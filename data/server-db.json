@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-01",
+      "loginId": "Admin",
+      "name": "GCap System Admin",
+      "role": "ADMIN",
+      "phone": "+91 98000 12345",
+      "email": "admin@gcap.in",
+      "joinedDate": "2026-01-01",
+      "status": "ACTIVE",
+      "passwordHash": "12345"
+    },
+    {
+      "id": "usr-user-01",
+      "loginId": "Demo",
+      "name": "Demo",
+      "role": "USER",
+      "phone": "+91 98765 43210",
+      "email": "demo@gcap.in",
+      "referralCode": "GCAP-DEMO",
+      "joinedDate": "2026-08-15",
+      "status": "ACTIVE",
+      "passwordHash": "demo123"
+    },
+    {
+      "id": "usr-1789039307103",
+      "loginId": "9876500001",
+      "name": "Test New User",
+      "role": "USER",
+      "phone": "9876500001",
+      "email": "9876500001@gcap.user",
+      "referralCode": "GCAP-500001",
+      "joinedDate": "2026-09-10",
+      "status": "ACTIVE",
+      "passwordHash": "password123"
+    }
+  ],
+  "lastUpdated": "2026-09-10T11:21:47.103Z"
+}

@@ -1,0 +1,26 @@
+{
+  "short_name": "GCap",
+  "name": "GCap - Investment & Daily Returns Platform",
+  "description": "GCap - Smart Investment & Daily Returns Platform with Daily Returns and Auto-Accrual",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "id": "/",
+  "background_color": "#020617",
+  "theme_color": "#064e3b",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}

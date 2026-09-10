@@ -1,0 +1,78 @@
+import { InvestmentPlan } from '../types';
+import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
+import { broadcastOtaUpdate } from './liveConfigStorage';
+
+const PLANS_STORAGE_KEY = 'gcap_investment_plans_v3_641d';
+
+export function getStoredPlans(): InvestmentPlan[] {
+  try {
+    const raw = localStorage.getItem(PLANS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
+      return DEFAULT_PLANS;
+    }
+    const parsed: InvestmentPlan[] = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
+      return DEFAULT_PLANS;
+    }
+    // Auto-migrate: ensure the 641-day short-term plan and 365-day long-term plan are active
+    const shortTermPlan = parsed.find((p) => p.id === 'short-term');
+    const longTermPlan = parsed.find((p) => p.id === 'long-term');
+    if (!shortTermPlan || shortTermPlan.durationDays !== 641 || !longTermPlan || longTermPlan.durationDays !== 365 || longTermPlan.minAmount !== 50000) {
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
+      return DEFAULT_PLANS;
+    }
+    return parsed;
+  } catch (err) {
+    console.error('Failed to load plans from storage:', err);
+    return DEFAULT_PLANS;
+  }
+}
+
+export function saveStoredPlans(plans: InvestmentPlan[], broadcast = true): void {
+  try {
+    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(plans));
+    if (broadcast) {
+      broadcastOtaUpdate(
+        'PLANS',
+        'Investment Plans Updated Live',
+        'निवेश प्लान लाइव अपडेट हुए',
+        `Active plans list updated (${plans.length} plans available). Instant sync complete.`,
+        `सक्रिय प्लान्स सूची अपडेट हुई (${plans.length} प्लान्स उपलब्ध)। तत्काल सिंक पूर्ण।`
+      );
+    }
+  } catch (err) {
+    console.error('Failed to save plans to storage:', err);
+  }
+}
+
+export function addPlan(newPlan: InvestmentPlan): InvestmentPlan[] {
+  const plans = getStoredPlans();
+  const updated = [...plans, newPlan];
+  saveStoredPlans(updated, true);
+  return updated;
+}
+
+export function updatePlan(updatedPlan: InvestmentPlan): InvestmentPlan[] {
+  const plans = getStoredPlans();
+  const index = plans.findIndex((p) => p.id === updatedPlan.id);
+  if (index !== -1) {
+    plans[index] = updatedPlan;
+    saveStoredPlans(plans, true);
+  }
+  return plans;
+}
+
+export function deletePlan(planId: string): InvestmentPlan[] {
+  const plans = getStoredPlans();
+  const filtered = plans.filter((p) => p.id !== planId);
+  saveStoredPlans(filtered, true);
+  return filtered;
+}
+
+export function resetPlansToDefault(): InvestmentPlan[] {
+  saveStoredPlans(DEFAULT_PLANS, true);
+  return DEFAULT_PLANS;
+}
+

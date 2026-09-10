@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@media print {
+  body, html {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation and modal backdrop overlays on print */
+  nav, header, footer, #app-navbar, .no-print, [role="dialog"] > div:first-child:not([id*="print"]) {
+    display: none !important;
+  }
+
+  /* Ensure printed modals take full page width and clean styling */
+  .print-container {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

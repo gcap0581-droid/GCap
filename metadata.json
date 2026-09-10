@@ -1,0 +1,6 @@
+{
+  "name": "GCap",
+  "description": "GCap - Smart Investment & Daily Returns Platform. Deposit funds, invest in high-yield plans, collect daily returns, and withdraw instantly.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
