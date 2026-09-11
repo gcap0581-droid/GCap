@@ -1,15 +1,16 @@
 {
-  "buildCommand": "vite build",
+  "version": 2,
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/$1"
+      "destination": "/api/index.ts"
     },
     {
       "source": "/version.json",
-      "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/version.json"
+      "destination": "/version.json"
     },
     {
       "source": "/(.*)",
@@ -17,4 +18,3 @@
     }
   ]
 }
-
