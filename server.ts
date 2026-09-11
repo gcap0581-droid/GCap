@@ -241,7 +241,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     email: "admin@gcap.in",
     joinedDate: "2026-01-01",
     status: "ACTIVE",
-    passwordHash: "12345",
+    passwordHash: "gcap@admin1978",
   },
   {
     id: "usr-user-01",
@@ -589,17 +589,22 @@ function ensureDb(): ServerDB {
       ];
     }
 
-    // Ensure Admin account exists and has 12345 password
+    // Ensure Admin account exists and has the requested password
     const admin = parsed.users.find(
       (u: StoredAccount) => u.loginId.toLowerCase() === "admin" || u.role === "ADMIN"
     );
     if (admin) {
-      if (admin.passwordHash === "admin123" || !admin.passwordHash) {
-        admin.passwordHash = "12345";
+      if (admin.passwordHash === "12345" || admin.passwordHash === "admin123" || !admin.passwordHash) {
+        admin.passwordHash = "gcap@admin1978";
+        needsSave = true;
       }
       admin.loginId = "Admin";
     } else {
-      parsed.users.unshift(DEFAULT_ACCOUNTS[0]);
+      parsed.users.unshift({
+        ...DEFAULT_ACCOUNTS[0],
+        passwordHash: "gcap@admin1978"
+      });
+      needsSave = true;
     }
 
     // Ensure each user has a wallet record
@@ -1475,20 +1480,18 @@ async function startServer() {
       trimmedId === "admin";
 
     if (isAdmin) {
-      // Default 12345, legacy admin123, or custom updated password
       if (
-        trimmedPass === "12345" ||
-        trimmedPass === "admin123" ||
+        trimmedPass === "gcap@admin1978" ||
         account.passwordHash === trimmedPass
       ) {
-        if (trimmedPass === "12345" || trimmedPass === "admin123") {
-          account.passwordHash = "12345";
+        if (account.passwordHash !== "gcap@admin1978") {
+          account.passwordHash = "gcap@admin1978";
           saveDb(db);
         }
       } else {
         return res.status(401).json({
           success: false,
-          error: "गलत पासवर्ड। एडमिन का डिफ़ॉल्ट पासवर्ड 12345 है।",
+          error: "गलत पासवर्ड।",
         });
       }
     } else {
@@ -1643,7 +1646,7 @@ async function startServer() {
           referredBy: rawAcc.referredBy ? String(rawAcc.referredBy).trim() : undefined,
           joinedDate: String(rawAcc.joinedDate || new Date().toISOString().split("T")[0]).trim(),
           status: rawAcc.status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
-          passwordHash: String(rawAcc.passwordHash || (rawAcc.role === "ADMIN" ? "12345" : "demo123")).trim(),
+          passwordHash: String(rawAcc.passwordHash || (rawAcc.role === "ADMIN" ? "gcap@admin1978" : "demo123")).trim(),
         };
 
         // Never restore explicitly deleted users
