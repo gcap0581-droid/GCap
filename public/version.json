@@ -1,8 +1,8 @@
 {
-  "buildId": "1773421500000",
-  "buildTime": "2026-09-11T14:25:00.000Z",
-  "appVersion": "2.6.9",
+  "buildId": "1773422000000",
+  "buildTime": "2026-09-11T14:35:00.000Z",
+  "appVersion": "2.7.0",
   "source": "Google AI Studio Live",
-  "message": "Eliminated Top Blank Area / Safe Area Padding Across All Pages for Edge-to-Edge Mobile Display",
+  "message": "Safe Area Top Inset Restored: App Header & Menu sit cleanly below mobile status bar/notch without clipping",
   "autoReloadEnabled": true
 }
