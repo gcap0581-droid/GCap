@@ -91,18 +91,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Left: Menu Button (Drawer trigger) & Brand Logo */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Main Menu Button (Always visible on mobile & desktop) */}
-            <button
-              id="btn-main-menu-drawer"
-              onClick={onOpenMenuDrawer}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
-              title={isHi ? 'मुख्य मेन्यू खोलें' : 'Open Menu'}
-            >
-              <Menu className="w-5 h-5 text-amber-400" />
-              <span className="hidden sm:inline text-xs font-bold text-slate-200">
-                {isHi ? 'मेन्यू' : 'Menu'}
-              </span>
-            </button>
+            {/* Main Menu Button (Always visible on mobile & desktop if logged in) */}
+            {currentUser && (
+              <button
+                id="btn-main-menu-drawer"
+                onClick={onOpenMenuDrawer}
+                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+                title={isHi ? 'मुख्य मेन्यू खोलें' : 'Open Menu'}
+              >
+                <Menu className="w-5 h-5 text-amber-400" />
+                <span className="hidden sm:inline text-xs font-bold text-slate-200">
+                  {isHi ? 'मेन्यू' : 'Menu'}
+                </span>
+              </button>
+            )}
 
             {/* Logo */}
             <div
@@ -124,63 +126,69 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Center Search Bar (Hidden on very small screens, responsive) */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"
-          >
-            <div className="relative w-full flex items-center">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
-              <input
-                type="text"
-                value={searchVal}
-                onChange={(e) => {
-                  setSearchVal(e.target.value);
-                  if (onSearchQuery) onSearchQuery(e.target.value);
-                }}
-                placeholder={
-                  isHi
-                    ? 'प्लान्स, रिटर्न खोजें (641D, 365D)...'
-                    : 'Search plans, daily ROI (641D, 365D)...'
-                }
-                className="w-full pl-8 pr-16 py-1.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="absolute right-1 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer"
-              >
-                {isHi ? 'सर्च' : 'Find'}
-              </button>
-            </div>
-          </form>
+          {currentUser && (
+            <form
+              onSubmit={handleSearch}
+              className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"
+            >
+              <div className="relative w-full flex items-center">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchVal}
+                  onChange={(e) => {
+                    setSearchVal(e.target.value);
+                    if (onSearchQuery) onSearchQuery(e.target.value);
+                  }}
+                  placeholder={
+                    isHi
+                      ? 'प्लान्स, रिटर्न खोजें (641D, 365D)...'
+                      : 'Search plans, daily ROI (641D, 365D)...'
+                  }
+                  className="w-full pl-8 pr-16 py-1.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer"
+                >
+                  {isHi ? 'सर्च' : 'Find'}
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Right Actions: Wallet Pill, Deposit, View Switcher */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
             {/* Compact Wallet Pill */}
-            <div
-              onClick={() => onDesktopTabChange && onDesktopTabChange('wallet')}
-              className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors"
-            >
-              <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <div className="leading-none">
-                <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
-                  {isHi ? 'बैलेंस' : 'Balance'}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
-                  {formatINR(wallet.cashBalance)}
-                </span>
+            {currentUser && (
+              <div
+                onClick={() => onDesktopTabChange && onDesktopTabChange('wallet')}
+                className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors"
+              >
+                <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="leading-none">
+                  <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
+                    {isHi ? 'बैलेंस' : 'Balance'}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
+                    {formatINR(wallet.cashBalance)}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quick Add Money Button */}
-            <button
-              id="btn-nav-deposit-quick"
-              onClick={onOpenDeposit}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow cursor-pointer transition-all active:scale-95"
-            >
-              <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
-            </button>
+            {currentUser && (
+              <button
+                id="btn-nav-deposit-quick"
+                onClick={onOpenDeposit}
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow cursor-pointer transition-all active:scale-95"
+              >
+                <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
+              </button>
+            )}
 
             {/* User Profile / Bank Account Details Button */}
             {currentUser && onOpenProfile && (
@@ -198,7 +206,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             {/* Notifications Button */}
-            {onOpenNotifications && (
+            {currentUser && onOpenNotifications && (
               <button
                 id="btn-nav-notifications"
                 onClick={onOpenNotifications}

@@ -105,28 +105,30 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
         
         {/* Left: Mobile Drawer / Menu Icon + Brand + Back button */}
         <div className="flex items-center gap-2">
-          {activeTab !== 'dashboard' ? (
-            <button
-              onClick={() => onTabChange('dashboard')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
-              title={isHi ? 'मुख्य स्क्रीन पर वापस जाएं' : 'Back to Home'}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{isHi ? 'वापस' : 'Back'}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg bg-slate-800 text-amber-400 hover:bg-slate-700 transition-colors cursor-pointer"
-              title={isHi ? 'मेन्यू खोलें' : 'Open Menu'}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+          {currentUser && (
+            activeTab !== 'dashboard' ? (
+              <button
+                onClick={() => onTabChange('dashboard')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
+                title={isHi ? 'मुख्य स्क्रीन पर वापस जाएं' : 'Back to Home'}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>{isHi ? 'वापस' : 'Back'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-1.5 rounded-lg bg-slate-800 text-amber-400 hover:bg-slate-700 transition-colors cursor-pointer"
+                title={isHi ? 'मेन्यू खोलें' : 'Open Menu'}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )
           )}
 
           <div
-            onClick={() => onTabChange('dashboard')}
-            className="flex items-center gap-1.5 cursor-pointer"
+            onClick={() => currentUser ? onTabChange('dashboard') : null}
+            className={`flex items-center gap-1.5 ${currentUser ? 'cursor-pointer' : ''}`}
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-400 flex items-center justify-center font-black text-slate-950 text-xs shadow-sm">
               <TrendingUp className="w-4 h-4" />
@@ -142,7 +144,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
 
         {/* Right: Quick Balance, Notification Bell & Exit Mobile Mode */}
         <div className="flex items-center gap-1.5">
-          {wallet && (
+          {currentUser && wallet && (
             <div
               onClick={() => onTabChange('wallet')}
               className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 cursor-pointer"
@@ -155,7 +157,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
           )}
 
           {/* Mobile Notifications Bell Button */}
-          {onOpenNotifications && (
+          {currentUser && onOpenNotifications && (
             <button
               id="btn-mobile-notifications"
               onClick={onOpenNotifications}
