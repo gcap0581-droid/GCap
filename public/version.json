@@ -1,8 +1,8 @@
 {
-  "buildId": "1773422500000",
-  "buildTime": "2026-09-11T14:40:00.000Z",
-  "appVersion": "2.7.1",
+  "buildId": "1773423000000",
+  "buildTime": "2026-09-11T14:45:00.000Z",
+  "appVersion": "2.7.2",
   "source": "Google AI Studio Live",
-  "message": "Dynamic safe-area-inset-top padding applied successfully to account for mobile notches and system UI",
+  "message": "Zero-Top-Gap Layout: Completely removed top safe area inset padding so app header and login screens start immediately at the very top edge",
   "autoReloadEnabled": true
 }
