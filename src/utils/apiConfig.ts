@@ -6,12 +6,18 @@ export const CENTRAL_SERVER_ORIGIN =
   'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
 
 /**
- * Returns true if current environment is localhost or direct Cloud Run
+ * Returns true if current environment is the central development server.
+ * The shared app container (which contains 'ais-pre-') is routed directly to the
+ * main 'ais-dev-' container, ensuring BOTH systems share the exact same database.
  */
 export function isDirectServerHost(): boolean {
   if (typeof window === 'undefined') return true;
   const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host.includes('run.app');
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    (host.includes('run.app') && host.includes('ais-dev-'))
+  );
 }
 
 /**
