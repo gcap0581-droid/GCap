@@ -540,30 +540,133 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="space-y-2">
-        {/* Mobile Dropdown Menu Selector */}
-        <div className="block sm:hidden bg-slate-900 border border-slate-700 rounded-xl p-2.5">
-          <label className="block text-[10px] text-slate-400 font-semibold mb-1 uppercase tracking-wider">
-            {isHi ? '📑 एडमिन मेनू नेविगेशन (Select Section)' : '📑 Admin Menu Navigation'}
-          </label>
-          <select
-            value={activeSubTab}
-            onChange={(e) => setActiveSubTab(e.target.value as any)}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-600 rounded-lg text-white text-xs font-bold focus:outline-none focus:border-amber-400"
-          >
-            <option value="OVERVIEW">📊 {isHi ? 'सिस्टम अवलोकन (Overview)' : 'System Overview'}</option>
-            <option value="MESSAGES">📢 {isHi ? 'संदेश व लाइव प्रसारण (Messages & Alerts)' : 'Messages & Alerts'}</option>
-            <option value="TREASURY">💰 {isHi ? 'कंपनी मुख्य बैलेंस (Company Treasury)' : 'Company Treasury'}</option>
-            <option value="INVESTMENTS">⚡ {isHi ? 'निवेश व 6h चक्र (Portfolios)' : 'Portfolios & 6h Cycles'}</option>
-            <option value="PLANS">📦 {isHi ? 'प्लान्स प्रबंधन (Plans Manager)' : 'Plans Manager'}</option>
-            <option value="USERS">👥 {isHi ? 'यूज़र्स प्रबंधन (Users Manager)' : 'Users Manager'}</option>
-            <option value="TRANSACTIONS">🕒 {isHi ? 'लेनदेन प्रबंधन (Transactions)' : 'Transactions'}</option>
-            <option value="BACKUP">💾 {isHi ? 'डेटा बैकअप व रिस्टोर' : 'Backup & Restore'}</option>
-            <option value="COMPANY_PROFILE">🏢 {isHi ? 'कंपनी प्रोफाइल व लीगल' : 'Company Profile & Legal'}</option>
-            <option value="OTA">📡 {isHi ? 'OTA व लाइव कंट्रोल' : 'OTA & Live Control'}</option>
-          </select>
-        </div>
+      {/* Navigation Sub-Tabs & Mobile Menu Grid */}
+      <div className="space-y-4">
+        {/* Mobile Grid Menu (when OVERVIEW is selected) */}
+        {activeSubTab === 'OVERVIEW' ? (
+          <div className="block sm:hidden space-y-3">
+            <div className="text-[11px] uppercase font-bold text-amber-400 px-1 tracking-wider">
+              {isHi ? '⚙️ एडमिन कंट्रोल पैनल मेन्यू (ADMIN MENU)' : '⚙️ ADMIN HUB CONTROLS'}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  id: 'MESSAGES' as const,
+                  title: isHi ? 'संदेश व लाइव' : 'Messages',
+                  subtitle: isHi ? `${messages.length} संदेश` : `${messages.length} alerts`,
+                  icon: Bell,
+                  color: 'from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 text-amber-400',
+                  badge: String(messages.length),
+                  badgeColor: 'bg-amber-500/20 text-amber-300'
+                },
+                {
+                  id: 'TREASURY' as const,
+                  title: isHi ? 'कंपनी खजाना' : 'Treasury',
+                  subtitle: isLowBalance ? (isHi ? 'कम बैलेंस!' : 'Low balance!') : formatINR(treasury.balance),
+                  icon: Building2,
+                  color: 'from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 text-emerald-400',
+                  badge: isLowBalance ? (isHi ? 'चेतावनी' : 'Alert') : 'OK',
+                  badgeColor: isLowBalance ? 'bg-rose-500/25 text-rose-300 animate-pulse' : 'bg-emerald-500/25 text-emerald-300'
+                },
+                {
+                  id: 'INVESTMENTS' as const,
+                  title: isHi ? 'सक्रिय निवेश' : 'Portfolios',
+                  subtitle: isHi ? `${investments.length} योजनाएं` : `${investments.length} active plans`,
+                  icon: Zap,
+                  color: 'from-indigo-500/10 via-indigo-500/5 to-transparent border-indigo-500/20 text-indigo-400',
+                  badge: String(investments.length),
+                  badgeColor: 'bg-indigo-500/25 text-indigo-300'
+                },
+                {
+                  id: 'PLANS' as const,
+                  title: isHi ? 'प्लान्स प्रबंधन' : 'Plans CRUD',
+                  subtitle: isHi ? 'प्लान्स जोड़ें/संपादित करें' : 'Manage Plans',
+                  icon: Layers,
+                  color: 'from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/20 text-rose-400',
+                  badge: String(plans.length),
+                  badgeColor: 'bg-rose-500/25 text-rose-300'
+                },
+                {
+                  id: 'USERS' as const,
+                  title: isHi ? 'यूज़र्स प्रबंधन' : 'Users CRUD',
+                  subtitle: isHi ? 'कस्टमर सूची व प्रोफाइल' : 'Customers DB',
+                  icon: Users,
+                  color: 'from-cyan-500/10 via-cyan-500/5 to-transparent border-cyan-500/20 text-cyan-400',
+                  badge: String(usersList.length),
+                  badgeColor: 'bg-cyan-500/25 text-cyan-300'
+                },
+                {
+                  id: 'TRANSACTIONS' as const,
+                  title: isHi ? 'लेनदेन मैनेजर' : 'Txns CRUD',
+                  subtitle: isHi ? 'डिपॉजिट व विड्रॉल' : 'Transactions list',
+                  icon: Clock,
+                  color: 'from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20 text-purple-400',
+                  badge: String(transactions.length),
+                  badgeColor: 'bg-purple-500/25 text-purple-300'
+                },
+                {
+                  id: 'BACKUP' as const,
+                  title: isHi ? 'डेटा बैकअप' : 'Backups',
+                  subtitle: isHi ? 'रिस्टोर व स्नैपशॉट' : 'Snapshots & Rollback',
+                  icon: Database,
+                  color: 'from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 text-blue-400',
+                  badge: 'Auto',
+                  badgeColor: 'bg-blue-500/25 text-blue-300'
+                },
+                {
+                  id: 'COMPANY_PROFILE' as const,
+                  title: isHi ? 'कंपनी प्रोफाइल' : 'Company Profile',
+                  subtitle: 'GCap Pvt Ltd',
+                  icon: ShieldCheck,
+                  color: 'from-teal-500/10 via-teal-500/5 to-transparent border-teal-500/20 text-teal-400',
+                  badge: 'Legal',
+                  badgeColor: 'bg-teal-500/25 text-teal-300'
+                },
+                {
+                  id: 'OTA' as const,
+                  title: isHi ? 'लाइव OTA' : 'OTA UI Engine',
+                  subtitle: `v${liveConfig.appVersion}`,
+                  icon: Radio,
+                  color: 'from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/20 text-pink-400',
+                  badge: 'v2.7',
+                  badgeColor: 'bg-pink-500/25 text-pink-300 animate-pulse'
+                }
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSubTab(item.id)}
+                    className={`w-full text-left p-3 rounded-2xl bg-gradient-to-br ${item.color} border flex flex-col justify-between h-24 shadow-md transition-all cursor-pointer active:scale-95`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-black font-mono tracking-wider ${item.badgeColor}`}>
+                        {item.badge}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      <div className="font-extrabold text-[12px] text-white tracking-tight truncate">{item.title}</div>
+                      <div className="text-[9px] text-slate-400 truncate">{item.subtitle}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="block sm:hidden">
+            <button
+              onClick={() => setActiveSubTab('OVERVIEW')}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-amber-500/30 text-amber-400 rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{isHi ? '← वापस एडमिन मुख्य ओवरव्यू (Admin Hub Menu)' : '← Back to Admin Hub Menu'}</span>
+            </button>
+          </div>
+        )}
 
         <div className="hidden sm:flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1 gap-1">
         <div className="flex flex-wrap items-center gap-1">

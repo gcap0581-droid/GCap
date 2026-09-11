@@ -1,8 +1,8 @@
 {
-  "buildId": "1773424500000",
-  "buildTime": "2026-09-11T15:15:00.000Z",
-  "appVersion": "2.7.5",
+  "buildId": "1773424900000",
+  "buildTime": "2026-09-11T16:00:00.000Z",
+  "appVersion": "2.7.7",
   "source": "Google AI Studio Live",
-  "message": "Dynamic safe-area status bar spacing: Set top padding on AndroidFrame to keep app navigation cleanly below mobile status bar/notch",
+  "message": "AdminPanel mobile grid menu implementation: Replaced native select drop-down with premium cards grid of options on mobile view",
   "autoReloadEnabled": true
 }

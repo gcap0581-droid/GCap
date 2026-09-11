@@ -2791,47 +2791,57 @@ export default function App() {
         )}
 
         {currentUser.role === 'ADMIN' && adminViewMode === 'ADMIN_HUB' ? (
-          <AdminPanel
-            adminUser={currentUser}
-            language={language}
-            rules={rules}
-            wallet={wallet}
-            transactions={transactions}
-            plans={plans}
-            investments={investments}
-            treasury={treasury}
-            treasuryLogs={treasuryLogs}
-            backups={backups}
-            currentPayload={getCurrentSystemPayload()}
-            liveConfig={liveConfig}
-            onUpdateLiveConfig={handleUpdateLiveConfig}
-            onResetLiveConfig={handleResetLiveConfig}
-            onOpenRules={() => setIsRulesOpen(true)}
-            onSwitchToInvestorView={() => setAdminViewMode('INVESTOR_VIEW')}
-            onLogout={handleLogout}
-            onAddPlan={handleAdminAddPlan}
-            onUpdatePlan={handleAdminUpdatePlan}
-            onDeletePlan={handleAdminDeletePlan}
-            onResetPlans={handleAdminResetPlans}
-            onAddTransaction={handleAdminAddTransaction}
-            onUpdateTransaction={handleAdminUpdateTransaction}
-            onDeleteTransaction={handleAdminDeleteTransaction}
-            onSimulateComplete24hLock={handleSimulateComplete24hLock}
-            onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
-            onSimulateMaturity641Days={handleSimulateMaturity641Days}
-            onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
-            onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
-            onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
-            onResetTreasury={handleResetTreasury}
-            onRunMidnightBackupNow={handleRunMidnightBackupNow}
-            onCreateManualSnapshot={handleCreateManualSnapshot}
-            onRestoreBackup={handleRestoreBackup}
-            onDeleteBackup={handleDeleteBackup}
-            messages={messages}
-            onSendMessage={handleSendAdminMessage}
-            onDeleteMessage={handleDeleteAdminMessage}
-            onRefreshMessages={refreshMessages}
-          />
+          <div
+            className={viewMode === 'android' ? "px-3.5" : ""}
+            style={viewMode === 'android' ? {
+              paddingTop: 'env(safe-area-inset-top, 38px)',
+              paddingBottom: 'env(safe-area-inset-bottom, 12px)',
+              paddingLeft: 'env(safe-area-inset-left, 0px)',
+              paddingRight: 'env(safe-area-inset-right, 0px)',
+            } : undefined}
+          >
+            <AdminPanel
+              adminUser={currentUser}
+              language={language}
+              rules={rules}
+              wallet={wallet}
+              transactions={transactions}
+              plans={plans}
+              investments={investments}
+              treasury={treasury}
+              treasuryLogs={treasuryLogs}
+              backups={backups}
+              currentPayload={getCurrentSystemPayload()}
+              liveConfig={liveConfig}
+              onUpdateLiveConfig={handleUpdateLiveConfig}
+              onResetLiveConfig={handleResetLiveConfig}
+              onOpenRules={() => setIsRulesOpen(true)}
+              onSwitchToInvestorView={() => setAdminViewMode('INVESTOR_VIEW')}
+              onLogout={handleLogout}
+              onAddPlan={handleAdminAddPlan}
+              onUpdatePlan={handleAdminUpdatePlan}
+              onDeletePlan={handleAdminDeletePlan}
+              onResetPlans={handleAdminResetPlans}
+              onAddTransaction={handleAdminAddTransaction}
+              onUpdateTransaction={handleAdminUpdateTransaction}
+              onDeleteTransaction={handleAdminDeleteTransaction}
+              onSimulateComplete24hLock={handleSimulateComplete24hLock}
+              onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
+              onSimulateMaturity641Days={handleSimulateMaturity641Days}
+              onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
+              onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+              onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
+              onResetTreasury={handleResetTreasury}
+              onRunMidnightBackupNow={handleRunMidnightBackupNow}
+              onCreateManualSnapshot={handleCreateManualSnapshot}
+              onRestoreBackup={handleRestoreBackup}
+              onDeleteBackup={handleDeleteBackup}
+              messages={messages}
+              onSendMessage={handleSendAdminMessage}
+              onDeleteMessage={handleDeleteAdminMessage}
+              onRefreshMessages={refreshMessages}
+            />
+          </div>
         ) : viewMode === 'web' ? (
           <>
             {currentUser.role === 'ADMIN' && (
