@@ -9,7 +9,9 @@ import {
   TreasuryLog,
   BankAccountDetails,
   UserProfile,
+  AdminMessage,
 } from '../types';
+import { apiFetch } from './apiConfig';
 
 export interface CentralStateResponse {
   success: boolean;
@@ -24,6 +26,7 @@ export interface CentralStateResponse {
   treasury?: CompanyTreasury;
   treasuryLogs?: TreasuryLog[];
   bankDetails?: BankAccountDetails | null;
+  messages?: AdminMessage[];
   lastUpdated: string;
   serverTime?: number;
 }
@@ -45,7 +48,7 @@ export async function fetchCentralState(
     params.append('role', role);
     params.append('t', Date.now().toString());
 
-    const res = await fetch(`${API_BASE}/central/state?${params.toString()}`, {
+    const res = await apiFetch(`${API_BASE}/central/state?${params.toString()}`, {
       headers: {
         'Cache-Control': 'no-cache',
         Pragma: 'no-cache',
@@ -69,7 +72,7 @@ export async function apiCreateTransaction(
   userId: string
 ): Promise<{ success: boolean; transaction?: Transaction; wallet?: Wallet; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/transactions`, {
+    const res = await apiFetch(`${API_BASE}/transactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction, userId }),
@@ -94,7 +97,7 @@ export async function apiUpdateTransaction(
   error?: string;
 }> {
   try {
-    const res = await fetch(`${API_BASE}/transactions/update`, {
+    const res = await apiFetch(`${API_BASE}/transactions/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction, adminId }),
@@ -112,7 +115,7 @@ export async function apiAddTransaction(
   transaction: Transaction
 ): Promise<{ success: boolean; transaction?: Transaction; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/transactions/add`, {
+    const res = await apiFetch(`${API_BASE}/transactions/add`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction }),
@@ -130,7 +133,7 @@ export async function apiDeleteTransaction(
   transactionId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/transactions/${transactionId}`, {
+    const res = await apiFetch(`${API_BASE}/transactions/${transactionId}`, {
       method: 'DELETE',
     });
     return await res.json();
@@ -147,7 +150,7 @@ export async function apiCreateInvestment(
   userId: string
 ): Promise<{ success: boolean; investment?: ActiveInvestment; wallet?: Wallet; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/investments`, {
+    const res = await apiFetch(`${API_BASE}/investments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ investment, userId }),
@@ -176,7 +179,7 @@ export async function apiUpdateInvestment(
   }
 
   try {
-    const res = await fetch(`${API_BASE}/investments/update`, {
+    const res = await apiFetch(`${API_BASE}/investments/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ investment, walletUpdates: resolvedWalletUpdates, userId: resolvedUserId }),
@@ -194,7 +197,7 @@ export async function apiSavePlans(
   plans: InvestmentPlan[]
 ): Promise<{ success: boolean; plans?: InvestmentPlan[]; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/plans/save`, {
+    const res = await apiFetch(`${API_BASE}/plans/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plans }),
@@ -212,7 +215,7 @@ export async function apiSaveRules(
   rules: AppRules
 ): Promise<{ success: boolean; rules?: AppRules; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/rules/save`, {
+    const res = await apiFetch(`${API_BASE}/rules/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rules }),
@@ -230,7 +233,7 @@ export async function apiSaveLiveConfig(
   liveConfig: LiveInterfaceConfig
 ): Promise<{ success: boolean; liveConfig?: LiveInterfaceConfig; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/live-config/save`, {
+    const res = await apiFetch(`${API_BASE}/live-config/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ liveConfig }),
@@ -249,7 +252,7 @@ export async function apiUpdateTreasury(
   log?: TreasuryLog
 ): Promise<{ success: boolean; treasury?: CompanyTreasury; logs?: TreasuryLog[]; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/treasury/update`, {
+    const res = await apiFetch(`${API_BASE}/treasury/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ treasury, log }),
@@ -268,7 +271,7 @@ export async function apiSaveBankDetails(
   details: BankAccountDetails
 ): Promise<{ success: boolean; details?: BankAccountDetails; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/bank-details`, {
+    const res = await apiFetch(`${API_BASE}/bank-details`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, details }),
@@ -294,10 +297,107 @@ export async function apiUpdateWallet(
   }
 
   try {
-    const res = await fetch(`${API_BASE}/wallet/update`, {
+    const res = await apiFetch(`${API_BASE}/wallet/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, wallet }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+/**
+ * Fetch messages from central database
+ */
+export async function apiFetchMessages(
+  userId?: string,
+  role: 'ADMIN' | 'USER' = 'USER'
+): Promise<{ success: boolean; messages: AdminMessage[] }> {
+  try {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    params.append('role', role);
+    params.append('t', Date.now().toString());
+
+    const res = await apiFetch(`${API_BASE}/messages?${params.toString()}`);
+    if (!res.ok) return { success: false, messages: [] };
+    const data = await res.json();
+    return { success: true, messages: data.messages || [] };
+  } catch (err) {
+    console.warn('[CentralSync] Failed to fetch messages:', err);
+    return { success: false, messages: [] };
+  }
+}
+
+/**
+ * Admin broadcasts a message
+ */
+export async function apiSendAdminMessage(
+  message: Partial<AdminMessage>
+): Promise<{ success: boolean; message?: AdminMessage; error?: string }> {
+  try {
+    const res = await apiFetch(`${API_BASE}/admin/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+/**
+ * Mark a message as read by user
+ */
+export async function apiMarkMessageRead(
+  messageId: string,
+  userId: string
+): Promise<{ success: boolean }> {
+  try {
+    const res = await apiFetch(`${API_BASE}/messages/${messageId}/read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false };
+  }
+}
+
+/**
+ * Dismiss a message popup for a user
+ */
+export async function apiDismissMessagePopup(
+  messageId: string,
+  userId: string
+): Promise<{ success: boolean }> {
+  try {
+    const res = await apiFetch(`${API_BASE}/messages/${messageId}/dismiss`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false };
+  }
+}
+
+export const apiDismissMessage = apiDismissMessagePopup;
+
+/**
+ * Admin deletes a message
+ */
+export async function apiDeleteAdminMessage(
+  messageId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await apiFetch(`${API_BASE}/admin/messages/${messageId}`, {
+      method: 'DELETE',
     });
     return await res.json();
   } catch (err: any) {

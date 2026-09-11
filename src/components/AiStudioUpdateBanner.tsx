@@ -22,10 +22,9 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
 
   useEffect(() => {
     const unsubscribe = subscribeToAiStudioUpdates((info) => {
-      // Check if build was already installed or dismissed
+      // Check if build was already installed
       const installedId = localStorage.getItem('gcap_installed_build_id');
-      const ignoredId = localStorage.getItem('gcap_last_ignored_build');
-      if (info.buildId && (info.buildId === installedId || info.buildId === ignoredId)) {
+      if (info.buildId && info.buildId === installedId) {
         return;
       }
       setUpdateInfo(info);
@@ -35,15 +34,13 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
     return () => unsubscribe();
   }, []);
 
-  // Auto-dismiss banner after 8 seconds if user does not interact, preventing screen clutter
+  // Auto-apply update after 4 seconds if user has not clicked
   useEffect(() => {
     if (!updateInfo || isDismissed || isUpdating) return;
-    const timer = setTimeout(() => {
-      setIsDismissed(true);
-      if (updateInfo?.buildId) {
-        localStorage.setItem('gcap_last_ignored_build', updateInfo.buildId);
-      }
-    }, 8000);
+    const timer = setTimeout(async () => {
+      setIsUpdating(true);
+      await applyAiStudioUpdateNow();
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [updateInfo, isDismissed, isUpdating]);
@@ -58,14 +55,11 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
       await applyAiStudioUpdateNow();
       setIsDismissed(true);
       setUpdateInfo(null);
-    }, 1200);
+    }, 800);
   };
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    if (updateInfo?.buildId) {
-      localStorage.setItem('gcap_last_ignored_build', updateInfo.buildId);
-    }
     setUpdateInfo(null);
   };
 

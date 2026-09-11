@@ -1,4 +1,5 @@
 import { UserProfile } from '../types';
+import { apiFetch } from './apiConfig';
 
 const AUTH_USER_KEY = 'gcap_active_session_v1';
 const USERS_DB_KEY = 'gcap_registered_users_v1';
@@ -105,12 +106,42 @@ function saveAccountsDB(accounts: StoredAccount[]): void {
 /**
  * Bi-directionally synchronizes users with the central GCap server.
  * Ensures any user created on any mobile phone or browser is immediately
- * available in the Admin Panel and across all devices.
+ * uploaded to the central database, and all Admin panels see the exact same users.
  */
 export async function syncUsersWithServer(): Promise<UserProfile[]> {
   try {
-    // 1. Fetch authoritative user list from central server (Single Source of Truth)
-    const res = await fetch('/api/users');
+    const localAccounts = getAccountsDB();
+
+    // 1. Bi-directional sync with central authoritative server (Single Source of Truth)
+    // Sends local accounts from this session. Central server merges any missing users
+    // into server-db.json, respects deletions, and returns the master list.
+    const response = await apiFetch('/api/users/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ accounts: localAccounts }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && Array.isArray(data.accounts)) {
+        const serverAccounts: StoredAccount[] = data.accounts;
+        try {
+          localStorage.setItem(USERS_DB_KEY, JSON.stringify(serverAccounts));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('gcap_users_updated', { detail: serverAccounts }));
+          }
+        } catch (e) {
+          console.error('Local storage save error:', e);
+        }
+
+        return serverAccounts.map(({ passwordHash: _, ...profile }) => profile);
+      }
+    }
+
+    // 2. Fallback to GET /api/users
+    const res = await apiFetch('/api/users?t=' + Date.now());
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users)) {
@@ -126,40 +157,12 @@ export async function syncUsersWithServer(): Promise<UserProfile[]> {
         return serverAccounts.map(({ passwordHash: _, ...profile }) => profile);
       }
     }
-
-    // 2. Fallback to POST sync if GET fails
-    const localAccounts = getAccountsDB();
-    const response = await fetch('/api/users/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accounts: localAccounts }),
-    });
-
-    if (!response.ok) {
-      return getAllUsers();
-    }
-
-    const data = await response.json();
-    if (data.success && Array.isArray(data.accounts)) {
-      const serverAccounts: StoredAccount[] = data.accounts;
-      try {
-        localStorage.setItem(USERS_DB_KEY, JSON.stringify(serverAccounts));
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('gcap_users_updated', { detail: serverAccounts }));
-        }
-      } catch (e) {
-        console.error('Local storage save error:', e);
-      }
-
-      return serverAccounts.map(({ passwordHash: _, ...profile }) => profile);
-    }
-    return getAllUsers();
-  } catch {
-    // Return local users if network is offline
-    return getAllUsers();
+  } catch (err) {
+    console.warn('[GCap Sync] Network sync unavailable, using local accounts cache:', err);
   }
+
+  // Return local users if network is offline
+  return getAllUsers();
 }
 
 /**
@@ -282,7 +285,7 @@ export async function loginUserAsync(
 
   // 1. Primary: Verify directly with Central Server (Main DB)
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ loginId: trimmedId, password: trimmedPass }),
@@ -433,7 +436,7 @@ export async function registerUserAsync(data: {
 
   // 1. Register directly on central server
   try {
-    const res = await fetch('/api/register', {
+    const res = await apiFetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -535,7 +538,7 @@ export function registerUser(data: {
   saveAccountsDB(accounts);
 
   // Sync with central server so Admin sees this user from any device
-  fetch('/api/register', {
+  apiFetch('/api/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -607,7 +610,7 @@ export function adminAddUser(data: {
   saveAccountsDB(accounts);
 
   // Sync to central server
-  fetch('/api/users/add', {
+  apiFetch('/api/users/add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -615,6 +618,35 @@ export function adminAddUser(data: {
 
   const { passwordHash: _, ...profile } = newAccount;
   return { success: true, user: profile };
+}
+
+export async function adminAddUserAsync(data: {
+  name: string;
+  loginId: string;
+  phone: string;
+  email?: string;
+  password?: string;
+  role: 'ADMIN' | 'USER';
+  status: 'ACTIVE' | 'BLOCKED';
+  joinedDate?: string;
+}): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
+  try {
+    const res = await apiFetch('/api/users/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (res.ok && result.success && result.user) {
+      await syncUsersWithServer();
+      return { success: true, user: result.user };
+    } else if (result.error) {
+      return { success: false, error: result.error };
+    }
+  } catch (err) {
+    console.warn('Server user add error, saving locally:', err);
+  }
+  return adminAddUser(data);
 }
 
 export function adminUpdateUser(
@@ -650,7 +682,7 @@ export function adminUpdateUser(
   saveAccountsDB(accounts);
 
   // Sync to central server
-  fetch('/api/users/update', {
+  apiFetch('/api/users/update', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, updates }),
@@ -660,13 +692,44 @@ export function adminUpdateUser(
   return { success: true, user: profile };
 }
 
+export async function adminUpdateUserAsync(
+  userId: string,
+  updates: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    role?: 'ADMIN' | 'USER';
+    status?: 'ACTIVE' | 'BLOCKED';
+    password?: string;
+    joinedDate?: string;
+  }
+): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
+  try {
+    const res = await apiFetch('/api/users/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, updates }),
+    });
+    const result = await res.json();
+    if (res.ok && result.success && result.user) {
+      await syncUsersWithServer();
+      return { success: true, user: result.user };
+    } else if (result.error) {
+      return { success: false, error: result.error };
+    }
+  } catch (err) {
+    console.warn('Server user update error, updating locally:', err);
+  }
+  return adminUpdateUser(userId, updates);
+}
+
 export function adminDeleteUser(userId: string): { success: boolean; error?: string } {
   const accounts = getAccountsDB();
   const target = accounts.find((a) => a.id === userId);
   if (!target) {
     return { success: false, error: 'यूज़र नहीं मिला' };
   }
-  if (target.loginId.toLowerCase() === 'admin') {
+  if (target.loginId.toLowerCase() === 'admin' || target.role === 'ADMIN') {
     return { success: false, error: 'सुरक्षा कारणों से मुख्य सुपर एडमिन को हटाया नहीं जा सकता।' };
   }
 
@@ -674,10 +737,39 @@ export function adminDeleteUser(userId: string): { success: boolean; error?: str
   saveAccountsDB(filtered);
 
   // Sync to central server
-  fetch(`/api/users/${encodeURIComponent(userId)}`, {
+  apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
     method: 'DELETE',
   }).catch((e) => console.warn('Background server user delete sync:', e));
 
+  return { success: true };
+}
+
+export async function adminDeleteUserAsync(userId: string): Promise<{ success: boolean; error?: string }> {
+  // 1. Immediately delete locally to provide instant UI feedback
+  const accounts = getAccountsDB();
+  const target = accounts.find((a) => a.id === userId);
+  if (target && (target.loginId.toLowerCase() === 'admin' || target.role === 'ADMIN')) {
+    return { success: false, error: 'सुरक्षा कारणों से मुख्य सुपर एडमिन को हटाया नहीं जा सकता।' };
+  }
+
+  const filtered = accounts.filter((a) => a.id !== userId);
+  saveAccountsDB(filtered);
+
+  // 2. Delete on central server
+  try {
+    const res = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      await syncUsersWithServer();
+      return { success: true };
+    } else if (result.error) {
+      return { success: false, error: result.error };
+    }
+  } catch (err) {
+    console.warn('Server delete user error, deleted locally:', err);
+  }
   return { success: true };
 }
 

@@ -58,8 +58,8 @@ export const AdminOtaTab: React.FC<AdminOtaTabProps> = ({
   const [forceRefreshSuccess, setForceRefreshSuccess] = useState(false);
   const [history, setHistory] = useState<OtaEventPayload[]>(() => getOtaHistory());
 
-  const handleForceRefreshAll = () => {
-    broadcastAiStudioForceUpdate();
+  const handleForceRefreshAll = async () => {
+    await broadcastAiStudioForceUpdate();
     setForceRefreshSuccess(true);
     setTimeout(() => setForceRefreshSuccess(false), 4000);
   };
@@ -226,24 +226,24 @@ export const AdminOtaTab: React.FC<AdminOtaTabProps> = ({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                {isHi ? 'AI Studio लाइव सिंक इंजन' : 'AI Studio Live Sync Engine'}
+                {isHi ? 'GitHub & AI Studio ऑटो-लॉन्च सिंक' : 'GitHub & AI Studio Auto-Launch Sync'}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-xs">
-                Build ID: {CURRENT_BUILD_ID.slice(-8)}
+                Build: {CURRENT_BUILD_ID.slice(-8)}
               </span>
               <span className="text-xs text-emerald-400 font-semibold">
-                ● {isHi ? 'बिना रीइन्स्टॉल ऑटो-रिफ्रेश सक्रिय' : 'Zero Reinstall Auto-Update Active'}
+                ● {isHi ? 'ऐप खुलते ही तुरंत नया वर्ज़न लोड होगा' : 'Instant Launch Auto-Update Active'}
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
               {isHi
-                ? 'AI Studio से किया गया कोई भी बदलाव यूज़र्स के पास तुरंत बिना री-इन्स्टॉल के लाइव हो जाता है'
-                : 'Any change made from AI Studio automatically syncs to users without reinstalling'}
+                ? 'GitHub या Admin में कुछ भी अपडेट होने पर, पहले से इंस्टॉल्ड मोबाइलों में ऐप खुलते ही सारा बदलाव लोड हो जाएगा'
+                : 'Any updates in GitHub or Admin are instantly applied the second any user opens their installed mobile app'}
             </h3>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
               {isHi
-                ? 'जब भी AI Studio में कोड, बटन, नया प्लान या कोई भी फीचर बदला जाता है, हमारा बैकग्राउंड सिंक इंजन उसे डिटेक्ट करके सभी एक्टिव डिवाइसों व ब्राउज़र्स पर बिना यूजर डेटा खोए स्वतः अपडेट कर देता है।'
-                : 'Whenever AI Studio modifies code or features, the live sync detector broadcasts the new build to all active devices, updating the app seamlessly with 0% data loss.'}
+                ? 'सिस्टम में ज़ीरो-रीइन्स्टॉल ऑटो-लॉन्च सिंक सक्रिय है। यदि किसी यूज़र के मोबाइल में ऐप पहले से इंस्टॉल है, तो ऐप खोलते ही 0ms पर सर्वर से नया कोड व डेटा फेच होकर तुरंत रीफ्रेश हो जाता है और हमेशा नवीनतम वर्ज़न खुलता है।'
+                : 'Zero-reinstall launch sync is active. Whenever a user opens their installed PWA/mobile app, the engine verifies the server build in the background and immediately refreshes to the latest code with full data preservation.'}
             </p>
           </div>
 

@@ -34,7 +34,187 @@
       "joinedDate": "2026-09-10",
       "status": "ACTIVE",
       "passwordHash": "password123"
+    },
+    {
+      "id": "usr-1789122599824",
+      "loginId": "9876500002",
+      "name": "Live Realtime Test",
+      "role": "USER",
+      "phone": "9876500002",
+      "email": "9876500002@gcap.user",
+      "referralCode": "GCAP-500002",
+      "joinedDate": "2026-09-11",
+      "status": "ACTIVE",
+      "passwordHash": "Password123"
     }
   ],
-  "lastUpdated": "2026-09-10T11:21:47.103Z"
+  "lastUpdated": "2026-09-11T10:29:59.824Z",
+  "wallets": {
+    "usr-admin-01": {
+      "cashBalance": 0,
+      "gpBalance": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    },
+    "usr-user-01": {
+      "cashBalance": 0,
+      "gpBalance": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    },
+    "usr-1789039307103": {
+      "cashBalance": 0,
+      "gpBalance": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    },
+    "usr-1789122599824": {
+      "cashBalance": 0,
+      "gpBalance": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    }
+  },
+  "investments": [],
+  "transactions": [],
+  "plans": [
+    {
+      "id": "short-term",
+      "name": "Short Term Plan",
+      "nameHi": "शॉर्ट टर्म प्लान (Short Term Plan)",
+      "dailyRoiPercent": 0.16,
+      "durationDays": 641,
+      "minAmount": 100000,
+      "maxAmount": 1000000000,
+      "payoutFrequency": "Daily",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.04% GP",
+      "risk": "Low",
+      "tag": "641 Days Lock + 0.04%/6h GP",
+      "tagHi": "641 दिन लॉक + हर 6h में 0.04% GP",
+      "badge": "⚡ 641-Day Short Term Plan",
+      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000. Earn 0.04% every 6 hours automatically credited to earnings.",
+      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000। हर 6 घंटे में 0.04% GP स्वतः जमा।",
+      "features": [
+        "न्यूनतम निवेश ₹1,00,000 (अधिकतम Unlimited)",
+        "परिपक्वता अवधि 641 दिन",
+        "हर 6 घंटे में 0.04% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ],
+      "featuresHi": [
+        "न्यूनतम निवेश ₹1,00,000 (अधिकतम Unlimited)",
+        "परिपक्वता अवधि 641 दिन",
+        "हर 6 घंटे में 0.04% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ]
+    },
+    {
+      "id": "long-term",
+      "name": "Long Term Plan",
+      "nameHi": "लॉन्ग टर्म प्लान (Long Term Plan)",
+      "dailyRoiPercent": 0.12,
+      "durationDays": 365,
+      "minAmount": 50000,
+      "maxAmount": 100000,
+      "payoutFrequency": "Daily",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.03% GP",
+      "risk": "Low",
+      "tag": "365 Days Lock + Royalty Pathway",
+      "tagHi": "365 दिन लॉक + 0.03%/6h GP + रॉयल्टी प्लान",
+      "badge": "👑 365-Day Long Term & Royalty Plan",
+      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹50,000 to ₹100,000. Earn 0.03% every 6 hours.",
+      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹50,000 से ₹1,00,000 तक।",
+      "features": [
+        "न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000",
+        "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
+        "हर 6 घंटे में 0.03% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ],
+      "featuresHi": [
+        "न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000",
+        "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
+        "हर 6 घंटे में 0.03% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ]
+    }
+  ],
+  "rules": {
+    "platformName": "GCap",
+    "gpRatePerRupee": 1,
+    "minDeposit": 100,
+    "maxDeposit": 500000,
+    "minWithdrawal": 200,
+    "maxWithdrawalPerDay": 100000,
+    "withdrawalFeePercent": 0,
+    "withdrawalTiming": "Earning: 1st - 5th of Month | Royalty: 6th - 10th of Month",
+    "withdrawalTimingHi": "अर्निंग निकासी: हर महीने 1 से 5 तारीख | रॉयल्टी निकासी: 6 से 10 तारीख",
+    "dailyPayoutCycle": "Every 24 Hours (Midnight 12:00 AM)",
+    "dailyPayoutCycleHi": "प्रत्येक 24 घंटे में (दैनिक ऑटो-कैलकुलेशन)",
+    "capitalReturnPolicy": "100%_AT_MATURITY",
+    "capitalReturnPolicyLabel": "100% Capital Refund at Plan Maturity",
+    "capitalReturnPolicyLabelHi": "प्लान समाप्ति पर 100% मूलधन सीधे वॉलेट में वापस",
+    "referralL1Percent": 1,
+    "referralL2Percent": 0.5,
+    "isReferralEnabled": true,
+    "tdsPercent": 5,
+    "adminFeePercent": 2,
+    "supportEmail": "support@gcap.in",
+    "supportPhone": "+91 98000 12345",
+    "lastUpdated": "2026-09-11"
+  },
+  "liveConfig": {
+    "appVersion": "v2.5.2-MAIN-DB",
+    "lastUpdated": "2026-09-11 09:58",
+    "themeAccent": "emerald",
+    "bannerEnabled": true,
+    "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
+    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
+    "bannerType": "success",
+    "heroHeadline": "Smart Daily Returns & Automated Growth",
+    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
+    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
+    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
+    "maintenanceMode": false,
+    "maintenanceMessage": "System routine maintenance in progress.",
+    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
+    "liveBadgeText": "⚡ Live Main DB Connected",
+    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
+    "autoSyncIntervalSec": 3
+  },
+  "bankDetails": {},
+  "treasury": {
+    "balance": 600000,
+    "minAlertThreshold": 500000,
+    "totalInjected": 600000,
+    "totalDeducted": 0,
+    "totalTransferredToUsers": 0,
+    "lastUpdated": "2026-09-11T09:58:56.790Z"
+  },
+  "treasuryLogs": [
+    {
+      "id": "tr-log-1",
+      "type": "ADMIN_ADD",
+      "amount": 600000,
+      "balanceBefore": 0,
+      "balanceAfter": 600000,
+      "date": "2026-09-11T09:58:56.790Z",
+      "timestamp": 1789120736790,
+      "reason": "Initial Company Liquidity Injection into Main Reserve",
+      "reasonHi": "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
+      "actor": "Super Admin (admin)",
+      "referenceId": "INJ-600000"
+    }
+  ],
+  "deletedUserIds": []
 }

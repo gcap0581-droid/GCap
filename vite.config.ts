@@ -49,10 +49,10 @@ export default defineConfig(() => {
           clientsClaim: true,
           skipWaiting: true,
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/version\.json/],
+          navigateFallbackDenylist: [/^\/version\.json/, /^\/api/],
           runtimeCaching: [
             {
-              urlPattern: ({ url }) => url.pathname.includes('version.json'),
+              urlPattern: ({ url }) => url.pathname.includes('version.json') || url.pathname.startsWith('/api'),
               handler: 'NetworkOnly',
             },
             {
@@ -60,7 +60,7 @@ export default defineConfig(() => {
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'html-cache',
-                networkTimeoutSeconds: 3,
+                networkTimeoutSeconds: 1.5,
               },
             },
           ],
@@ -133,9 +133,9 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // HMR is disabled in AI Studio dev environment to prevent WebSocket reconnect errors
+      hmr: false,
+      watch: null,
     },
   };
 });

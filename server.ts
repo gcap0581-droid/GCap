@@ -3,6 +3,10 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 
+// Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
+let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
+const SERVER_BOOT_TIME = new Date().toISOString();
+
 interface StoredAccount {
   id: string;
   loginId: string;
@@ -183,8 +187,30 @@ interface BankAccountDetails {
   upiId?: string;
 }
 
+export interface AdminMessage {
+  id: string;
+  title: string;
+  titleHi?: string;
+  content: string;
+  contentHi?: string;
+  senderName: string;
+  targetType: "ALL" | "SINGLE" | "INVESTORS" | "POSITIVE_BALANCE" | "SELECTED";
+  targetUserId?: string;
+  targetUserLoginId?: string;
+  targetUserName?: string;
+  targetUserIds?: string[];
+  priority: "NORMAL" | "URGENT" | "POPUP";
+  category: "ANNOUNCEMENT" | "ALERT" | "INFO" | "BONUS" | "SYSTEM";
+  showPopup: boolean;
+  createdAt: string;
+  timestamp: number;
+  readByUserIds?: string[];
+  dismissedByUserIds?: string[];
+}
+
 interface ServerDB {
   users: StoredAccount[];
+  deletedUserIds?: string[];
   wallets: Record<string, Wallet>;
   investments: ActiveInvestment[];
   transactions: Transaction[];
@@ -194,6 +220,7 @@ interface ServerDB {
   bankDetails: Record<string, BankAccountDetails>;
   treasury: CompanyTreasury;
   treasuryLogs: TreasuryLog[];
+  messages?: AdminMessage[];
   lastUpdated: string;
 }
 
@@ -396,6 +423,7 @@ function ensureDb(): ServerDB {
 
     // Reconcile and ensure all fields exist
     if (!parsed.users || !Array.isArray(parsed.users)) parsed.users = DEFAULT_ACCOUNTS;
+    if (!parsed.deletedUserIds || !Array.isArray(parsed.deletedUserIds)) parsed.deletedUserIds = [];
     if (!parsed.wallets || typeof parsed.wallets !== "object") parsed.wallets = {};
     if (!parsed.investments || !Array.isArray(parsed.investments)) parsed.investments = [];
     if (!parsed.transactions || !Array.isArray(parsed.transactions)) parsed.transactions = [];
@@ -405,6 +433,26 @@ function ensureDb(): ServerDB {
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
     if (!parsed.treasuryLogs || !Array.isArray(parsed.treasuryLogs)) parsed.treasuryLogs = INITIAL_LOGS;
+    if (!parsed.messages || !Array.isArray(parsed.messages)) {
+      parsed.messages = [
+        {
+          id: "msg-welcome-01",
+          title: "Welcome to GCap Investment Platform",
+          titleHi: "जीकैप निवेश मंच में आपका स्वागत है",
+          content: "Welcome to GCap! You can now explore high-yield investment plans, earn daily automated returns, and withdraw directly to your bank account or UPI.",
+          contentHi: "जीकैप में आपका हार्दिक स्वागत है! अब आप उच्च रिटर्न वाले प्लान्स में निवेश कर सकते हैं, हर 6 घंटे में रिटर्न प्राप्त कर सकते हैं और महीने की 1-5 या 6-10 तारीख को सीधे अपने बैंक खाते में निकासी कर सकते हैं।",
+          senderName: "GCap Management",
+          targetType: "ALL",
+          priority: "NORMAL",
+          category: "ANNOUNCEMENT",
+          showPopup: false,
+          createdAt: new Date().toISOString(),
+          timestamp: Date.now() - 3600000,
+          readByUserIds: [],
+          dismissedByUserIds: [],
+        },
+      ];
+    }
 
     // Ensure Admin account exists and has 12345 password
     const admin = parsed.users.find(
@@ -489,16 +537,87 @@ async function startServer() {
     });
   });
 
-  // Version for OTA Auto-Sync
-  app.get("/version.json", (_req, res) => {
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.json({
-      buildId: String(Date.now()),
-      buildTime: new Date().toISOString(),
-      appVersion: "2.5.2",
-      source: "gcap-central-server",
-      message: "Main Worldwide Real-Time Sync Active",
+  // Real-time Event Stream (Server-Sent Events) for instant automatic updates worldwide
+  const sseClients = new Set<express.Response>();
+
+  function broadcastRealtimeEvent(event: string, data: any) {
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const client of sseClients) {
+      try {
+        client.write(payload);
+      } catch (_) {
+        sseClients.delete(client);
+      }
+    }
+  }
+
+  // SSE Real-time stream endpoint
+  app.get("/api/realtime/stream", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders?.();
+
+    sseClients.add(res);
+
+    // Initial connection confirmation
+    res.write(`event: connected\ndata: ${JSON.stringify({ message: "Real-time stream connected", time: Date.now() })}\n\n`);
+
+    // Keep-alive heartbeat every 15 seconds
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(`: heartbeat ${Date.now()}\n\n`);
+      } catch (_) {
+        clearInterval(heartbeat);
+        sseClients.delete(res);
+      }
+    }, 15000);
+
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
     });
+  });
+
+  // Version for OTA Auto-Sync - Crucial for mobile apps already installed to instantly detect changes
+  app.get("/version.json", (_req, res) => {
+    const db = ensureDb();
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.json({
+      buildId: SERVER_BUILD_ID,
+      buildTime: SERVER_BOOT_TIME,
+      appVersion: "2.5.3",
+      source: "gcap-central-server",
+      message: "Main Worldwide Real-Time Sync & Auto-Launch Update Active",
+      autoReloadEnabled: true,
+      lastDbUpdate: db.lastUpdated || SERVER_BOOT_TIME,
+      serverTime: Date.now(),
+    });
+  });
+
+  // Admin Force System Update Endpoint: Forces all installed PWAs and open mobile apps to update immediately
+  app.post("/api/admin/force-refresh", (_req, res) => {
+    SERVER_BUILD_ID = `${Date.now()}`;
+    const db = ensureDb();
+    db.lastUpdated = new Date().toISOString();
+    saveDb(db);
+
+    broadcastRealtimeEvent("system_force_update", {
+      type: "SYSTEM_FORCE_UPDATE",
+      buildId: SERVER_BUILD_ID,
+      timestamp: Date.now(),
+      message: "Admin pushed immediate system update across all devices",
+    });
+    broadcastRealtimeEvent("state_changed", {
+      type: "FORCE_UPDATE",
+      buildId: SERVER_BUILD_ID,
+      timestamp: Date.now(),
+    });
+
+    res.json({ success: true, buildId: SERVER_BUILD_ID, message: "Force update broadcasted to all devices" });
   });
 
   // GET: Central real-time state for any user or admin across the world
@@ -595,6 +714,17 @@ async function startServer() {
     saveDb(db);
     console.log(`[GCap DB] Transaction created: ${transaction.type} ₹${transaction.amount} by ${effectiveUserId}`);
 
+    // Instant worldwide broadcast to all connected Admin panels and clients
+    broadcastRealtimeEvent("transaction_created", {
+      transaction,
+      userId: effectiveUserId,
+      wallet,
+      timestamp: Date.now(),
+      message: `New transaction: ${transaction.type} ₹${transaction.amount} by ${transaction.userName || effectiveUserId}`,
+    });
+    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_CREATE", timestamp: Date.now() });
+
     res.json({
       success: true,
       transaction,
@@ -655,9 +785,20 @@ async function startServer() {
 
     saveDb(db);
 
+    const finalTxn = idx !== -1 ? db.transactions[idx] : transaction;
+    broadcastRealtimeEvent("transaction_updated", {
+      transaction: finalTxn,
+      wallet,
+      treasury: db.treasury,
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_UPDATE", timestamp: Date.now() });
+
     res.json({
       success: true,
-      transaction: idx !== -1 ? db.transactions[idx] : transaction,
+      transaction: finalTxn,
       wallet,
       treasury: db.treasury,
     });
@@ -672,6 +813,9 @@ async function startServer() {
     db.transactions.unshift(transaction);
     saveDb(db);
 
+    broadcastRealtimeEvent("transaction_created", { transaction, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_ADD", timestamp: Date.now() });
+
     res.json({ success: true, transaction });
   });
 
@@ -680,6 +824,10 @@ async function startServer() {
     const db = ensureDb();
     db.transactions = db.transactions.filter((t) => t.id !== req.params.id);
     saveDb(db);
+
+    broadcastRealtimeEvent("transaction_deleted", { transactionId: req.params.id, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_DELETE", timestamp: Date.now() });
+
     res.json({ success: true });
   });
 
@@ -708,6 +856,16 @@ async function startServer() {
     saveDb(db);
 
     console.log(`[GCap DB] Investment created: ${investment.planName} (₹${amount}) by ${effectiveUserId}`);
+
+    broadcastRealtimeEvent("investment_created", {
+      investment,
+      userId: effectiveUserId,
+      wallet,
+      timestamp: Date.now(),
+      message: `New investment: ${investment.planName} (₹${amount}) by ${effectiveUserId}`,
+    });
+    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "INVESTMENT_CREATE", timestamp: Date.now() });
 
     res.json({
       success: true,
@@ -740,9 +898,26 @@ async function startServer() {
     }
 
     saveDb(db);
+
+    const finalInv = idx !== -1 ? db.investments[idx] : investment;
+    broadcastRealtimeEvent("investment_updated", {
+      investment: finalInv,
+      userId: effectiveUserId,
+      wallet: effectiveUserId ? db.wallets[effectiveUserId] : undefined,
+      timestamp: Date.now(),
+    });
+    if (effectiveUserId && db.wallets[effectiveUserId]) {
+      broadcastRealtimeEvent("wallet_updated", {
+        userId: effectiveUserId,
+        wallet: db.wallets[effectiveUserId],
+        timestamp: Date.now(),
+      });
+    }
+    broadcastRealtimeEvent("state_changed", { type: "INVESTMENT_UPDATE", timestamp: Date.now() });
+
     res.json({
       success: true,
-      investment: idx !== -1 ? db.investments[idx] : investment,
+      investment: finalInv,
       wallet: effectiveUserId ? db.wallets[effectiveUserId] : undefined,
     });
   });
@@ -756,6 +931,10 @@ async function startServer() {
     db.plans = plans;
     saveDb(db);
     console.log(`[GCap DB] Plans updated: ${plans.length} plans`);
+
+    broadcastRealtimeEvent("plans_updated", { plans: db.plans, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "PLANS_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, plans: db.plans });
   });
 
@@ -768,6 +947,10 @@ async function startServer() {
     db.rules = { ...db.rules, ...rules };
     saveDb(db);
     console.log(`[GCap DB] Rules updated`);
+
+    broadcastRealtimeEvent("rules_updated", { rules: db.rules, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "RULES_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, rules: db.rules });
   });
 
@@ -780,6 +963,10 @@ async function startServer() {
     db.liveConfig = { ...db.liveConfig, ...liveConfig };
     saveDb(db);
     console.log(`[GCap DB] Live Config updated`);
+
+    broadcastRealtimeEvent("live_config_updated", { liveConfig: db.liveConfig, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "LIVE_CONFIG_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, liveConfig: db.liveConfig });
   });
 
@@ -794,6 +981,10 @@ async function startServer() {
       db.treasuryLogs.unshift(log);
     }
     saveDb(db);
+
+    broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "TREASURY_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, treasury: db.treasury, logs: db.treasuryLogs });
   });
 
@@ -805,6 +996,10 @@ async function startServer() {
     const db = ensureDb();
     db.bankDetails[userId] = details;
     saveDb(db);
+
+    broadcastRealtimeEvent("bank_details_updated", { userId, details, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "BANK_DETAILS_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, details });
   });
 
@@ -816,7 +1011,178 @@ async function startServer() {
     const db = ensureDb();
     db.wallets[userId] = { ...DEFAULT_WALLET, ...wallet };
     saveDb(db);
+
+    broadcastRealtimeEvent("wallet_updated", { userId, wallet: db.wallets[userId], timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "WALLET_UPDATE", timestamp: Date.now() });
+
     res.json({ success: true, wallet: db.wallets[userId] });
+  });
+
+  // GET: Messages for a user or admin
+  app.get("/api/messages", (req, res) => {
+    const db = ensureDb();
+    const { userId, role } = req.query;
+    const allMessages = db.messages || [];
+
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+
+    if (role === "ADMIN") {
+      return res.json({ success: true, messages: allMessages });
+    }
+
+    if (!userId || typeof userId !== "string") {
+      // Return public broadcast messages only
+      const publicMsgs = allMessages.filter((m) => m.targetType === "ALL");
+      return res.json({ success: true, messages: publicMsgs });
+    }
+
+    const user = db.users.find((u) => u.id === userId);
+    const userWallet = db.wallets[userId] || DEFAULT_WALLET;
+    const hasInvestments = db.investments.some((inv) => inv.userId === userId && inv.status === "ACTIVE");
+    const hasPositiveBalance = (userWallet.cashBalance || 0) > 0 || (userWallet.gpBalance || 0) > 0 || (userWallet.totalEarned || 0) > 0;
+
+    const userMessages = allMessages.filter((m) => {
+      if (m.targetType === "ALL") return true;
+      if (m.targetType === "SINGLE") {
+        return m.targetUserId === userId || (user && m.targetUserLoginId && user.loginId.toLowerCase() === m.targetUserLoginId.toLowerCase());
+      }
+      if (m.targetType === "INVESTORS") {
+        return hasInvestments;
+      }
+      if (m.targetType === "POSITIVE_BALANCE") {
+        return hasPositiveBalance;
+      }
+      if (m.targetType === "SELECTED") {
+        return Array.isArray(m.targetUserIds) && m.targetUserIds.includes(userId);
+      }
+      return false;
+    });
+
+    res.json({ success: true, messages: userMessages });
+  });
+
+  // POST: Admin broadcasts a new message (single, bulk, or selected criteria)
+  app.post("/api/admin/messages", (req, res) => {
+    const {
+      title,
+      titleHi,
+      content,
+      contentHi,
+      senderName,
+      targetType,
+      targetUserId,
+      targetUserLoginId,
+      targetUserName,
+      targetUserIds,
+      priority,
+      category,
+      showPopup,
+    } = req.body || {};
+
+    if (!title || !content) {
+      return res.status(400).json({ success: false, error: "Title and content are required" });
+    }
+
+    const db = ensureDb();
+    if (!db.messages) db.messages = [];
+
+    const newMsg: AdminMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      title: String(title).trim(),
+      titleHi: titleHi ? String(titleHi).trim() : String(title).trim(),
+      content: String(content).trim(),
+      contentHi: contentHi ? String(contentHi).trim() : String(content).trim(),
+      senderName: senderName ? String(senderName).trim() : "GCap Admin",
+      targetType: targetType || "ALL",
+      targetUserId,
+      targetUserLoginId,
+      targetUserName,
+      targetUserIds: Array.isArray(targetUserIds) ? targetUserIds : undefined,
+      priority: priority || "NORMAL",
+      category: category || "ANNOUNCEMENT",
+      showPopup: showPopup !== false,
+      createdAt: new Date().toISOString(),
+      timestamp: Date.now(),
+      readByUserIds: [],
+      dismissedByUserIds: [],
+    };
+
+    db.messages.unshift(newMsg);
+    saveDb(db);
+
+    console.log(`[GCap DB] Admin message created: "${newMsg.title}" (Target: ${newMsg.targetType})`);
+
+    // Broadcast instant real-time event across all connected clients & devices
+    broadcastRealtimeEvent("admin_message", newMsg);
+    broadcastRealtimeEvent("state_changed", {
+      type: "MESSAGE_CREATED",
+      message: newMsg,
+      timestamp: Date.now(),
+    });
+
+    res.json({ success: true, message: newMsg });
+  });
+
+  // POST: Mark message as read by a user
+  app.post("/api/messages/:id/read", (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body || {};
+    if (!id || !userId) {
+      return res.status(400).json({ success: false, error: "Message ID and User ID required" });
+    }
+
+    const db = ensureDb();
+    if (!db.messages) db.messages = [];
+    const msg = db.messages.find((m) => m.id === id);
+    if (msg) {
+      if (!msg.readByUserIds) msg.readByUserIds = [];
+      if (!msg.readByUserIds.includes(userId)) {
+        msg.readByUserIds.push(userId);
+        saveDb(db);
+      }
+    }
+
+    res.json({ success: true });
+  });
+
+  // POST: Dismiss message popup on user screen
+  app.post("/api/messages/:id/dismiss", (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.body || {};
+    if (!id || !userId) {
+      return res.status(400).json({ success: false, error: "Message ID and User ID required" });
+    }
+
+    const db = ensureDb();
+    if (!db.messages) db.messages = [];
+    const msg = db.messages.find((m) => m.id === id);
+    if (msg) {
+      if (!msg.dismissedByUserIds) msg.dismissedByUserIds = [];
+      if (!msg.dismissedByUserIds.includes(userId)) {
+        msg.dismissedByUserIds.push(userId);
+        saveDb(db);
+      }
+    }
+
+    res.json({ success: true });
+  });
+
+  // DELETE: Admin deletes a message
+  app.delete("/api/admin/messages/:id", (req, res) => {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ success: false, error: "Message ID required" });
+
+    const db = ensureDb();
+    if (!db.messages) db.messages = [];
+    const initialLen = db.messages.length;
+    db.messages = db.messages.filter((m) => m.id !== id);
+
+    if (db.messages.length !== initialLen) {
+      saveDb(db);
+      broadcastRealtimeEvent("state_changed", { type: "MESSAGE_DELETED", messageId: id, timestamp: Date.now() });
+    }
+
+    res.json({ success: true, remaining: db.messages.length });
   });
 
   // GET: Users list
@@ -995,26 +1361,68 @@ async function startServer() {
     console.log(`[GCap DB] New user registered: ${cleanName} (${cleanPhone})`);
 
     const { passwordHash: _, ...profile } = newAccount;
+
+    // Broadcast instant user registration to all connected admin panels worldwide
+    broadcastRealtimeEvent("user_registered", {
+      user: profile,
+      timestamp: Date.now(),
+      message: `नया यूज़र रजिस्टर हुआ: ${cleanName} (${cleanPhone})`,
+    });
+    broadcastRealtimeEvent("wallet_updated", {
+      userId: newAccount.id,
+      wallet: db.wallets[newAccount.id],
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("state_changed", { type: "USER_REGISTER", timestamp: Date.now() });
+
     res.json({ success: true, user: profile, account: newAccount });
   });
 
-  // POST: Users Sync
+  // POST: Users Sync (Bi-directional multi-device synchronization)
   app.post("/api/users/sync", (req, res) => {
     const { accounts } = req.body || {};
     const db = ensureDb();
+    const deletedSet = new Set(db.deletedUserIds || []);
 
     if (Array.isArray(accounts)) {
       let changed = false;
 
       // Add or update from client accounts
-      accounts.forEach((clientAcc: StoredAccount) => {
-        if (!clientAcc || !clientAcc.id) return;
-        const existing = db.users.find((u) => u.id === clientAcc.id || (clientAcc.phone && u.phone === clientAcc.phone));
+      accounts.forEach((rawAcc: any) => {
+        if (!rawAcc || !rawAcc.id) return;
+        const clientAcc: StoredAccount = {
+          id: String(rawAcc.id),
+          loginId: String(rawAcc.loginId || rawAcc.phone || "user").trim(),
+          name: String(rawAcc.name || "User").trim(),
+          role: rawAcc.role === "ADMIN" ? "ADMIN" : "USER",
+          phone: String(rawAcc.phone || "").trim(),
+          email: String(rawAcc.email || "").trim(),
+          referralCode: rawAcc.referralCode ? String(rawAcc.referralCode).trim() : undefined,
+          referredBy: rawAcc.referredBy ? String(rawAcc.referredBy).trim() : undefined,
+          joinedDate: String(rawAcc.joinedDate || new Date().toISOString().split("T")[0]).trim(),
+          status: rawAcc.status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
+          passwordHash: String(rawAcc.passwordHash || (rawAcc.role === "ADMIN" ? "12345" : "demo123")).trim(),
+        };
+
+        // Never restore explicitly deleted users
+        if (
+          deletedSet.has(clientAcc.id) ||
+          (clientAcc.phone && deletedSet.has(clientAcc.phone)) ||
+          (clientAcc.loginId && deletedSet.has(clientAcc.loginId.toLowerCase()))
+        ) {
+          return;
+        }
+
+        const cleanClientPhone = (clientAcc.phone || "").replace(/[^0-9]/g, "");
+        const existing = db.users.find(
+          (u) =>
+            u.id === clientAcc.id ||
+            (cleanClientPhone && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanClientPhone) ||
+            (clientAcc.loginId && u.loginId && u.loginId.toLowerCase() === clientAcc.loginId.toLowerCase())
+        );
+
         if (!existing) {
-          db.users.push({
-            ...clientAcc,
-            passwordHash: clientAcc.passwordHash || "demo123",
-          });
+          db.users.push(clientAcc);
           if (!db.wallets[clientAcc.id]) {
             db.wallets[clientAcc.id] = { ...DEFAULT_WALLET };
           }
@@ -1028,11 +1436,20 @@ async function startServer() {
             existing.name = clientAcc.name;
             changed = true;
           }
+          if (clientAcc.passwordHash && clientAcc.passwordHash !== existing.passwordHash && existing.role !== "ADMIN") {
+            existing.passwordHash = clientAcc.passwordHash;
+            changed = true;
+          }
         }
       });
 
       if (changed) {
         saveDb(db);
+        broadcastRealtimeEvent("users_updated", {
+          users: db.users.map(({ passwordHash: _, ...p }) => p),
+          timestamp: Date.now(),
+        });
+        broadcastRealtimeEvent("state_changed", { type: "USERS_SYNC", timestamp: Date.now() });
       }
     }
 
@@ -1095,7 +1512,15 @@ async function startServer() {
     saveDb(db);
 
     const { passwordHash: _, ...profile } = newAccount;
-    res.json({ success: true, user: profile });
+
+    broadcastRealtimeEvent("user_added", { user: profile, timestamp: Date.now() });
+    broadcastRealtimeEvent("users_updated", {
+      users: db.users.map(({ passwordHash: _, ...p }) => p),
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("state_changed", { type: "USER_ADD", timestamp: Date.now() });
+
+    res.json({ success: true, user: profile, account: newAccount });
   });
 
   // POST: Admin Update User
@@ -1123,7 +1548,15 @@ async function startServer() {
     saveDb(db);
 
     const { passwordHash: _, ...profile } = current;
-    res.json({ success: true, user: profile });
+
+    broadcastRealtimeEvent("user_updated", { user: profile, timestamp: Date.now() });
+    broadcastRealtimeEvent("users_updated", {
+      users: db.users.map(({ passwordHash: _, ...p }) => p),
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("state_changed", { type: "USER_UPDATE", timestamp: Date.now() });
+
+    res.json({ success: true, user: profile, account: current });
   });
 
   // DELETE: Admin Delete User
@@ -1140,24 +1573,82 @@ async function startServer() {
     }
 
     db.users = db.users.filter((u) => u.id !== userId);
+    if (!db.deletedUserIds) db.deletedUserIds = [];
+    if (!db.deletedUserIds.includes(userId)) {
+      db.deletedUserIds.push(userId);
+    }
+    if (target.phone && !db.deletedUserIds.includes(target.phone)) {
+      db.deletedUserIds.push(target.phone);
+    }
+    if (target.loginId && !db.deletedUserIds.includes(target.loginId.toLowerCase())) {
+      db.deletedUserIds.push(target.loginId.toLowerCase());
+    }
+
     delete db.wallets[userId];
     delete db.bankDetails[userId];
     saveDb(db);
 
-    res.json({ success: true, message: "User deleted successfully" });
+    broadcastRealtimeEvent("user_deleted", { userId, timestamp: Date.now() });
+    broadcastRealtimeEvent("users_updated", {
+      users: db.users.map(({ passwordHash: _, ...p }) => p),
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("state_changed", { type: "USER_DELETE", timestamp: Date.now() });
+
+    res.json({ success: true, message: "User deleted successfully", remaining: db.users.length });
+  });
+
+  // Anti-cache middleware for HTML, manifest, and service worker files
+  app.use((req, res, next) => {
+    const url = req.path;
+    if (
+      url === "/" ||
+      url.endsWith(".html") ||
+      url.endsWith("sw.js") ||
+      url.endsWith("version.json") ||
+      url.endsWith("manifest.webmanifest") ||
+      url.endsWith("manifest.json")
+    ) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
+    next();
   });
 
   // Vite middleware for development vs static production serve
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(
+      express.static(distPath, {
+        setHeaders: (res, filePath) => {
+          if (
+            filePath.endsWith(".html") ||
+            filePath.endsWith("sw.js") ||
+            filePath.endsWith("version.json") ||
+            filePath.endsWith("manifest.webmanifest") ||
+            filePath.endsWith("manifest.json")
+          ) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+          }
+        },
+      })
+    );
     app.get("*", (_req, res) => {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

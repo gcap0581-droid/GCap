@@ -24,6 +24,7 @@ import {
   Sliders,
   Clock,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import {
   Language,
@@ -58,6 +59,7 @@ interface NavigationDrawerProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onOpenProfile?: () => void;
+  onOpenSplashIntro?: () => void;
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
@@ -84,6 +86,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   viewMode,
   onViewModeChange,
   onOpenProfile,
+  onOpenSplashIntro,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -558,6 +561,20 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               )}
             </button>
           </div>
+
+          {/* GCap Intro Animation & Music Replay */}
+          {onOpenSplashIntro && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenSplashIntro();
+              }}
+              className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-emerald-500/15 via-amber-500/15 to-emerald-500/15 hover:from-emerald-500/25 hover:to-amber-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>{isHi ? '✨ GCap ओपनिंग एनीमेशन व म्यूजिक' : '✨ Replay Startup Music & Intro'}</span>
+            </button>
+          )}
 
           {/* Test Day Advance Button */}
           <button

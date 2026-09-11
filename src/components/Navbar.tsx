@@ -12,6 +12,7 @@ import {
   Award,
   LogOut,
   ChevronDown,
+  Bell,
 } from 'lucide-react';
 import {
   Language,
@@ -45,6 +46,8 @@ interface NavbarProps {
   onSearchQuery?: (query: string) => void;
   onOpenMenuDrawer?: () => void;
   onOpenProfile?: () => void;
+  unreadMessagesCount?: number;
+  onOpenNotifications?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -68,6 +71,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSearchQuery,
   onOpenMenuDrawer,
   onOpenProfile,
+  unreadMessagesCount = 0,
+  onOpenNotifications,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -189,6 +194,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <span className="hidden md:inline max-w-[100px] truncate">{currentUser.name}</span>
+              </button>
+            )}
+
+            {/* Notifications Button */}
+            {onOpenNotifications && (
+              <button
+                id="btn-nav-notifications"
+                onClick={onOpenNotifications}
+                className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-amber-400 transition-all cursor-pointer shadow-sm active:scale-95"
+                title={isHi ? 'सूचनाएं एवं संदेश' : 'Notifications & Messages'}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-amber-500 text-slate-950 rounded-full text-[10px] font-black flex items-center justify-center border-2 border-slate-900 shadow-sm animate-pulse">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                  </span>
+                )}
               </button>
             )}
 

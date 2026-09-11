@@ -1,7 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, TrendingUp, Lock, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import {
+  ShieldCheck,
+  TrendingUp,
+  Lock,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+} from 'lucide-react';
 import { Language, UserProfile } from '../types';
+import {
+  playStartupMusic,
+  playStartupStageMilestone,
+  playStartupTriumph,
+  toggleStartupSoundMute,
+  getStartupSoundMuted,
+  startupAudio,
+} from '../utils/startupAudio';
 
 interface GcapSplashIntroProps {
   user: UserProfile;
@@ -14,10 +32,12 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
   const [progress, setProgress] = useState(0);
   const [stageText, setStageText] = useState(isHi ? 'सुरक्षित सत्र आरंभ हो रहा है...' : 'Initializing 256-Bit Encrypted Session...');
   const [isDone, setIsDone] = useState(false);
+  const [isMuted, setIsMuted] = useState(getStartupSoundMuted());
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const onCompleteRef = useRef(onComplete);
   const isHiRef = useRef(isHi);
   const completedRef = useRef(false);
+  const lastMilestoneRef = useRef(0);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -34,6 +54,20 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
     if (onCompleteRef.current) {
       onCompleteRef.current();
     }
+  };
+
+  const handleToggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const muted = toggleStartupSoundMute();
+    setIsMuted(muted);
+    if (!muted) {
+      playStartupMusic(2.6);
+    }
+  };
+
+  const handleReplayIntro = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playStartupMusic(2.6);
   };
 
   // Background particle animation
@@ -110,10 +144,13 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
     };
   }, []);
 
-  // Progress simulation & stage updates (Stable timer that runs once)
+  // Play startup theme immediately upon opening and synchronize with stages
   useEffect(() => {
+    // Start majestic soundtrack
+    playStartupMusic(2.6);
+
     const startTime = Date.now();
-    const duration = 1800; // Snappy 1.8 seconds transition to enter dashboard immediately
+    const duration = 2400; // 2.4 seconds for cinematic music and smooth progress
 
     const interval = setInterval(() => {
       if (completedRef.current) {
@@ -129,20 +166,37 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
       if (currentProgress < 30) {
         setStageText(hi ? '🔒 256-बिट एन्क्रिप्टेड सत्र लोड हो रहा है...' : '🔒 Authenticating Encrypted Session...');
       } else if (currentProgress < 65) {
+        if (lastMilestoneRef.current < 1) {
+          lastMilestoneRef.current = 1;
+          playStartupStageMilestone(1);
+        }
         setStageText(hi ? '⚡ दैनिक ROI नेटवर्क पोर्टफोलियो सिंक हो रहा है...' : '⚡ Syncing Daily ROI Portfolio Engine...');
       } else if (currentProgress < 90) {
+        if (lastMilestoneRef.current < 2) {
+          lastMilestoneRef.current = 2;
+          playStartupStageMilestone(2);
+        }
         setStageText(hi ? '🏛️ वॉल्ट एवं अर्निंग्स वॉलेट तैयार हैं...' : '🏛️ Verifying Vault Assets & Wallet Balance...');
       } else {
+        if (lastMilestoneRef.current < 3) {
+          lastMilestoneRef.current = 3;
+          playStartupStageMilestone(3);
+        }
         setStageText(hi ? '✅ स्वागत है! प्रवेश हो रहा है...' : '✅ Session Verified! Launching Dashboard...');
       }
 
       if (currentProgress >= 100) {
         clearInterval(interval);
-        handleFinish();
+        playStartupTriumph();
+        setTimeout(() => {
+          handleFinish();
+        }, 300);
       }
     }, 30);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -151,33 +205,72 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
-          transition={{ duration: 0.6, ease: 'easeInOut' }}
-          className="fixed inset-0 z-[99999] bg-slate-950 flex flex-col items-center justify-between p-6 sm:p-10 select-none overflow-hidden"
+          exit={{ opacity: 0, scale: 1.08, filter: 'blur(10px)' }}
+          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          onClick={() => {
+            // Un-suspend AudioContext on any screen tap
+            if (!isMuted) {
+              startupAudio.playOpeningTheme(2.0);
+            }
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950 flex flex-col items-center justify-between p-4 sm:p-8 select-none overflow-hidden"
         >
           {/* Background Canvas Particles */}
           <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" />
 
-          {/* Top Bar: Skip Button & Security Badge */}
-          <div className="w-full max-w-4xl flex items-center justify-between z-10">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 backdrop-blur-md">
+          {/* Top Bar: Security Badge, Sound Toggle & Skip Button */}
+          <div className="w-full max-w-4xl flex items-center justify-between z-10 gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 backdrop-blur-md shadow-sm">
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isHi ? 'सुरक्षित एन्क्रिप्टेड नेटवर्क' : '256-Bit Encrypted Vault'}</span>
+              <span>{isHi ? 'सुरक्षित 256-Bit एन्क्रिप्टेड वॉल्ट' : '256-Bit Encrypted Vault'}</span>
             </div>
 
-            <button
-              onClick={handleFinish}
-              className="px-4 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs font-bold text-amber-300 hover:text-amber-200 flex items-center gap-1.5 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
-            >
-              <span>{isHi ? 'स्किप करें (Skip)' : 'Skip Intro'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Sound Toggle Button with Live Audio Waves */}
+              <button
+                id="btn-splash-sound-toggle"
+                onClick={handleToggleSound}
+                className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 backdrop-blur-md transition-all cursor-pointer shadow-md active:scale-95 ${
+                  isMuted
+                    ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-slate-200'
+                    : 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 shadow-emerald-900/30'
+                }`}
+                title={isMuted ? (isHi ? 'ध्वनि चालू करें' : 'Unmute Sound') : (isHi ? 'ध्वनि बंद करें' : 'Mute Sound')}
+              >
+                {isMuted ? (
+                  <>
+                    <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-[11px]">{isHi ? 'म्यूट' : 'Muted'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                    <div className="flex items-center gap-0.5 h-3">
+                      <span className="w-0.5 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-0.5 h-3 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-0.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-[11px] font-mono">{isHi ? 'संगीत ऑन' : 'Music On'}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Skip Intro Button */}
+              <button
+                id="btn-splash-skip"
+                onClick={handleFinish}
+                className="px-3.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs font-bold text-amber-300 hover:text-amber-200 flex items-center gap-1.5 backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95"
+              >
+                <span>{isHi ? 'स्किप' : 'Skip'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Center Stage: Glowing GCap Emblem & Motion Typography */}
-          <div className="flex-1 flex flex-col items-center justify-center text-center z-10 max-w-2xl px-4 py-8">
+          <div className="flex-1 flex flex-col items-center justify-center text-center z-10 max-w-2xl px-4 py-4 sm:py-8">
             {/* Animated Crest Logo */}
-            <div className="relative mb-8">
+            <div className="relative mb-6 sm:mb-8">
               {/* Outer Rotating Laser Tech Ring */}
               <motion.div
                 animate={{ rotate: 360 }}
@@ -225,8 +318,8 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.7 }}
-              className="space-y-2"
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="space-y-1.5 sm:space-y-2"
             >
               <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-200 to-amber-400 tracking-wider">
                 GCAP CAPITAL MANAGEMENT
@@ -241,8 +334,8 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
-              className="mt-5 px-4 py-2 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl flex items-center justify-center gap-2 backdrop-blur-md"
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="mt-4 sm:mt-5 px-4 py-2 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl flex items-center justify-center gap-2 backdrop-blur-md"
             >
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-xs sm:text-sm font-bold text-slate-200">
@@ -256,7 +349,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
           </div>
 
           {/* Bottom Progress Bar & Status Text */}
-          <div className="w-full max-w-md z-10 space-y-3 pb-2">
+          <div className="w-full max-w-md z-10 space-y-2.5 pb-2">
             <div className="flex items-center justify-between text-xs font-mono font-bold">
               <span className="text-slate-300 flex items-center gap-1.5 truncate">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -274,9 +367,12 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
               />
             </div>
 
-            <p className="text-[10px] text-center text-slate-400 font-medium tracking-wider">
-              {isHi ? 'सुरक्षित 256-Bit SSL एन्क्रिप्शन • GCap AI भारत' : 'Secured by 256-Bit SSL Encryption • GCap Capital'}
-            </p>
+            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium tracking-wider">
+              <span>{isHi ? 'सुरक्षित 256-Bit SSL • GCap AI' : '256-Bit SSL • GCap Capital'}</span>
+              <span className="text-emerald-400/80 font-mono flex items-center gap-1">
+                <span>🎵 High-Fi Audio Active</span>
+              </span>
+            </div>
           </div>
         </motion.div>
       )}

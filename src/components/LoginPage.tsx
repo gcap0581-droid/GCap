@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
 import { loginUserAsync, registerUserAsync, syncUsersWithServer } from '../utils/authStorage';
+import { audioAnnouncer } from '../utils/audioAnnouncer';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -125,6 +126,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       setIsLoading(false);
 
       if (res.success && res.user) {
+        audioAnnouncer.announceRegistration({
+          userName: res.user.name,
+          language: isHi ? 'hi' : 'en',
+        });
         onLoginSuccess(res.user);
       } else {
         setErrorMessage(res.error || (isHi ? 'पंजीकरण विफल रहा' : 'Registration failed'));

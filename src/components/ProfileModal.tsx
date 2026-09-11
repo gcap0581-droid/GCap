@@ -12,10 +12,15 @@ import {
   Shield,
   Save,
   AlertCircle,
+  Key,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Language, UserProfile, BankAccountDetails } from '../types';
 import { getStoredBankDetails, setStoredBankDetails } from '../utils/storage';
-import { adminUpdateUser } from '../utils/authStorage';
+import { adminUpdateUser, adminUpdateUserAsync } from '../utils/authStorage';
+import { apiSaveBankDetails } from '../utils/centralSync';
+import { audioAnnouncer } from '../utils/audioAnnouncer';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -44,12 +49,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [ifscCode, setIfscCode] = useState('');
   const [upiId, setUpiId] = useState('');
 
+  // Password Change State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (currentUser) {
       setEmail(currentUser.email || '');
+      setNewPassword('');
+      setConfirmPassword('');
       // Load saved bank details
       const stored = getStoredBankDetails(currentUser.id);
       if (stored) {
@@ -70,6 +82,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     e.preventDefault();
     setError('');
 
+    // If new password is provided, validate
+    const trimmedPass = newPassword.trim();
+    if (trimmedPass) {
+      if (trimmedPass.length < 4) {
+        setError(isHi ? 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' : 'Password must be at least 4 characters.');
+        return;
+      }
+      if (trimmedPass !== confirmPassword.trim()) {
+        setError(isHi ? 'दोनों पासवर्ड मेल नहीं खा रहे हैं।' : 'Passwords do not match.');
+        return;
+      }
+    }
+
     // Save Bank Details
     const bankDetails: BankAccountDetails = {
       accountHolder: accountHolder.trim() || currentUser.name,
@@ -80,13 +105,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     };
 
     setStoredBankDetails(currentUser.id, bankDetails);
+    apiSaveBankDetails(currentUser.id, bankDetails).catch(() => {});
 
-    // Save user email
+    // Save user email & password
+    const updates: { email?: string; password?: string } = {};
+    let isPasswordChanged = false;
+
     if (email.trim() !== currentUser.email) {
-      const res = adminUpdateUser(currentUser.id, { email: email.trim() });
+      updates.email = email.trim();
+    }
+    if (trimmedPass) {
+      updates.password = trimmedPass;
+      isPasswordChanged = true;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const res = adminUpdateUser(currentUser.id, updates);
       if (res.success && res.user && onUpdateCurrentUser) {
         onUpdateCurrentUser(res.user);
       }
+      adminUpdateUserAsync(currentUser.id, updates).catch(() => {});
+    }
+
+    if (isPasswordChanged) {
+      // Trigger background audio announcement
+      audioAnnouncer.announcePasswordChange({
+        userName: currentUser.name,
+        language: isHi ? 'hi' : 'en',
+      });
     }
 
     setIsSaved(true);
@@ -111,7 +157,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 {isHi ? '👤 मेरी प्रोफ़ाइल एवं बैंक विवरण' : '👤 My Profile & Account Details'}
               </h3>
               <p className="text-xs text-slate-400">
-                {isHi ? 'बैंक खाता एवं निजी जानकारी दर्ज करें' : 'Manage bank account & payout information'}
+                {isHi ? 'बैंक खाता, पासवर्ड एवं निजी जानकारी दर्ज करें' : 'Manage password, bank account & payout info'}
               </p>
             </div>
           </div>
@@ -130,8 +176,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex items-center gap-2.5 text-emerald-300 text-xs font-medium animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               {isHi
-                ? 'आपका बैंक विवरण और प्रोफ़ाइल सफलतापूर्वक अपडेट हो गए हैं!'
-                : 'Profile & Bank details saved successfully!'}
+                ? 'आपका विवरण और पासवर्ड सफलतापूर्वक सुरक्षित हो गए हैं!'
+                : 'Profile details & password saved successfully!'}
             </div>
           )}
 
@@ -150,8 +196,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 {isHi ? '🔒 सुरक्षा सूचना (Locked Profile Fields):' : '🔒 Account Security Notice:'}
               </strong>
               {isHi
-                ? 'खाता सुरक्षा कारणों से आपका नाम, पंजीकृत मोबाइल नंबर और यूज़र आईडी केवल एडमिन द्वारा ही बदले जा सकते हैं। आप अपना ईमेल, पता और बैंक डिटेल्स नीचे स्वयं संपादित कर सकते हैं।'
-                : 'For security reasons, your Full Name, Mobile Number, and User ID are locked and can only be modified by System Admin. You can manage your email and Bank Details below.'}
+                ? 'खाता सुरक्षा कारणों से आपका नाम, पंजीकृत मोबाइल नंबर और यूज़र आईडी केवल एडमिन द्वारा ही बदले जा सकते हैं। आप अपना ईमेल, पता, बैंक डिटेल्स और पासवर्ड नीचे स्वयं बदल सकते हैं।'
+                : 'For security reasons, your Full Name, Mobile Number, and User ID are locked by System Admin. You can manage your email, Bank Details, and Password below.'}
             </div>
           </div>
 
@@ -175,22 +221,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     value={currentUser.name}
                     disabled
                     readOnly
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 font-medium text-xs cursor-not-allowed opacity-85 select-none"
-                  />
-                </div>
-
-                {/* Login ID - LOCKED */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1 flex items-center justify-between">
-                    <span>{isHi ? 'यूज़र आईडी / लॉगिन आईडी:' : 'User / Login ID:'}</span>
-                    <Lock className="w-3 h-3 text-amber-400" />
-                  </label>
-                  <input
-                    type="text"
-                    value={currentUser.loginId}
-                    disabled
-                    readOnly
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-amber-400/80 font-mono text-xs cursor-not-allowed opacity-85 select-none"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 text-xs font-medium cursor-not-allowed"
                   />
                 </div>
 
@@ -205,33 +236,50 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     value={currentUser.phone}
                     disabled
                     readOnly
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 font-mono text-xs cursor-not-allowed opacity-85 select-none"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 text-xs font-mono cursor-not-allowed"
+                  />
+                </div>
+
+                {/* User ID - LOCKED */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1 flex items-center justify-between">
+                    <span>{isHi ? 'यूज़र आईडी (Login ID):' : 'User Login ID:'}</span>
+                    <Lock className="w-3 h-3 text-amber-400" />
+                  </label>
+                  <input
+                    type="text"
+                    value={currentUser.loginId}
+                    disabled
+                    readOnly
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 text-xs font-bold font-mono cursor-not-allowed"
                   />
                 </div>
               </div>
             </div>
 
             {/* EDITABLE PERSONAL DETAILS */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" />
-                <span>{isHi ? 'व्यक्तिगत संपर्क विवरण (Contact Info)' : 'Contact Details'}</span>
-              </h4>
+            <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-slate-800">
+                <User className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{isHi ? 'व्यक्तिगत विवरण (Personal Info)' : 'Personal Information'}</span>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Email */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {isHi ? 'ईमेल आईडी (Email Address):' : 'Email Address:'}
+                    {isHi ? 'ईमेल पता (Email Address):' : 'Email Address:'}
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-cyan-400 focus:outline-none"
-                    placeholder="e.g. user@example.com"
+                    placeholder="user@example.com"
                   />
                 </div>
 
+                {/* Address */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     {isHi ? 'पूरा पता व शहर (Residential Address):' : 'Address & Location:'}
@@ -245,6 +293,63 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 </div>
               </div>
+            </div>
+
+            {/* PASSWORD CHANGE SECTION */}
+            <div className="p-4 rounded-xl bg-slate-950/60 border border-amber-500/30 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-500/20">
+                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span>{isHi ? '🔐 पासवर्ड बदलें (Change Password)' : '🔐 Change Account Password'}</span>
+                </h4>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-mono">
+                  {isHi ? 'वैकल्पिक' : 'Optional'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* New Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    {isHi ? 'नया पासवर्ड (New Password):' : 'New Password:'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 pr-9 text-white text-xs focus:border-amber-400 focus:outline-none font-mono"
+                      placeholder={isHi ? 'नया पासवर्ड दर्ज करें' : 'Enter new password'}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    {isHi ? 'पासवर्ड की पुष्टि (Confirm Password):' : 'Confirm New Password:'}
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-amber-400 focus:outline-none font-mono"
+                    placeholder={isHi ? 'पुनः पासवर्ड दर्ज करें' : 'Re-enter password'}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {isHi
+                  ? 'यदि आप पासवर्ड बदलना नहीं चाहते हैं तो इसे खाली छोड़ दें।'
+                  : 'Leave blank if you do not wish to change your password.'}
+              </p>
             </div>
 
             {/* EDITABLE BANK ACCOUNT DETAILS */}

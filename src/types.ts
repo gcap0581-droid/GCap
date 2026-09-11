@@ -303,3 +303,28 @@ export interface BackupRecord {
   };
   payload: BackupDataPayload;
 }
+
+export type MessageTarget = 'ALL' | 'SINGLE' | 'INVESTORS' | 'POSITIVE_BALANCE' | 'SELECTED';
+export type MessagePriority = 'NORMAL' | 'URGENT' | 'POPUP';
+export type MessageCategory = 'ANNOUNCEMENT' | 'ALERT' | 'INFO' | 'BONUS' | 'SYSTEM';
+
+export interface AdminMessage {
+  id: string;
+  title: string;
+  titleHi?: string;
+  content: string;
+  contentHi?: string;
+  senderName: string;
+  targetType: MessageTarget;
+  targetUserId?: string; // Single user ID or loginId
+  targetUserLoginId?: string;
+  targetUserName?: string;
+  targetUserIds?: string[]; // Selected user IDs
+  priority: MessagePriority;
+  category: MessageCategory;
+  showPopup: boolean; // Triggers instant modal on user screen
+  createdAt: string; // ISO / display string
+  timestamp: number;
+  readByUserIds?: string[]; // user IDs who have read the message
+  dismissedByUserIds?: string[]; // user IDs who dismissed the popup
+}

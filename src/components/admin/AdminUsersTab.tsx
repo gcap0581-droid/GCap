@@ -46,17 +46,25 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const filteredUsers = users.filter((u) => {
+    if (!u) return false;
+    const uName = String(u.name || '').toLowerCase();
+    const uLogin = String(u.loginId || '').toLowerCase();
+    const uPhone = String(u.phone || '');
+    const uEmail = String(u.email || '').toLowerCase();
+    const search = searchTerm.toLowerCase().trim();
+
     const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.loginId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.phone.includes(searchTerm) ||
-      (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+      !search ||
+      uName.includes(search) ||
+      uLogin.includes(search) ||
+      uPhone.includes(search) ||
+      uEmail.includes(search);
 
     const matchesRole = filterRole === 'ALL' || u.role === filterRole;
     return matchesSearch && matchesRole;
   });
 
-  const userToDelete = users.find((u) => u.id === deleteConfirmId);
+  const userToDelete = users.find((u) => u && u.id === deleteConfirmId);
 
   return (
     <div className="space-y-4">
@@ -68,15 +76,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
               <Users className="w-5 h-5 text-cyan-400" />
               <span>{isHi ? 'पंजीकृत निवेशक एवं एडमिन खाता प्रबंधन' : 'Registered Users & Accounts Management'}</span>
             </h3>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {isHi ? 'लाइव सिंक चालू' : 'Live Sync Active'}
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              {isHi ? 'सेंट्रल डेटाबेस रीयल-टाइम लाइव सिंक' : 'Central DB Real-Time Live Sync'}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
             {isHi
-              ? `कुल खाते: ${users.length} • मोबाइल व वेबसाइट पर बने सभी नए खाते यहाँ तुरंत अपडेट होते हैं`
-              : `Total Accounts: ${users.length} • Users registered via mobile or web appear here automatically`}
+              ? `कुल पंजीकृत खाते: ${users.length} • सभी डिवाइसेज़ व एडमिन सत्रों पर एक ही केंद्रीय डेटाबेस से रीयल-टाइम सिंक रहता है`
+              : `Total Accounts: ${users.length} • Single authoritative central database synchronized across all admin sessions in real time`}
           </p>
         </div>
 
@@ -174,11 +182,26 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                                 : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                             }`}
                           >
-                            {isAdmin ? '👑' : u.name.charAt(0)}
+                            {isAdmin ? '👑' : (u.name || u.loginId || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="font-bold text-white flex items-center gap-1.5">
-                              <span>{u.name}</span>
+                              <span>{u.name || u.loginId || 'Investor'}</span>
+                              {(() => {
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                const isNew =
+                                  u.joinedDate === todayStr ||
+                                  (u.id.startsWith('usr-') &&
+                                    Date.now() - Number(u.id.replace('usr-', '')) < 24 * 60 * 60 * 1000);
+                                if (isNew) {
+                                  return (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 uppercase tracking-wider animate-pulse">
+                                      {isHi ? '✨ नया' : '✨ NEW'}
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })()}
                               {u.referralCode && (
                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
                                   {u.referralCode}

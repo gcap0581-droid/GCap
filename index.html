@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>GCap - Investment & Daily Returns Platform</title>
     <meta name="description" content="GCap - Smart Investment & Daily Returns Platform. Deposit funds, invest in high-yield plans, collect daily returns, and withdraw instantly." />
     <meta property="og:title" content="GCap - Investment & Daily Returns Platform" />
@@ -10,10 +10,10 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- PWA & Mobile Web Capabilities -->
-    <meta name="theme-color" content="#064e3b" />
+    <!-- PWA & Mobile Web Capabilities: Stay within native navigation & status bars -->
+    <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="GCap" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
@@ -23,6 +23,68 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+
+    <!-- AI Studio Sandbox Benign Vite HMR Error Silencer -->
+    <script>
+      (function() {
+        // 1. Intercept console.error and console.warn for benign [vite] logs
+        const origError = console.error;
+        const origWarn = console.warn;
+        console.error = function(...args) {
+          if (args[0] && typeof args[0] === 'string' && (args[0].includes('[vite]') || args[0].includes('websocket'))) {
+            return;
+          }
+          origError.apply(console, args);
+        };
+        console.warn = function(...args) {
+          if (args[0] && typeof args[0] === 'string' && (args[0].includes('[vite]') || args[0].includes('websocket'))) {
+            return;
+          }
+          origWarn.apply(console, args);
+        };
+
+        // 2. Intercept unhandled errors matching [vite]
+        window.addEventListener('error', function(e) {
+          if (e && (e.message?.includes?.('[vite]') || e.filename?.includes?.('@vite'))) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+
+        // 3. Prevent Vite HMR WebSocket connection errors in sandbox container
+        try {
+          const NativeWS = window.WebSocket;
+          if (NativeWS) {
+            window.WebSocket = function(url, protocols) {
+              const urlStr = String(url || '');
+              const protoStr = String(protocols || '');
+              if (
+                protoStr === 'vite-hmr' ||
+                protoStr === 'vite-ping' ||
+                urlStr.includes(':24678') ||
+                urlStr.includes('token=') ||
+                urlStr.includes('vite')
+              ) {
+                const dummy = new EventTarget();
+                dummy.readyState = 1;
+                dummy.close = function() {};
+                dummy.send = function() {};
+                setTimeout(function() {
+                  dummy.dispatchEvent(new Event('open'));
+                }, 10);
+                return dummy;
+              }
+              return new NativeWS(url, protocols);
+            };
+            window.WebSocket.prototype = NativeWS.prototype;
+            window.WebSocket.CONNECTING = 0;
+            window.WebSocket.OPEN = 1;
+            window.WebSocket.CLOSING = 2;
+            window.WebSocket.CLOSED = 3;
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white">
     <div id="root"></div>

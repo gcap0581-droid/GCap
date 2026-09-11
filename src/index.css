@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Mobile Safe Area Insets: Ensures content sits strictly inside the mobile navigation bar and below status bar */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html, body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 @media print {
   body, html {
     background-color: #ffffff !important;

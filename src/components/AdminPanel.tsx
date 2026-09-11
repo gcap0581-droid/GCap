@@ -22,6 +22,8 @@ import {
   Radio,
   ArrowLeft,
   FileCheck,
+  Bell,
+  MessageSquare,
 } from 'lucide-react';
 import {
   AppRules,
@@ -36,6 +38,7 @@ import {
   BackupRecord,
   BackupDataPayload,
   LiveInterfaceConfig,
+  AdminMessage,
 } from '../types';
 import { formatINR } from '../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../utils/treasuryStorage';
@@ -44,9 +47,13 @@ import {
   adminAddUser,
   adminUpdateUser,
   adminDeleteUser,
+  adminAddUserAsync,
+  adminUpdateUserAsync,
+  adminDeleteUserAsync,
   syncUsersWithServer,
   subscribeToUsersUpdates,
 } from '../utils/authStorage';
+import { subscribeToRealtimeEvents } from '../utils/realtimeSync';
 import { exportAllDataToExcel } from '../utils/excelExport';
 import { AdminPlansTab } from './admin/AdminPlansTab';
 import { AdminUsersTab } from './admin/AdminUsersTab';
@@ -56,6 +63,7 @@ import { AdminBackupTab } from './admin/AdminBackupTab';
 import { AdminOtaTab } from './admin/AdminOtaTab';
 import { AdminInvestmentsTab } from './admin/AdminInvestmentsTab';
 import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
+import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
 import { PlanEditModal } from './admin/PlanEditModal';
@@ -63,6 +71,7 @@ import { UserEditModal } from './admin/UserEditModal';
 import { TransactionEditModal } from './admin/TransactionEditModal';
 import { ProjectCertificateModal } from './admin/ProjectCertificateModal';
 import { UserAgreementModal } from './UserAgreementModal';
+import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
 
 interface AdminPanelProps {
@@ -101,6 +110,10 @@ interface AdminPanelProps {
   onCreateManualSnapshot: (customDate?: string, note?: string) => void;
   onRestoreBackup: (backup: BackupRecord) => void;
   onDeleteBackup: (id: string) => void;
+  messages?: AdminMessage[];
+  onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
+  onDeleteMessage?: (msgId: string) => Promise<boolean>;
+  onRefreshMessages?: () => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -139,10 +152,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onCreateManualSnapshot,
   onRestoreBackup,
   onDeleteBackup,
+  messages = [],
+  onSendMessage = async () => false,
+  onDeleteMessage = async () => false,
+  onRefreshMessages = () => {},
 }) => {
   const isHi = language === 'hi';
   const [activeSubTab, setActiveSubTab] = useState<
-    'OVERVIEW' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
   >('OVERVIEW');
 
   // Company Balance Modal state
@@ -190,19 +207,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     refreshUsers();
 
     // 2. Subscribe to custom event & cross-tab storage changes
-    const unsubscribe = subscribeToUsersUpdates((updated) => {
+    const unsubscribeStorage = subscribeToUsersUpdates((updated) => {
       setUsersList(updated);
     });
 
-    // 3. Heartbeat polling every 2 seconds
+    // 3. Subscribe to real-time Server-Sent Events (SSE) stream for 0ms cross-device synchronization
+    const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+      if (
+        event.type === 'USER_REGISTERED' ||
+        event.type === 'USER_ADDED' ||
+        event.type === 'USER_UPDATED' ||
+        event.type === 'USER_DELETED' ||
+        event.type === 'STATE_CHANGED'
+      ) {
+        refreshUsers();
+      }
+    });
+
+    // 4. Heartbeat polling every 1.5 seconds as robust fallback
     const interval = setInterval(() => {
       syncUsersWithServer().then((updated) => {
         setUsersList(updated);
       }).catch(() => {});
-    }, 2000);
+    }, 1500);
 
     return () => {
-      unsubscribe();
+      unsubscribeStorage();
+      unsubscribeRealtime();
       clearInterval(interval);
     };
   }, []);
@@ -225,7 +256,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setUserModalOpen(true);
   };
 
-  const handleSaveUser = (data: {
+  const handleSaveUser = async (data: {
     userId?: string;
     name: string;
     loginId: string;
@@ -239,48 +270,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     backdatedAmount?: number;
     backdatedWithdrawal?: number;
   }) => {
-    if (data.userId) {
-      const res = adminUpdateUser(data.userId, {
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        password: data.password,
-        role: data.role,
-        status: data.status,
-        joinedDate: data.joinedDate,
-      });
-      if (!res.success) {
-        alert(res.error || 'User update failed');
-        return;
+    setIsSyncingUsers(true);
+    try {
+      if (data.userId) {
+        const res = await adminUpdateUserAsync(data.userId, {
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          status: data.status,
+          joinedDate: data.joinedDate,
+        });
+        if (!res.success) {
+          console.warn('User update error:', res.error);
+          return;
+        }
+        if (data.password && data.password.trim()) {
+          audioAnnouncer.announcePasswordChange({
+            userName: data.name,
+            language: language === 'hi' ? 'hi' : 'en',
+          });
+        }
+      } else {
+        const res = await adminAddUserAsync({
+          name: data.name,
+          loginId: data.loginId,
+          phone: data.phone,
+          email: data.email,
+          password: data.password,
+          role: data.role,
+          status: data.status,
+          joinedDate: data.joinedDate,
+        });
+        if (!res.success) {
+          console.warn('User add error:', res.error);
+          return;
+        }
       }
-    } else {
-      const res = adminAddUser({
-        name: data.name,
-        loginId: data.loginId,
-        phone: data.phone,
-        email: data.email,
-        password: data.password,
-        role: data.role,
-        status: data.status,
-        joinedDate: data.joinedDate,
-      });
-      if (!res.success) {
-        alert(res.error || 'User add failed');
-        return;
-      }
+      await refreshUsers();
+    } finally {
+      setIsSyncingUsers(false);
     }
-    refreshUsers();
   };
 
-  const handleToggleUserStatus = (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED') => {
-    const nextStatus = currentStatus === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE';
-    adminUpdateUser(userId, { status: nextStatus });
-    refreshUsers();
+  const handleToggleUserStatus = async (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED') => {
+    setIsSyncingUsers(true);
+    try {
+      const nextStatus = currentStatus === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE';
+      await adminUpdateUserAsync(userId, { status: nextStatus });
+      await refreshUsers();
+    } finally {
+      setIsSyncingUsers(false);
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
-    adminDeleteUser(userId);
-    refreshUsers();
+  const handleDeleteUser = async (userId: string) => {
+    // AdminUsersTab already shows a dedicated confirmation modal, so perform deletion directly
+    setIsSyncingUsers(true);
+    // Instantly remove from local list for snappy zero-latency UI response
+    setUsersList((prev) => prev.filter((u) => u.id !== userId));
+    try {
+      const res = await adminDeleteUserAsync(userId);
+      if (!res.success) {
+        console.warn('Delete user failed:', res.error);
+      }
+      await refreshUsers();
+    } finally {
+      setIsSyncingUsers(false);
+    }
   };
 
   // Plan Actions
@@ -402,6 +460,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   ? `लॉगिन आईडी: ${adminUser.loginId} (${adminUser.name}) • सब कुछ जोड़ें, एडिट करें और हटाएं (CRUD)`
                   : `Logged in as: ${adminUser.loginId} (${adminUser.name}) • Full control to Add, Edit, and Delete everything`}
               </p>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>{isHi ? 'रीयल-टाइम ऑटो-सिंक सक्रिय (कोई भी नया यूज़र तुरंत यहाँ अपडेट होगा)' : 'Live Real-Time Sync Active (New registrations update instantly)'}</span>
+                </span>
+                <span className="text-[11px] text-slate-400 font-mono bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                  {isHi ? `कुल यूज़र्स: ${usersList.length}` : `Total Users: ${usersList.length}`}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -483,6 +553,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             className="w-full px-3 py-2 bg-slate-950 border border-slate-600 rounded-lg text-white text-xs font-bold focus:outline-none focus:border-amber-400"
           >
             <option value="OVERVIEW">📊 {isHi ? 'सिस्टम अवलोकन (Overview)' : 'System Overview'}</option>
+            <option value="MESSAGES">📢 {isHi ? 'संदेश व लाइव प्रसारण (Messages & Alerts)' : 'Messages & Alerts'}</option>
             <option value="TREASURY">💰 {isHi ? 'कंपनी मुख्य बैलेंस (Company Treasury)' : 'Company Treasury'}</option>
             <option value="INVESTMENTS">⚡ {isHi ? 'निवेश व 6h चक्र (Portfolios)' : 'Portfolios & 6h Cycles'}</option>
             <option value="PLANS">📦 {isHi ? 'प्लान्स प्रबंधन (Plans Manager)' : 'Plans Manager'}</option>
@@ -518,6 +589,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           >
           <TrendingUp className="w-4 h-4" />
           <span>{isHi ? 'सिस्टम अवलोकन' : 'Overview'}</span>
+        </button>
+
+        <button
+          id="tab-admin-messages"
+          onClick={() => setActiveSubTab('MESSAGES')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            activeSubTab === 'MESSAGES'
+              ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Bell className="w-4 h-4" />
+          <span>{isHi ? 'संदेश व लाइव अलर्ट' : 'Messages & Alerts'}</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-slate-900/80 text-amber-300 font-mono text-[10px] font-bold">
+            {messages.length}
+          </span>
         </button>
 
         <button
@@ -854,6 +941,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: MESSAGES & LIVE ALERTS */}
+      {activeSubTab === 'MESSAGES' && (
+        <AdminMessagesTab
+          language={language}
+          users={usersList}
+          messages={messages}
+          onSendMessage={onSendMessage}
+          onDeleteMessage={onDeleteMessage}
+          onRefreshMessages={onRefreshMessages}
+        />
       )}
 
       {/* TAB: ACTIVE INVESTMENTS & 6H CYCLES */}

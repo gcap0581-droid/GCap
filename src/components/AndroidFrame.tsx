@@ -20,6 +20,7 @@ import {
   Gift,
   Award,
   ArrowLeft,
+  Bell,
 } from 'lucide-react';
 import { Language, UserProfile, Wallet, DesktopCategoryTab } from '../types';
 import { formatINR } from '../utils/storage';
@@ -41,6 +42,8 @@ interface AndroidFrameProps {
   onOpenReferral?: () => void;
   isAdminHubActive?: boolean;
   onToggleAdminHub?: () => void;
+  unreadMessagesCount?: number;
+  onOpenNotifications?: () => void;
 }
 
 export const AndroidFrame: React.FC<AndroidFrameProps> = ({
@@ -60,23 +63,13 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onOpenReferral,
   isAdminHubActive = false,
   onToggleAdminHub,
+  unreadMessagesCount = 0,
+  onOpenNotifications,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN';
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => {
-    const d = new Date();
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const d = new Date();
-      setCurrentTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleMobileSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,20 +78,17 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden relative">
-      
-      {/* 0. Mobile Status Bar (Time, Network Signal, WiFi, Battery) */}
-      <div className="sticky top-0 z-40 bg-slate-950 text-slate-300 px-4 py-1 flex items-center justify-between text-[11px] font-mono shrink-0 border-b border-slate-900 select-none shadow-sm">
-        <div className="font-bold text-white tracking-wide">{currentTime}</div>
-        <div className="flex items-center gap-2.5">
-          <span className="text-[10px] text-emerald-400 font-bold">5G 📶</span>
-          <span className="text-[10px] text-cyan-400">WiFi 🛜</span>
-          <span className="text-[10px] text-amber-400 font-bold">98% 🔋</span>
-        </div>
-      </div>
-
-      {/* 1. Mobile App Top Bar (Full width, no outer chassis bezel) */}
-      <header className="sticky top-[27px] z-30 bg-slate-900/98 backdrop-blur-md border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2 shadow-md shrink-0 w-full">
+    <div
+      className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden relative"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+    >
+      {/* 1. Mobile App Top Bar */}
+      <header className="sticky top-0 z-30 bg-slate-900/98 backdrop-blur-md border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2 shadow-md shrink-0 w-full">
         
         {/* Left: Mobile Drawer / Menu Icon + Brand + Back button */}
         <div className="flex items-center gap-2">
@@ -137,8 +127,8 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Balance & Exit Mobile Mode */}
-        <div className="flex items-center gap-2">
+        {/* Right: Quick Balance, Notification Bell & Exit Mobile Mode */}
+        <div className="flex items-center gap-1.5">
           {wallet && (
             <div
               onClick={() => onTabChange('wallet')}
@@ -149,6 +139,23 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                 {formatINR(wallet.cashBalance)}
               </span>
             </div>
+          )}
+
+          {/* Mobile Notifications Bell Button */}
+          {onOpenNotifications && (
+            <button
+              id="btn-mobile-notifications"
+              onClick={onOpenNotifications}
+              className="relative p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 transition-all cursor-pointer"
+              title={isHi ? 'सूचनाएं' : 'Notifications'}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadMessagesCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center border border-slate-900 animate-pulse">
+                  {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                </span>
+              )}
+            </button>
           )}
 
           <button
@@ -201,12 +208,22 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
       )}
 
       {/* 3. Main Full-Screen Vertical Scroll Container (Only Vertical Scroll, No Left-Right Overflow) */}
-      <main className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-4 pb-36">
+      <main
+        className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-4"
+        style={{
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6.5rem)',
+        }}
+      >
         {children}
       </main>
 
-      {/* 4. Bottom Mobile App Floating Tab Bar (High Visibility, Floating Pill) */}
-      <div className="fixed bottom-3 left-3 right-3 z-50 max-w-md mx-auto">
+      {/* 4. Bottom Mobile App Floating Tab Bar (High Visibility, Floating Pill, Stays strictly above native nav bar) */}
+      <div
+        className="fixed left-3 right-3 z-50 max-w-md mx-auto pointer-events-auto"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+        }}
+      >
         <nav className="bg-slate-900/98 backdrop-blur-xl border-2 border-amber-500/60 rounded-2xl p-2 shadow-2xl shadow-amber-500/30 flex items-center justify-around gap-1">
         {[
           { id: 'dashboard', label: isHi ? 'होम' : 'Home', icon: Home, isAction: false },

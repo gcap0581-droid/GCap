@@ -15,6 +15,7 @@ import {
   LiveInterfaceConfig,
   WithdrawalSource,
   DesktopCategoryTab,
+  AdminMessage,
 } from './types';
 import {
   getStoredWallet,
@@ -75,7 +76,13 @@ import {
   apiSaveLiveConfig,
   apiUpdateTreasury,
   apiUpdateWallet,
+  apiFetchMessages,
+  apiSendAdminMessage,
+  apiMarkMessageRead,
+  apiDismissMessage,
+  apiDeleteAdminMessage,
 } from './utils/centralSync';
+import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { INVESTMENT_PLANS } from './data/plans';
 import { Navbar } from './components/Navbar';
 import { WalletCard } from './components/WalletCard';
@@ -97,12 +104,15 @@ import { LockCongratulationsModal } from './components/LockCongratulationsModal'
 import { MaturityCertificateModal } from './components/MaturityCertificateModal';
 import { PaymentVoucherModal } from './components/PaymentVoucherModal';
 import { LiveAnnouncementBanner } from './components/LiveAnnouncementBanner';
+import { UserMessagePopupModal } from './components/UserMessagePopupModal';
+import { NotificationCenterModal } from './components/NotificationCenterModal';
 import { DesktopCategoryNav } from './components/DesktopCategoryNav';
 import { EcommerceBanner } from './components/EcommerceBanner';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { ProfileModal } from './components/ProfileModal';
 import { GuidesModal } from './components/GuidesModal';
 import { UserAgreementModal } from './components/UserAgreementModal';
+import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
   ShieldCheck,
@@ -148,6 +158,9 @@ export default function App() {
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isAgreementOpen, setIsAgreementOpen] = useState<boolean>(false);
+  const [messages, setMessages] = useState<AdminMessage[]>([]);
+  const [activePopupMessage, setActivePopupMessage] = useState<AdminMessage | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
 
   // Auto-adapt mobile/web interface according to screen width automatically
   useEffect(() => {
@@ -211,7 +224,63 @@ export default function App() {
     };
   }, []);
 
-  // Global Real-Time Central Database Synchronizer
+  // Immediate Public State Sync on App Launch & Foreground Resume:
+  // Ensures: "Kuch bhi update ya change karne per admin ya GitHub me kuch bhi new ho wo sub kuch kisi dusre ke mobile me jo pahle se app install ho open hote hi sara change leker hi khule"
+  useEffect(() => {
+    let isCancelled = false;
+
+    const syncPublicState = async () => {
+      try {
+        const state = await fetchCentralState(undefined, 'USER');
+        if (isCancelled || !state || !state.success) return;
+
+        if (state.plans && state.plans.length > 0) {
+          setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(state.plans) ? state.plans : prev));
+          saveStoredPlans(state.plans);
+        }
+        if (state.rules) {
+          setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(state.rules) ? state.rules : prev));
+          saveStoredRules(state.rules);
+        }
+        if (state.liveConfig) {
+          setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(state.liveConfig) ? state.liveConfig : prev));
+          saveStoredLiveConfig(state.liveConfig);
+        }
+      } catch (err) {
+        console.warn('[PublicSync] Launch sync error:', err);
+      }
+    };
+
+    // Run at 0ms on launch
+    syncPublicState();
+
+    // Re-check whenever the user brings the mobile app to foreground
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncPublicState();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+      if (
+        event.type === 'PLANS_UPDATED' ||
+        event.type === 'RULES_UPDATED' ||
+        event.type === 'LIVE_CONFIG_UPDATED' ||
+        event.type === 'STATE_CHANGED'
+      ) {
+        syncPublicState();
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      unsubscribeRealtime();
+    };
+  }, []);
+
+  // Global Real-Time Central Database Synchronizer for Logged-In User & Admin
   // Ensures: "Duniya me kahi bhi kuch koi user ya admin kare wo sab kuch turant main database me update ho aur panel per change show ho"
   useEffect(() => {
     if (!currentUser) return;
@@ -276,15 +345,212 @@ export default function App() {
       }
     };
 
-    // Run immediately, then poll every 2500ms
+    // Run immediately, then poll every 1500ms as fallback
     syncWithCentralDb();
-    const interval = setInterval(syncWithCentralDb, 2500);
+    const interval = setInterval(syncWithCentralDb, 1500);
+
+    const handleResume = () => {
+      if (document.visibilityState === 'visible') {
+        syncWithCentralDb();
+      }
+    };
+    document.addEventListener('visibilitychange', handleResume);
+
+    // Instant SSE Real-Time Sync on any activity anywhere
+    const unsubscribeRealtime = subscribeToRealtimeEvents(() => {
+      syncWithCentralDb();
+    });
 
     return () => {
       isCancelled = true;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleResume);
+      unsubscribeRealtime();
     };
   }, [currentUser?.id, currentUser?.role]);
+
+  // Message Helper: Check if a message matches current user
+  const isMessageForCurrentUser = useCallback((msg: AdminMessage) => {
+    if (!currentUser) return false;
+    if (msg.targetType === 'ALL') return true;
+    if (msg.targetType === 'SINGLE') {
+      return (
+        msg.targetUserId === currentUser.id ||
+        (msg.targetUserLoginId && msg.targetUserLoginId.toLowerCase() === currentUser.loginId?.toLowerCase())
+      );
+    }
+    if (msg.targetType === 'SELECTED') {
+      return Array.isArray(msg.targetUserIds) && msg.targetUserIds.includes(currentUser.id);
+    }
+    if (msg.targetType === 'INVESTORS') {
+      return investments.length > 0;
+    }
+    if (msg.targetType === 'POSITIVE_BALANCE') {
+      return wallet.cashBalance > 0;
+    }
+    return true;
+  }, [currentUser, investments.length, wallet.cashBalance]);
+
+  // Real-time messages fetch and synchronization
+  const refreshMessages = useCallback(async () => {
+    try {
+      const res = await apiFetchMessages(currentUser?.id, currentUser?.role || 'USER');
+      if (res && Array.isArray(res.messages)) {
+        setMessages(res.messages);
+      }
+    } catch (err) {
+      console.warn('[Messages] Fetch error:', err);
+    }
+  }, [currentUser?.id, currentUser?.role]);
+
+  useEffect(() => {
+    refreshMessages();
+  }, [refreshMessages]);
+
+  // Real-time SSE listener for instant admin messages to reflect on ANY screen
+  useEffect(() => {
+    const unsub = subscribeToRealtimeEvents((event) => {
+      if (event.type === 'ADMIN_MESSAGE') {
+        const payloadMsg = event.adminMessage || (event as any).message;
+        if (payloadMsg) {
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === payloadMsg.id);
+            return exists ? prev.map((m) => (m.id === payloadMsg.id ? payloadMsg : m)) : [payloadMsg, ...prev];
+          });
+
+          // Show immediate popup modal if message is targeted to current user and not dismissed
+          if (currentUser && isMessageForCurrentUser(payloadMsg)) {
+            const isDismissed = Array.isArray(payloadMsg.dismissedByUserIds) && payloadMsg.dismissedByUserIds.includes(currentUser.id);
+            if (!isDismissed && (payloadMsg.showPopup || payloadMsg.priority === 'POPUP' || payloadMsg.priority === 'URGENT')) {
+              setActivePopupMessage(payloadMsg);
+              playRealtimeChime();
+            }
+          }
+        }
+      }
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [currentUser, isMessageForCurrentUser]);
+
+  // User-facing visible messages
+  const userVisibleMessages = messages.filter((m) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'ADMIN') return true;
+    return isMessageForCurrentUser(m);
+  });
+
+  const unreadMessagesCount = userVisibleMessages.filter((m) => {
+    if (!currentUser) return false;
+    return !(Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUser.id));
+  }).length;
+
+  const handleSendAdminMessage = async (msg: Partial<AdminMessage>): Promise<boolean> => {
+    try {
+      const res = await apiSendAdminMessage({
+        ...msg,
+        senderName: currentUser?.name || 'GCap Master Admin',
+      });
+      if (res.success && res.message) {
+        setMessages((prev) => [res.message!, ...prev]);
+        showToast(
+          isHi ? '📢 संदेश सफलतापूर्वक भेजा गया!' : '📢 Message Broadcasted!',
+          isHi ? 'यूज़र्स की स्क्रीन पर तुरंत पॉपअप व नोटिफिकेशन में दिखेगा।' : 'Delivered live to user screens and notification centers.'
+        );
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleDeleteAdminMessage = async (msgId: string): Promise<boolean> => {
+    const res = await apiDeleteAdminMessage(msgId);
+    const success = !!res?.success;
+    if (success) {
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+      if (activePopupMessage?.id === msgId) {
+        setActivePopupMessage(null);
+      }
+      showToast(
+        isHi ? '🗑️ संदेश हटाया गया' : '🗑️ Message Deleted',
+        isHi ? 'संदेश सूची से हटा दिया गया है।' : 'Removed from system.'
+      );
+    }
+    return success;
+  };
+
+  const handleMarkMessageAsRead = async (msgId: string) => {
+    if (currentUser) {
+      await apiMarkMessageRead(msgId, currentUser.id);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                readByUserIds: Array.isArray(m.readByUserIds)
+                  ? m.readByUserIds.includes(currentUser.id)
+                    ? m.readByUserIds
+                    : [...m.readByUserIds, currentUser.id]
+                  : [currentUser.id],
+              }
+            : m
+        )
+      );
+    }
+  };
+
+  const handleDismissPopupMessage = async () => {
+    if (activePopupMessage && currentUser) {
+      const msgId = activePopupMessage.id;
+      await apiDismissMessage(msgId, currentUser.id);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                dismissedByUserIds: Array.isArray(m.dismissedByUserIds)
+                  ? m.dismissedByUserIds.includes(currentUser.id)
+                    ? m.dismissedByUserIds
+                    : [...m.dismissedByUserIds, currentUser.id]
+                  : [currentUser.id],
+              }
+            : m
+        )
+      );
+    }
+    setActivePopupMessage(null);
+  };
+
+  const handleMarkAsReadAndClosePopup = async () => {
+    if (activePopupMessage) {
+      await handleMarkMessageAsRead(activePopupMessage.id);
+      await handleDismissPopupMessage();
+    }
+  };
+
+  const handleMarkAllMessagesAsRead = async () => {
+    if (currentUser) {
+      for (const msg of userVisibleMessages) {
+        if (!msg.readByUserIds?.includes(currentUser.id)) {
+          apiMarkMessageRead(msg.id, currentUser.id).catch(console.error);
+        }
+      }
+      setMessages((prev) =>
+        prev.map((m) => ({
+          ...m,
+          readByUserIds: Array.isArray(m.readByUserIds)
+            ? m.readByUserIds.includes(currentUser.id)
+              ? m.readByUserIds
+              : [...m.readByUserIds, currentUser.id]
+            : [currentUser.id],
+        }))
+      );
+    }
+  };
 
   const handleUpdateLiveConfig = (newConfig: LiveInterfaceConfig) => {
     saveStoredLiveConfig(newConfig);
@@ -643,6 +909,46 @@ export default function App() {
     }, 4500);
   };
 
+  // Real-time Event Listener for instant Audio Chime & Admin Live Notifications
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const unsubscribe = subscribeToRealtimeEvents((event) => {
+      if (currentUser.role === 'ADMIN') {
+        if (event.type === 'USER_REGISTERED' && event.user) {
+          playRealtimeChime('success');
+          showToast(
+            '🔔 नया यूज़र रजिस्टर हुआ!',
+            `${event.user.name} (${event.user.phone || event.user.loginId}) ने अभी रजिस्टर किया। एडमिन पैनल में तुरंत जुड़ गया!`
+          );
+        } else if (event.type === 'TRANSACTION_CREATED' && event.transaction) {
+          const t = event.transaction;
+          playRealtimeChime('info');
+          const title =
+            t.type === 'DEPOSIT'
+              ? '💰 नया डिपॉजिट अनुरोध!'
+              : t.type === 'WITHDRAWAL'
+              ? '💸 नया निकासी अनुरोध!'
+              : '📝 नया ट्रांजेक्शन';
+          showToast(
+            title,
+            `₹${Number(t.amount || 0).toLocaleString('en-IN')} - ${t.userName || t.userLoginId || t.userId || 'यूज़र'} (तुरंत अपडेट)`
+          );
+        } else if (event.type === 'INVESTMENT_CREATED' && event.investment) {
+          playRealtimeChime('info');
+          showToast(
+            '📈 नया निवेश प्लान सक्रिय!',
+            `₹${Number(event.investment.investedAmount || 0).toLocaleString('en-IN')} - ${event.investment.planName}`
+          );
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentUser?.id, currentUser?.role]);
+
   const handleLoginSuccess = async (user: UserProfile) => {
     setCurrentUser(user);
     setShowSplashIntro(true);
@@ -766,6 +1072,13 @@ export default function App() {
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
 
+    // Trigger Personalized Audio Voice Announcement (plays in background)
+    audioAnnouncer.announceDeposit({
+      userName: currentUser?.name || 'Investor',
+      amount: amount,
+      language: isHi ? 'hi' : 'en',
+    });
+
     showToast(
       isHi ? '⏳ जमा अनुरोध दर्ज (Wait for approval)' : '⏳ Deposit Submitted for Approval',
       isHi
@@ -810,6 +1123,14 @@ export default function App() {
       apiCreateTransaction(newTx, currentUser.id).catch(console.error);
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
+
+    // Trigger Audio Voice Announcement
+    audioAnnouncer.announceGpSwap({
+      userName: currentUser?.name || 'Investor',
+      amount: swapAmount,
+      gpAmount: finalGpAmount,
+      language: isHi ? 'hi' : 'en',
+    });
 
     showToast(
       isHi ? '🔄 GP स्वैप सफल!' : '🔄 GP Swap Successful!',
@@ -896,6 +1217,14 @@ export default function App() {
       apiCreateTransaction(newTx, currentUser.id).catch(console.error);
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
+
+    // Trigger Personalized Audio Voice Announcement
+    audioAnnouncer.announceWithdrawal({
+      userName: currentUser?.name || 'Investor',
+      amount: netAmount,
+      method: destination,
+      language: isHi ? 'hi' : 'en',
+    });
 
     // Trigger Payment Voucher view
     setSelectedVoucherTxn(newTx);
@@ -1031,6 +1360,14 @@ export default function App() {
       newTxns.forEach((tx) => apiCreateTransaction(tx, currentUser.id).catch(console.error));
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
+
+    // Trigger Personalized Audio Voice Announcement
+    audioAnnouncer.announceInvestment({
+      userName: currentUser?.name || 'Investor',
+      planName: isHi ? plan.nameHi : plan.name,
+      amount: amount,
+      language: isHi ? 'hi' : 'en',
+    });
 
     showToast(
       isHi ? '⭐ निवेश सक्रिय (24 घंटे का लॉक शुरू)!' : '⭐ Investment Activated (24h Lock Started)!',
@@ -2279,7 +2616,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950 overflow-x-hidden w-full max-w-full">
-      
       {/* Full-Screen GCap Intro Animation Overlay */}
       {showSplashIntro && (
         <GcapSplashIntro
@@ -2308,8 +2644,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Live Announcement & OTA Remote Config Banner (Web Mode Only) */}
-      {viewMode === 'web' && (
+      {/* Emergency Maintenance Mode Banner Only (Regular live updates run quietly in background without screen clutter) */}
+      {viewMode === 'web' && liveConfig.maintenanceMode && (
         <LiveAnnouncementBanner
           config={liveConfig}
           language={language}
@@ -2353,6 +2689,8 @@ export default function App() {
           }}
           onOpenMenuDrawer={() => setIsMenuDrawerOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
+          unreadMessagesCount={unreadMessagesCount}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
         />
       )}
 
@@ -2386,6 +2724,7 @@ export default function App() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenSplashIntro={() => setShowSplashIntro(true)}
       />
 
       {/* Main Viewport */}
@@ -2473,6 +2812,10 @@ export default function App() {
             onCreateManualSnapshot={handleCreateManualSnapshot}
             onRestoreBackup={handleRestoreBackup}
             onDeleteBackup={handleDeleteBackup}
+            messages={messages}
+            onSendMessage={handleSendAdminMessage}
+            onDeleteMessage={handleDeleteAdminMessage}
+            onRefreshMessages={refreshMessages}
           />
         ) : viewMode === 'web' ? (
           <>
@@ -2516,6 +2859,8 @@ export default function App() {
             onOpenReferral={() => setIsReferralOpen(true)}
             isAdminHubActive={adminViewMode === 'ADMIN_HUB'}
             onToggleAdminHub={() => setAdminViewMode((prev) => (prev === 'ADMIN_HUB' ? 'INVESTOR_VIEW' : 'ADMIN_HUB'))}
+            unreadMessagesCount={unreadMessagesCount}
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
           >
             {mobileTab === 'dashboard' && (
               <div className="space-y-4">
@@ -2805,6 +3150,27 @@ export default function App() {
           language={language}
         />
       )}
+
+      {/* Instant Real-Time User Message Popup Modal */}
+      {activePopupMessage && (
+        <UserMessagePopupModal
+          message={activePopupMessage}
+          language={language}
+          onDismiss={handleDismissPopupMessage}
+          onMarkAsReadAndClose={handleMarkAsReadAndClosePopup}
+        />
+      )}
+
+      {/* Notification Center Modal (History of all announcements & personal messages) */}
+      <NotificationCenterModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        messages={userVisibleMessages}
+        currentUserId={currentUser?.id}
+        language={language}
+        onMarkAsRead={handleMarkMessageAsRead}
+        onMarkAllAsRead={handleMarkAllMessagesAsRead}
+      />
 
     </div>
   );

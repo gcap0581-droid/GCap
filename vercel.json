@@ -4,8 +4,17 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/$1"
+    },
+    {
+      "source": "/version.json",
+      "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/version.json"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
+
