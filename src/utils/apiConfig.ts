@@ -3,7 +3,7 @@
 // to the authoritative Google Cloud Run central server.
 
 export const CENTRAL_SERVER_ORIGIN =
-  'https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
+  'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
 
 /**
  * Returns true if current environment is localhost or direct Cloud Run
@@ -27,12 +27,25 @@ export function buildApiPath(endpoint: string): string {
 
 /**
  * Resilient API Fetcher:
- * 1. Tries standard relative /api endpoint.
- * 2. If it returns HTML (e.g. Vercel SPA static fallback rewrite) or network error,
- *    it automatically forwards the request directly to the central Cloud Run server.
+ * 1. If hosted on Vercel or PWA (non-direct host), immediately uses CENTRAL_SERVER_ORIGIN
+ *    for real-time master synchronization of users and investments.
+ * 2. Fallbacks gracefully to relative paths if needed.
  */
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const relativePath = buildApiPath(endpoint);
+
+  if (!isDirectServerHost()) {
+    const directUrl = `${CENTRAL_SERVER_ORIGIN}${relativePath}`;
+    try {
+      const res = await fetch(directUrl, options);
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && !contentType.includes('text/html')) {
+        return res;
+      }
+    } catch (err) {
+      console.warn('Direct central server connection attempt failed, falling back:', err);
+    }
+  }
 
   try {
     const res = await fetch(relativePath, options);
@@ -54,3 +67,4 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
     throw err;
   }
 }
+

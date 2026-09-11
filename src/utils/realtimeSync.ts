@@ -6,6 +6,7 @@
  */
 
 import { UserProfile, Transaction, ActiveInvestment, Wallet, BankAccountDetails, AdminMessage } from '../types';
+import { CENTRAL_SERVER_ORIGIN, isDirectServerHost } from './apiConfig';
 
 export type RealtimeEventType =
   | 'USER_REGISTERED'
@@ -106,7 +107,10 @@ class RealtimeSyncManager {
     }
 
     try {
-      const streamUrl = `/api/realtime/stream?t=${Date.now()}`;
+      const baseStreamPath = '/api/realtime/stream';
+      const streamUrl = isDirectServerHost()
+        ? `${baseStreamPath}?t=${Date.now()}`
+        : `${CENTRAL_SERVER_ORIGIN}${baseStreamPath}?t=${Date.now()}`;
       this.eventSource = new EventSource(streamUrl);
 
       this.eventSource.onopen = () => {

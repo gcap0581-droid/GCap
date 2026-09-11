@@ -1,8 +1,8 @@
 {
-  "buildId": "1773419000000",
-  "buildTime": "2026-09-11T13:30:00.000Z",
-  "appVersion": "2.6.4",
+  "buildId": "1773420000000",
+  "buildTime": "2026-09-11T13:55:00.000Z",
+  "appVersion": "2.6.6",
   "source": "Google AI Studio Live",
-  "message": "Enhanced User Registration Synchronization & Robust Audio Announcer",
+  "message": "Direct Central SSE Stream & 0ms Real-Time Admin Panel Sync",
   "autoReloadEnabled": true
 }
