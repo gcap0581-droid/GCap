@@ -136,6 +136,11 @@ interface AppRules {
   supportEmail: string;
   supportPhone: string;
   lastUpdated: string;
+  companyUpiId?: string;
+  companyBankAccountHolder?: string;
+  companyBankName?: string;
+  companyBankAccountNumber?: string;
+  companyBankIfsc?: string;
 }
 
 interface LiveInterfaceConfig {
@@ -346,6 +351,11 @@ const DEFAULT_RULES: AppRules = {
   supportEmail: "support@gcap.in",
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
+  companyUpiId: "8603504808@axisbank",
+  companyBankAccountHolder: "GCap Investments",
+  companyBankName: "HDFC Bank Ltd.",
+  companyBankAccountNumber: "50200084920194",
+  companyBankIfsc: "HDFC0000240",
 };
 
 const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
@@ -536,7 +546,24 @@ function ensureDb(): ServerDB {
     if (!parsed.investments || !Array.isArray(parsed.investments)) parsed.investments = [];
     if (!parsed.transactions || !Array.isArray(parsed.transactions)) parsed.transactions = [];
     if (!parsed.plans || !Array.isArray(parsed.plans) || parsed.plans.length === 0) parsed.plans = DEFAULT_PLANS;
-    if (!parsed.rules || typeof parsed.rules !== "object") parsed.rules = DEFAULT_RULES;
+    if (!parsed.rules || typeof parsed.rules !== "object") {
+      parsed.rules = DEFAULT_RULES;
+    } else {
+      parsed.rules = {
+        ...DEFAULT_RULES,
+        ...parsed.rules,
+      };
+    }
+    let needsSave = false;
+    // Force set user's specific company details if legacy defaults are present
+    if (parsed.rules.companyUpiId === "gcap.pay@hdfcbank" || !parsed.rules.companyUpiId) {
+      parsed.rules.companyUpiId = "8603504808@axisbank";
+      needsSave = true;
+    }
+    if (parsed.rules.companyBankAccountHolder === "GCap Capital Ventures Pvt Ltd" || !parsed.rules.companyBankAccountHolder) {
+      parsed.rules.companyBankAccountHolder = "GCap Investments";
+      needsSave = true;
+    }
     if (!parsed.liveConfig || typeof parsed.liveConfig !== "object") parsed.liveConfig = DEFAULT_LIVE_CONFIG;
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
@@ -576,7 +603,6 @@ function ensureDb(): ServerDB {
     }
 
     // Ensure each user has a wallet record
-    let needsSave = false;
     parsed.users.forEach((u: StoredAccount) => {
       if (!parsed.wallets[u.id]) {
         parsed.wallets[u.id] = { ...DEFAULT_WALLET };

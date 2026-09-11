@@ -23,4 +23,9 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   supportEmail: 'support@gcap.in',
   supportPhone: '+91 98000 12345',
   lastUpdated: '2026-09-07',
+  companyUpiId: '8603504808@axisbank',
+  companyBankAccountHolder: 'GCap Investments',
+  companyBankName: 'HDFC Bank Ltd.',
+  companyBankAccountNumber: '50200084920194',
+  companyBankIfsc: 'HDFC0000240',
 };

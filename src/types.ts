@@ -148,6 +148,11 @@ export interface AppRules {
   supportEmail: string;
   supportPhone: string;
   lastUpdated: string;
+  companyUpiId?: string;
+  companyBankAccountHolder?: string;
+  companyBankName?: string;
+  companyBankAccountNumber?: string;
+  companyBankIfsc?: string;
 }
 
 export type UserRole = 'ADMIN' | 'USER';

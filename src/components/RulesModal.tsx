@@ -765,6 +765,90 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   />
                 </div>
 
+                {/* Company Deposit Details */}
+                <div className="sm:col-span-2 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-slate-900 to-purple-500/5 border border-purple-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                      <span>🏢 {isHi ? 'कंपनी जमा प्राप्तकर्ता बैंक/UPI विवरण' : 'Company Deposit Bank/UPI Details'}</span>
+                    </label>
+                    <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded border border-purple-500/30">
+                      {isHi ? 'यूजर डिपॉजिट स्क्रीन पर सिंक' : 'Synced with User Deposit Screen'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {isHi
+                      ? 'यहाँ कंपनी का बैंक और UPI ID बदलें। यहाँ किए गए बदलाव तुरंत यूज़र के पैसे जोड़ने (Deposit QR/Bank) वाले सेक्शन में दिखने लगेंगे।'
+                      : 'Customize the company banking & UPI details here. These fields sync instantly with the user deposit screen.'}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {isHi ? 'कंपनी UPI ID (UPI/QR के लिए):' : 'Company UPI ID (for QR/Deep link):'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.companyUpiId || ''}
+                        onChange={(e) => setFormData({ ...formData, companyUpiId: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-xs focus:border-purple-500 focus:outline-none"
+                        placeholder="e.g. company@bank"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {isHi ? 'खाताधारक का नाम (Company Account Holder):' : 'Account Holder Name:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.companyBankAccountHolder || ''}
+                        onChange={(e) => setFormData({ ...formData, companyBankAccountHolder: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs focus:border-purple-500 focus:outline-none"
+                        placeholder="e.g. GCap Capital Pvt Ltd"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {isHi ? 'बैंक का नाम:' : 'Bank Name:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.companyBankName || ''}
+                        onChange={(e) => setFormData({ ...formData, companyBankName: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs focus:border-purple-500 focus:outline-none"
+                        placeholder="e.g. HDFC Bank"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {isHi ? 'खाता संख्या (Account Number):' : 'Account Number:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.companyBankAccountNumber || ''}
+                        onChange={(e) => setFormData({ ...formData, companyBankAccountNumber: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-xs focus:border-purple-500 focus:outline-none"
+                        placeholder="e.g. 50200012345"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                        {isHi ? 'आईएफएससी कोड (IFSC Code):' : 'IFSC Code:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.companyBankIfsc || ''}
+                        onChange={(e) => setFormData({ ...formData, companyBankIfsc: e.target.value.toUpperCase() })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white font-mono text-xs focus:border-purple-500 focus:outline-none uppercase"
+                        placeholder="e.g. HDFC0000123"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Support Contact */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">

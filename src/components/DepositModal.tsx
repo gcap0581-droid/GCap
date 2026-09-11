@@ -45,13 +45,16 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   if (!isOpen) return null;
 
   const quickAmounts = [minDeposit, 1000, 2000, 5000, 10000, 25000].filter((v, i, a) => a.indexOf(v) === i);
-  const companyUpiId = 'gcap.pay@hdfcbank';
+  const companyUpiId = rules?.companyUpiId || 'gcap.pay@hdfcbank';
   const companyBank = {
-    name: 'GCap Capital Ventures Pvt Ltd',
-    bank: 'HDFC Bank',
-    accountNumber: '50200098234123',
-    ifsc: 'HDFC0001234',
+    name: rules?.companyBankAccountHolder || 'GCap Capital Ventures Pvt Ltd',
+    bank: rules?.companyBankName || 'HDFC Bank',
+    accountNumber: rules?.companyBankAccountNumber || '50200098234123',
+    ifsc: rules?.companyBankIfsc || 'HDFC0001234',
   };
+
+  const upiUrl = `upi://pay?pa=${companyUpiId}&pn=${encodeURIComponent(companyBank.name)}&am=${amount}&cu=INR`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiUrl)}`;
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(companyUpiId);
@@ -241,23 +244,17 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           {paymentMethod === 'UPI' && (
             <div className="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-4">
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                {/* Simulated QR Code SVG */}
-                <div className="w-28 h-28 bg-white p-2 rounded-xl shrink-0 flex items-center justify-center shadow-md">
-                  <div className="w-full h-full border-2 border-slate-900 p-1 flex flex-col justify-between">
-                    <div className="flex justify-between">
-                      <div className="w-6 h-6 bg-slate-900"></div>
-                      <div className="w-6 h-6 bg-slate-900"></div>
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <span className="text-[9px] font-mono font-bold text-slate-900">GCap UPI</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="w-6 h-6 bg-slate-900"></div>
-                      <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
-                    </div>
-                  </div>
+                {/* Real Dynamic QR Code */}
+                <div className="w-32 h-32 bg-white p-1 rounded-xl shrink-0 flex flex-col items-center justify-center shadow-md border border-slate-700">
+                  <img
+                    src={qrUrl}
+                    alt="Scan UPI QR Code"
+                    className="w-28 h-28 object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="text-[8px] font-mono font-bold text-slate-800 tracking-wider">GCAP SECURE QR</span>
                 </div>
-
+ 
                 {/* Instructions */}
                 <div className="space-y-2 text-xs text-slate-300 w-full">
                   <div className="font-semibold text-white">
@@ -276,12 +273,36 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                       <span>{copiedUpi ? 'कॉपी हुआ' : 'कॉपी करें'}</span>
                     </button>
                   </div>
-                  <p className="text-slate-400 text-[11px]">
-                    {isHi
-                      ? 'अपने PhonePe, GPay, Paytm से इस UPI ID पर राशि भेजें।'
-                      : 'Transfer from your PhonePe, Google Pay, or Paytm to this verified company ID.'}
-                  </p>
+                  <div className="text-slate-400 text-[11px] space-y-1">
+                    <p>
+                      {isHi
+                        ? 'अपने PhonePe, GPay, Paytm से इस UPI ID पर राशि भेजें।'
+                        : 'Transfer from your PhonePe, Google Pay, or Paytm to this verified company ID.'}
+                    </p>
+                    <p className="text-emerald-400/90 font-medium">
+                      {isHi
+                        ? `💸 कंपनी का नाम: ${companyBank.name}`
+                        : `💸 Payee Name: ${companyBank.name}`}
+                    </p>
+                  </div>
                 </div>
+              </div>
+ 
+              {/* Dynamic Action Button for direct UPI Mobile Intents */}
+              <div className="pt-2">
+                <a
+                  href={upiUrl}
+                  id="btn-upi-intent"
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer select-none active:scale-95 text-center"
+                >
+                  <Smartphone className="w-4.5 h-4.5" />
+                  <span>{isHi ? `📱 सीधे UPI ऐप से पे करें (₹${amount.toLocaleString('en-IN')})` : `📱 Pay via UPI App (₹${amount.toLocaleString('en-IN')})`}</span>
+                </a>
+                <p className="text-[10px] text-center text-slate-500 mt-1.5">
+                  {isHi 
+                    ? '💡 मोबाइल यूज़र्स इस बटन पर क्लिक कर सीधे किसी भी यूपीआई ऐप (GPay, PhonePe, Paytm) से भुगतान कर सकते हैं।' 
+                    : '💡 Mobile users can click this button to open and pay directly using any installed UPI app.'}
+                </p>
               </div>
             </div>
           )}
