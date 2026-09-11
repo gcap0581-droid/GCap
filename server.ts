@@ -528,6 +528,51 @@ async function startServer() {
     next();
   });
 
+  // Server-Side Master Database Proxy for GCap Cloud Run Multi-Container Sync
+  // If request hits the Shared/Preview App container (host contains "ais-pre-"),
+  // proxy the database request server-side directly to the Master Dev App container.
+  // This bypasses browser-side CORS blocks, sandboxing, and session isolation.
+  app.use((req, res, next) => {
+    const host = req.headers.host || "";
+    if (
+      host.includes("ais-pre-") &&
+      req.path.startsWith("/api") &&
+      req.path !== "/api/health" &&
+      req.path !== "/api/realtime/stream"
+    ) {
+      const devOrigin = "https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app";
+      const targetUrl = `${devOrigin}${req.originalUrl}`;
+      const method = req.method;
+      
+      const headers: Record<string, string> = {};
+      for (const [key, val] of Object.entries(req.headers)) {
+        if (typeof val === "string" && key.toLowerCase() !== "host") {
+          headers[key] = val;
+        }
+      }
+
+      fetch(targetUrl, {
+        method,
+        headers,
+        body: ["GET", "HEAD"].includes(method) ? undefined : JSON.stringify(req.body),
+      })
+        .then(async (proxyRes) => {
+          res.status(proxyRes.status);
+          proxyRes.headers.forEach((val, key) => {
+            res.setHeader(key, val);
+          });
+          const text = await proxyRes.text();
+          res.send(text);
+        })
+        .catch((err) => {
+          console.error("[Master Proxy] Error proxying API request:", err);
+          next();
+        });
+      return;
+    }
+    next();
+  });
+
   // Health check
   app.get("/api/health", (_req, res) => {
     res.json({
