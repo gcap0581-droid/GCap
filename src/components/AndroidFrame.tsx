@@ -81,7 +81,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
     <div
       className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden relative"
       style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingTop: '0px',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
         paddingRight: 'env(safe-area-inset-right, 0px)',
