@@ -114,6 +114,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA') => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -156,11 +158,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSendMessage = async () => false,
   onDeleteMessage = async () => false,
   onRefreshMessages = () => {},
+  externalActiveSubTab,
+  onExternalActiveSubTabChange,
 }) => {
   const isHi = language === 'hi';
-  const [activeSubTab, setActiveSubTab] = useState<
+  const [internalActiveSubTab, setInternalActiveSubTab] = useState<
     'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
   >('OVERVIEW');
+
+  const activeSubTab = externalActiveSubTab || internalActiveSubTab;
+  const setActiveSubTab = (tab: any) => {
+    if (onExternalActiveSubTabChange) {
+      onExternalActiveSubTabChange(tab);
+    } else {
+      setInternalActiveSubTab(tab);
+    }
+  };
 
   // Company Balance Modal state
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);

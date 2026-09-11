@@ -142,7 +142,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   return (
     <div className={`w-full text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 ${
-      viewMode === 'android' ? 'min-h-0 bg-transparent gap-2' : 'min-h-screen bg-slate-950 justify-between'
+      viewMode === 'android' ? 'min-h-0 bg-transparent' : 'min-h-screen bg-slate-950 justify-start'
     }`}>
       {/* Top Header */}
       {viewMode !== 'android' ? (
@@ -206,43 +206,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </button>
           </div>
         </header>
-      ) : (
-        <div className="px-4 py-2 mt-2 flex items-center justify-between bg-slate-900/40 border border-slate-800/40 rounded-2xl mx-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-white font-sans">
-                  GCap
-                </span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">
-                  PRO
-                </span>
-              </div>
-              <p className="text-[9px] text-slate-400 tracking-wider">
-                {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
-              </p>
-            </div>
-          </div>
-
-          {/* Language Toggle */}
-          <button
-            onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
-            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 cursor-pointer"
-          >
-            <Globe className="w-3 h-3 text-emerald-400" />
-            <span>{isHi ? 'English' : 'हिंदी'}</span>
-          </button>
-        </div>
-      )}
+      ) : null}
 
       {/* Main Container */}
-      <main className={`flex items-center justify-center ${
-        viewMode === 'android' ? 'p-1 mt-1' : 'flex-1 p-4 sm:p-6 lg:p-8'
+      <main className={`flex items-start justify-center ${
+        viewMode === 'android' ? 'p-1 mt-1' : 'flex-1 p-4 pt-10 sm:p-6 sm:pt-14 lg:p-8 lg:pt-16'
       }`}>
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           

@@ -153,6 +153,9 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('hi'); // Default Hindi for user's prompt
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
+  const [adminMobileTab, setAdminMobileTab] = useState<
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
+  >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState<boolean>(false);
@@ -2619,6 +2622,7 @@ export default function App() {
           activeTab="dashboard"
           onTabChange={() => {}}
           language={language}
+          onLanguageChange={setLanguage}
           onExitMobile={() => setViewMode('web')}
           currentUser={null}
         >
@@ -2790,7 +2794,7 @@ export default function App() {
           </div>
         )}
 
-        {currentUser.role === 'ADMIN' && adminViewMode === 'ADMIN_HUB' ? (
+        {currentUser.role === 'ADMIN' && adminViewMode === 'ADMIN_HUB' && viewMode === 'web' ? (
           <div
             className={viewMode === 'android' ? "px-3.5" : ""}
             style={viewMode === 'android' ? {
@@ -2866,15 +2870,18 @@ export default function App() {
           </>
         ) : (
           <AndroidFrame
-            activeTab={mobileTab}
-            onTabChange={setMobileTab}
+            activeTab={adminViewMode === 'ADMIN_HUB' ? adminMobileTab : mobileTab}
+            onTabChange={adminViewMode === 'ADMIN_HUB' ? (tab) => setAdminMobileTab(tab as any) : setMobileTab}
             language={language}
+            onLanguageChange={setLanguage}
             onExitMobile={() => setViewMode('web')}
             currentUser={currentUser}
             onLogout={handleLogout}
             onSearchQuery={(q) => {
-              setSearchQuery(q);
-              setMobileTab('plans');
+              if (adminViewMode !== 'ADMIN_HUB') {
+                setSearchQuery(q);
+                setMobileTab('plans');
+              }
             }}
             wallet={wallet}
             onOpenDeposit={() => setIsDepositOpen(true)}
@@ -2887,162 +2894,210 @@ export default function App() {
             unreadMessagesCount={unreadMessagesCount}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
           >
-            {mobileTab === 'dashboard' && (
-              <div className="space-y-4">
-                {/* Flipkart / Amazon Mobile Hero Carousel Banner */}
-                <EcommerceBanner
-                  language={language}
-                  wallet={wallet}
-                  onNavigateTab={(tab) => setMobileTab(tab)}
-                  onOpenDeposit={() => setIsDepositOpen(true)}
-                  onOpenWithdraw={() => setIsWithdrawOpen(true)}
-                />
-
-                <WalletCard
-                  wallet={wallet}
-                  language={language}
-                  rules={rules}
-                  activeInvestmentsCount={activeInvestmentsList.length}
-                  unclaimedReturnsTotal={unclaimedReturnsTotal}
-                  dailyProjectedTotal={dailyProjectedTotal}
-                  onOpenDeposit={() => setIsDepositOpen(true)}
-                  onOpenWithdraw={() => setIsWithdrawOpen(true)}
-                  onOpenSwap={() => setIsSwapOpen(true)}
-                  onClaimAllReturns={handleClaimAllReturns}
-                />
-                <RoiCalculator
-                  language={language}
-                  onSelectPlanAndAmount={(plan, amt) => handleOpenInvest(plan, amt)}
-                  plans={plans}
-                />
-              </div>
-            )}
-
-            {mobileTab === 'plans' && (
-              <PlansList
+            {adminViewMode === 'ADMIN_HUB' ? (
+              <AdminPanel
+                adminUser={currentUser}
                 language={language}
-                onSelectPlan={(plan) => handleOpenInvest(plan)}
+                rules={rules}
+                wallet={wallet}
+                transactions={transactions}
                 plans={plans}
-                searchFilter={searchQuery}
-              />
-            )}
-
-            {mobileTab === 'investments' && (
-              <ActiveInvestments
                 investments={investments}
-                language={language}
-                onClaimReturn={handleClaimSingleReturn}
+                treasury={treasury}
+                treasuryLogs={treasuryLogs}
+                backups={backups}
+                currentPayload={getCurrentSystemPayload()}
+                liveConfig={liveConfig}
+                onUpdateLiveConfig={handleUpdateLiveConfig}
+                onResetLiveConfig={handleResetLiveConfig}
+                onOpenRules={() => setIsRulesOpen(true)}
+                onSwitchToInvestorView={() => setAdminViewMode('INVESTOR_VIEW')}
+                onLogout={handleLogout}
+                onAddPlan={handleAdminAddPlan}
+                onUpdatePlan={handleAdminUpdatePlan}
+                onDeletePlan={handleAdminDeletePlan}
+                onResetPlans={handleAdminResetPlans}
+                onAddTransaction={handleAdminAddTransaction}
+                onUpdateTransaction={handleAdminUpdateTransaction}
+                onDeleteTransaction={handleAdminDeleteTransaction}
                 onSimulateComplete24hLock={handleSimulateComplete24hLock}
                 onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
                 onSimulateMaturity641Days={handleSimulateMaturity641Days}
-                onRenewPlan={handleRenewPlan}
-                onClaimMaturityClose={handleClaimMaturityClose}
-                onViewCertificate={(inv) => setSelectedCertificateInvestment(inv)}
-                onTransitionToRoyalty1461D={handleTransitionToRoyalty1461D}
-                onClaim1461DAndEnterRoyalty1825D={handleClaim1461DAndEnterRoyalty1825D}
-                onClaimFinalRoyaltyMasterClose={handleClaimFinalRoyaltyMasterClose}
-                onSimulateMaturity365Days={handleSimulateMaturity365Days}
-                onSimulateMaturity1461Days={handleSimulateMaturity1461Days}
-                onSimulateMaturity1825Days={handleSimulateMaturity1825Days}
-                onNavigateToPlans={() => setMobileTab('plans')}
+                onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
+                onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+                onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
+                onResetTreasury={handleResetTreasury}
+                onRunMidnightBackupNow={handleRunMidnightBackupNow}
+                onCreateManualSnapshot={handleCreateManualSnapshot}
+                onRestoreBackup={handleRestoreBackup}
+                onDeleteBackup={handleDeleteBackup}
+                messages={messages}
+                onSendMessage={handleSendAdminMessage}
+                onDeleteMessage={handleDeleteAdminMessage}
+                onRefreshMessages={refreshMessages}
+                externalActiveSubTab={adminMobileTab}
+                onExternalActiveSubTabChange={(tab) => setAdminMobileTab(tab)}
               />
-            )}
+            ) : (
+              <>
+                {mobileTab === 'dashboard' && (
+                  <div className="space-y-4">
+                    {/* Flipkart / Amazon Mobile Hero Carousel Banner */}
+                    <EcommerceBanner
+                      language={language}
+                      wallet={wallet}
+                      onNavigateTab={(tab) => setMobileTab(tab)}
+                      onOpenDeposit={() => setIsDepositOpen(true)}
+                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
+                    />
 
-            {mobileTab === 'wallet' && (
-              <div className="space-y-4">
-                <WalletCard
-                  wallet={wallet}
-                  language={language}
-                  rules={rules}
-                  activeInvestmentsCount={activeInvestmentsList.length}
-                  unclaimedReturnsTotal={unclaimedReturnsTotal}
-                  dailyProjectedTotal={dailyProjectedTotal}
-                  onOpenDeposit={() => setIsDepositOpen(true)}
-                  onOpenWithdraw={() => setIsWithdrawOpen(true)}
-                  onOpenSwap={() => setIsSwapOpen(true)}
-                  onClaimAllReturns={handleClaimAllReturns}
-                />
-                <TransactionsTable
-                  transactions={transactions}
-                  language={language}
-                  onViewVoucher={(tx) => {
-                    setSelectedVoucherTxn(tx);
-                    setIsVoucherModalOpen(true);
-                  }}
-                />
-              </div>
-            )}
-
-            {mobileTab === 'rules' && (
-              <div className="space-y-3">
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-400" />
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                        {isHi ? 'GCap आधिकारिक नियम' : 'GCap Rules'}
-                      </h4>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      {isHi ? 'लागू नीतियां' : 'Active'}
-                    </span>
+                    <WalletCard
+                      wallet={wallet}
+                      language={language}
+                      rules={rules}
+                      activeInvestmentsCount={activeInvestmentsList.length}
+                      unclaimedReturnsTotal={unclaimedReturnsTotal}
+                      dailyProjectedTotal={dailyProjectedTotal}
+                      onOpenDeposit={() => setIsDepositOpen(true)}
+                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
+                      onOpenSwap={() => setIsSwapOpen(true)}
+                      onClaimAllReturns={handleClaimAllReturns}
+                    />
+                    <RoiCalculator
+                      language={language}
+                      onSelectPlanAndAmount={(plan, amt) => handleOpenInvest(plan, amt)}
+                      plans={plans}
+                    />
                   </div>
+                )}
 
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम डिपॉजिट' : 'Min Deposit'}</span>
-                      <span className="font-mono font-bold text-emerald-400">{formatINR(rules.minDeposit)}</span>
+                {mobileTab === 'plans' && (
+                  <PlansList
+                    language={language}
+                    onSelectPlan={(plan) => handleOpenInvest(plan)}
+                    plans={plans}
+                    searchFilter={searchQuery}
+                  />
+                )}
+
+                {mobileTab === 'investments' && (
+                  <ActiveInvestments
+                    investments={investments}
+                    language={language}
+                    onClaimReturn={handleClaimSingleReturn}
+                    onSimulateComplete24hLock={handleSimulateComplete24hLock}
+                    onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
+                    onSimulateMaturity641Days={handleSimulateMaturity641Days}
+                    onRenewPlan={handleRenewPlan}
+                    onClaimMaturityClose={handleClaimMaturityClose}
+                    onViewCertificate={(inv) => setSelectedCertificateInvestment(inv)}
+                    onTransitionToRoyalty1461D={handleTransitionToRoyalty1461D}
+                    onClaim1461DAndEnterRoyalty1825D={handleClaim1461DAndEnterRoyalty1825D}
+                    onClaimFinalRoyaltyMasterClose={handleClaimFinalRoyaltyMasterClose}
+                    onSimulateMaturity365Days={handleSimulateMaturity365Days}
+                    onSimulateMaturity1461Days={handleSimulateMaturity1461Days}
+                    onSimulateMaturity1825Days={handleSimulateMaturity1825Days}
+                    onNavigateToPlans={() => setMobileTab('plans')}
+                  />
+                )}
+
+                {mobileTab === 'wallet' && (
+                  <div className="space-y-4">
+                    <WalletCard
+                      wallet={wallet}
+                      language={language}
+                      rules={rules}
+                      activeInvestmentsCount={activeInvestmentsList.length}
+                      unclaimedReturnsTotal={unclaimedReturnsTotal}
+                      dailyProjectedTotal={dailyProjectedTotal}
+                      onOpenDeposit={() => setIsDepositOpen(true)}
+                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
+                      onOpenSwap={() => setIsSwapOpen(true)}
+                      onClaimAllReturns={handleClaimAllReturns}
+                    />
+                    <TransactionsTable
+                      transactions={transactions}
+                      language={language}
+                      onViewVoucher={(tx) => {
+                        setSelectedVoucherTxn(tx);
+                        setIsVoucherModalOpen(true);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {mobileTab === 'rules' && (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-emerald-400" />
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                            {isHi ? 'GCap आधिकारिक नियम' : 'GCap Rules'}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          {isHi ? 'लागू नीतियां' : 'Active'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम डिपॉजिट' : 'Min Deposit'}</span>
+                          <span className="font-mono font-bold text-emerald-400">{formatINR(rules.minDeposit)}</span>
+                        </div>
+                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम निकासी' : 'Min Withdraw'}</span>
+                          <span className="font-mono font-bold text-purple-300">{formatINR(rules.minWithdrawal)}</span>
+                        </div>
+                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">{isHi ? 'निकासी शुल्क' : 'Withdrawal Fee'}</span>
+                          <span className="font-mono font-bold text-white">{rules.withdrawalFeePercent}%</span>
+                        </div>
+                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                          <span className="text-[10px] text-slate-400 block">{isHi ? 'मूलधन वापसी' : 'Capital Return'}</span>
+                          <span className="font-bold text-emerald-400 text-[11px]">100% Refund</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => setIsRulesOpen(true)}
+                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer text-center"
+                        >
+                          {isHi ? 'संपूर्ण नियम व नीतियां' : 'Full Policy'}
+                        </button>
+                        <button
+                          onClick={() => setIsRulesOpen(true)}
+                          className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg transition-colors cursor-pointer"
+                        >
+                          ⚙️ {isHi ? 'एडिट' : 'Edit'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम निकासी' : 'Min Withdraw'}</span>
-                      <span className="font-mono font-bold text-purple-300">{formatINR(rules.minWithdrawal)}</span>
-                    </div>
-                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">{isHi ? 'निकासी शुल्क' : 'Withdrawal Fee'}</span>
-                      <span className="font-mono font-bold text-white">{rules.withdrawalFeePercent}%</span>
-                    </div>
-                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                      <span className="text-[10px] text-slate-400 block">{isHi ? 'मूलधन वापसी' : 'Capital Return'}</span>
-                      <span className="font-bold text-emerald-400 text-[11px]">100% Refund</span>
+
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold block text-amber-300">{isHi ? 'रेफरल कमीशन प्रोग्राम' : 'Referral Bonus'}</span>
+                        <span className="text-[11px] text-amber-200/80">L1: {rules.referralL1Percent}% | L2: {rules.referralL2Percent}%</span>
+                      </div>
+                      <button
+                        onClick={() => setIsReferralOpen(true)}
+                        className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold text-[11px] cursor-pointer"
+                      >
+                        {isHi ? 'लिंक देखें' : 'Get Link'}
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => setIsRulesOpen(true)}
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer text-center"
-                    >
-                      {isHi ? 'संपूर्ण नियम व नीतियां' : 'Full Policy'}
-                    </button>
-                    <button
-                      onClick={() => setIsRulesOpen(true)}
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg transition-colors cursor-pointer"
-                    >
-                      ⚙️ {isHi ? 'एडिट' : 'Edit'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-bold block text-amber-300">{isHi ? 'रेफरल कमीशन प्रोग्राम' : 'Referral Bonus'}</span>
-                    <span className="text-[11px] text-amber-200/80">L1: {rules.referralL1Percent}% | L2: {rules.referralL2Percent}%</span>
-                  </div>
-                  <button
-                    onClick={() => setIsReferralOpen(true)}
-                    className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold text-[11px] cursor-pointer"
-                  >
-                    {isHi ? 'लिंक देखें' : 'Get Link'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {mobileTab === 'transactions' && (
-              <TransactionsTable
-                transactions={transactions}
-                language={language}
-              />
+                {mobileTab === 'transactions' && (
+                  <TransactionsTable
+                    transactions={transactions}
+                    language={language}
+                  />
+                )}
+              </>
             )}
           </AndroidFrame>
         )}

@@ -540,7 +540,9 @@ async function startServer() {
       req.path !== "/api/health" &&
       req.path !== "/api/realtime/stream"
     ) {
-      const devOrigin = "https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app";
+      const devHost = host.replace("ais-pre-", "ais-dev-");
+      const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+      const devOrigin = `${protocol}://${devHost}`;
       const targetUrl = `${devOrigin}${req.originalUrl}`;
       const method = req.method;
       

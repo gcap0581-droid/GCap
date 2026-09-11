@@ -21,6 +21,12 @@ import {
   Award,
   ArrowLeft,
   Bell,
+  LayoutDashboard,
+  MessageSquare,
+  Building2,
+  Users,
+  Activity,
+  Globe,
 } from 'lucide-react';
 import { Language, UserProfile, Wallet, DesktopCategoryTab } from '../types';
 import { formatINR } from '../utils/storage';
@@ -44,6 +50,7 @@ interface AndroidFrameProps {
   onToggleAdminHub?: () => void;
   unreadMessagesCount?: number;
   onOpenNotifications?: () => void;
+  onLanguageChange?: (lang: Language) => void;
 }
 
 export const AndroidFrame: React.FC<AndroidFrameProps> = ({
@@ -65,6 +72,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onToggleAdminHub,
   unreadMessagesCount = 0,
   onOpenNotifications,
+  onLanguageChange,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -81,14 +89,19 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
     <div
       className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden relative"
       style={{
-        paddingTop: 'env(safe-area-inset-top, 38px)',
+        paddingTop: 0,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
         paddingRight: 'env(safe-area-inset-right, 0px)',
       }}
     >
       {/* 1. Mobile App Top Bar */}
-      <header className="sticky top-0 z-30 bg-slate-900/98 backdrop-blur-md border-b border-slate-800 px-3.5 py-2.5 flex items-center justify-between gap-2 shadow-md shrink-0 w-full">
+      <header
+        className="sticky top-0 z-30 bg-slate-900/98 backdrop-blur-md border-b border-slate-800 px-3.5 pb-2.5 flex items-center justify-between gap-2 shadow-md shrink-0 w-full"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+        }}
+      >
         
         {/* Left: Mobile Drawer / Menu Icon + Brand + Back button */}
         <div className="flex items-center gap-2">
@@ -158,6 +171,17 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             </button>
           )}
 
+          {onLanguageChange && (
+            <button
+              onClick={() => onLanguageChange(language === 'hi' ? 'en' : 'hi')}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
+              title={isHi ? 'भाषा बदलें' : 'Change Language'}
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{isHi ? 'English' : 'हिंदी'}</span>
+            </button>
+          )}
+
           <button
             onClick={onExitMobile}
             className="text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer font-medium"
@@ -169,27 +193,29 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
       </header>
 
       {/* 2. Compact Search Strip */}
-      <div className="bg-slate-900/80 px-3.5 py-2 border-b border-slate-800/80 shrink-0">
-        <form onSubmit={handleMobileSearch} className="relative w-full">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={mobileSearch}
-            onChange={(e) => {
-              setMobileSearch(e.target.value);
-              if (onSearchQuery) onSearchQuery(e.target.value);
-            }}
-            placeholder={isHi ? 'प्लान्स या रिटर्न खोजें (उदा. 641D)...' : 'Search schemes, daily returns...'}
-            className="w-full pl-8 pr-14 py-1.5 bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-lg bg-amber-500 text-[11px] font-bold text-slate-950 cursor-pointer"
-          >
-            {isHi ? 'सर्च' : 'Find'}
-          </button>
-        </form>
-      </div>
+      {currentUser && (
+        <div className="bg-slate-900/80 px-3.5 py-2 border-b border-slate-800/80 shrink-0">
+          <form onSubmit={handleMobileSearch} className="relative w-full">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={mobileSearch}
+              onChange={(e) => {
+                setMobileSearch(e.target.value);
+                if (onSearchQuery) onSearchQuery(e.target.value);
+              }}
+              placeholder={isHi ? 'प्लान्स या रिटर्न खोजें (उदा. 641D)...' : 'Search schemes, daily returns...'}
+              className="w-full pl-8 pr-14 py-1.5 bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-lg bg-amber-500 text-[11px] font-bold text-slate-950 cursor-pointer"
+            >
+              {isHi ? 'सर्च' : 'Find'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Sub-Header Back Navigation Bar for Mobile Sub-Screens */}
       {activeTab !== 'dashboard' && (
@@ -259,218 +285,420 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             {/* Menu List */}
             <div className="p-3 space-y-3 flex-1 text-xs">
               
-              {/* Category 0: Main Navigation (Home, Plans, Portfolio, Wallet, Admin) */}
-              <div className="space-y-1">
-                <div className="text-[10px] uppercase font-bold text-amber-400 px-2 flex items-center justify-between">
-                  <span>{isHi ? 'मुख्य नेविगेशन' : 'Main Navigation'}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Menu</span>
-                </div>
-                <button
-                  onClick={() => {
-                    onTabChange('dashboard');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'dashboard' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Home className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isHi ? '• होम (मुख्य पृष्ठ)' : '• Home Dashboard'}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-                <button
-                  onClick={() => {
-                    onTabChange('plans');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'plans' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isHi ? '• निवेश प्लान्स (Plans)' : '• Investment Plans'}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-                <button
-                  onClick={() => {
-                    onTabChange('investments');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'investments' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-blue-400" />
-                    <span>{isHi ? '• माई पोर्टफोलियो (Portfolio)' : '• My Active Portfolio'}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-                <button
-                  onClick={() => {
-                    onTabChange('wallet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                    activeTab === 'wallet' ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{isHi ? '• वॉलेट (Wallet & Passbook)' : '• Wallet & Balance'}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
+              {isAdminHubActive ? (
+                /* Admin Hub Navigation Options */
+                <div className="space-y-1">
+                  <div className="text-[10px] uppercase font-bold text-amber-400 px-2 flex items-center justify-between mb-2">
+                    <span>{isHi ? 'एडमिन हब विकल्प' : 'Admin Hub Menu'}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Admin</span>
+                  </div>
 
-                {isAdmin && onToggleAdminHub ? (
+                  {/* 1. OVERVIEW */}
                   <button
                     onClick={() => {
-                      onToggleAdminHub();
+                      onTabChange('OVERVIEW');
                       setIsMobileMenuOpen(false);
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                      isAdminHubActive ? 'bg-amber-500/30 text-amber-200 font-bold border border-amber-400/60' : 'bg-gradient-to-r from-amber-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-300 border border-amber-500/30'
+                      activeTab === 'OVERVIEW' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <Award className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{isHi ? '👑 कंपनी एडमिन पैनल (Admin Hub)' : '👑 Company Admin Panel'}</span>
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      onTabChange('rules');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                      activeTab === 'rules' ? 'bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-teal-400" />
-                      <span>{isHi ? '• नियम व शर्तें (Rules)' : '• Official Rules'}</span>
+                      <LayoutDashboard className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isHi ? '• सिस्टम डैशबोर्ड (Overview)' : '• System Dashboard'}</span>
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                   </button>
-                )}
-              </div>
 
-              {/* Category 1: Plans */}
-              <div className="space-y-1">
-                <div className="text-[10px] uppercase font-bold text-amber-400 px-2">
-                  {isHi ? 'निवेश मेन्यू' : 'Investments'}
-                </div>
-                <button
-                  onClick={() => {
-                    onTabChange('plans');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                >
-                  <span>{isHi ? '• उपलब्ध प्लान्स (641D / 365D)' : '• All Investment Plans'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-                <button
-                  onClick={() => {
-                    onTabChange('investments');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                >
-                  <span>{isHi ? '• माई पोर्टफोलियो (सक्रिय निवेश)' : '• My Active Portfolio'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-              </div>
+                  {/* 2. MESSAGES */}
+                  <button
+                    onClick={() => {
+                      onTabChange('MESSAGES');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'MESSAGES' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isHi ? '• लाइव संदेश व अलर्ट्स' : '• Live Messages'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
 
-              {/* Category 2: Wallet */}
-              <div className="space-y-1">
-                <div className="text-[10px] uppercase font-bold text-emerald-400 px-2">
-                  {isHi ? 'वॉलेट व लेनदेन' : 'Wallet Actions'}
-                </div>
-                {onOpenDeposit && (
+                  {/* 3. TREASURY */}
                   <button
                     onClick={() => {
+                      onTabChange('TREASURY');
                       setIsMobileMenuOpen(false);
-                      onOpenDeposit();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'TREASURY' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
                   >
-                    <span>{isHi ? '• पैसे जोड़ें (Deposit via UPI/QR)' : '• Deposit Funds (UPI/QR)'}</span>
-                    <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{isHi ? '• कंपनी ट्रेजरी रिज़र्व' : '• Company Treasury'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                   </button>
-                )}
-                {onOpenWithdraw && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onOpenWithdraw();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>{isHi ? '• निकासी अनुरोध (Withdrawal)' : '• Withdrawal Request'}</span>
-                    <ArrowDownToLine className="w-3.5 h-3.5 text-purple-400" />
-                  </button>
-                )}
-                {onOpenSwap && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onOpenSwap();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>{isHi ? '• फंड स्वैप (Cash ⇄ G-Points)' : '• Swap Cash ⇄ GP'}</span>
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    onTabChange('wallet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                >
-                  <span>{isHi ? '• पासबुक व स्टेटमेंट' : '• Wallet Passbook'}</span>
-                  <Receipt className="w-3.5 h-3.5 text-slate-500" />
-                </button>
-              </div>
 
-              {/* Category 3: Rules & Referral */}
-              <div className="space-y-1">
-                <div className="text-[10px] uppercase font-bold text-teal-400 px-2">
-                  {isHi ? 'नीतियां व शेयर' : 'Rules & Rewards'}
+                  {/* 4. INVESTMENTS */}
+                  <button
+                    onClick={() => {
+                      onTabChange('INVESTMENTS');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'INVESTMENTS' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{isHi ? '• सक्रिय पोर्टफोलियो' : '• Active Portfolios'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 5. PLANS */}
+                  <button
+                    onClick={() => {
+                      onTabChange('PLANS');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'PLANS' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-teal-400" />
+                      <span>{isHi ? '• प्लान्स प्रबंधन (CRUD)' : '• Plans CRUD Management'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 6. USERS */}
+                  <button
+                    onClick={() => {
+                      onTabChange('USERS');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'USERS' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 text-purple-400" />
+                      <span>{isHi ? '• यूजर्स डेटाबेस' : '• Users DB & Profiles'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 7. TRANSACTIONS */}
+                  <button
+                    onClick={() => {
+                      onTabChange('TRANSACTIONS');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'TRANSACTIONS' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Receipt className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{isHi ? '• सभी लेन-देन सूची' : '• Transactions Ledger'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 8. BACKUP */}
+                  <button
+                    onClick={() => {
+                      onTabChange('BACKUP');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'BACKUP' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-pink-400" />
+                      <span>{isHi ? '• डेटाबेस बैकअप' : '• System Backups'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 9. COMPANY_PROFILE */}
+                  <button
+                    onClick={() => {
+                      onTabChange('COMPANY_PROFILE');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'COMPANY_PROFILE' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Shield className="w-3.5 h-3.5 text-red-400" />
+                      <span>{isHi ? '• लीगल कंपनी प्रोफाइल' : '• Company Legal Profile'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* 10. OTA */}
+                  <button
+                    onClick={() => {
+                      onTabChange('OTA');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'OTA' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Activity className="w-3.5 h-3.5 text-teal-400" />
+                      <span>{isHi ? '• ओवर-द-एयर (OTA) सेटिंग' : '• Live OTA Config'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+
+                  {/* Switch to Investor Mode button inside Drawer for Admins */}
+                  {onToggleAdminHub && (
+                    <div className="pt-4 mt-4 border-t border-slate-800">
+                      <button
+                        onClick={() => {
+                          onToggleAdminHub();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between bg-gradient-to-r from-teal-500/20 to-emerald-500/20 border border-teal-500/40 text-teal-300 font-bold"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Award className="w-3.5 h-3.5 text-teal-400" />
+                          <span>{isHi ? '👤 इन्वेस्टर व्यू (User Panel)' : '👤 Investor View'}</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {onOpenRules && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onOpenRules();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>{isHi ? '• नियम व शर्तें (Rules)' : '• Official Rules'}</span>
-                    <FileText className="w-3.5 h-3.5 text-teal-400" />
-                  </button>
-                )}
-                {onOpenReferral && (
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onOpenReferral();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>{isHi ? '• रेफरल लिंक व टीम बोनस' : '• Share & Earn Referral'}</span>
-                    <Gift className="w-3.5 h-3.5 text-amber-400" />
-                  </button>
-                )}
-              </div>
+              ) : (
+                /* Regular Investor Navigation Options */
+                <>
+                  {/* Category 0: Main Navigation (Home, Plans, Portfolio, Wallet, Admin) */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-amber-400 px-2 flex items-center justify-between">
+                      <span>{isHi ? 'मुख्य नेविगेशन' : 'Main Navigation'}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Menu</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        onTabChange('dashboard');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                        activeTab === 'dashboard' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Home className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{isHi ? '• होम (मुख्य पृष्ठ)' : '• Home Dashboard'}</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        onTabChange('plans');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                        activeTab === 'plans' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Layers className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{isHi ? '• निवेश प्लान्स (Plans)' : '• Investment Plans'}</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        onTabChange('investments');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                        activeTab === 'investments' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-blue-400" />
+                        <span>{isHi ? '• माई पोर्टफोलियो (Portfolio)' : '• My Active Portfolio'}</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        onTabChange('wallet');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                        activeTab === 'wallet' ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{isHi ? '• वॉलेट (Wallet & Passbook)' : '• Wallet & Balance'}</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+
+                    {isAdmin && onToggleAdminHub ? (
+                      <button
+                        onClick={() => {
+                          onToggleAdminHub();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                          isAdminHubActive ? 'bg-amber-500/30 text-amber-200 font-bold border border-amber-400/60' : 'bg-gradient-to-r from-amber-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-300 border border-amber-500/30'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Award className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{isHi ? '👑 कंपनी एडमिन पैनल (Admin Hub)' : '👑 Company Admin Panel'}</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          onTabChange('rules');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                          activeTab === 'rules' ? 'bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <FileText className="w-3.5 h-3.5 text-teal-400" />
+                          <span>{isHi ? '• नियम व शर्तें (Rules)' : '• Official Rules'}</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Category 1: Plans */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-amber-400 px-2">
+                      {isHi ? '投资菜单 (Investments)' : 'Investments'}
+                    </div>
+                    <button
+                      onClick={() => {
+                        onTabChange('plans');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                    >
+                      <span>{isHi ? '• उपलब्ध प्लान्स (641D / 365D)' : '• All Investment Plans'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        onTabChange('investments');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                    >
+                      <span>{isHi ? '• माई पोर्टफोलियो (सक्रिय निवेश)' : '• My Active Portfolio'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                  </div>
+
+                  {/* Category 2: Wallet */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-emerald-400 px-2">
+                      {isHi ? 'वॉलेट व लेनदेन' : 'Wallet Actions'}
+                    </div>
+                    {onOpenDeposit && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenDeposit();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                      >
+                        <span>{isHi ? '• पैसे जोड़ें (Deposit via UPI/QR)' : '• Deposit Funds (UPI/QR)'}</span>
+                        <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                      </button>
+                    )}
+                    {onOpenWithdraw && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenWithdraw();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                      >
+                        <span>{isHi ? '• निकासी अनुरोध (Withdrawal)' : '• Withdrawal Request'}</span>
+                        <ArrowDownToLine className="w-3.5 h-3.5 text-purple-400" />
+                      </button>
+                    )}
+                    {onOpenSwap && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenSwap();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                      >
+                        <span>{isHi ? '• फंड स्वैप (Cash ⇄ G-Points)' : '• Swap Cash ⇄ GP'}</span>
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        onTabChange('wallet');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                    >
+                      <span>{isHi ? '• पासबुक व स्टेटमेंट' : '• Wallet Passbook'}</span>
+                      <Receipt className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
+                  </div>
+
+                  {/* Category 3: Rules & Referral */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-teal-400 px-2">
+                      {isHi ? 'नीतियां व शेयर' : 'Rules & Rewards'}
+                    </div>
+                    {onOpenRules && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenRules();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                      >
+                        <span>{isHi ? '• नियम व शर्तें (Rules)' : '• Official Rules'}</span>
+                        <FileText className="w-3.5 h-3.5 text-teal-400" />
+                      </button>
+                    )}
+                    {onOpenReferral && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenReferral();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
+                      >
+                        <span>{isHi ? '• रेफरल लिंक व टीम बोनस' : '• Share & Earn Referral'}</span>
+                        <Gift className="w-3.5 h-3.5 text-amber-400" />
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
 
             </div>
 

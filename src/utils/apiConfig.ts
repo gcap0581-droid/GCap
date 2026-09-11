@@ -2,8 +2,19 @@
 // Connects any device, browser, Vercel deployment, or Android WebView
 // to the authoritative Google Cloud Run central server.
 
-export const CENTRAL_SERVER_ORIGIN =
-  'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
+export function getCentralServerOrigin(): string {
+  if (typeof window === 'undefined') {
+    return 'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
+  }
+  const host = window.location.host;
+  const protocol = window.location.protocol;
+  if (host.includes('ais-pre-')) {
+    return `${protocol}//${host.replace('ais-pre-', 'ais-dev-')}`;
+  }
+  return `${protocol}//${host}`;
+}
+
+export const CENTRAL_SERVER_ORIGIN = getCentralServerOrigin();
 
 /**
  * Returns true if current environment is the central development server.
