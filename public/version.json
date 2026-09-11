@@ -1,8 +1,8 @@
 {
-  "buildId": "1773422000000",
-  "buildTime": "2026-09-11T14:35:00.000Z",
-  "appVersion": "2.7.0",
+  "buildId": "1773422500000",
+  "buildTime": "2026-09-11T14:40:00.000Z",
+  "appVersion": "2.7.1",
   "source": "Google AI Studio Live",
-  "message": "Safe Area Top Inset Restored: App Header & Menu sit cleanly below mobile status bar/notch without clipping",
+  "message": "Dynamic safe-area-inset-top padding applied successfully to account for mobile notches and system UI",
   "autoReloadEnabled": true
 }
