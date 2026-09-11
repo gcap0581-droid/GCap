@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
 let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
@@ -394,6 +396,103 @@ const INITIAL_LOGS: TreasuryLog[] = [
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "server-db.json");
 
+// Firebase Firestore Integration Setup
+let firestore: any = null;
+let lastSyncedTimestamp: string = "";
+
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    if (config.projectId) {
+      if (getApps().length === 0) {
+        initializeApp({
+          projectId: config.projectId,
+        });
+      }
+      firestore = getFirestore(undefined, config.firestoreDatabaseId || "(default)");
+      console.log("[Firebase] Successfully initialized Firestore with database:", config.firestoreDatabaseId || "(default)");
+    }
+  } else {
+    console.warn("[Firebase] No firebase-applet-config.json found.");
+  }
+} catch (err) {
+  console.error("[Firebase] Error initializing firebase-admin:", err);
+}
+
+// Function to save the DB to Firestore
+async function saveToFirestore(db: ServerDB): Promise<void> {
+  if (!firestore) return;
+  try {
+    const dbRef = firestore.collection("gcap_database");
+    const batch = firestore.batch();
+
+    batch.set(dbRef.doc("users"), { data: db.users || [] });
+    batch.set(dbRef.doc("wallets"), { data: db.wallets || {} });
+    batch.set(dbRef.doc("investments"), { data: db.investments || [] });
+    batch.set(dbRef.doc("transactions"), { data: db.transactions || [] });
+    batch.set(dbRef.doc("plans"), { data: db.plans || [] });
+    if (db.rules) batch.set(dbRef.doc("rules"), { data: db.rules });
+    if (db.liveConfig) batch.set(dbRef.doc("liveConfig"), { data: db.liveConfig });
+    batch.set(dbRef.doc("bankDetails"), { data: db.bankDetails || {} });
+    if (db.treasury) batch.set(dbRef.doc("treasury"), { data: db.treasury });
+    batch.set(dbRef.doc("treasuryLogs"), { data: db.treasuryLogs || [] });
+    batch.set(dbRef.doc("messages"), { data: db.messages || [] });
+    batch.set(dbRef.doc("deletedUserIds"), { data: db.deletedUserIds || [] });
+    batch.set(dbRef.doc("metadata"), { lastUpdated: db.lastUpdated || new Date().toISOString() });
+
+    await batch.commit();
+    console.log("[Firebase] Successfully batch-saved full DB state to Firestore!");
+  } catch (err) {
+    console.error("[Firebase] Error saving to Firestore:", err);
+  }
+}
+
+// Function to load the DB from Firestore
+async function loadFromFirestore(): Promise<ServerDB | null> {
+  if (!firestore) return null;
+  try {
+    const dbRef = firestore.collection("gcap_database");
+    const docs = [
+      "users", "wallets", "investments", "transactions", "plans", "rules", 
+      "liveConfig", "bankDetails", "treasury", "treasuryLogs", "messages", 
+      "deletedUserIds", "metadata"
+    ];
+    
+    const snaps = await Promise.all(docs.map(docId => dbRef.doc(docId).get()));
+    const snapMap: Record<string, any> = {};
+    docs.forEach((docId, index) => {
+      snapMap[docId] = snaps[index];
+    });
+
+    if (!snapMap["users"].exists) {
+      console.log("[Firebase] Firestore 'users' document does not exist. Needs initialization.");
+      return null;
+    }
+
+    const loadedDb: any = {
+      users: snapMap["users"].data()?.data || [],
+      wallets: snapMap["wallets"].data()?.data || {},
+      investments: snapMap["investments"].data()?.data || [],
+      transactions: snapMap["transactions"].data()?.data || [],
+      plans: snapMap["plans"].data()?.data || [],
+      rules: snapMap["rules"].data()?.data,
+      liveConfig: snapMap["liveConfig"].data()?.data,
+      bankDetails: snapMap["bankDetails"].data()?.data || {},
+      treasury: snapMap["treasury"].data()?.data,
+      treasuryLogs: snapMap["treasuryLogs"].data()?.data || [],
+      messages: snapMap["messages"].data()?.data || [],
+      deletedUserIds: snapMap["deletedUserIds"].data()?.data || [],
+      lastUpdated: snapMap["metadata"].data()?.lastUpdated || new Date().toISOString()
+    };
+
+    return loadedDb as ServerDB;
+  } catch (err) {
+    console.error("[Firebase] Error loading from Firestore:", err);
+    return null;
+  }
+}
+
 function ensureDb(): ServerDB {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -416,6 +515,15 @@ function ensureDb(): ServerDB {
         lastUpdated: new Date().toISOString(),
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), "utf-8");
+      
+      // Seed Firestore with initial state asynchronously
+      if (firestore) {
+        saveToFirestore(initial).then(() => {
+          console.log("[Firebase] Seeded Firestore with initial default DB");
+        }).catch(err => {
+          console.error("[Firebase] Error seeding Firestore:", err);
+        });
+      }
       return initial;
     }
     const raw = fs.readFileSync(DB_FILE, "utf-8");
@@ -505,7 +613,19 @@ function saveDb(db: ServerDB): void {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     db.lastUpdated = new Date().toISOString();
+    
+    // Save locally
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    
+    // Set local tracking timestamp to avoid redundant self-loading triggers
+    lastSyncedTimestamp = db.lastUpdated;
+    
+    // Write asynchronously to Firestore
+    if (firestore) {
+      saveToFirestore(db).catch(err => {
+        console.error("[Firebase] Async save to Firestore failed:", err);
+      });
+    }
   } catch (err) {
     console.error("Error saving server DB:", err);
   }
@@ -595,6 +715,55 @@ async function startServer() {
       } catch (_) {
         sseClients.delete(client);
       }
+    }
+  }
+
+  // Perform initial database synchronization from Firestore at startup
+  if (firestore) {
+    try {
+      console.log("[Firebase] Performing initial startup database synchronization...");
+      loadFromFirestore().then(async (remoteDb) => {
+        if (remoteDb) {
+          // Remote Firestore has data! Seed the local file with it.
+          lastSyncedTimestamp = remoteDb.lastUpdated || new Date().toISOString();
+          fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
+          console.log(`[Firebase] Initial sync complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
+        } else {
+          // Firestore is empty. Seed Firestore with whatever we have in DB_FILE.
+          console.log("[Firebase] Firestore is empty. Seeding Firestore with local database state...");
+          const localDb = ensureDb();
+          lastSyncedTimestamp = localDb.lastUpdated;
+          await saveToFirestore(localDb);
+          console.log("[Firebase] Seeded Firestore successfully.");
+        }
+
+        // Setup real-time listener to keep everything synchronized 100% in real-time worldwide
+        console.log("[Firebase] Setting up worldwide real-time snapshot listener...");
+        firestore.collection("gcap_database").doc("metadata").onSnapshot(async (docSnap: any) => {
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            const firestoreLastUpdated = data?.lastUpdated;
+            if (firestoreLastUpdated && firestoreLastUpdated !== lastSyncedTimestamp) {
+              console.log(`[Firebase Realtime] Remote database update detected (${firestoreLastUpdated}). Syncing...`);
+              const updatedDb = await loadFromFirestore();
+              if (updatedDb) {
+                lastSyncedTimestamp = updatedDb.lastUpdated;
+                fs.writeFileSync(DB_FILE, JSON.stringify(updatedDb, null, 2), "utf-8");
+                console.log("[Firebase Realtime] Synchronized database successfully in real-time.");
+                
+                // Broadcast change to all connected SSE clients so they refresh instantly!
+                broadcastRealtimeEvent("state_changed", { type: "FIRESTORE_SYNC", timestamp: Date.now() });
+              }
+            }
+          }
+        }, (err: any) => {
+          console.error("[Firebase Realtime] Snapshot listener error:", err);
+        });
+      }).catch(err => {
+        console.error("[Firebase] Error during initial database load:", err);
+      });
+    } catch (err) {
+      console.error("[Firebase] Error setting up initial startup synchronization:", err);
     }
   }
 

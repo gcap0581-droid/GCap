@@ -2795,15 +2795,7 @@ export default function App() {
         )}
 
         {currentUser.role === 'ADMIN' && adminViewMode === 'ADMIN_HUB' && viewMode === 'web' ? (
-          <div
-            className={viewMode === 'android' ? "px-3.5" : ""}
-            style={viewMode === 'android' ? {
-              paddingTop: 'env(safe-area-inset-top, 38px)',
-              paddingBottom: 'env(safe-area-inset-bottom, 12px)',
-              paddingLeft: 'env(safe-area-inset-left, 0px)',
-              paddingRight: 'env(safe-area-inset-right, 0px)',
-            } : undefined}
-          >
+          <div>
             <AdminPanel
               adminUser={currentUser}
               language={language}
