@@ -1,8 +1,8 @@
 {
-  "buildId": "1773420000000",
-  "buildTime": "2026-09-11T13:55:00.000Z",
-  "appVersion": "2.6.6",
+  "buildId": "1773421000000",
+  "buildTime": "2026-09-11T14:15:00.000Z",
+  "appVersion": "2.6.8",
   "source": "Google AI Studio Live",
-  "message": "Direct Central SSE Stream & 0ms Real-Time Admin Panel Sync",
+  "message": "Full-Screen Amazon/Flipkart Look: Removed Bottom Nav Bar & Moved All Tabs (Home, Plan, Portfolio, Wallet, Admin) to Top 3-Line Menu Drawer",
   "autoReloadEnabled": true
 }

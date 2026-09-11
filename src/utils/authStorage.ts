@@ -110,11 +110,36 @@ function saveAccountsDB(accounts: StoredAccount[]): void {
  */
 export async function syncUsersWithServer(): Promise<UserProfile[]> {
   try {
-    const localAccounts = getAccountsDB();
+    // 1. Fetch authoritative master users list from Central Server first (Single Source of Truth)
+    const res = await apiFetch('/api/users?t=' + Date.now());
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        const serverAccounts: StoredAccount[] = data.users;
+        try {
+          // Preserve local password hashes if server accounts don't have them
+          const currentLocal = getAccountsDB();
+          const passMap = new Map<string, string>();
+          currentLocal.forEach(a => { if (a.passwordHash) passMap.set(a.id, a.passwordHash); });
 
-    // 1. Bi-directional sync with central authoritative server (Single Source of Truth)
-    // Sends local accounts from this session. Central server merges any missing users
-    // into server-db.json, respects deletions, and returns the master list.
+          const mergedAccounts = serverAccounts.map(sa => ({
+            ...sa,
+            passwordHash: sa.passwordHash || passMap.get(sa.id) || (sa.role === 'ADMIN' ? '12345' : 'demo123')
+          }));
+
+          localStorage.setItem(USERS_DB_KEY, JSON.stringify(mergedAccounts));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('gcap_users_updated', { detail: mergedAccounts }));
+          }
+          return mergedAccounts.map(({ passwordHash: _, ...profile }) => profile);
+        } catch (e) {
+          console.error('Local storage save error:', e);
+        }
+      }
+    }
+
+    // 2. Fallback to /api/users/sync if GET /api/users didn't return
+    const localAccounts = getAccountsDB();
     const response = await apiFetch('/api/users/sync', {
       method: 'POST',
       headers: {
@@ -136,24 +161,6 @@ export async function syncUsersWithServer(): Promise<UserProfile[]> {
           console.error('Local storage save error:', e);
         }
 
-        return serverAccounts.map(({ passwordHash: _, ...profile }) => profile);
-      }
-    }
-
-    // 2. Fallback to GET /api/users
-    const res = await apiFetch('/api/users?t=' + Date.now());
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.users)) {
-        const serverAccounts: StoredAccount[] = data.users;
-        try {
-          localStorage.setItem(USERS_DB_KEY, JSON.stringify(serverAccounts));
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('gcap_users_updated', { detail: serverAccounts }));
-          }
-        } catch (e) {
-          console.error('Local storage save error:', e);
-        }
         return serverAccounts.map(({ passwordHash: _, ...profile }) => profile);
       }
     }

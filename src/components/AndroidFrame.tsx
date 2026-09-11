@@ -211,56 +211,11 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
       <main
         className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden px-3.5 py-3 space-y-4"
         style={{
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6.5rem)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)',
         }}
       >
         {children}
       </main>
-
-      {/* 4. Bottom Mobile App Floating Tab Bar (High Visibility, Floating Pill, Stays strictly above native nav bar) */}
-      <div
-        className="fixed left-3 right-3 z-50 max-w-md mx-auto pointer-events-auto"
-        style={{
-          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
-        }}
-      >
-        <nav className="bg-slate-900/98 backdrop-blur-xl border-2 border-amber-500/60 rounded-2xl p-2 shadow-2xl shadow-amber-500/30 flex items-center justify-around gap-1">
-        {[
-          { id: 'dashboard', label: isHi ? 'होम' : 'Home', icon: Home, isAction: false },
-          { id: 'plans', label: isHi ? 'प्लान्स' : 'Plans', icon: Layers, isAction: false },
-          { id: 'investments', label: isHi ? 'पोर्टफोलियो' : 'Portfolio', icon: Clock, isAction: false },
-          { id: 'wallet', label: isHi ? 'वॉलेट' : 'Wallet', icon: WalletIcon, isAction: false },
-          ...(isAdmin && onToggleAdminHub
-            ? [{ id: 'admin_hub', label: isHi ? '👑 एडमिन' : '👑 Admin', icon: Award, isAction: true }]
-            : [{ id: 'rules', label: isHi ? 'नियम' : 'Rules', icon: FileText, isAction: false }]),
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = tab.isAction ? isAdminHubActive : activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.isAction && onToggleAdminHub) {
-                  onToggleAdminHub();
-                } else {
-                  onTabChange(tab.id);
-                }
-              }}
-              className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-xl transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-gradient-to-t from-amber-500/30 to-amber-500/10 text-amber-300 font-extrabold border border-amber-400/50 shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5] text-amber-400 scale-110' : 'stroke-2 text-slate-300'}`} />
-              <span className={`text-[10px] font-bold mt-1 whitespace-nowrap ${isActive ? 'text-amber-200 font-extrabold' : 'text-slate-300'}`}>
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-      </div>
 
       {/* 5. Mobile Slide-Over Menu Drawer (Organized Menu & Submenu system) */}
       {isMobileMenuOpen && (
@@ -304,6 +259,108 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             {/* Menu List */}
             <div className="p-3 space-y-3 flex-1 text-xs">
               
+              {/* Category 0: Main Navigation (Home, Plans, Portfolio, Wallet, Admin) */}
+              <div className="space-y-1">
+                <div className="text-[10px] uppercase font-bold text-amber-400 px-2 flex items-center justify-between">
+                  <span>{isHi ? 'मुख्य नेविगेशन' : 'Main Navigation'}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Menu</span>
+                </div>
+                <button
+                  onClick={() => {
+                    onTabChange('dashboard');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                    activeTab === 'dashboard' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Home className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? '• होम (मुख्य पृष्ठ)' : '• Home Dashboard'}</span>
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+                <button
+                  onClick={() => {
+                    onTabChange('plans');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                    activeTab === 'plans' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? '• निवेश प्लान्स (Plans)' : '• Investment Plans'}</span>
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+                <button
+                  onClick={() => {
+                    onTabChange('investments');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                    activeTab === 'investments' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-blue-400" />
+                    <span>{isHi ? '• माई पोर्टफोलियो (Portfolio)' : '• My Active Portfolio'}</span>
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+                <button
+                  onClick={() => {
+                    onTabChange('wallet');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                    activeTab === 'wallet' ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{isHi ? '• वॉलेट (Wallet & Passbook)' : '• Wallet & Balance'}</span>
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                {isAdmin && onToggleAdminHub ? (
+                  <button
+                    onClick={() => {
+                      onToggleAdminHub();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      isAdminHubActive ? 'bg-amber-500/30 text-amber-200 font-bold border border-amber-400/60' : 'bg-gradient-to-r from-amber-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isHi ? '👑 कंपनी एडमिन पैनल (Admin Hub)' : '👑 Company Admin Panel'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      onTabChange('rules');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                      activeTab === 'rules' ? 'bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-teal-400" />
+                      <span>{isHi ? '• नियम व शर्तें (Rules)' : '• Official Rules'}</span>
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+                )}
+              </div>
+
               {/* Category 1: Plans */}
               <div className="space-y-1">
                 <div className="text-[10px] uppercase font-bold text-amber-400 px-2">
