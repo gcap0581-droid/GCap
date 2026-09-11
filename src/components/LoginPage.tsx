@@ -141,71 +141,109 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
+    <div className={`w-full text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-950 ${
+      viewMode === 'android' ? 'min-h-0 bg-transparent gap-2' : 'min-h-screen bg-slate-950 justify-between'
+    }`}>
       {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-emerald-400" />
+      {viewMode !== 'android' ? (
+        <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
+                  GCap
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
+                  PRO
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 tracking-wider uppercase">
+                {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
+              </p>
             </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
-                GCap
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
-                PRO
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 tracking-wider uppercase">
-              {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
-            </p>
-          </div>
-        </div>
 
-        {/* Header Right Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* View Mode Toggle */}
-          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+          {/* Header Right Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* View Mode Toggle */}
+            <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+              <button
+                onClick={() => onViewModeChange('web')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'web'
+                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Web</span>
+              </button>
+              <button
+                onClick={() => onViewModeChange('android')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  (viewMode as string) === 'android'
+                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Android</span>
+              </button>
+            </div>
+
+            {/* Language Toggle */}
             <button
-              onClick={() => onViewModeChange('web')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'web'
-                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer"
             >
-              <Monitor className="w-3.5 h-3.5" />
-              <span>Web</span>
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{isHi ? 'English' : 'हिंदी'}</span>
             </button>
-            <button
-              onClick={() => onViewModeChange('android')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'android'
-                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Android</span>
-            </button>
+          </div>
+        </header>
+      ) : (
+        <div className="px-4 py-2 mt-2 flex items-center justify-between bg-slate-900/40 border border-slate-800/40 rounded-2xl mx-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-base tracking-tight text-white font-sans">
+                  GCap
+                </span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+                  PRO
+                </span>
+              </div>
+              <p className="text-[9px] text-slate-400 tracking-wider">
+                {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
+              </p>
+            </div>
           </div>
 
           {/* Language Toggle */}
           <button
             onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 cursor-pointer"
           >
-            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <Globe className="w-3 h-3 text-emerald-400" />
             <span>{isHi ? 'English' : 'हिंदी'}</span>
           </button>
         </div>
-      </header>
+      )}
 
       {/* Main Container */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <main className={`flex items-center justify-center ${
+        viewMode === 'android' ? 'p-1 mt-1' : 'flex-1 p-4 sm:p-6 lg:p-8'
+      }`}>
         <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left Hero & Features Banner (Hidden on mobile or compact) */}
@@ -653,11 +691,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-3 text-center text-xs text-slate-500">
-        <p>
-          © 2026 GCap Wealth & Asset Management • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
-        </p>
-      </footer>
+      {viewMode !== 'android' && (
+        <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-3 text-center text-xs text-slate-500">
+          <p>
+            © 2026 GCap Wealth & Asset Management • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
+          </p>
+        </footer>
+      )}
     </div>
   );
 };
