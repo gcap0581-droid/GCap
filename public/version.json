@@ -1,8 +1,8 @@
 {
-  "buildId": "1773424000000",
-  "buildTime": "2026-09-11T15:00:00.000Z",
-  "appVersion": "2.7.4",
+  "buildId": "1773424500000",
+  "buildTime": "2026-09-11T15:15:00.000Z",
+  "appVersion": "2.7.5",
   "source": "Google AI Studio Live",
-  "message": "LoginPage layout space optimization: Removed large vertical blank gap inside AndroidFrame for login credentials form",
+  "message": "Dynamic safe-area status bar spacing: Set top padding on AndroidFrame to keep app navigation cleanly below mobile status bar/notch",
   "autoReloadEnabled": true
 }
