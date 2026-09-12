@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Users, Copy, Check, Gift, Share2, Award, ArrowUpRight, Lock, UserCheck, ShieldCheck, DollarSign } from 'lucide-react';
 import { AppRules, Language, UserProfile } from '../types';
-import { formatINR } from '../utils/storage';
+import { formatINR, getStoredInvestments } from '../utils/storage';
+import { getAllUsers } from '../utils/authStorage';
 
 interface ReferralModalProps {
   isOpen: boolean;
@@ -30,20 +31,50 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const apkDownloadUrl = 'https://drive.google.com/file/d/117Tn84m7yVG6-FWu8chung/view?pli=1';
   const referralLink = `${baseUrl}?ref=${referralCode}`;
 
-  // Sample Team Data (Direct Level 1 & Level 2)
-  const level1Team = [
-    { id: '1', name: 'Rajesh Sharma', phone: '98****1234', date: '02 Sep 2026', investment: 25000, status: 'ACTIVE', comm: 1250 },
-    { id: '2', name: 'Sunita Verma', phone: '97****5678', date: '04 Sep 2026', investment: 50000, status: 'ACTIVE', comm: 2500 },
-    { id: '3', name: 'Vikram Patel', phone: '99****9012', date: '06 Sep 2026', investment: 0, status: 'REGISTERED', comm: 0 },
-    { id: '4', name: 'Anita Roy', phone: '96****3456', date: '07 Sep 2026', investment: 10000, status: 'ACTIVE', comm: 500 },
-    { id: '5', name: 'Manoj Kumar', phone: '95****7890', date: '08 Sep 2026', investment: 100000, status: 'ACTIVE', comm: 5000 },
-  ];
+  // Dynamic Team Data (Direct Level 1 & Level 2)
+  const allUsers = getAllUsers();
+  const allInvestments = getStoredInvestments();
 
-  const level2Team = [
-    { id: '101', name: 'Sanjay Gupta', sponsor: 'Rajesh Sharma', date: '03 Sep 2026', investment: 10000, status: 'ACTIVE', comm: 200 },
-    { id: '102', name: 'Pooja Singh', sponsor: 'Sunita Verma', date: '05 Sep 2026', investment: 25000, status: 'ACTIVE', comm: 500 },
-    { id: '103', name: 'Amitabh Sen', sponsor: 'Sunita Verma', date: '07 Sep 2026', investment: 15000, status: 'ACTIVE', comm: 300 },
-  ];
+  // Find L1 Users
+  const l1Users = allUsers.filter(u => u.referredBy && (u.referredBy === referralCode || u.referredBy === currentUser?.id));
+  
+  const level1Team = l1Users.map(u => {
+    const userInvestments = allInvestments.filter(inv => inv.userId === u.id || inv.userLoginId === u.loginId);
+    const totalInvestment = userInvestments.reduce((acc, inv) => acc + inv.investedAmount, 0);
+    return {
+      id: u.id,
+      name: u.name || 'User',
+      phone: u.phone.length >= 10 ? u.phone.slice(0, 2) + '****' + u.phone.slice(-4) : '***',
+      date: new Date(u.joinedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      investment: totalInvestment,
+      status: totalInvestment > 0 ? 'ACTIVE' : 'REGISTERED',
+      comm: (totalInvestment * (rules.referralL1Percent || 5)) / 100
+    };
+  });
+
+  // Find L2 Users
+  const l1UserIds = l1Users.map(u => u.id);
+  const l1UserRefCodes = l1Users.map(u => u.referralCode).filter(Boolean);
+  
+  const l2Users = allUsers.filter(u => 
+    u.referredBy && (l1UserIds.includes(u.referredBy) || l1UserRefCodes.includes(u.referredBy))
+  );
+
+  const level2Team = l2Users.map(u => {
+    const userInvestments = allInvestments.filter(inv => inv.userId === u.id || inv.userLoginId === u.loginId);
+    const totalInvestment = userInvestments.reduce((acc, inv) => acc + inv.investedAmount, 0);
+    const sponsor = l1Users.find(l1 => l1.id === u.referredBy || l1.referralCode === u.referredBy)?.name || 'Unknown';
+    
+    return {
+      id: u.id,
+      name: u.name || 'User',
+      sponsor: sponsor,
+      date: new Date(u.joinedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      investment: totalInvestment,
+      status: totalInvestment > 0 ? 'ACTIVE' : 'REGISTERED',
+      comm: (totalInvestment * (rules.referralL2Percent || 2)) / 100
+    };
+  });
 
   if (!isOpen) return null;
 
