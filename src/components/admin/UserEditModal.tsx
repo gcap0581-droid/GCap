@@ -9,7 +9,6 @@ interface UserEditModalProps {
   onSave: (data: {
     userId?: string;
     name: string;
-    loginId: string;
     phone: string;
     email: string;
     password?: string;
@@ -99,7 +98,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     onSave({
       userId: user?.id,
       name: name.trim(),
-      loginId: loginId.trim().toLowerCase(),
       phone: phone.trim(),
       email: email.trim(),
       password: password ? password.trim() : undefined,
@@ -115,7 +113,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 text-slate-100">
+      <div className="relative w-full max-w-lg max-h-[90vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 text-slate-100 overflow-y-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -164,35 +162,18 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                {isHi ? 'लॉगिन आईडी (Login ID):' : 'Login ID / Username:'}
-              </label>
-              <input
-                type="text"
-                value={loginId}
-                disabled={isEditing && loginId === 'admin'}
-                onChange={(e) => setLoginId(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white disabled:opacity-60 focus:border-cyan-400 focus:outline-none"
-                placeholder="e.g. ramesh99"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                {isHi ? 'मोबाइल नंबर (Phone):' : 'Phone Number:'}
-              </label>
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-cyan-400 focus:outline-none"
-                placeholder="+91 98765 00000"
-                required
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {isHi ? 'मोबाइल नंबर (Phone):' : 'Mobile Number:'}
+            </label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-cyan-400 focus:outline-none"
+              placeholder="+91 98765 00000"
+              required
+            />
           </div>
 
           <div>

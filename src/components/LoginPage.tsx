@@ -462,8 +462,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     />
                   </div>
 
-                  {/* Mobile Number & Login ID Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mobile Number */}
+                  <div className="grid grid-cols-1 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">
                         {isHi ? 'मोबाइल नंबर (10 अंक)' : 'Mobile Number (10 Digits)'}
@@ -476,21 +476,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         onChange={(e) => {
                           const val = e.target.value;
                           setRegPhone(val);
-                          setRegLoginId(val);
                         }}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                         className="w-full px-3.5 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        {isHi ? 'यूजर आईडी (User ID)' : 'User ID'}
-                      </label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={regPhone ? regPhone : (isHi ? 'ऑटो मोबाइल नंबर' : 'Auto Mobile Number')}
-                        className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-emerald-400 font-bold text-sm focus:outline-none cursor-not-allowed font-mono"
                       />
                       <span className="text-[10px] text-slate-400 mt-0.5 block">
                         {isHi ? '✓ मोबाइल नंबर ही यूजर आईडी रहेगा' : '✓ Mobile number is your User ID'}

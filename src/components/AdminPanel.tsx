@@ -297,7 +297,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleSaveUser = async (data: {
     userId?: string;
     name: string;
-    loginId: string;
     phone: string;
     email: string;
     password?: string;
@@ -333,7 +332,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       } else {
         const res = await adminAddUserAsync({
           name: data.name,
-          loginId: data.loginId,
+          loginId: data.phone.trim().replace(/[^0-9]/g, ""),
           phone: data.phone,
           email: data.email,
           password: data.password,

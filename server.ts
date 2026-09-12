@@ -1766,45 +1766,48 @@ async function startServer() {
 
   // POST: Admin Add User
   app.post("/api/users/add", (req, res) => {
-    const { name, loginId, phone, email, password, role, status, joinedDate } = req.body || {};
+    const { name, phone, password, role, status, joinedDate } = req.body || {};
 
     const cleanName = String(name || "").trim();
-    const cleanLoginId = String(loginId || "").trim().toLowerCase();
-    const cleanPhone = String(phone || "").trim();
+    const cleanPhone = String(phone || "").trim().replace(/[^0-9]/g, "");
+    const cleanLoginId = cleanPhone; // Force login ID to be mobile number
     const cleanPassword = String(password || "demo123").trim();
 
     if (!cleanName || cleanName.length < 2) {
       return res.status(400).json({ success: false, error: "कृपया पूरा नाम दर्ज करें" });
     }
-    if (!cleanLoginId || cleanLoginId.length < 3) {
-      return res.status(400).json({ success: false, error: "लॉगिन आईडी कम से कम 3 अक्षरों की होनी चाहिए" });
-    }
-    if (!cleanPhone) {
-      return res.status(400).json({ success: false, error: "कृपया फ़ोन नंबर दर्ज करें" });
+    if (!cleanPhone || cleanPhone.length < 10) {
+      return res.status(400).json({ success: false, error: "कृपया 10 अंकों का मान्य फ़ोन नंबर दर्ज करें" });
     }
 
     const db = ensureDb();
+    
+    // Always use the primary admin's referral code for users created by admin
+    const adminUser = db.users.find(u => u.role === 'ADMIN');
+    const referralCode = adminUser ? adminUser.referralCode : `GCAP-${cleanPhone.slice(-6).toUpperCase()}`;
+
     const existing = db.users.find(
       (acc) =>
-        acc.loginId.toLowerCase() === cleanLoginId ||
-        acc.phone.replace(/[^0-9]/g, "") === cleanPhone.replace(/[^0-9]/g, "")
+        acc.loginId === cleanLoginId ||
+        acc.phone.replace(/[^0-9]/g, "") === cleanPhone
     );
 
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: "यह लॉगिन आईडी या फ़ोन नंबर पहले से मौजूद है।",
+        error: "यह फ़ोन नंबर पहले से पंजीकृत है।",
       });
     }
 
     const newAccount: StoredAccount = {
       id: `usr-${Date.now()}`,
-      loginId: cleanLoginId,
+      loginId: cleanLoginId, // Using phone as loginId
       name: cleanName,
       role: role === "ADMIN" ? "ADMIN" : "USER",
       phone: cleanPhone,
-      email: String(email || "").trim() || `${cleanLoginId}@gcap.in`,
-      referralCode: `GCAP-${cleanLoginId.toUpperCase()}`,
+      email: `${cleanPhone}@gcap.user`,
+      referralCode: `GCAP-${cleanPhone.slice(-6).toUpperCase()}`, // Unique code for the new user
+      referredBy: referralCode, // Set to admin's code
       joinedDate: String(joinedDate || "").trim() || new Date().toISOString().split("T")[0],
       status: status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
       passwordHash: cleanPassword,
