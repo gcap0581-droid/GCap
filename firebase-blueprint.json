@@ -1,0 +1,26 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Registered user profile with phone and credentials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "loginId": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "joinedDate": { "type": "string" }
+      },
+      "required": ["name", "phone", "loginId", "passwordHash"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User accounts collection"
+    }
+  }
+}

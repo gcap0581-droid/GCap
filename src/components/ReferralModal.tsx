@@ -32,11 +32,11 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const referralLink = `${baseUrl}?ref=${referralCode}`;
 
   // Dynamic Team Data (Direct Level 1 & Level 2)
-  const allUsers = getAllUsers();
-  const allInvestments = getStoredInvestments();
+  const allUsersList = Array.isArray(getAllUsers()) ? getAllUsers() : [];
+  const allInvestments = Array.isArray(getStoredInvestments()) ? getStoredInvestments() : [];
 
   // Find L1 Users
-  const l1Users = allUsers.filter(u => u.referredBy && (u.referredBy === referralCode || u.referredBy === currentUser?.id));
+  const l1Users = allUsersList.filter(u => u.referredBy && (u.referredBy === referralCode || u.referredBy === currentUser?.id));
   
   const level1Team = l1Users.map(u => {
     const userInvestments = allInvestments.filter(inv => inv.userId === u.id || inv.userLoginId === u.loginId);
@@ -56,7 +56,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const l1UserIds = l1Users.map(u => u.id);
   const l1UserRefCodes = l1Users.map(u => u.referralCode).filter(Boolean);
   
-  const l2Users = allUsers.filter(u => 
+  const l2Users = allUsersList.filter(u => 
     u.referredBy && (l1UserIds.includes(u.referredBy) || l1UserRefCodes.includes(u.referredBy))
   );
 

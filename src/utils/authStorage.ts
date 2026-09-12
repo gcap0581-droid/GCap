@@ -4,11 +4,74 @@ import { collection, query, where, getDocs, addDoc, deleteDoc, doc, updateDoc, o
 
 const AUTH_USER_KEY = 'gcap_active_session_v1';
 
+const DEFAULT_SEED_USERS: UserProfile[] = [
+  {
+    id: 'usr-admin-01',
+    loginId: 'admin',
+    name: 'GCap System Admin',
+    role: 'ADMIN',
+    phone: '9800012345',
+    email: 'admin@gcap.in',
+    joinedDate: '2026-01-01',
+    status: 'ACTIVE',
+    passwordHash: 'gcap@admin1978'
+  },
+  {
+    id: 'usr-user-01',
+    loginId: 'demo',
+    name: 'Demo User',
+    role: 'USER',
+    phone: '9876543210',
+    email: 'demo@gcap.in',
+    referralCode: 'GCAP-DEMO',
+    joinedDate: '2026-08-15',
+    status: 'ACTIVE',
+    passwordHash: 'demo123'
+  }
+];
+
+let isSeeding = false;
+async function ensureInitialUsersExist(): Promise<void> {
+  if (isSeeding) return;
+  try {
+    const usersRef = collection(db, 'users');
+    const snapshot = await getDocs(usersRef);
+    if (snapshot.empty) {
+      isSeeding = true;
+      for (const u of DEFAULT_SEED_USERS) {
+        await addDoc(usersRef, u);
+      }
+      console.log('Default Firestore users seeded successfully.');
+    }
+  } catch (err) {
+    console.warn('Could not auto-seed users:', err);
+  } finally {
+    isSeeding = false;
+  }
+}
+
+let cachedUsers: UserProfile[] = [...DEFAULT_SEED_USERS];
+
 export function subscribeToUsersUpdates(callback: (users: UserProfile[]) => void): () => void {
+  ensureInitialUsersExist();
   const usersRef = collection(db, 'users');
   return onSnapshot(usersRef, (snapshot) => {
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-    callback(users);
+    if (snapshot.empty) {
+      cachedUsers = [...DEFAULT_SEED_USERS];
+      callback(cachedUsers);
+    } else {
+      const users = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          passwordHash: data.passwordHash || data.password || '',
+          password: data.passwordHash || data.password || ''
+        } as UserProfile;
+      });
+      cachedUsers = users;
+      callback(users);
+    }
   });
 }
 
@@ -20,39 +83,84 @@ export async function loginUserAsync(
   const trimmedPass = passwordInput.trim();
 
   try {
+    await ensureInitialUsersExist();
     const usersRef = collection(db, 'users');
-    const cleanId = trimmedId.replace(/[^0-9]/g, '');
-    const q = query(usersRef, where('phone', '==', cleanId));
-    const querySnapshot = await getDocs(q);
-
+    const allSnapshot = await getDocs(usersRef);
+    
     let userDoc = null;
-    let userData = null;
+    let userData: any = null;
 
-    if (!querySnapshot.empty) {
-      userDoc = querySnapshot.docs[0];
-      userData = userDoc.data();
-    } else {
-        const q2 = query(usersRef, where('loginId', '==', trimmedId.toLowerCase()));
-        const snapshot2 = await getDocs(q2);
-        if (!snapshot2.empty) {
-            userDoc = snapshot2.docs[0];
-            userData = userDoc.data();
-        }
+    if (!allSnapshot.empty) {
+      const cleanPhone = trimmedId.replace(/[^0-9]/g, '');
+      const matched = allSnapshot.docs.find(d => {
+        const data = d.data();
+        const phoneMatch = cleanPhone && data.phone && data.phone.replace(/[^0-9]/g, '') === cleanPhone;
+        const loginMatch = data.loginId && data.loginId.toLowerCase() === trimmedId.toLowerCase();
+        const nameMatch = data.name && data.name.toLowerCase() === trimmedId.toLowerCase();
+        const idMatch = data.id && data.id === trimmedId;
+        return phoneMatch || loginMatch || nameMatch || idMatch;
+      });
+
+      if (matched) {
+        userDoc = matched;
+        userData = matched.data();
+      }
+    }
+
+    // Check cached users if not found in snapshot
+    if (!userData) {
+      const cached = cachedUsers.find(
+        u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() ||
+              u.phone.replace(/[^0-9]/g, '') === trimmedId.replace(/[^0-9]/g, '') ||
+              u.id === trimmedId)
+      );
+      if (cached) {
+        userData = cached;
+      }
+    }
+
+    if (!userData) {
+      // Check hardcoded seed users
+      const seedMatch = DEFAULT_SEED_USERS.find(
+        u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() || 
+              u.phone === trimmedId.replace(/[^0-9]/g, ''))
+      );
+      if (seedMatch) {
+        userData = seedMatch;
+        addDoc(usersRef, seedMatch).catch(() => {});
+      }
     }
 
     if (!userData) {
       return { success: false, error: 'खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।' };
     }
 
-    if (userData.passwordHash !== trimmedPass) {
+    const actualPassword = userData.passwordHash || userData.password;
+    if (actualPassword !== trimmedPass) {
       return { success: false, error: 'गलत पासवर्ड।' };
     }
 
-    const profile = { id: userDoc!.id, ...userData } as UserProfile;
+    const profile = { 
+      id: userDoc ? userDoc.id : userData.id, 
+      ...userData,
+      passwordHash: actualPassword,
+      password: actualPassword
+    } as UserProfile;
+
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
     return { success: true, user: profile };
   } catch (err) {
     console.error('Login error:', err);
+    // Fallback on cached/seed users
+    const fallback = cachedUsers.find(
+      u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() ||
+            u.phone.replace(/[^0-9]/g, '') === trimmedId.replace(/[^0-9]/g, '')) &&
+           (u.passwordHash === trimmedPass || (u as any).password === trimmedPass)
+    );
+    if (fallback) {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(fallback));
+      return { success: true, user: fallback };
+    }
     return { success: false, error: 'सर्वर त्रुटि, कृपया पुनः प्रयास करें।' };
   }
 }
@@ -107,14 +215,21 @@ export function logoutUser(): void {
   localStorage.removeItem(AUTH_USER_KEY);
 }
 
-export async function getAllUsers(): Promise<UserProfile[]> {
+export function getAllUsers(): UserProfile[] {
+  return cachedUsers;
+}
+
+export async function getAllUsersAsync(): Promise<UserProfile[]> {
   try {
     const usersRef = collection(db, 'users');
     const snapshot = await getDocs(usersRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    if (!snapshot.empty) {
+      cachedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    }
+    return cachedUsers;
   } catch (err) {
     console.error('Failed to fetch all users:', err);
-    return [];
+    return cachedUsers;
   }
 }
 
@@ -153,18 +268,96 @@ export async function adminDeleteUserAsync(userId: string): Promise<{ success: b
 
 export async function adminUpdateUserAsync(userId: string, updates: any): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, updates);
-    return { success: true };
+    const cleanUpdates = { ...updates };
+    if (cleanUpdates.password && !cleanUpdates.passwordHash) {
+      cleanUpdates.passwordHash = cleanUpdates.password;
+    }
+    if (cleanUpdates.passwordHash && !cleanUpdates.password) {
+      cleanUpdates.password = cleanUpdates.passwordHash;
+    }
+
+    const usersRef = collection(db, 'users');
+    let docIdToUpdate = userId;
+    let foundDoc = false;
+
+    // Check if doc exists with this exact doc ID
+    try {
+      const directRef = doc(db, 'users', userId);
+      await updateDoc(directRef, cleanUpdates);
+      foundDoc = true;
+    } catch {
+      // If direct update failed, query by id / loginId / phone
+      const qSnap = await getDocs(usersRef);
+      const matched = qSnap.docs.find(d => {
+        const data = d.data();
+        return d.id === userId || data.id === userId || data.loginId === userId || data.phone === userId;
+      });
+
+      if (matched) {
+        docIdToUpdate = matched.id;
+        await updateDoc(doc(db, 'users', docIdToUpdate), cleanUpdates);
+        foundDoc = true;
+      } else {
+        // If not in firestore yet, add it
+        const newDoc = { id: userId, ...cleanUpdates };
+        await addDoc(usersRef, newDoc);
+        foundDoc = true;
+      }
+    }
+
+    // Update in-memory cache
+    cachedUsers = cachedUsers.map(u => {
+      if (u.id === userId || u.loginId === userId || u.phone === userId) {
+        return { ...u, ...cleanUpdates };
+      }
+      return u;
+    });
+
+    // Update current active user if it matches
+    const current = getCurrentUser();
+    if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
+      const updatedCurrent = { ...current, ...cleanUpdates };
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
+    }
+
+    const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
+    return { success: true, user: updatedProfile };
   } catch (err) {
     console.error('Admin update user error:', err);
     return { success: false, error: 'यूज़र अपडेट करने में विफल।' };
   }
 }
 
-export function adminUpdateUser(userId: string, updates: any): { success: boolean; error?: string } {
-    console.warn('adminUpdateUser is deprecated, please use adminUpdateUserAsync');
-    return { success: true };
+export function adminUpdateUser(userId: string, updates: any): { success: boolean; user?: UserProfile; error?: string } {
+  const cleanUpdates = { ...updates };
+  if (cleanUpdates.password && !cleanUpdates.passwordHash) {
+    cleanUpdates.passwordHash = cleanUpdates.password;
+  }
+  if (cleanUpdates.passwordHash && !cleanUpdates.password) {
+    cleanUpdates.password = cleanUpdates.passwordHash;
+  }
+
+  // Update in-memory cache immediately
+  cachedUsers = cachedUsers.map(u => {
+    if (u.id === userId || u.loginId === userId || u.phone === userId) {
+      return { ...u, ...cleanUpdates };
+    }
+    return u;
+  });
+
+  const current = getCurrentUser();
+  if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
+    const updatedCurrent = { ...current, ...cleanUpdates };
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
+  }
+
+  // Trigger firestore update in background
+  adminUpdateUserAsync(userId, cleanUpdates).catch(err => {
+    console.warn('Background adminUpdateUserAsync error:', err);
+  });
+
+  const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
+  return { success: true, user: updatedProfile };
 }
 
 export function syncServerUsersToLocal(users: UserProfile[]): void {
