@@ -18,7 +18,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     email: 'admin@gcap.in',
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
-    passwordHash: '12345',
+    passwordHash: 'gcap@admin1978',
   },
   {
     id: 'usr-user-01',
@@ -57,7 +57,7 @@ function getAccountsDB(): StoredAccount[] {
         email: 'admin@gcap.in',
         joinedDate: '2026-01-01',
         status: 'ACTIVE',
-        passwordHash: '12345',
+        passwordHash: 'gcap@admin1978',
       });
       updated = true;
     }
@@ -124,7 +124,7 @@ export async function syncUsersWithServer(): Promise<UserProfile[]> {
 
           const mergedAccounts = serverAccounts.map(sa => ({
             ...sa,
-            passwordHash: sa.passwordHash || passMap.get(sa.id) || (sa.role === 'ADMIN' ? '12345' : 'demo123')
+            passwordHash: sa.passwordHash || passMap.get(sa.id) || (sa.role === 'ADMIN' ? 'gcap@admin1978' : 'demo123')
           }));
 
           localStorage.setItem(USERS_DB_KEY, JSON.stringify(mergedAccounts));
@@ -222,7 +222,7 @@ export function restoreUsersDB(users: UserProfile[]): void {
 
   const updatedAccounts: StoredAccount[] = users.map((u) => ({
     ...u,
-    passwordHash: passwordMap.get(u.id) || (u.role === 'ADMIN' ? '12345' : 'demo123'),
+    passwordHash: passwordMap.get(u.id) || (u.role === 'ADMIN' ? 'gcap@admin1978' : 'demo123'),
   }));
 
   saveAccountsDB(updatedAccounts);
@@ -239,7 +239,7 @@ export function syncServerUsersToLocal(serverUsers: UserProfile[]): void {
 
   const merged: StoredAccount[] = serverUsers.map((u) => ({
     ...u,
-    passwordHash: passwordMap.get(u.id) || (u.role === 'ADMIN' ? '12345' : 'demo123'),
+    passwordHash: passwordMap.get(u.id) || (u.role === 'ADMIN' ? 'gcap@admin1978' : 'demo123'),
   }));
 
   saveAccountsDB(merged);
@@ -371,16 +371,16 @@ export function loginUser(
     trimmedId === 'admin';
 
   if (isAdmin) {
-    // If admin enters 12345 or old password admin123, grant instant access and ensure 12345 is saved
-    if (trimmedPass === '12345' || trimmedPass === 'admin123' || account.passwordHash === trimmedPass) {
-      if (account.passwordHash !== '12345' && (trimmedPass === '12345' || trimmedPass === 'admin123')) {
-        account.passwordHash = '12345';
+    // Only allow the new secure admin password
+    if (trimmedPass === 'gcap@admin1978' || account.passwordHash === trimmedPass) {
+      if (account.passwordHash !== 'gcap@admin1978' && trimmedPass === 'gcap@admin1978') {
+        account.passwordHash = 'gcap@admin1978';
         saveAccountsDB(accounts);
       }
     } else {
       return {
         success: false,
-        error: 'गलत पासवर्ड। एडमिन का डिफ़ॉल्ट पासवर्ड 12345 है।'
+        error: 'गलत पासवर्ड। कृपया सही एडमिन पासवर्ड दर्ज करें।'
       };
     }
   } else {

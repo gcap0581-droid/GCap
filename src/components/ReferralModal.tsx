@@ -27,8 +27,8 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const [copied, setCopied] = useState(false);
 
   const referralCode = currentUser?.referralCode || (currentUser?.id ? `GCAP-${currentUser.id.toUpperCase().slice(-6)}` : 'GCAP-INV992');
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://g-cap.vercel.app';
-  const apkDownloadUrl = 'https://drive.google.com/file/d/117Tn84m7yVG6-FWu8chung/view?pli=1';
+  const baseUrl = 'https://g-cap.vercel.app';
+  const apkDownloadUrl = 'https://drive.google.com/file/d/117Tn84m7yVG6-FWu8CHFHC3PX1YbrRsf/view?usp=drivesdk';
   const referralLink = `${baseUrl}?ref=${referralCode}`;
 
   // Dynamic Team Data (Direct Level 1 & Level 2)

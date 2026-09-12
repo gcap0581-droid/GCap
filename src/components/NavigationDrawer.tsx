@@ -495,7 +495,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 </button>
 
                 <a
-                  href="https://drive.google.com/file/d/117Tn84m7yVG6-FWu8CHFHC3PX1YbrRsf/view?pli=1"
+                  href="https://drive.google.com/file/d/117Tn84m7yVG6-FWu8CHFHC3PX1YbrRsf/view?usp=drivesdk"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between text-emerald-300 hover:bg-emerald-500/10 transition-colors font-bold border border-emerald-500/30 bg-emerald-500/5 mt-1"
