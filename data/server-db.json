@@ -9,7 +9,7 @@
       "email": "admin@gcap.in",
       "joinedDate": "2026-01-01",
       "status": "ACTIVE",
-      "passwordHash": "12345"
+      "passwordHash": "gcap@admin1978"
     },
     {
       "id": "usr-user-01",
@@ -48,7 +48,7 @@
       "passwordHash": "Password123"
     }
   ],
-  "lastUpdated": "2026-09-11T10:29:59.824Z",
+  "lastUpdated": "2026-09-12T14:49:23.239Z",
   "wallets": {
     "usr-admin-01": {
       "cashBalance": 0,
@@ -94,28 +94,28 @@
       "id": "short-term",
       "name": "Short Term Plan",
       "nameHi": "शॉर्ट टर्म प्लान (Short Term Plan)",
-      "dailyRoiPercent": 0.16,
+      "dailyRoiPercent": 0.164,
       "durationDays": 641,
       "minAmount": 100000,
       "maxAmount": 1000000000,
       "payoutFrequency": "Daily",
-      "payoutFrequencyHi": "हर 6 घंटे में 0.04% GP",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.041% GP",
       "risk": "Low",
-      "tag": "641 Days Lock + 0.04%/6h GP",
-      "tagHi": "641 दिन लॉक + हर 6h में 0.04% GP",
+      "tag": "641 Days Lock + 0.041%/6h GP",
+      "tagHi": "641 दिन लॉक + हर 6h में 0.041% GP",
       "badge": "⚡ 641-Day Short Term Plan",
-      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000. Earn 0.04% every 6 hours automatically credited to earnings.",
-      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000। हर 6 घंटे में 0.04% GP स्वतः जमा।",
+      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000. Earn 0.041% every 6 hours automatically credited to earnings.",
+      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000। हर 6 घंटे में 0.041% GP स्वतः जमा।",
       "features": [
         "न्यूनतम निवेश ₹1,00,000 (अधिकतम Unlimited)",
         "परिपक्वता अवधि 641 दिन",
-        "हर 6 घंटे में 0.04% GP लाभ",
+        "हर 6 घंटे में 0.041% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ],
       "featuresHi": [
         "न्यूनतम निवेश ₹1,00,000 (अधिकतम Unlimited)",
         "परिपक्वता अवधि 641 दिन",
-        "हर 6 घंटे में 0.04% GP लाभ",
+        "हर 6 घंटे में 0.041% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ]
     },
@@ -123,28 +123,28 @@
       "id": "long-term",
       "name": "Long Term Plan",
       "nameHi": "लॉन्ग टर्म प्लान (Long Term Plan)",
-      "dailyRoiPercent": 0.12,
+      "dailyRoiPercent": 0.124,
       "durationDays": 365,
       "minAmount": 50000,
       "maxAmount": 100000,
       "payoutFrequency": "Daily",
-      "payoutFrequencyHi": "हर 6 घंटे में 0.03% GP",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.031% GP",
       "risk": "Low",
       "tag": "365 Days Lock + Royalty Pathway",
-      "tagHi": "365 दिन लॉक + 0.03%/6h GP + रॉयल्टी प्लान",
+      "tagHi": "365 दिन लॉक + 0.031%/6h GP + रॉयल्टी प्लान",
       "badge": "👑 365-Day Long Term & Royalty Plan",
-      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹50,000 to ₹100,000. Earn 0.03% every 6 hours.",
+      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹50,000 to ₹100,000. Earn 0.031% every 6 hours.",
       "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹50,000 से ₹1,00,000 तक।",
       "features": [
         "न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000",
         "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
-        "हर 6 घंटे में 0.03% GP लाभ",
+        "हर 6 घंटे में 0.031% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ],
       "featuresHi": [
         "न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000",
         "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
-        "हर 6 घंटे में 0.03% GP लाभ",
+        "हर 6 घंटे में 0.031% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ]
     }
@@ -171,7 +171,12 @@
     "adminFeePercent": 2,
     "supportEmail": "support@gcap.in",
     "supportPhone": "+91 98000 12345",
-    "lastUpdated": "2026-09-11"
+    "lastUpdated": "2026-09-11",
+    "companyUpiId": "8603504808@axisbank",
+    "companyBankAccountHolder": "GCap Investments",
+    "companyBankName": "HDFC Bank Ltd.",
+    "companyBankAccountNumber": "50200084920194",
+    "companyBankIfsc": "HDFC0000240"
   },
   "liveConfig": {
     "appVersion": "v2.5.2-MAIN-DB",
@@ -216,5 +221,23 @@
       "referenceId": "INJ-600000"
     }
   ],
-  "deletedUserIds": []
+  "deletedUserIds": [],
+  "messages": [
+    {
+      "id": "msg-welcome-01",
+      "title": "Welcome to GCap Investment Platform",
+      "titleHi": "जीकैप निवेश मंच में आपका स्वागत है",
+      "content": "Welcome to GCap! You can now explore high-yield investment plans, earn daily automated returns, and withdraw directly to your bank account or UPI.",
+      "contentHi": "जीकैप में आपका हार्दिक स्वागत है! अब आप उच्च रिटर्न वाले प्लान्स में निवेश कर सकते हैं, हर 6 घंटे में रिटर्न प्राप्त कर सकते हैं और महीने की 1-5 या 6-10 तारीख को सीधे अपने बैंक खाते में निकासी कर सकते हैं।",
+      "senderName": "GCap Management",
+      "targetType": "ALL",
+      "priority": "NORMAL",
+      "category": "ANNOUNCEMENT",
+      "showPopup": false,
+      "createdAt": "2026-09-12T14:49:23.238Z",
+      "timestamp": 1789220963238,
+      "readByUserIds": [],
+      "dismissedByUserIds": []
+    }
+  ]
 }

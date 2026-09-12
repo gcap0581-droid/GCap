@@ -1,5 +1,6 @@
 import { Wallet, ActiveInvestment, Transaction, BankAccountDetails } from '../types';
 import { INVESTMENT_PLANS } from '../data/plans';
+import { alignInvestmentCycleTimestamps } from './cycleTiming';
 
 const STORAGE_KEYS = {
   WALLET: 'inv_portal_wallet_v1',
@@ -74,24 +75,28 @@ export function getStoredInvestments(): ActiveInvestment[] {
       const isShortTerm = inv.planId === 'short-term';
       const duration = isShortTerm ? 641 : (inv.durationDays || 641);
       const investedAmount = isShortTerm && inv.investedAmount < 100000 ? 100000 : inv.investedAmount;
-      // 0.04% of invested amount per 6 hours
+      // 0.041% of invested amount per 6 hours
       const cycleReturn = isShortTerm
-        ? Math.round((investedAmount * 0.04) / 100)
-        : (inv.cycleReturnAmount || (inv.dailyReturnAmount ? inv.dailyReturnAmount / 4 : (investedAmount * (inv.dailyRoiPercent / 4)) / 100));
+        ? Math.round((investedAmount * 0.041) / 100 * 100) / 100
+        : (inv.cycleReturnAmount || (inv.dailyReturnAmount ? inv.dailyReturnAmount / 4 : (investedAmount * ((inv.dailyRoiPercent || 0.124) / 4)) / 100));
 
       const planUniqueId = inv.planUniqueId || (isShortTerm 
         ? `STP-641D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '89421'}`
-        : `LTP-1282D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '72910'}`);
+        : `LTP-365D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '72910'}`);
 
-      const cycleStart = inv.currentCycleStartTimestamp || (isLockDone ? lockedUntil : activation);
-      const cycleEnd = inv.currentCycleEndTimestamp || (cycleStart + cycleHours * 3600 * 1000);
+      const alignedTiming = alignInvestmentCycleTimestamps({
+        isInitialLockCompleted: isLockDone,
+        lockedUntilTimestamp: lockedUntil,
+        currentCycleStartTimestamp: inv.currentCycleStartTimestamp,
+        currentCycleEndTimestamp: inv.currentCycleEndTimestamp,
+      });
 
       return {
         ...inv,
         planUniqueId,
         investedAmount,
         durationDays: duration,
-        dailyRoiPercent: isShortTerm ? 0.16 : inv.dailyRoiPercent,
+        dailyRoiPercent: isShortTerm ? 0.164 : (inv.planId === 'long-term' ? 0.124 : inv.dailyRoiPercent),
         dailyReturnAmount: cycleReturn * 4,
         totalExpectedReturn: cycleReturn * 4 * duration,
         totalWithdrawn: inv.totalWithdrawn || 0,
@@ -100,8 +105,8 @@ export function getStoredInvestments(): ActiveInvestment[] {
         isInitialLockCompleted: isLockDone,
         lockCongratulationsShown: inv.lockCongratulationsShown ?? isLockDone,
         cycleDurationHours: cycleHours,
-        currentCycleStartTimestamp: cycleStart,
-        currentCycleEndTimestamp: cycleEnd,
+        currentCycleStartTimestamp: alignedTiming.currentCycleStartTimestamp,
+        currentCycleEndTimestamp: alignedTiming.currentCycleEndTimestamp,
         completedCyclesCount: inv.completedCyclesCount || 0,
         cycleReturnAmount: cycleReturn,
       };

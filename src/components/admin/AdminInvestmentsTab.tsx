@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, Zap, Lock, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { ActiveInvestment, Language } from '../../types';
 import { formatINR } from '../../utils/storage';
+import { formatFixedSlotTime } from '../../utils/cycleTiming';
 
 interface AdminInvestmentsTabProps {
   investments: ActiveInvestment[];
@@ -181,7 +182,7 @@ export const AdminInvestmentsTab: React.FC<AdminInvestmentsTabProps> = ({
                       ) : (
                         <div className="bg-emerald-950/40 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-center">
                           <span className="text-[9px] uppercase font-bold text-emerald-300 block">
-                            {isHi ? '6h चक्र टाइमर' : '6h Cycle Countdown'}
+                            {isHi ? `6h चक्र (${formatFixedSlotTime(inv.currentCycleEndTimestamp)})` : `6h Cycle (${formatFixedSlotTime(inv.currentCycleEndTimestamp)})`}
                           </span>
                           <span className="font-mono font-black text-emerald-400 text-base tracking-wider">
                             {formatCountdown(cycleLeft)}

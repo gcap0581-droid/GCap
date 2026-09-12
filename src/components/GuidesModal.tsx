@@ -64,7 +64,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
     name: 'GCap 641-Day Prime Short Term',
     nameHi: 'GCap 641-दिन शॉर्ट टर्म योजना',
     durationDays: 641,
-    dailyRoiPercent: 0.16,
+    dailyRoiPercent: 0.164,
     minAmount: 1000,
     maxAmount: 500000,
   };

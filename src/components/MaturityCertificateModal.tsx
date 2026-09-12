@@ -207,7 +207,7 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-slate-200">
                 <span className="text-slate-300 print:text-slate-700">{isHi ? 'कुल पूर्ण चक्र (6h Cycles Completed):' : 'Total 6h Cycles:'}</span>
-                <span className="font-mono font-bold text-slate-200 print:text-slate-900">{totalCycles} {isHi ? 'चक्र (0.04% GP/चक्र)' : 'Cycles'}</span>
+                <span className="font-mono font-bold text-slate-200 print:text-slate-900">{totalCycles} {isHi ? `चक्र (${investment.planId === 'long-term' ? '0.031%' : '0.041%'} GP/चक्र)` : 'Cycles'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-slate-200">
                 <span className="text-slate-300 print:text-slate-700">{isHi ? 'कुल संचित लाभ (Total Earning Generated):' : 'Total Earnings Generated:'}</span>

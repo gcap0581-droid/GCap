@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, CheckCircle, Sparkles, Lock, ArrowRight, Zap, RefreshCw, AlertCircle, ShieldCheck, Search, Award, FileText, ArrowUpRight, DollarSign } from 'lucide-react';
 import { ActiveInvestment, Language } from '../types';
 import { formatINR } from '../utils/storage';
+import { formatFixedSlotTime, FIXED_SLAB_LABELS } from '../utils/cycleTiming';
 
 interface ActiveInvestmentsProps {
   investments: ActiveInvestment[];
@@ -101,8 +102,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
         </h3>
         <p className="text-xs text-slate-400 max-w-sm mx-auto mb-5">
           {isHi
-            ? '641-दिनों के शॉर्ट टर्म प्लान में निवेश करें। पहले 24 घंटे का लॉक रहेगा और उसके बाद हर 6 घंटे में 0.04% GP अर्निंग स्वतः Total Earning में जमा होगी।'
-            : 'Invest in 641-Day Short Term Plan. Locked for first 24 hours, followed by recurring 6-hour 0.04% GP earnings added to Total Earning.'}
+            ? '641-दिनों के शॉर्ट टर्म प्लान में निवेश करें। पहले 24 घंटे का लॉक रहेगा और उसके बाद हर 6 घंटे में 0.041% GP अर्निंग स्वतः Total Earning में जमा होगी।'
+            : 'Invest in 641-Day Short Term Plan. Locked for first 24 hours, followed by recurring 6-hour 0.041% GP earnings added to Total Earning.'}
         </p>
         <button
           id="btn-empty-invest-start"
@@ -223,8 +224,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const cycleClock = formatCountdown(cycleRemainingMs);
 
             const isLongTerm = inv.planId === 'long-term' || !!inv.royaltyStage;
-            const cyclePercentStr = isLongTerm ? '0.03%' : '0.04%';
-            const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount * (isLongTerm ? 0.03 : 0.04) / 100);
+            const cyclePercentStr = isLongTerm ? '0.031%' : '0.041%';
+            const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount * (isLongTerm ? 0.031 : 0.041) / 100);
             const planUniqueCode = inv.planUniqueId || (isLongTerm ? `LTP-365D-${inv.id.slice(-5)}` : `STP-641D-${inv.id.slice(-5)}`);
             const isMatured = (inv.royaltyStage === '1825D_ROYALTY' ? (inv.royaltyDaysCompleted || 0) >= 1825 : inv.daysCompleted >= inv.durationDays) || inv.isMatured;
             const isCompleted = inv.status === 'COMPLETED';
@@ -466,9 +467,12 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
                           <p className="text-[11px] text-amber-200/80 mt-2">
                             {isHi
-                              ? '⏳ 24h लॉक पूर्ण होने के बाद 6 घंटे का 0.04% GP अर्निंग चक्र शुरू होगा।'
-                              : '⏳ 6-hour 0.04% GP cycle starts after 24h lock completes.'}
+                              ? `⏳ 24h लॉक पूर्ण होने पर निकटतम फिक्स्ड स्लॉट (${formatFixedSlotTime(inv.currentCycleEndTimestamp)}) पर ${cyclePercentStr} GP चक्र शुरू होगा।`
+                              : `⏳ Next cycle syncs at nearest fixed slab (${formatFixedSlotTime(inv.currentCycleEndTimestamp)}) after 24h lock.`}
                           </p>
+                          <div className="mt-2 text-[10px] text-amber-300/80 font-mono bg-amber-950/40 py-1 px-2 rounded-md border border-amber-500/20">
+                            {isHi ? '🕒 4 दैनिक फिक्स्ड स्लॉट: 08:00 AM • 02:00 PM • 08:00 PM • 02:00 AM' : '🕒 4 Daily Fixed Slots: 08:00 AM • 02:00 PM • 08:00 PM • 02:00 AM'}
+                          </div>
 
                           {onSimulateComplete24hLock && (
                             <div className="mt-3 pt-2.5 border-t border-amber-500/20 flex justify-center">
@@ -519,9 +523,32 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-emerald-300/90 mt-2.5 px-2 bg-emerald-900/20 py-1.5 rounded-lg border border-emerald-500/20">
-                            <span>{isHi ? `अगला ऑटो-क्रेडिट ${cyclePercentStr} GP:` : `Next Auto ${cyclePercentStr} Credit:`}</span>
-                            <span className="font-mono font-extrabold text-white">+{formatINR(cycleReturn)} (Total Earning)</span>
+                          <div className="flex items-center justify-between text-[11px] text-emerald-300/90 mt-2.5 px-2.5 bg-emerald-900/30 py-2 rounded-lg border border-emerald-500/20">
+                            <div>
+                              <span>{isHi ? `अगला ऑटो-क्रेडिट (${formatFixedSlotTime(inv.currentCycleEndTimestamp)} स्लॉट):` : `Next Auto Credit (${formatFixedSlotTime(inv.currentCycleEndTimestamp)} Slot):`}</span>
+                              <div className="text-[10px] text-emerald-400/80 font-mono">
+                                {isHi ? 'सभी यूज़र्स के लिए सिंक्रनाइज़्ड' : 'Synchronized for all users'}
+                              </div>
+                            </div>
+                            <span className="font-mono font-extrabold text-white text-sm">+{formatINR(cycleReturn)} GP</span>
+                          </div>
+
+                          <div className="mt-2.5 grid grid-cols-4 gap-1 text-[9px] font-mono font-bold text-center">
+                            {FIXED_SLAB_LABELS.map((slab) => {
+                              const isCurrentTarget = formatFixedSlotTime(inv.currentCycleEndTimestamp) === slab;
+                              return (
+                                <div
+                                  key={slab}
+                                  className={`py-1 px-1 rounded border transition-all ${
+                                    isCurrentTarget
+                                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black shadow-md shadow-emerald-500/40 animate-pulse'
+                                      : 'bg-slate-950/60 text-slate-400 border-slate-800'
+                                  }`}
+                                >
+                                  {slab}
+                                </div>
+                              );
+                            })}
                           </div>
 
                           {/* Fast-Forward simulator buttons */}

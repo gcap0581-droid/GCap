@@ -75,7 +75,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
     name: 'GCap 641-Day Prime Short Term Growth',
     nameHi: 'जीकैप 641-दिन शॉर्ट टर्म ग्रोथ प्लान',
     durationDays: 641,
-    dailyRoiPercent: 0.16,
+    dailyRoiPercent: 0.164,
     minAmount: 1000,
     maxAmount: 500000,
   };
@@ -86,7 +86,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
     name: 'GCap 365-Day Long Term Royalty Asset Plan',
     nameHi: 'जीकैप 365-दिन लॉन्ग टर्म रॉयल्टी प्लान',
     durationDays: 365,
-    dailyRoiPercent: 0.12,
+    dailyRoiPercent: 0.124,
     minAmount: 5000,
     maxAmount: 1000000,
   };
@@ -401,7 +401,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                 </div>
                 <ul className="text-[11px] text-slate-300 print:text-slate-700 space-y-1 list-disc list-inside">
                   <li><b>{isHi ? 'अवधि:' : 'Tenure:'}</b> {shortTermPlan.durationDays} {isHi ? 'दिन' : 'Days'}</li>
-                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {shortTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.04% प्रति 6 घंटे)' : 'per day (0.04% per 6h)'}</li>
+                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {shortTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.041% प्रति 6 घंटे)' : 'per day (0.041% per 6h)'}</li>
                   <li><b>{isHi ? 'निकासी विंडो:' : 'Withdrawal:'}</b> {isHi ? 'हर माह 1 से 5 तारीख तक' : '1st to 5th of each month'}</li>
                   <li><b>{isHi ? 'परिपक्वता मूलधन:' : 'Maturity Capital:'}</b> {isHi ? '100% मूलधन पूर्ण वापसी' : '100% Principal Refund'}</li>
                 </ul>
@@ -419,7 +419,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                 </div>
                 <ul className="text-[11px] text-slate-300 print:text-slate-700 space-y-1 list-disc list-inside">
                   <li><b>{isHi ? 'अवधि:' : 'Tenure:'}</b> {longTermPlan.durationDays} {isHi ? 'दिन + रॉयल्टी सुरक्षा' : 'Days + Royalty Gateway'}</li>
-                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {longTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.03% प्रति 6 घंटे)' : 'per day (0.03% per 6h)'}</li>
+                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {longTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.031% प्रति 6 घंटे)' : 'per day (0.031% per 6h)'}</li>
                   <li><b>{isHi ? 'रॉयल्टी निकासी:' : 'Royalty Window:'}</b> {isHi ? 'हर माह 6 से 10 तारीख तक' : '6th to 10th of each month'}</li>
                   <li><b>{isHi ? 'रॉयल्टी पात्रता:' : 'Royalty Stage:'}</b> {isHi ? '1461D लॉक उपरांत आजीवन रॉयल्टी' : 'Eligible for long term royalty stream'}</li>
                 </ul>

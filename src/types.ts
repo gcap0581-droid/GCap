@@ -164,6 +164,8 @@ export interface UserProfile {
   role: UserRole;
   phone: string;
   email?: string;
+  password?: string;
+  passwordHash?: string;
   referralCode?: string;
   referredBy?: string;
   joinedDate: string;

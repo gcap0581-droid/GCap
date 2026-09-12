@@ -41,11 +41,11 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       id: 'deal-short-term',
       tag: isHi ? '⚡ शॉर्ट टर्म निवेश प्लान (641 दिन)' : '⚡ SHORT TERM INVESTMENT PLAN (641 DAYS)',
       tagColor: 'bg-amber-400 text-slate-950 font-black',
-      title: isHi ? 'शॉर्ट टर्म प्लान — 641 दिन लॉक • हर 6 घंटे में 0.04% GP' : 'Short Term Plan — 641-Day Lock • 0.04% GP Every 6 Hours',
+      title: isHi ? 'शॉर्ट टर्म प्लान — 641 दिन लॉक • हर 6 घंटे में 0.041% GP' : 'Short Term Plan — 641-Day Lock • 0.041% GP Every 6 Hours',
       desc: isHi
-        ? 'न्यूनतम ₹1,00,000 निवेश (नो मैक्स लिमिट) • हर 6h में 0.04% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
-        : 'Min ₹1,00,000 Deposit (No Max Limit) • 0.04% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
-      badgeText: '0.16%/DAY',
+        ? 'न्यूनतम ₹1,00,000 निवेश (नो मैक्स लिमिट) • हर 6h में 0.041% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
+        : 'Min ₹1,00,000 Deposit (No Max Limit) • 0.041% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
+      badgeText: '0.164%/DAY',
       badgeSub: isHi ? '641 दिन लॉक' : '641-Day Maturity',
       ctaText: isHi ? 'शॉर्ट टर्म प्लान चुनें' : 'View Short Term Plan',
       targetTab: 'plans' as const,
@@ -55,11 +55,11 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       id: 'deal-long-term',
       tag: isHi ? '👑 लॉन्ग टर्म निवेश व रॉयल्टी प्लान (365 दिन)' : '👑 LONG TERM & ROYALTY PLAN (365 DAYS)',
       tagColor: 'bg-emerald-400 text-slate-950 font-black',
-      title: isHi ? 'लॉन्ग टर्म प्लान — 365 दिन लॉक • हर 6 घंटे में 0.03% GP + 5-वर्ष रॉयल्टी' : 'Long Term Plan — 365-Day Lock • 0.03% GP Every 6 Hours + Royalty',
+      title: isHi ? 'लॉन्ग टर्म प्लान — 365 दिन लॉक • हर 6 घंटे में 0.031% GP + 5-वर्ष रॉयल्टी' : 'Long Term Plan — 365-Day Lock • 0.031% GP Every 6 Hours + Royalty',
       desc: isHi
         ? 'निवेश सीमा ₹50,000 - ₹1,00,000 • 365 दिन पर मूलधन वापसी या 1461 दिन रॉयल्टी विकल्प (1825 दिन तक लगातार रॉयल्टी अर्निंग)'
         : 'Deposit ₹50,000 - ₹1,00,000 • 365-day exit or 1461-day Royalty Pathway (earn continuous royalty for 1825 days)',
-      badgeText: '0.12%/DAY',
+      badgeText: '0.124%/DAY',
       badgeSub: isHi ? '365 दिन + रॉयल्टी' : '365D + Royalty',
       ctaText: isHi ? 'लॉन्ग टर्म प्लान चुनें' : 'View Long Term Plan',
       targetTab: 'plans' as const,

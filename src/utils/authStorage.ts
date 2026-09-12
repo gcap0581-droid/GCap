@@ -67,7 +67,7 @@ export function subscribeToUsersUpdates(callback: (users: UserProfile[]) => void
           ...data,
           passwordHash: data.passwordHash || data.password || '',
           password: data.passwordHash || data.password || ''
-        } as UserProfile;
+        } as unknown as UserProfile;
       });
       cachedUsers = users;
       callback(users);
@@ -169,6 +169,9 @@ export async function registerUserAsync(data: {
   name: string;
   phone: string;
   password: string;
+  loginId?: string;
+  email?: string;
+  referralCode?: string;
 }): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   const cleanPhone = data.phone.replace(/[^0-9]/g, '');
   
@@ -184,15 +187,18 @@ export async function registerUserAsync(data: {
     const newUser = {
         name: data.name,
         phone: cleanPhone,
-        loginId: cleanPhone,
+        loginId: data.loginId ? data.loginId.trim() : cleanPhone,
+        email: data.email || '',
+        referralCode: data.referralCode || '',
         passwordHash: data.password,
-        role: 'USER',
-        status: 'ACTIVE',
+        password: data.password,
+        role: 'USER' as const,
+        status: 'ACTIVE' as const,
         joinedDate: new Date().toISOString().split('T')[0]
     };
     
     const docRef = await addDoc(usersRef, newUser);
-    const profile = { id: docRef.id, ...newUser } as UserProfile;
+    const profile = { id: docRef.id, ...newUser } as unknown as UserProfile;
     
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
     return { success: true, user: profile };
@@ -247,23 +253,51 @@ export async function syncUsersWithServer(): Promise<UserProfile[]> {
 export async function adminAddUserAsync(data: any): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
     const usersRef = collection(db, 'users');
-    const newUser = { ...data, joinedDate: data.joinedDate || new Date().toISOString().split('T')[0] };
+    const newUser = { 
+      ...data, 
+      passwordHash: data.password || data.passwordHash || '',
+      password: data.password || data.passwordHash || '',
+      joinedDate: data.joinedDate || new Date().toISOString().split('T')[0] 
+    };
     const docRef = await addDoc(usersRef, newUser);
-    return { success: true, user: { id: docRef.id, ...newUser } as UserProfile };
+    const created = { id: docRef.id, ...newUser } as unknown as UserProfile;
+    cachedUsers = [...cachedUsers, created];
+    return { success: true, user: created };
   } catch (err) {
     console.error('Admin add user error:', err);
     return { success: false, error: 'यूज़र जोड़ने में विफल।' };
   }
 }
 
+export function adminAddUser(data: any): { success: boolean; user?: UserProfile; error?: string } {
+  const tempId = `usr-admin-${Date.now()}`;
+  const newUser = {
+    id: tempId,
+    ...data,
+    passwordHash: data.password || data.passwordHash || '',
+    password: data.password || data.passwordHash || '',
+    joinedDate: data.joinedDate || new Date().toISOString().split('T')[0]
+  } as unknown as UserProfile;
+  cachedUsers = [...cachedUsers, newUser];
+  adminAddUserAsync(data).catch(e => console.warn('Background adminAddUser error:', e));
+  return { success: true, user: newUser };
+}
+
 export async function adminDeleteUserAsync(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteDoc(doc(db, 'users', userId));
+    cachedUsers = cachedUsers.filter(u => u.id !== userId);
     return { success: true };
   } catch (err) {
     console.error('Admin delete user error:', err);
     return { success: false, error: 'यूज़र हटाने में विफल।' };
   }
+}
+
+export function adminDeleteUser(userId: string): { success: boolean; error?: string } {
+  cachedUsers = cachedUsers.filter(u => u.id !== userId);
+  adminDeleteUserAsync(userId).catch(e => console.warn('Background adminDeleteUser error:', e));
+  return { success: true };
 }
 
 export async function adminUpdateUserAsync(userId: string, updates: any): Promise<{ success: boolean; user?: UserProfile; error?: string }> {

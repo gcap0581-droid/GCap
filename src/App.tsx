@@ -27,6 +27,7 @@ import {
   resetPortalData,
   formatINR,
 } from './utils/storage';
+import { getNextFixedCycleTimestamp, formatFixedSlotTime } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
 import { getStoredCompanyProfile, saveStoredCompanyProfile } from './utils/companyStorage';
 import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers } from './utils/authStorage';
@@ -1332,7 +1333,7 @@ export default function App() {
       lockCongratulationsShown: false,
       cycleDurationHours: 6,
       currentCycleStartTimestamp: lockedUntil,
-      currentCycleEndTimestamp: lockedUntil + 6 * 3600 * 1000,
+      currentCycleEndTimestamp: getNextFixedCycleTimestamp(lockedUntil),
       completedCyclesCount: 0,
       cycleReturnAmount: cycleReturn,
       royaltyStage: plan.id === 'long-term' ? '365D_INITIAL' : undefined,
@@ -1749,12 +1750,11 @@ export default function App() {
       const updated = investments.map((inv) => {
         if (inv.status !== 'ACTIVE') return inv;
 
-        // Phase 1: 24h Lock Expiry Check
+        // Phase 1: 24h Lock Expiry Check -> snap to nearest upcoming fixed time slab
         if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
           hasChanges = true;
-          const cycleDurationMs = (inv.cycleDurationHours || 6) * 3600 * 1000;
-          const currentStart = now;
-          const currentEnd = now + cycleDurationMs;
+          const currentEnd = getNextFixedCycleTimestamp(now);
+          const currentStart = currentEnd - 6 * 3600 * 1000;
 
           // Trigger Congratulations Modal if not already shown
           if (!inv.lockCongratulationsShown) {
@@ -1776,12 +1776,13 @@ export default function App() {
           };
         }
 
-        // Phase 2: 6-Hour Cycle Completion Check
+        // Phase 2: Fixed 6-Hour Cycle Completion Check (8 AM, 2 PM, 8 PM, 2 AM)
         if (inv.isInitialLockCompleted && now >= (inv.currentCycleEndTimestamp || 0)) {
           hasChanges = true;
-          const cycleDurationMs = (inv.cycleDurationHours || 6) * 3600 * 1000;
           const cyclePayout = inv.cycleReturnAmount || (inv.dailyReturnAmount / 4);
           const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
+          const currentEnd = getNextFixedCycleTimestamp(now);
+          const currentStart = currentEnd - 6 * 3600 * 1000;
 
           totalCycleEarningsToAdd += cyclePayout;
 
@@ -1793,16 +1794,16 @@ export default function App() {
             timestamp: now,
             status: 'SUCCESS',
             referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-            note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
-            noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग (Total Earning) में जमा हुआ (${inv.planName})`,
+            note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
+            noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
           });
 
           return {
             ...inv,
             completedCyclesCount: nextCycleNum,
             earnedSoFar: (inv.earnedSoFar || 0) + cyclePayout,
-            currentCycleStartTimestamp: now,
-            currentCycleEndTimestamp: now + cycleDurationMs, // restarts 6h timer!
+            currentCycleStartTimestamp: currentStart,
+            currentCycleEndTimestamp: currentEnd, // Next synchronized fixed time slab
           };
         }
 
@@ -1890,9 +1891,8 @@ export default function App() {
     const inv = investments.find((i) => i.id === investmentId);
     if (!inv) return;
     const now = Date.now();
-    const cycleDurationMs = (inv.cycleDurationHours || 6) * 3600 * 1000;
-    const currentStart = now;
-    const currentEnd = now + cycleDurationMs;
+    const currentEnd = getNextFixedCycleTimestamp(now);
+    const currentStart = currentEnd - 6 * 3600 * 1000;
 
     const updated = investments.map((i) => {
       if (i.id === investmentId) {
@@ -1919,8 +1919,8 @@ export default function App() {
     showToast(
       isHi ? '🎉 24 घंटे का लॉक समाप्त!' : '🎉 24-Hour Lock Completed!',
       isHi
-        ? 'प्रारंभिक लॉक पूर्ण हुआ! बधाई संदेश प्रदर्शित और 6 घंटे का अर्निंग टाइमर सक्रिय।'
-        : 'Initial lock completed! Congratulations shown and 6h earning cycle countdown is active.'
+        ? `प्रारंभिक लॉक पूर्ण! बधाई संदेश प्रदर्शित और ${formatFixedSlotTime(currentEnd)} का फिक्स्ड टाइम स्लॉट टाइमर सक्रिय।`
+        : `Initial lock completed! Congratulations shown and fixed ${formatFixedSlotTime(currentEnd)} slot countdown is active.`
     );
   };
 
@@ -1930,7 +1930,8 @@ export default function App() {
     const now = Date.now();
     const cyclePayout = inv.cycleReturnAmount || (inv.dailyReturnAmount / 4);
     const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
-    const cycleDurationMs = (inv.cycleDurationHours || 6) * 3600 * 1000;
+    const currentEnd = getNextFixedCycleTimestamp(now + 1000);
+    const currentStart = currentEnd - 6 * 3600 * 1000;
 
     const cycleTx: Transaction = {
       id: `txn-sim-cyc-${Date.now()}`,
@@ -1940,8 +1941,8 @@ export default function App() {
       timestamp: now,
       status: 'SUCCESS',
       referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
-      noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग (Total Earning) में जमा हुआ (${inv.planName})`,
+      note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at fixed slot ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
+      noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
     };
 
     const updated = investments.map((i) => {
@@ -1951,8 +1952,8 @@ export default function App() {
           isInitialLockCompleted: true,
           completedCyclesCount: nextCycleNum,
           earnedSoFar: (i.earnedSoFar || 0) + cyclePayout,
-          currentCycleStartTimestamp: now,
-          currentCycleEndTimestamp: now + cycleDurationMs, // timer restarts!
+          currentCycleStartTimestamp: currentStart,
+          currentCycleEndTimestamp: currentEnd, // synchronized to next fixed slot
         };
       }
       return i;
@@ -2019,7 +2020,7 @@ export default function App() {
           isInitialLockCompleted: false,
           lockCongratulationsShown: false,
           currentCycleStartTimestamp: lockedUntil,
-          currentCycleEndTimestamp: lockedUntil + cycleDurationMs,
+          currentCycleEndTimestamp: getNextFixedCycleTimestamp(lockedUntil),
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(now + (i.durationDays || 641) * 86400000).toISOString().split('T')[0],
         };
@@ -2151,8 +2152,8 @@ export default function App() {
     showToast(
       isHi ? '👑 1461-दिवसीय रॉयल्टी लॉक सक्रिय!' : '👑 1461-Day Royalty Lock Activated!',
       isHi
-        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.03% GP प्राप्त होता रहेगा।`
-        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.03% GP credited every 6 hours.`
+        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.031% GP प्राप्त होता रहेगा।`
+        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.031% GP credited every 6 hours.`
     );
   };
 
@@ -2209,7 +2210,7 @@ export default function App() {
       isHi ? '👑 मूलधन वापस प्राप्त & 1825-दिवसीय रॉयल्टी रिवॉर्ड प्रारंभ!' : '👑 Principal Returned & 1825-Day Royalty Started!',
       isHi
         ? `+${formatINR(payoutAmount)} (मूलधन + अर्निंग) आपके वॉलेट में ट्रांसफर कर दिए गए हैं! मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार अर्निंग मिलती रहेगी।`
-        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.03% GP every 6 hours for 1825 days.`
+        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.031% GP every 6 hours for 1825 days.`
     );
   };
 

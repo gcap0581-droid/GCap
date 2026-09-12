@@ -2,7 +2,7 @@ import { InvestmentPlan } from '../types';
 import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 
-const PLANS_STORAGE_KEY = 'gcap_investment_plans_v3_641d';
+const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
 
 export function getStoredPlans(): InvestmentPlan[] {
   try {
@@ -16,10 +16,10 @@ export function getStoredPlans(): InvestmentPlan[] {
       localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
       return DEFAULT_PLANS;
     }
-    // Auto-migrate: ensure the 641-day short-term plan and 365-day long-term plan are active
+    // Auto-migrate: ensure the 641-day short-term plan (0.164%) and 365-day long-term plan (0.124%) are active
     const shortTermPlan = parsed.find((p) => p.id === 'short-term');
     const longTermPlan = parsed.find((p) => p.id === 'long-term');
-    if (!shortTermPlan || shortTermPlan.durationDays !== 641 || !longTermPlan || longTermPlan.durationDays !== 365 || longTermPlan.minAmount !== 50000) {
+    if (!shortTermPlan || shortTermPlan.dailyRoiPercent !== 0.164 || !longTermPlan || longTermPlan.dailyRoiPercent !== 0.124) {
       localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
       return DEFAULT_PLANS;
     }
