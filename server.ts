@@ -1515,12 +1515,14 @@ async function startServer() {
 
     const db = ensureDb();
     const cleanPhone = trimmedId.replace(/[^0-9]/g, "");
+    // If input had a country code (like 91), try to extract last 10 digits
+    const normalizedPhone = cleanPhone.length > 10 ? cleanPhone.slice(-10) : cleanPhone;
 
     const account = db.users.find(
       (acc) =>
         acc.loginId.toLowerCase() === trimmedId ||
         (acc.email && acc.email.toLowerCase() === trimmedId) ||
-        (cleanPhone && acc.phone.replace(/[^0-9]/g, "") === cleanPhone)
+        acc.phone.replace(/[^0-9]/g, "").slice(-10) === normalizedPhone
     );
 
     if (!account) {
