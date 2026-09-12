@@ -50,6 +50,7 @@ interface AndroidFrameProps {
   onToggleAdminHub?: () => void;
   unreadMessagesCount?: number;
   onOpenNotifications?: () => void;
+  onOpenProfile?: () => void;
   onLanguageChange?: (lang: Language) => void;
 }
 
@@ -72,6 +73,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onToggleAdminHub,
   unreadMessagesCount = 0,
   onOpenNotifications,
+  onOpenProfile,
   onLanguageChange,
 }) => {
   const isHi = language === 'hi';
@@ -128,7 +130,8 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
 
           <div
             onClick={() => currentUser ? onTabChange('dashboard') : null}
-            className={`flex items-center gap-1.5 ${currentUser ? 'cursor-pointer' : ''}`}
+            className={`flex items-center gap-1.5 ${currentUser ? 'cursor-pointer hover:opacity-90 active:scale-95 transition-all' : ''}`}
+            title={isHi ? 'मुख्य होम पेज पर जाएँ' : 'Go to Home Page'}
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 via-emerald-400 to-teal-400 flex items-center justify-center font-black text-slate-950 text-xs shadow-sm">
               <TrendingUp className="w-4 h-4" />
@@ -156,41 +159,41 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             </div>
           )}
 
-          {/* Mobile Notifications Bell Button */}
-          {currentUser && onOpenNotifications && (
+          {/* User Profile Detail Button with integrated Notifications Bell */}
+          {currentUser && (
             <button
-              id="btn-mobile-notifications"
-              onClick={onOpenNotifications}
-              className="relative p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 transition-all cursor-pointer"
-              title={isHi ? 'सूचनाएं' : 'Notifications'}
+              id="btn-mobile-profile-notifications"
+              onClick={onOpenProfile || onOpenNotifications}
+              className="relative flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
+              title={isHi ? 'प्रोफ़ाइल विवरण एवं सूचनाएं' : 'Profile Details & Notifications'}
             >
-              <Bell className="w-4 h-4" />
-              {unreadMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center border border-slate-900 animate-pulse">
-                  {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
-                </span>
-              )}
+              <div className="w-5 h-5 rounded-md bg-cyan-500/30 text-cyan-200 flex items-center justify-center font-black text-[10px]">
+                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="text-[11px] font-bold tracking-tight text-cyan-200 max-w-[65px] truncate">
+                {currentUser.name ? currentUser.name.split(' ')[0] : (isHi ? 'प्रोफ़ाइल' : 'Profile')}
+              </span>
+              
+              {/* Integrated Notification Bell */}
+              <div 
+                onClick={(e) => {
+                  if (onOpenNotifications) {
+                    e.stopPropagation();
+                    onOpenNotifications();
+                  }
+                }}
+                className="relative flex items-center justify-center pl-0.5"
+                title={isHi ? 'सूचनाएं' : 'Notifications'}
+              >
+                <Bell className="w-3.5 h-3.5 text-amber-400 hover:text-amber-300" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 bg-amber-500 text-slate-950 rounded-full text-[8px] font-black flex items-center justify-center border border-slate-900 animate-pulse">
+                    {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                  </span>
+                )}
+              </div>
             </button>
           )}
-
-          {onLanguageChange && (
-            <button
-              onClick={() => onLanguageChange(language === 'hi' ? 'en' : 'hi')}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer"
-              title={isHi ? 'भाषा बदलें' : 'Change Language'}
-            >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isHi ? 'English' : 'हिंदी'}</span>
-            </button>
-          )}
-
-          <button
-            onClick={onExitMobile}
-            className="text-[10px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer font-medium"
-            title="Switch to PC View"
-          >
-            {isHi ? 'कंप्यूटर' : 'Web'}
-          </button>
         </div>
       </header>
 

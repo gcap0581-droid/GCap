@@ -50,14 +50,10 @@ export function getStoredCompanyProfile(): CompanyProfile {
       return DEFAULT_COMPANY_PROFILE;
     }
     const parsed = JSON.parse(raw);
-    const updated = {
+    return {
       ...DEFAULT_COMPANY_PROFILE,
       ...parsed,
-      bankName: 'Axis Bank Ltd.',
-      bankAccountNumber: '924010008662307',
-      bankIfsc: 'UTIB0001219',
     };
-    return updated;
   } catch (err) {
     console.error('Failed to parse stored company profile:', err);
     return DEFAULT_COMPANY_PROFILE;

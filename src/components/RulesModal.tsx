@@ -52,7 +52,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         setActiveTab('EDIT');
       }
     }
-  }, [rules, isOpen, isAdmin]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -506,8 +506,13 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                         step={0.01}
                         value={formData.gpRatePerRupee ?? 1}
                         onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          setFormData({ ...formData, gpRatePerRupee: isNaN(val) ? 1 : Math.max(0.01, val) });
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            setFormData({ ...formData, gpRatePerRupee: 0 });
+                          } else {
+                            const val = parseFloat(raw);
+                            setFormData({ ...formData, gpRatePerRupee: isNaN(val) ? 1 : val });
+                          }
                         }}
                         className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-300 font-mono text-sm font-bold focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
                       />
@@ -549,10 +554,13 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    min={100}
+                    min={0}
                     step={50}
-                    value={formData.minDeposit}
-                    onChange={(e) => setFormData({ ...formData, minDeposit: Number(e.target.value) })}
+                    value={formData.minDeposit ?? 100}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setFormData({ ...formData, minDeposit: raw === '' ? 0 : (isNaN(Number(raw)) ? 0 : Number(raw)) });
+                    }}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -564,10 +572,13 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    min={1000}
+                    min={0}
                     step={1000}
-                    value={formData.maxDeposit}
-                    onChange={(e) => setFormData({ ...formData, maxDeposit: Number(e.target.value) })}
+                    value={formData.maxDeposit ?? 100000000}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setFormData({ ...formData, maxDeposit: raw === '' ? 0 : (isNaN(Number(raw)) ? 0 : Number(raw)) });
+                    }}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -579,10 +590,13 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </label>
                   <input
                     type="number"
-                    min={50}
+                    min={0}
                     step={50}
-                    value={formData.minWithdrawal}
-                    onChange={(e) => setFormData({ ...formData, minWithdrawal: Number(e.target.value) })}
+                    value={formData.minWithdrawal ?? 200}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setFormData({ ...formData, minWithdrawal: raw === '' ? 0 : (isNaN(Number(raw)) ? 0 : Number(raw)) });
+                    }}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -597,14 +611,17 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                     min={0}
                     max={25}
                     step={0.5}
-                    value={formData.withdrawalFeePercent}
-                    onChange={(e) => setFormData({ ...formData, withdrawalFeePercent: Number(e.target.value) })}
+                    value={formData.withdrawalFeePercent ?? 0}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setFormData({ ...formData, withdrawalFeePercent: raw === '' ? 0 : (isNaN(Number(raw)) ? 0 : Number(raw)) });
+                    }}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Admin Charge % (Dynamic Admin Control) */}
-                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-2">
+                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-2 sm:col-span-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-purple-300 block">
                       {isHi ? '👑 एडमिन चार्ज (%) (Admin Service Charge)' : '👑 Admin Service Charge (%)'}
@@ -626,13 +643,18 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                       step={0.1}
                       value={formData.adminFeePercent ?? 2.0}
                       onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setFormData({ ...formData, adminFeePercent: isNaN(val) ? 2.0 : val });
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setFormData({ ...formData, adminFeePercent: 0 });
+                        } else {
+                          const val = parseFloat(raw);
+                          setFormData({ ...formData, adminFeePercent: isNaN(val) ? 0 : val });
+                        }
                       }}
                       className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-1.5 text-purple-300 font-mono text-xs font-bold focus:border-purple-400 focus:outline-none"
                     />
                     <div className="flex gap-1 shrink-0">
-                      {[0.5, 1.0, 2.0, 3.0, 5.0].map((rate) => (
+                      {[0.0, 0.5, 1.0, 2.0, 3.0, 5.0].map((rate) => (
                         <button
                           key={rate}
                           type="button"

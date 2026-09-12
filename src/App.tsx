@@ -28,6 +28,7 @@ import {
   formatINR,
 } from './utils/storage';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
+import { getStoredCompanyProfile, saveStoredCompanyProfile } from './utils/companyStorage';
 import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers } from './utils/authStorage';
 import {
   getStoredPlans,
@@ -1685,11 +1686,27 @@ export default function App() {
   const handleSaveRules = (updatedRules: AppRules) => {
     setRules(updatedRules);
     saveStoredRules(updatedRules);
+
+    // Sync bank details to company profile
+    try {
+      const profile = getStoredCompanyProfile();
+      const updatedProfile = {
+        ...profile,
+        bankName: updatedRules.companyBankName || profile.bankName,
+        bankAccountNumber: updatedRules.companyBankAccountNumber || profile.bankAccountNumber,
+        bankIfsc: updatedRules.companyBankIfsc || profile.bankIfsc,
+        companyName: updatedRules.companyBankAccountHolder || profile.companyName,
+      };
+      saveStoredCompanyProfile(updatedProfile);
+    } catch (e) {
+      console.error('Failed to sync company profile:', e);
+    }
+
     showToast(
       isHi ? 'नियम व शर्तें अपडेट हुईं' : 'Rules Updated',
       isHi
-        ? 'आपके द्वारा निर्धारित नए नियम और सीमाएं पूरी ऐप में तुरंत लागू हो चुकी हैं।'
-        : 'Your updated regulations and limits are now active across GCap.'
+        ? 'आपके द्वारा निर्धारित नए नियम, बैंक विवरण और सीमाएं पूरी ऐप में तुरंत लागू हो चुकी हैं।'
+        : 'Your updated regulations, bank details and limits are now active across GCap.'
     );
   };
 
@@ -2772,6 +2789,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileOpen(true)}
           unreadMessagesCount={unreadMessagesCount}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onSelectAdminSubTab={setAdminMobileTab}
         />
       )}
 
@@ -2955,6 +2973,7 @@ export default function App() {
             onToggleAdminHub={() => setAdminViewMode((prev) => (prev === 'ADMIN_HUB' ? 'INVESTOR_VIEW' : 'ADMIN_HUB'))}
             unreadMessagesCount={unreadMessagesCount}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
+            onOpenProfile={() => setIsProfileOpen(true)}
           >
             {adminViewMode === 'ADMIN_HUB' ? (
               <AdminPanel
@@ -3193,6 +3212,7 @@ export default function App() {
         onClose={() => setIsProfileOpen(false)}
         currentUser={currentUser}
         language={language}
+        onLanguageChange={setLanguage}
         onUpdateCurrentUser={setCurrentUser}
       />
 

@@ -13,16 +13,6 @@ export function getStoredRules(): AppRules {
     }
     const parsed = JSON.parse(raw);
     const merged = { ...DEFAULT_GCAP_RULES, ...parsed };
-    // Auto-migrate legacy 0.02 adminFeePercent to standard 2.0 percentage format
-    if (merged.adminFeePercent < 0.1) {
-      merged.adminFeePercent = 2.0;
-      saveStoredRules(merged, false);
-    }
-    // If previously defaulted to 500 minDeposit, sync with new 100 default if requested
-    if (merged.minDeposit > 100 && parsed.minDeposit === 500) {
-      merged.minDeposit = 100;
-      saveStoredRules(merged, false);
-    }
     return merged;
   } catch {
     return DEFAULT_GCAP_RULES;
