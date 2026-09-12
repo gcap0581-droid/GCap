@@ -249,6 +249,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     // 3. Subscribe to real-time Server-Sent Events (SSE) stream for 0ms cross-device synchronization
     const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+      console.log(`[AdminPanel] Received realtime event: ${event.type}`, event);
       if (
         event.type === 'USER_REGISTERED' ||
         event.type === 'USER_ADDED' ||
@@ -256,6 +257,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         event.type === 'USER_DELETED' ||
         event.type === 'STATE_CHANGED'
       ) {
+        console.log(`[AdminPanel] Triggering refresh for event: ${event.type}`);
         refreshUsers();
       }
     });

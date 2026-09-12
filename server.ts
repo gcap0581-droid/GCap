@@ -1664,11 +1664,13 @@ async function startServer() {
     const { passwordHash: _, ...profile } = newAccount;
 
     // Broadcast instant user registration to all connected admin panels worldwide
+    console.log(`[SSE Broadcast] Broadcasting user_registered for: ${cleanName}`);
     broadcastRealtimeEvent("user_registered", {
       user: profile,
       timestamp: Date.now(),
       message: `नया यूज़र रजिस्टर हुआ: ${cleanName} (${cleanPhone})`,
     });
+    console.log(`[SSE Broadcast] Broadcasted successfully.`);
     broadcastRealtimeEvent("wallet_updated", {
       userId: newAccount.id,
       wallet: db.wallets[newAccount.id],
