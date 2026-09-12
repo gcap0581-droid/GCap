@@ -1519,17 +1519,29 @@ async function startServer() {
     const normalizedPhone = cleanPhone.length > 10 ? cleanPhone.slice(-10) : cleanPhone;
 
     const account = db.users.find(
-      (acc) =>
-        acc.loginId.toLowerCase() === trimmedId ||
-        (acc.email && acc.email.toLowerCase() === trimmedId) ||
-        acc.phone.replace(/[^0-9]/g, "").slice(-10) === normalizedPhone
+      (acc) => {
+        const accPhone = acc.phone.replace(/[^0-9]/g, "").slice(-10);
+        console.log(`[LOGIN DEBUG] Checking user: ${acc.phone} (normalized: ${accPhone}) against input: ${normalizedPhone}`);
+        return (
+          acc.loginId.toLowerCase() === trimmedId ||
+          (acc.email && acc.email.toLowerCase() === trimmedId) ||
+          accPhone === normalizedPhone
+        );
+      }
     );
 
     if (!account) {
+      console.log(`[LOGIN DEBUG] No account found for input: ${normalizedPhone}`);
       return res.status(404).json({
         success: false,
         error: "खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।",
       });
+    }
+
+    console.log(`[LOGIN DEBUG] Account found: ${account.phone}. Comparing password: ${trimmedPass} against hash: ${account.passwordHash}`);
+    if (account.passwordHash !== trimmedPass) {
+       console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone}`);
+       return res.status(401).json({ success: false, error: "गलत पासवर्ड।" });
     }
 
     const isAdmin =
