@@ -60,6 +60,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const [isSaved, setIsSaved] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -67,6 +68,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       setEmail(currentUser.email || '');
       setNewPassword('');
       setConfirmPassword('');
+      setError('');
+      setSuccessMessage('');
       // Load saved bank details
       const stored = getStoredBankDetails(currentUser.id);
       if (stored) {
@@ -86,10 +89,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     // If new password is provided, validate
     const trimmedPass = newPassword.trim();
-    if (activeMenu === 'SECURITY' && trimmedPass) {
+    if (activeMenu === 'SECURITY') {
+      if (!trimmedPass) {
+        setError(isHi ? 'कृपया नया पासवर्ड दर्ज करें।' : 'Please enter a new password.');
+        return;
+      }
       if (trimmedPass.length < 4) {
         setError(isHi ? 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' : 'Password must be at least 4 characters.');
         return;
@@ -109,14 +117,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       upiId: upiId.trim(),
     };
 
-    setStoredBankDetails(currentUser.id, bankDetails);
-    apiSaveBankDetails(currentUser.id, bankDetails).catch(() => {});
+    if (activeMenu === 'BANK') {
+      setStoredBankDetails(currentUser.id, bankDetails);
+      apiSaveBankDetails(currentUser.id, bankDetails).catch(() => {});
+    }
 
     // Save user email & password
     const updates: { email?: string; password?: string } = {};
     let isPasswordChanged = false;
 
-    if (email.trim() !== currentUser.email) {
+    if (email.trim() !== currentUser.email && activeMenu === 'PERSONAL') {
       updates.email = email.trim();
     }
     if (trimmedPass && activeMenu === 'SECURITY') {
@@ -138,12 +148,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         userName: currentUser.name,
         language: isHi ? 'hi' : 'en',
       });
+      setNewPassword('');
+      setConfirmPassword('');
+      setSuccessMessage(
+        isHi
+          ? '✅ नया पासवर्ड सफलतापूर्वक बदल दिया गया है और एडमिन पैनल में तुरंत अपडेट हो गया है!'
+          : '✅ Password changed successfully and updated in Admin panel instantly!'
+      );
+    } else if (activeMenu === 'BANK') {
+      setSuccessMessage(isHi ? '✅ बैंक विवरण सफलतापूर्वक सुरक्षित हो गया!' : '✅ Bank details saved successfully!');
+    } else if (activeMenu === 'PERSONAL') {
+      setSuccessMessage(isHi ? '✅ व्यक्तिगत जानकारी अपडेट हो गई!' : '✅ Personal details updated successfully!');
+    } else {
+      setSuccessMessage(isHi ? '✅ सेटिंग्स सफलतापूर्वक सुरक्षित हो गई!' : '✅ Settings saved successfully!');
     }
 
     setIsSaved(true);
     setTimeout(() => {
       setIsSaved(false);
-    }, 2000);
+      setSuccessMessage('');
+    }, 4000);
   };
 
   const menuItems: { id: ProfileSubMenu; labelHi: string; labelEn: string; icon: any }[] = [
@@ -212,9 +236,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {isSaved && (
             <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex items-center gap-2.5 text-emerald-300 text-xs font-medium animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              {isHi
-                ? 'आपका विवरण सफलतापूर्वक अपडेट हो गया है!'
-                : 'Details updated successfully!'}
+              <span>
+                {successMessage || (isHi ? 'आपका विवरण सफलतापूर्वक अपडेट हो गया है!' : 'Details updated successfully!')}
+              </span>
             </div>
           )}
 

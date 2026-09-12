@@ -45,6 +45,7 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MiB limit to allow all app assets to be safely precached
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
@@ -136,6 +137,10 @@ export default defineConfig(() => {
       // HMR is disabled in AI Studio dev environment to prevent WebSocket reconnect errors
       hmr: false,
       watch: null,
+    },
+    build: {
+      chunkSizeWarningLimit: 3500,
+      outDir: 'dist',
     },
   };
 });

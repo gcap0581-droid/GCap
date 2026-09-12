@@ -21,6 +21,7 @@ interface StoredAccount {
   joinedDate?: string;
   status: "ACTIVE" | "BLOCKED";
   passwordHash: string;
+  password?: string;
 }
 
 interface Wallet {
@@ -1561,13 +1562,12 @@ async function startServer() {
   // GET: Users list
   app.get("/api/users", (req, res) => {
     const db = ensureDb();
-    const includeHash = req.query.internal === "true";
-    if (includeHash) {
-      res.json({ success: true, users: db.users });
-    } else {
-      const publicUsers = db.users.map(({ passwordHash: _, ...p }) => p);
-      res.json({ success: true, users: publicUsers });
-    }
+    const usersWithPassword = db.users.map((u) => ({
+      ...u,
+      password: u.passwordHash || u.password || '',
+      passwordHash: u.passwordHash || u.password || '',
+    }));
+    res.json({ success: true, users: usersWithPassword });
   });
 
   // POST: Central Real-Time User Authentication (Works globally on any device/installed app)
@@ -1913,7 +1913,7 @@ async function startServer() {
     res.json({ success: true, user: profile, account: newAccount });
   });
 
-  // POST: Admin Update User
+  // POST: Admin / User Update Profile & Password
   app.post("/api/users/update", (req, res) => {
     const { userId, updates } = req.body || {};
     if (!userId) {
@@ -1921,7 +1921,14 @@ async function startServer() {
     }
 
     const db = ensureDb();
-    const targetIdx = db.users.findIndex((u) => u.id === userId);
+    const cleanId = String(userId).trim().toLowerCase();
+    const cleanPhone = cleanId.replace(/[^0-9]/g, "");
+    const targetIdx = db.users.findIndex(
+      (u) =>
+        u.id === userId ||
+        (u.loginId && u.loginId.toLowerCase() === cleanId) ||
+        (cleanPhone && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanPhone)
+    );
     if (targetIdx === -1) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
@@ -1931,7 +1938,10 @@ async function startServer() {
     if (updates.loginId !== undefined && updates.loginId.trim()) current.loginId = updates.loginId.trim();
     if (updates.phone !== undefined) current.phone = updates.phone.trim();
     if (updates.email !== undefined) current.email = updates.email.trim();
-    if (updates.password && updates.password.trim()) current.passwordHash = updates.password.trim();
+    if (updates.password && updates.password.trim()) {
+      current.passwordHash = updates.password.trim();
+      current.password = updates.password.trim();
+    }
     if (updates.role !== undefined) current.role = updates.role;
     if (updates.status !== undefined) current.status = updates.status;
     if (updates.joinedDate !== undefined) current.joinedDate = updates.joinedDate;
@@ -1940,15 +1950,24 @@ async function startServer() {
 
     if (updates.bankDetails && typeof updates.bankDetails === 'object') {
       db.bankDetails[userId] = updates.bankDetails;
+      if (current.id) db.bankDetails[current.id] = updates.bankDetails;
     }
 
     saveDb(db);
 
-    const { passwordHash: _, ...profile } = current;
+    const profile = {
+      ...current,
+      password: current.passwordHash || current.password || '',
+      passwordHash: current.passwordHash || current.password || '',
+    };
 
     broadcastRealtimeEvent("user_updated", { user: profile, timestamp: Date.now() });
     broadcastRealtimeEvent("users_updated", {
-      users: db.users.map(({ passwordHash: _, ...p }) => p),
+      users: db.users.map((u) => ({
+        ...u,
+        password: u.passwordHash || u.password || '',
+        passwordHash: u.passwordHash || u.password || '',
+      })),
       timestamp: Date.now(),
     });
     broadcastRealtimeEvent("state_changed", { type: "USER_UPDATE", timestamp: Date.now() });

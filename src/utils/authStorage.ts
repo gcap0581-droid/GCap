@@ -354,6 +354,20 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
     }
 
+    // Synchronize with server.ts backend endpoint for real-time SSE broadcasts across all active sessions
+    fetch('/api/users/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, updates: cleanUpdates }),
+    }).catch((apiErr) => {
+      console.warn('API users update sync error:', apiErr);
+    });
+
+    // Dispatch local update event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+    }
+
     const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
     return { success: true, user: updatedProfile };
   } catch (err) {
