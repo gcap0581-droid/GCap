@@ -19,8 +19,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database path fallback for Vercel serverless environment (/tmp)
-const DATA_DIR = process.env.VERCEL ? path.join("/tmp", "data") : path.join(process.cwd(), "data");
+// Database path synchronized with /server.ts
+const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "server-db.json");
 
 function ensureVercelDb() {
