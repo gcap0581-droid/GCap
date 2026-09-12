@@ -953,14 +953,22 @@ async function startServer() {
     }
 
     // Regular user gets their own transactions, investments, wallet, plus global plans/rules
-    const userWallet = (userId && typeof userId === "string" ? db.wallets[userId] : null) || DEFAULT_WALLET;
-    const userTxns = (userId && typeof userId === "string")
-      ? db.transactions.filter((t) => t.userId === userId || !t.userId)
+    const reqUserId = userId && typeof userId === "string" ? String(userId).trim() : "";
+    const reqDigits = reqUserId.replace(/[^0-9]/g, "");
+    const foundUser = reqUserId ? db.users.find((u) => u.id === reqUserId || (u.loginId && u.loginId.toLowerCase() === reqUserId.toLowerCase()) || (reqDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === reqDigits)) : null;
+    
+    const userWallet = reqUserId
+      ? (db.wallets[reqUserId] || (foundUser?.id ? db.wallets[foundUser.id] : null) || (foundUser?.loginId ? db.wallets[foundUser.loginId] : null) || (foundUser?.phone ? db.wallets[foundUser.phone.replace(/[^0-9]/g, "")] : null) || DEFAULT_WALLET)
+      : DEFAULT_WALLET;
+    
+    const effectiveId = foundUser ? foundUser.id : reqUserId;
+    const userTxns = reqUserId
+      ? db.transactions.filter((t) => t.userId === effectiveId || t.userId === reqUserId || (foundUser && (t.userLoginId === foundUser.loginId || t.userPhone === foundUser.phone)) || !t.userId)
       : db.transactions;
-    const userInvs = (userId && typeof userId === "string")
-      ? db.investments.filter((i) => i.userId === userId || !i.userId)
+    const userInvs = reqUserId
+      ? db.investments.filter((i) => i.userId === effectiveId || i.userId === reqUserId || !i.userId)
       : db.investments;
-    const userBank = userId && typeof userId === "string" ? db.bankDetails[userId] || null : null;
+    const userBank = reqUserId ? (db.bankDetails[effectiveId] || db.bankDetails[reqUserId] || null) : null;
 
     res.json({
       success: true,
@@ -1315,8 +1323,26 @@ async function startServer() {
     }
 
     const db = ensureDb();
-    const user = db.users.find((u) => u.id === userId);
-    const existingWallet = db.wallets[userId] || { ...DEFAULT_WALLET };
+    const cleanId = String(userId).trim();
+    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+
+    // Multi-criteria user lookup
+    const user = db.users.find(
+      (u) =>
+        u.id === cleanId ||
+        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
+        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+    );
+
+    const effectiveUserId = user ? user.id : cleanId;
+
+    // Retrieve existing wallet checking effectiveUserId, loginId, phone, and cleanId
+    const existingWallet =
+      db.wallets[effectiveUserId] ||
+      (user?.loginId ? db.wallets[user.loginId] : null) ||
+      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
+      db.wallets[cleanId] ||
+      { ...DEFAULT_WALLET };
 
     let updatedWallet = { ...existingWallet };
     if (wallet && typeof wallet === 'object') {
@@ -1331,15 +1357,28 @@ async function startServer() {
       };
     }
 
-    db.wallets[userId] = updatedWallet;
-
-    // If a specific adjustment transaction was requested, record it in user transactions ledger
-    if (adjustment && adjustment.amount > 0) {
+    // Apply specific adjustment if provided
+    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount > 0) {
       const amount = Number(adjustment.amount);
-      const adjType = adjustment.type; // 'ADD' | 'DEDUCT' | 'SET'
+      const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
       const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
+
+      // Check if wallet passed in req.body already modified targetWallet from existingWallet; if not, apply adjustment directly
+      const currentVal = existingWallet[targetWallet] || 0;
+      let calculatedVal = currentVal;
+      if (adjType === 'ADD') {
+        calculatedVal = currentVal + amount;
+      } else if (adjType === 'DEDUCT') {
+        calculatedVal = Math.max(0, currentVal - amount);
+      } else if (adjType === 'SET') {
+        calculatedVal = amount;
+      }
+
+      if (!wallet || wallet[targetWallet] === undefined || wallet[targetWallet] === existingWallet[targetWallet]) {
+        updatedWallet[targetWallet] = calculatedVal;
+      }
+
       const reason = adjustment.reason?.trim() || 'Admin manual balance adjustment';
-      
       const targetLabelEn = targetWallet === 'cashBalance' ? 'Cash Balance' : targetWallet === 'gpBalance' ? 'GP Balance' : targetWallet === 'totalEarned' ? 'Total Earnings' : 'Royalty Balance';
       const targetLabelHi = targetWallet === 'cashBalance' ? 'नकद बैलेंस' : targetWallet === 'gpBalance' ? 'GP बैलेंस' : targetWallet === 'totalEarned' ? 'कुल कमाई' : 'रॉयल्टी बैलेंस';
 
@@ -1349,8 +1388,8 @@ async function startServer() {
 
       const newTxn: Transaction = {
         id: `txn-adm-adj-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        userId: userId,
-        userLoginId: user?.loginId || userId,
+        userId: effectiveUserId,
+        userLoginId: user?.loginId || effectiveUserId,
         userName: user?.name || 'User',
         userPhone: user?.phone || '',
         type: txnType,
@@ -1364,16 +1403,33 @@ async function startServer() {
       };
 
       db.transactions.unshift(newTxn);
-      broadcastRealtimeEvent("transaction_created", { transaction: newTxn, userId, timestamp: Date.now() });
+      broadcastRealtimeEvent("transaction_created", { transaction: newTxn, userId: effectiveUserId, timestamp: Date.now() });
     }
+
+    // Synchronize and persist updated wallet under ALL alias keys for this user
+    const keysToSave = new Set<string>();
+    if (cleanId) keysToSave.add(cleanId);
+    if (effectiveUserId) keysToSave.add(effectiveUserId);
+    if (user?.id) keysToSave.add(user.id);
+    if (user?.loginId) keysToSave.add(user.loginId);
+    if (user?.phone) keysToSave.add(user.phone.replace(/[^0-9]/g, ""));
+
+    keysToSave.forEach((k) => {
+      if (k) db.wallets[k] = { ...updatedWallet };
+    });
 
     db.lastUpdated = new Date().toISOString();
     saveDb(db);
 
-    broadcastRealtimeEvent("wallet_updated", { userId, wallet: updatedWallet, timestamp: Date.now() });
-    broadcastRealtimeEvent("state_changed", { type: "ADMIN_WALLET_ADJUST", userId, timestamp: Date.now() });
+    // Broadcast wallet_updated for ALL keys so connected clients update immediately
+    keysToSave.forEach((k) => {
+      if (k) {
+        broadcastRealtimeEvent("wallet_updated", { userId: k, wallet: updatedWallet, timestamp: Date.now() });
+      }
+    });
+    broadcastRealtimeEvent("state_changed", { type: "ADMIN_WALLET_ADJUST", userId: effectiveUserId, timestamp: Date.now() });
 
-    console.log(`[GCap Admin] Wallet adjusted for user ${user?.name || userId}:`, updatedWallet);
+    console.log(`[GCap Admin] Wallet adjusted for user ${user?.name || effectiveUserId}:`, updatedWallet);
     res.json({ success: true, wallet: updatedWallet });
   });
 
@@ -1383,13 +1439,36 @@ async function startServer() {
     if (!userId || !wallet) return res.status(400).json({ success: false, error: "User ID and wallet required" });
 
     const db = ensureDb();
-    db.wallets[userId] = { ...DEFAULT_WALLET, ...wallet };
+    const cleanId = String(userId).trim();
+    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+    const user = db.users.find(
+      (u) =>
+        u.id === cleanId ||
+        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
+        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+    );
+
+    const updated = { ...DEFAULT_WALLET, ...wallet };
+    const keysToSave = new Set<string>();
+    keysToSave.add(cleanId);
+    if (user?.id) keysToSave.add(user.id);
+    if (user?.loginId) keysToSave.add(user.loginId);
+    if (user?.phone) keysToSave.add(user.phone.replace(/[^0-9]/g, ""));
+
+    keysToSave.forEach((k) => {
+      if (k) db.wallets[k] = updated;
+    });
+
     saveDb(db);
 
-    broadcastRealtimeEvent("wallet_updated", { userId, wallet: db.wallets[userId], timestamp: Date.now() });
+    keysToSave.forEach((k) => {
+      if (k) {
+        broadcastRealtimeEvent("wallet_updated", { userId: k, wallet: updated, timestamp: Date.now() });
+      }
+    });
     broadcastRealtimeEvent("state_changed", { type: "WALLET_UPDATE", timestamp: Date.now() });
 
-    res.json({ success: true, wallet: db.wallets[userId] });
+    res.json({ success: true, wallet: updated });
   });
 
   // GET: Messages for a user or admin

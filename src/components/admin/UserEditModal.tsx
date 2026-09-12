@@ -227,6 +227,31 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       const parsedAdjAmount = parseFloat(adjAmount);
       const hasAdjustment = !isNaN(parsedAdjAmount) && parsedAdjAmount > 0;
 
+      let finalCash = Math.max(0, cashBalance);
+      let finalGp = Math.max(0, gpBalance);
+      let finalTotalEarned = Math.max(0, totalEarned);
+      let finalRoyalty = Math.max(0, royaltyEarned);
+
+      if (hasAdjustment) {
+        if (adjTarget === 'cashBalance') {
+          if (adjType === 'ADD') finalCash = finalCash + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalCash = Math.max(0, finalCash - parsedAdjAmount);
+          else if (adjType === 'SET') finalCash = parsedAdjAmount;
+        } else if (adjTarget === 'gpBalance') {
+          if (adjType === 'ADD') finalGp = finalGp + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalGp = Math.max(0, finalGp - parsedAdjAmount);
+          else if (adjType === 'SET') finalGp = parsedAdjAmount;
+        } else if (adjTarget === 'totalEarned') {
+          if (adjType === 'ADD') finalTotalEarned = finalTotalEarned + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalTotalEarned = Math.max(0, finalTotalEarned - parsedAdjAmount);
+          else if (adjType === 'SET') finalTotalEarned = parsedAdjAmount;
+        } else if (adjTarget === 'royaltyEarned') {
+          if (adjType === 'ADD') finalRoyalty = finalRoyalty + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalRoyalty = Math.max(0, finalRoyalty - parsedAdjAmount);
+          else if (adjType === 'SET') finalRoyalty = parsedAdjAmount;
+        }
+      }
+
       await onSave({
         userId: user?.id,
         name: name.trim(),
@@ -247,10 +272,10 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           upiId: upiId.trim(),
         } : undefined,
         walletUpdates: {
-          cashBalance: Math.max(0, cashBalance),
-          gpBalance: Math.max(0, gpBalance),
-          totalEarned: Math.max(0, totalEarned),
-          royaltyEarned: Math.max(0, royaltyEarned),
+          cashBalance: finalCash,
+          gpBalance: finalGp,
+          totalEarned: finalTotalEarned,
+          royaltyEarned: finalRoyalty,
         },
         walletAdjustment: hasAdjustment ? {
           type: adjType,

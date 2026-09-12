@@ -364,7 +364,17 @@ export default function App() {
     document.addEventListener('visibilitychange', handleResume);
 
     // Instant SSE Real-Time Sync on any activity anywhere
-    const unsubscribeRealtime = subscribeToRealtimeEvents(() => {
+    const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+      if (event.type === 'wallet_updated' && event.wallet && currentUser) {
+        const targetId = event.userId;
+        const curId = currentUser.id;
+        const curLoginId = currentUser.loginId;
+        const curPhone = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "") : "";
+        if (targetId && (targetId === curId || targetId === curLoginId || targetId === curPhone)) {
+          setWallet(event.wallet);
+          setStoredWallet(event.wallet);
+        }
+      }
       syncWithCentralDb();
     });
 

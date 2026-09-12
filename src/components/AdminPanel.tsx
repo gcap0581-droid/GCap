@@ -337,7 +337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }) => {
     setIsSyncingUsers(true);
     try {
-      const targetUserId = data.userId || (data.phone.trim().replace(/[^0-9]/g, ""));
+      let targetUserId = data.userId || (data.phone.trim().replace(/[^0-9]/g, ""));
       
       if (data.userId) {
         const res = await adminUpdateUserAsync(data.userId, {
@@ -375,19 +375,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           referralCode: data.referralCode,
           referredBy: data.referredBy,
         });
-        if (!res.success) {
+        if (res.success && res.user?.id) {
+          targetUserId = res.user.id;
+        } else if (!res.success) {
           console.warn('User add error:', res.error);
         }
       }
 
       // Handle Wallet Updates and Adjustments if present
       if (targetUserId && (data.walletUpdates || data.walletAdjustment)) {
-        await apiAdminAdjustUserWallet(
+        const adjustRes = await apiAdminAdjustUserWallet(
           targetUserId,
           data.walletUpdates || {},
           data.walletAdjustment,
           adminUser?.name || 'Super Admin'
         );
+        if (adjustRes.success && adjustRes.wallet) {
+          const w = adjustRes.wallet;
+          const cleanPhone = data.phone.trim().replace(/[^0-9]/g, "");
+          setWalletsMap((prev) => ({
+            ...prev,
+            [targetUserId]: w,
+            ...(cleanPhone ? { [cleanPhone]: w } : {}),
+            ...(data.loginId ? { [data.loginId]: w } : {}),
+          }));
+        }
       }
 
       await refreshUsers();
