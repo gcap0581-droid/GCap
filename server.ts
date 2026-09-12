@@ -867,6 +867,62 @@ async function startServer() {
     res.json({ success: true, buildId: SERVER_BUILD_ID, message: "Force update broadcasted to all devices" });
   });
 
+  // Admin Reset System Data to Fresh (Keep Treasury ₹6,00,000, clear all transactions & investments)
+  app.post("/api/admin/reset-fresh", (_req, res) => {
+    const db = ensureDb();
+    db.transactions = [];
+    db.investments = [];
+    
+    // Reset all user wallets to 0
+    const freshWallets: Record<string, Wallet> = {};
+    for (const u of db.users) {
+      freshWallets[u.id] = { ...DEFAULT_WALLET };
+    }
+    db.wallets = freshWallets;
+
+    // Reset Treasury to exact ₹6,00,000
+    db.treasury = {
+      balance: 600000,
+      minAlertThreshold: 500000,
+      totalInjected: 600000,
+      totalDeducted: 0,
+      totalTransferredToUsers: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    db.treasuryLogs = [
+      {
+        id: "tr-log-1",
+        type: "ADMIN_ADD",
+        amount: 600000,
+        balanceBefore: 0,
+        balanceAfter: 600000,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        reason: "Initial Company Liquidity Injection into Main Reserve",
+        reasonHi: "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
+        actor: "Super Admin (admin)",
+        referenceId: "INJ-600000",
+      },
+    ];
+
+    db.lastUpdated = new Date().toISOString();
+    saveDb(db);
+
+    broadcastRealtimeEvent("state_changed", {
+      type: "SYSTEM_RESET_FRESH",
+      timestamp: Date.now(),
+    });
+
+    res.json({
+      success: true,
+      message: "System reset to fresh state with ₹6,00,000 Treasury balance.",
+      treasury: db.treasury,
+      transactions: [],
+      investments: [],
+    });
+  });
+
   // GET: Central real-time state for any user or admin across the world
   app.get("/api/central/state", (req, res) => {
     const db = ensureDb();

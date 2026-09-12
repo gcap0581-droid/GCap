@@ -41,6 +41,7 @@ import {
   getStoredTreasury,
   setStoredTreasury,
   getStoredTreasuryLogs,
+  setStoredTreasuryLogs,
   adminAddCompanyBalance,
   adminDeductCompanyBalance,
   deductForUserInvestment,
@@ -83,6 +84,7 @@ import {
   apiDeleteAdminMessage,
 } from './utils/centralSync';
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
+import { apiFetch } from './utils/apiConfig';
 import { INVESTMENT_PLANS } from './data/plans';
 import { Navbar } from './components/Navbar';
 import { WalletCard } from './components/WalletCard';
@@ -1610,13 +1612,73 @@ export default function App() {
     }, 600);
   };
 
-  const handleResetData = () => {
-    if (window.confirm(isHi ? 'क्या आप सभी डेमो डेटा रीसेट करना चाहते हैं?' : 'Reset all demo data to default?')) {
-      const reset = resetPortalData();
-      setWallet(reset.wallet);
-      setInvestments(reset.investments);
-      setTransactions(reset.transactions);
-      showToast(isHi ? 'डेटा रीसेट हुआ' : 'Data Reset', isHi ? 'डेटा रीसेट हो गया है।' : 'Demo portal data restored.');
+  const handleResetData = async () => {
+    if (
+      window.confirm(
+        isHi
+          ? 'क्या आप एडमिन बैलेंस ₹6,00,000 रखकर बाकी सभी पुराने लेन-देन और निवेश डेटा को बिल्कुल ज़ीरो (फ्रेश) करना चाहते हैं?'
+          : 'Are you sure you want to reset all transaction and investment records to fresh state while keeping Admin balance at ₹600,000?'
+      )
+    ) {
+      const freshWallet: Wallet = {
+        cashBalance: 0,
+        gpBalance: 0,
+        totalInvested: 0,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+
+      const freshTreasury: CompanyTreasury = {
+        balance: 600000,
+        minAlertThreshold: 500000,
+        totalInjected: 600000,
+        totalDeducted: 0,
+        totalTransferredToUsers: 0,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      const freshLogs: TreasuryLog[] = [
+        {
+          id: 'tr-log-1',
+          type: 'ADMIN_ADD',
+          amount: 600000,
+          balanceBefore: 0,
+          balanceAfter: 600000,
+          date: new Date().toISOString(),
+          timestamp: Date.now(),
+          reason: 'Initial Company Liquidity Injection into Main Reserve',
+          reasonHi: 'कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया',
+          actor: 'Super Admin (admin)',
+          referenceId: 'INJ-600000',
+        },
+      ];
+
+      setTransactions([]);
+      setInvestments([]);
+      setWallet(freshWallet);
+      setTreasury(freshTreasury);
+      setTreasuryLogs(freshLogs);
+
+      setStoredTransactions([]);
+      setStoredInvestments([]);
+      setStoredWallet(freshWallet);
+      setStoredTreasury(freshTreasury);
+      setStoredTreasuryLogs(freshLogs);
+
+      try {
+        await apiFetch('/api/admin/reset-fresh', { method: 'POST' });
+      } catch (err) {
+        console.warn('Backend reset call failed, local state reset successfully:', err);
+      }
+
+      showToast(
+        isHi ? '✨ डेटा पूर्णतः फ्रेश हुआ!' : '✨ Data Reset Successful!',
+        isHi
+          ? 'कंपनी एडमिन बैलेंस ₹6,00,000 सुरक्षित है। सभी पुराने लेन-देन और निवेश रिकॉर्ड्स ज़ीरो (फ्रेश) कर दिए गए हैं।'
+          : 'Admin balance retained at ₹6,00,000. All past transactions and investments have been cleared.'
+      );
     }
   };
 
@@ -2833,6 +2895,7 @@ export default function App() {
               onSimulateMaturity641Days={handleSimulateMaturity641Days}
               onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
               onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+              onResetSystemFresh={handleResetData}
               onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
               onResetTreasury={handleResetTreasury}
               onRunMidnightBackupNow={handleRunMidnightBackupNow}
@@ -2924,6 +2987,7 @@ export default function App() {
                 onSimulateMaturity641Days={handleSimulateMaturity641Days}
                 onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
                 onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+                onResetSystemFresh={handleResetData}
                 onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
                 onResetTreasury={handleResetTreasury}
                 onRunMidnightBackupNow={handleRunMidnightBackupNow}

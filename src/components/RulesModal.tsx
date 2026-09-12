@@ -344,8 +344,8 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                 <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
                   <li>
                     {isHi
-                      ? `न्यूनतम जमा राशि ${formatINR(rules.minDeposit)} और अधिकतम ${formatINR(rules.maxDeposit)} प्रति लेनदेन है।`
-                      : `Minimum deposit is ${formatINR(rules.minDeposit)} and maximum is ${formatINR(rules.maxDeposit)} per transaction.`}
+                      ? `न्यूनतम जमा राशि ${formatINR(rules.minDeposit)} है एवं अधिकतम जमा की कोई सीमा नहीं है (असीमित जमा सुविधा)।`
+                      : `Minimum deposit is ${formatINR(rules.minDeposit)} with no upper limit (Unlimited deposits per transaction).`}
                   </li>
                   <li>
                     {isHi

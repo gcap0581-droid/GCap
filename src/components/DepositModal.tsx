@@ -32,8 +32,9 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onDepositSuccess,
 }) => {
   const isHi = language === 'hi';
-  const minDeposit = rules ? rules.minDeposit : 500;
-  const maxDeposit = rules ? rules.maxDeposit : 500000;
+  const minDeposit = rules ? rules.minDeposit : 100;
+  // Unlimited upper deposit limit support
+  const maxDeposit = rules && rules.maxDeposit ? rules.maxDeposit : 100000000;
   const [amount, setAmount] = useState<number>(Math.max(minDeposit, 1000));
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'NETBANKING' | 'CARD'>('UPI');
   const [utrNumber, setUtrNumber] = useState<string>('');
@@ -44,13 +45,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
   if (!isOpen) return null;
 
-  const quickAmounts = [minDeposit, 1000, 2000, 5000, 10000, 25000].filter((v, i, a) => a.indexOf(v) === i);
+  const quickAmounts = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000].filter((v, i, a) => a.indexOf(v) === i);
   const companyUpiId = rules?.companyUpiId || 'gcap.pay@hdfcbank';
   const companyBank = {
-    name: rules?.companyBankAccountHolder || 'GCap Capital Ventures Pvt Ltd',
-    bank: rules?.companyBankName || 'HDFC Bank',
-    accountNumber: rules?.companyBankAccountNumber || '50200098234123',
-    ifsc: rules?.companyBankIfsc || 'HDFC0001234',
+    name: rules?.companyBankAccountHolder || 'GCap Asset Management (India) Pvt. Ltd.',
+    bank: rules?.companyBankName || 'Axis Bank Ltd.',
+    accountNumber: rules?.companyBankAccountNumber || '924010008662307',
+    ifsc: rules?.companyBankIfsc || 'UTIB0001219',
   };
 
   const upiUrl = `upi://pay?pa=${companyUpiId}&pn=${encodeURIComponent(companyBank.name)}&am=${amount}&cu=INR`;
@@ -75,14 +76,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         isHi
           ? `न्यूनतम जमा राशि ${formatINR(minDeposit)} है।`
           : `Minimum deposit amount is ${formatINR(minDeposit)}.`
-      );
-      return;
-    }
-    if (amount > maxDeposit) {
-      setError(
-        isHi
-          ? `अधिकतम जमा राशि ${formatINR(maxDeposit)} है।`
-          : `Maximum deposit amount is ${formatINR(maxDeposit)}.`
       );
       return;
     }
@@ -179,7 +172,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                 id="input-deposit-amount"
                 type="number"
                 min={100}
-                max={1000000}
+                max={100000000}
                 step={100}
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
@@ -187,6 +180,10 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                 placeholder="5000"
               />
             </div>
+
+            <p className="text-[10px] text-emerald-400 font-semibold mt-1.5 flex items-center gap-1">
+              <span>✨ {isHi ? 'असीमित जमा सुविधा: QR कोड या बैंक से आप कितनी भी राशि जमा कर सकते हैं (No Upper Limit)।' : 'Unlimited Deposits: No upper limit restriction when depositing via QR Code or Bank A/C.'}</span>
+            </p>
 
             {/* Quick Amount Chips */}
             <div className="flex flex-wrap gap-2 mt-3">
@@ -215,8 +212,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             </label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { id: 'UPI', label: isHi ? 'कंपनी UPI / QR' : 'Company UPI / QR', icon: Smartphone },
-                { id: 'NETBANKING', label: isHi ? 'कंपनी बैंक खाता' : 'Company Bank A/C', icon: Building2 },
+                { id: 'UPI', label: isHi ? 'कंपनी QR कोड (Scan QR)' : 'Company QR Code', icon: QrCode },
+                { id: 'NETBANKING', label: isHi ? 'कंपनी बैंक खाता (Bank A/C)' : 'Company Bank A/C', icon: Building2 },
               ].map((m) => {
                 const Icon = m.icon;
                 const isSel = paymentMethod === m.id;
@@ -245,45 +242,34 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             <div className="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-4">
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 {/* Real Dynamic QR Code */}
-                <div className="w-32 h-32 bg-white p-1 rounded-xl shrink-0 flex flex-col items-center justify-center shadow-md border border-slate-700">
+                <div className="w-36 h-36 bg-white p-1.5 rounded-xl shrink-0 flex flex-col items-center justify-center shadow-lg border border-slate-700">
                   <img
                     src={qrUrl}
-                    alt="Scan UPI QR Code"
-                    className="w-28 h-28 object-contain"
+                    alt="Scan Payment QR Code"
+                    className="w-32 h-32 object-contain"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="text-[8px] font-mono font-bold text-slate-800 tracking-wider">GCAP SECURE QR</span>
+                  <span className="text-[8px] font-mono font-bold text-slate-800 tracking-wider">GCAP OFFICIAL QR</span>
                 </div>
  
                 {/* Instructions */}
                 <div className="space-y-2 text-xs text-slate-300 w-full">
-                  <div className="font-semibold text-white">
-                    {isHi ? 'कंपनी की आधिकारिक UPI ID:' : 'Official Company UPI ID:'}
+                  <div className="font-bold text-white flex items-center gap-1.5">
+                    <QrCode className="w-4 h-4 text-emerald-400" />
+                    <span>{isHi ? 'आधिकारिक भुगतान QR कोड:' : 'Official Payment QR Code:'}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-700">
-                    <span className="font-mono text-emerald-400 text-xs truncate font-bold">{companyUpiId}</span>
-                    <button
-                      type="button"
-                      id="btn-copy-upi"
-                      onClick={handleCopyUpi}
-                      className="ml-auto p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 text-[11px]"
-                      title="Copy UPI ID"
-                    >
-                      {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedUpi ? 'कॉपी हुआ' : 'कॉपी करें'}</span>
-                    </button>
-                  </div>
-                  <div className="text-slate-400 text-[11px] space-y-1">
-                    <p>
-                      {isHi
-                        ? 'अपने PhonePe, GPay, Paytm से इस UPI ID पर राशि भेजें।'
-                        : 'Transfer from your PhonePe, Google Pay, or Paytm to this verified company ID.'}
-                    </p>
-                    <p className="text-emerald-400/90 font-medium">
-                      {isHi
-                        ? `💸 कंपनी का नाम: ${companyBank.name}`
-                        : `💸 Payee Name: ${companyBank.name}`}
-                    </p>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    {isHi
+                      ? 'अपने PhonePe, GPay, Paytm, BHIM या किसी भी बैंकिंग ऐप से ऊपर दिए गए क्यूआर कोड को स्कैन करके राशि ट्रांसफर करें।'
+                      : 'Scan the QR code above using PhonePe, Google Pay, Paytm, or any banking app to complete your deposit.'}
+                  </p>
+                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-0.5">
+                    <span className="text-[10px] text-emerald-300/80 uppercase tracking-wider block font-semibold">
+                      {isHi ? 'प्राप्तकर्ता (Verified Payee Name):' : 'Verified Payee Name:'}
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono text-xs block">
+                      {companyBank.name}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -296,12 +282,12 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer select-none active:scale-95 text-center"
                 >
                   <Smartphone className="w-4.5 h-4.5" />
-                  <span>{isHi ? `📱 सीधे UPI ऐप से पे करें (₹${amount.toLocaleString('en-IN')})` : `📱 Pay via UPI App (₹${amount.toLocaleString('en-IN')})`}</span>
+                  <span>{isHi ? `📱 सीधे UPI ऐप से पे करें (₹${amount.toLocaleString('en-IN')})` : `📱 Pay via Installed UPI App (₹${amount.toLocaleString('en-IN')})`}</span>
                 </a>
                 <p className="text-[10px] text-center text-slate-500 mt-1.5">
                   {isHi 
-                    ? '💡 मोबाइल यूज़र्स इस बटन पर क्लिक कर सीधे किसी भी यूपीआई ऐप (GPay, PhonePe, Paytm) से भुगतान कर सकते हैं।' 
-                    : '💡 Mobile users can click this button to open and pay directly using any installed UPI app.'}
+                    ? '💡 मोबाइल यूज़र्स इस बटन पर क्लिक कर सीधे PhonePe / GPay खोलकर पे कर सकते हैं।' 
+                    : '💡 Mobile users can click this button to open GPay / PhonePe directly.'}
                 </p>
               </div>
             </div>

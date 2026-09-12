@@ -28,6 +28,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [referenceId, setReferenceId] = useState('');
   const [note, setNote] = useState('');
   const [noteHi, setNoteHi] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       setNote('Admin manual credit to account');
       setNoteHi('एडमिन द्वारा खाते में जमा की गई राशि');
     }
+    setAdminPassword('');
     setError('');
   }, [transaction, isOpen]);
 
@@ -57,8 +59,19 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (amount <= 0) {
       setError(isHi ? 'राशि 0 से अधिक होनी चाहिए।' : 'Amount must be greater than 0.');
+      return;
+    }
+
+    if (status === 'SUCCESS' && adminPassword.trim() !== 'gcap@tra1978') {
+      setError(
+        isHi
+          ? '❌ गलत ट्रांजेक्शन पासवर्ड! अप्रूवल के लिए सही पासवर्ड (gcap@tra1978) दर्ज करें।'
+          : '❌ Incorrect Transaction Password! Password gcap@tra1978 is required to set status to SUCCESS.'
+      );
       return;
     }
 
@@ -181,6 +194,25 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               />
             </div>
           </div>
+
+          {status === 'SUCCESS' && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5">
+              <label className="block text-xs font-bold text-amber-300">
+                {isHi ? '🔒 एडमिन ट्रांजेक्शन पासवर्ड (अनिवार्य):' : '🔒 Admin Transaction Password (Required):'}
+              </label>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="gcap@tra1978"
+                className="w-full px-3 py-2 bg-slate-950 border border-amber-500/40 rounded-lg text-xs font-mono text-white focus:border-amber-400 focus:outline-none"
+                required
+              />
+              <p className="text-[10px] text-amber-200/80">
+                {isHi ? 'स्टेटस SUCCESS (सफल) करने हेतु सुरक्षा कोड gcap@tra1978 दर्ज करें।' : 'Enter security code gcap@tra1978 to approve transaction.'}
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">

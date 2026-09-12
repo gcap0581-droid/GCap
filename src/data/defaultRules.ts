@@ -4,7 +4,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCap',
   gpRatePerRupee: 1.0, // 1 INR = 1.0 GP (Adjustable by Admin anytime)
   minDeposit: 100,
-  maxDeposit: 500000,
+  maxDeposit: 100000000, // Unlimited upper deposit limit
   minWithdrawal: 200,
   maxWithdrawalPerDay: 100000,
   withdrawalFeePercent: 0, // 0% fee (100% payout)
@@ -24,8 +24,8 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   supportPhone: '+91 98000 12345',
   lastUpdated: '2026-09-07',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCap Investments',
-  companyBankName: 'HDFC Bank Ltd.',
-  companyBankAccountNumber: '50200084920194',
-  companyBankIfsc: 'HDFC0000240',
+  companyBankAccountHolder: 'GCap Asset Management (India) Pvt. Ltd.',
+  companyBankName: 'Axis Bank Ltd.',
+  companyBankAccountNumber: '924010008662307',
+  companyBankIfsc: 'UTIB0001219',
 };

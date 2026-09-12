@@ -74,6 +74,7 @@ import { PlanEditModal } from './admin/PlanEditModal';
 import { UserEditModal } from './admin/UserEditModal';
 import { TransactionEditModal } from './admin/TransactionEditModal';
 import { ProjectCertificateModal } from './admin/ProjectCertificateModal';
+import { AdminApprovalPasswordModal } from './admin/AdminApprovalPasswordModal';
 import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
@@ -108,6 +109,7 @@ interface AdminPanelProps {
   onSimulateMaturity641Days?: (investmentId: string) => void;
   onAdminAddCompanyBalance: (amount: number, reason: string, reasonHi: string, refId?: string) => void;
   onAdminDeductCompanyBalance: (amount: number, reason: string, reasonHi: string, refId?: string) => void;
+  onResetSystemFresh?: () => void;
   onQuickAddCompanyBalance: (amount: number) => void;
   onResetTreasury: () => void;
   onRunMidnightBackupNow: () => void;
@@ -152,6 +154,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSimulateMaturity641Days,
   onAdminAddCompanyBalance,
   onAdminDeductCompanyBalance,
+  onResetSystemFresh,
   onQuickAddCompanyBalance,
   onResetTreasury,
   onRunMidnightBackupNow,
@@ -178,6 +181,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setInternalActiveSubTab(tab);
     }
   };
+
+  // Master Tools Collapsible State
+  const [isMasterToolsOpen, setIsMasterToolsOpen] = useState(false);
 
   // Company Balance Modal state
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
@@ -208,6 +214,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [txnModalOpen, setTxnModalOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
+
+  const [approvalPasswordModalOpen, setApprovalPasswordModalOpen] = useState(false);
+  const [approvalTargetTxn, setApprovalTargetTxn] = useState<Transaction | null>(null);
 
   const [certModalOpen, setCertModalOpen] = useState(false);
 
@@ -409,8 +418,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleQuickApprove = (txnId: string) => {
     const target = transactions.find((t) => t.id === txnId);
     if (target) {
-      onUpdateTransaction({ ...target, status: 'SUCCESS' });
+      setApprovalTargetTxn(target);
+      setApprovalPasswordModalOpen(true);
     }
+  };
+
+  const handleConfirmApprovalWithPassword = (targetTxn: Transaction) => {
+    onUpdateTransaction({ ...targetTxn, status: 'SUCCESS' });
   };
 
   const handleRejectTransaction = (txnId: string) => {
@@ -435,92 +449,82 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Persistent Back to User / Investor Screen Bar */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border-2 border-emerald-500/50 rounded-2xl p-3.5 px-4 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
-            <ShieldCheck className="w-5 h-5" />
+      {/* Sleek Compact Admin Master Control Header Bar */}
+      <div className="bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-white">
+                  {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
+                </h2>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 font-mono">
+                  SUPER ADMIN
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Live Sync
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {isHi
+                  ? `लॉगिन: ${adminUser.loginId} (${adminUser.name}) • कुल यूज़र्स: ${usersList.length}`
+                  : `ID: ${adminUser.loginId} (${adminUser.name}) • Total Users: ${usersList.length}`}
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="text-sm font-black text-white flex items-center gap-1.5">
-              <span>{isHi ? '👑 एडमिन कंट्रोल हब (Admin Hub)' : '👑 Admin Control Hub'}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/40">
-                ACTIVE
-              </span>
-            </span>
-            <p className="text-xs text-slate-300">
-              {isHi
-                ? 'सामान्य यूजर/इन्वेस्टर स्क्रीन पर वापस लौटने के लिए यह बटन दबाएं:'
-                : 'Return to regular investor user panel at any time:'}
-            </p>
+
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <button
+              onClick={() => setIsMasterToolsOpen((prev) => !prev)}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Sliders className="w-3.5 h-3.5 text-amber-400" />
+              <span>{isHi ? (isMasterToolsOpen ? 'टूल्स बंद करें ▲' : '🛠️ मास्टर टूल्स मेन्यू ▼') : (isMasterToolsOpen ? 'Close Tools ▲' : '🛠️ Master Tools ▼')}</span>
+            </button>
+
+            <button
+              id="btn-admin-top-back-investor"
+              onClick={onSwitchToInvestorView}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{isHi ? '← यूज़र व्यू' : '← User View'}</span>
+            </button>
+
+            <button
+              id="btn-admin-logout"
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{isHi ? 'लॉगआउट' : 'Logout'}</span>
+            </button>
           </div>
         </div>
 
-        <button
-          id="btn-admin-top-back-investor"
-          onClick={onSwitchToInvestorView}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs sm:text-sm font-black transition-all shadow-lg shadow-emerald-500/25 cursor-pointer active:scale-95 shrink-0"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{isHi ? '← वापस यूजर/इन्वेस्टर स्क्रीन (Back to User View)' : '← Back to User View'}</span>
-        </button>
-      </div>
-
-      {/* Admin Welcome Banner */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shrink-0 shadow-lg shadow-amber-500/10">
-              <Award className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-extrabold text-white">
-                  {isHi ? 'GCap एडमिन कंट्रोल हब (Master Portal)' : 'GCap Admin Control Hub'}
-                </h2>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                  SUPER ADMIN
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {isHi
-                  ? `लॉगिन आईडी: ${adminUser.loginId} (${adminUser.name}) • सब कुछ जोड़ें, एडिट करें और हटाएं (CRUD)`
-                  : `Logged in as: ${adminUser.loginId} (${adminUser.name}) • Full control to Add, Edit, and Delete everything`}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span>{isHi ? 'रीयल-टाइम ऑटो-सिंक सक्रिय (कोई भी नया यूज़र तुरंत यहाँ अपडेट होगा)' : 'Live Real-Time Sync Active (New registrations update instantly)'}</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
-                  {isHi ? `कुल यूज़र्स: ${usersList.length}` : `Total Users: ${usersList.length}`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
+        {/* Collapsible Master Tools Menu Panel */}
+        {isMasterToolsOpen && (
+          <div className="pt-3 border-t border-amber-500/20 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn">
             <button
               id="btn-admin-header-export-excel"
               onClick={() => exportAllDataToExcel(currentPayload, 'GCap_All_Data_Export')}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 cursor-pointer"
-              title={isHi ? 'पूरा डेटा Excel में एक्सपोर्ट करें' : 'Export all data to Excel (.xlsx)'}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>{isHi ? 'Excel एक्सपोर्ट (.xlsx)' : 'Export to Excel'}</span>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>{isHi ? 'Excel एक्सपोर्ट (.xlsx)' : 'Export Excel'}</span>
             </button>
 
             <button
               id="btn-admin-certificate-sample"
               onClick={() => setCertModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition-all shadow-md shadow-amber-500/20 cursor-pointer"
-              title={isHi ? 'प्रोजेक्ट समापन प्रमाण पत्र सैंपल देखें व प्रिंट करें' : 'View & Print Completion Certificate Sample'}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer"
             >
-              <Award className="w-3.5 h-3.5" />
-              <span>{isHi ? '📜 प्रमाण पत्र सैंपल' : '📜 Certificate Sample'}</span>
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>{isHi ? '📜 प्रमाण पत्र सैंपल' : '📜 Certificate'}</span>
             </button>
 
             <button
@@ -530,41 +534,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 setAgreementUser(firstInvestor);
                 setAgreementModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black transition-all shadow-md shadow-cyan-600/20 cursor-pointer border border-cyan-400/40 active:scale-95"
-              title={isHi ? 'यूजर कानूनी अनुबंध पत्र देखें व प्रिंट करें' : 'View & Print Legal Agreement PDF'}
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer"
             >
-              <FileCheck className="w-3.5 h-3.5" />
-              <span>{isHi ? '📄 कानूनी अनुबंध (Agreement)' : '📄 Legal Agreement'}</span>
+              <FileCheck className="w-4 h-4 text-cyan-400" />
+              <span>{isHi ? '📄 कानूनी अनुबंध' : '📄 Legal Agreement'}</span>
             </button>
 
             <button
               id="btn-admin-manage-rules"
               onClick={onOpenRules}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all cursor-pointer"
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
-              <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isHi ? '⚙️ नियम व सीमाएं बदलें' : '⚙️ Manage Rules'}</span>
+              <Sliders className="w-4 h-4 text-emerald-400" />
+              <span>{isHi ? '⚙️ नियम व सीमाएं' : '⚙️ Rules & Limits'}</span>
             </button>
 
-            <button
-              id="btn-admin-switch-investor"
-              onClick={onSwitchToInvestorView}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition-all shadow-lg shadow-emerald-600/30 cursor-pointer border border-emerald-400/40 active:scale-95"
-            >
-              <Eye className="w-4 h-4 text-emerald-200" />
-              <span>{isHi ? '👈 इन्वेस्टर/यूजर मोड में जाएं (Investor View)' : '👈 Switch to Investor Mode'}</span>
-            </button>
-
-            <button
-              id="btn-admin-logout"
-              onClick={onLogout}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{isHi ? 'लॉगआउट' : 'Logout'}</span>
-            </button>
+            {onResetSystemFresh && (
+              <button
+                id="btn-admin-fresh-reset-system"
+                onClick={onResetSystemFresh}
+                className="col-span-2 sm:col-span-4 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-black transition-all cursor-pointer shadow-md"
+                title={isHi ? 'कंपनी बैलेंस ₹6,00,000 छोड़कर सभी लेन-देन व निवेश जीरो (फ्रेश) करें' : 'Keep Admin balance ₹600,000 & reset all transaction records to zero'}
+              >
+                <RotateCcw className="w-4 h-4 text-rose-400" />
+                <span>{isHi ? '✨ डेटा फ्रेश रीसेट (कंपनी बैलेंस ₹6,00,000 रखें व सभी लेन-देन ज़ीरो करें)' : '✨ Reset All Transactions (Keep ₹600k Admin Balance)'}</span>
+              </button>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Navigation Sub-Tabs & Mobile Menu Grid */}
@@ -1435,6 +1432,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         rules={rules}
         plans={plans}
         language={language}
+      />
+
+      <AdminApprovalPasswordModal
+        isOpen={approvalPasswordModalOpen}
+        onClose={() => setApprovalPasswordModalOpen(false)}
+        transaction={approvalTargetTxn}
+        onConfirmApprove={handleConfirmApprovalWithPassword}
+        language={language}
+        rules={rules}
       />
     </div>
   );

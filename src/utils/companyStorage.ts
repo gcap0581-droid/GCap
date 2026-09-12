@@ -29,10 +29,10 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   signatoryDesignation: 'Managing Director & Authorized Signatory',
   signatoryDin: 'DIN: 08924192',
   sealCity: 'MUMBAI',
-  bankName: 'HDFC Bank Ltd.',
-  bankAccountNumber: '50200084920194',
-  bankIfsc: 'HDFC0000240',
-  bankBranch: 'BKC Mumbai Commercial Branch',
+  bankName: 'Axis Bank Ltd.',
+  bankAccountNumber: '924010008662307',
+  bankIfsc: 'UTIB0001219',
+  bankBranch: 'Axis Commercial Branch',
   bankAccountType: 'Current Account',
   tagline: 'Guaranteed Principal Security & Automated Asset Growth',
   taglineHi: '100% मूलधन सुरक्षा एवं स्वचालित संपत्ति विकास',
@@ -50,10 +50,14 @@ export function getStoredCompanyProfile(): CompanyProfile {
       return DEFAULT_COMPANY_PROFILE;
     }
     const parsed = JSON.parse(raw);
-    return {
+    const updated = {
       ...DEFAULT_COMPANY_PROFILE,
       ...parsed,
+      bankName: 'Axis Bank Ltd.',
+      bankAccountNumber: '924010008662307',
+      bankIfsc: 'UTIB0001219',
     };
+    return updated;
   } catch (err) {
     console.error('Failed to parse stored company profile:', err);
     return DEFAULT_COMPANY_PROFILE;
