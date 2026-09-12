@@ -1028,6 +1028,77 @@ export default function App() {
     );
   };
 
+  // =========================================================================
+  // AUTO-LOGOUT ON INACTIVITY (2 Minutes Inactivity on Web & App)
+  // =========================================================================
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes (120 seconds)
+    let lastActivityTime = Date.now();
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const triggerAutoLogout = () => {
+      logoutUser();
+      setCurrentUser(null);
+      showToast(
+        isHi ? '⏳ 2 मिनट की निष्क्रियता के कारण लॉगआउट' : '⏳ Auto Logged Out (2m Inactivity)',
+        isHi
+          ? 'सुरक्षा कारणों से 2 मिनट तक कोई गतिविधि न होने पर आपका सेशन स्वतः समाप्त हो गया।'
+          : 'Your session has ended automatically due to 2 minutes of inactivity.'
+      );
+    };
+
+    const resetTimer = () => {
+      lastActivityTime = Date.now();
+      clearTimeout(timerId);
+      timerId = setTimeout(() => {
+        triggerAutoLogout();
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        const elapsed = Date.now() - lastActivityTime;
+        if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+          triggerAutoLogout();
+          return;
+        }
+      }
+      resetTimer();
+    };
+
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'touchmove',
+      'click',
+      'pointerdown',
+      'wheel',
+    ];
+
+    activityEvents.forEach((ev) => {
+      window.addEventListener(ev, resetTimer, { passive: true });
+    });
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    // Initial arming of the 2-minute timer
+    resetTimer();
+
+    return () => {
+      clearTimeout(timerId);
+      activityEvents.forEach((ev) => {
+        window.removeEventListener(ev, resetTimer);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [currentUser, isHi]);
+
   // Save changes to localStorage
   useEffect(() => {
     setStoredWallet(wallet);
