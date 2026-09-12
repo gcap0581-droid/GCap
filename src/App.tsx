@@ -1687,6 +1687,11 @@ export default function App() {
     setRules(updatedRules);
     saveStoredRules(updatedRules);
 
+    // Persist to central database
+    apiSaveRules(updatedRules).catch((err) => {
+      console.error('Failed to persist rules to central database:', err);
+    });
+
     // Sync bank details to company profile
     try {
       const profile = getStoredCompanyProfile();
@@ -1713,6 +1718,13 @@ export default function App() {
   const handleResetRules = () => {
     const def = resetRulesToDefault();
     setRules(def);
+    saveStoredRules(def);
+
+    // Persist to central database
+    apiSaveRules(def).catch((err) => {
+      console.error('Failed to persist reset rules to central database:', err);
+    });
+
     showToast(
       isHi ? 'डिफ़ॉल्ट नियम बहाल' : 'Rules Reset to Default',
       isHi ? 'नियम डिफ़ॉल्ट सेटिंग्स पर रीसेट हो चुके हैं।' : 'Default parameters restored.'
