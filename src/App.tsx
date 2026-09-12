@@ -2740,6 +2740,11 @@ export default function App() {
         onToggleAdminHub={() =>
           setAdminViewMode((prev) => (prev === 'ADMIN_HUB' ? 'INVESTOR_VIEW' : 'ADMIN_HUB'))
         }
+        onSelectAdminSubTab={(subTab) => {
+          setAdminViewMode('ADMIN_HUB');
+          setAdminMobileTab(subTab);
+          setIsMenuDrawerOpen(false);
+        }}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -2799,6 +2804,8 @@ export default function App() {
             <AdminPanel
               adminUser={currentUser}
               language={language}
+              externalActiveSubTab={adminMobileTab}
+              onExternalActiveSubTabChange={setAdminMobileTab}
               rules={rules}
               wallet={wallet}
               transactions={transactions}

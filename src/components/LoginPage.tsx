@@ -352,7 +352,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   {/* Login ID Input */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      {isHi ? 'मोबाइल नंबर / यूजर आईडी (Admin या Mobile)' : 'Mobile Number / User ID'}
+                      {isHi ? 'मोबाइल नंबर / यूजर आईडी' : 'Mobile Number / User ID'}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -370,7 +370,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         required
                         value={loginId}
                         onChange={(e) => setLoginId(e.target.value)}
-                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर (या Admin)' : '10-digit mobile number (or Admin)'}
+                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
                     </div>

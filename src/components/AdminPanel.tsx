@@ -24,6 +24,10 @@ import {
   FileCheck,
   Bell,
   MessageSquare,
+  Activity,
+  Edit3,
+  CheckCircle2,
+  Receipt,
 } from 'lucide-react';
 import {
   AppRules,
@@ -178,6 +182,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Company Balance Modal state
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [balanceModalMode, setBalanceModalMode] = useState<'ADD' | 'DEDUCT'>('ADD');
+
+  // Overview recent activity filter
+  const [overviewTxnFilter, setOverviewTxnFilter] = useState<'ALL' | 'PENDING' | 'DEPOSIT' | 'WITHDRAWAL'>('ALL');
+  const sortedTxns = [...transactions].sort((a, b) => b.timestamp - a.timestamp);
+  const recentFilteredTxns = sortedTxns.filter((t) => {
+    if (overviewTxnFilter === 'PENDING') return t.status === 'PENDING';
+    if (overviewTxnFilter === 'DEPOSIT') return t.type === 'DEPOSIT';
+    if (overviewTxnFilter === 'WITHDRAWAL') return t.type === 'WITHDRAWAL';
+    return true;
+  });
 
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
 
@@ -968,6 +982,202 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   ? `कुल ${transactions.length} लेन-देन। मैन्युअल क्रेडिट/डेबिट जोड़ें या स्थिति बदलें।`
                   : `Total ${transactions.length} records. Manually credit, debit, or approve.`}
               </p>
+            </div>
+          </div>
+
+          {/* RECENT LIVE USER ACTIVITIES & TRANSACTIONS FEED PANEL */}
+          <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
+                  <Activity className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white">
+                      {isHi ? '⚡ यूज़र हालिया एक्टिविटीज़ एवं लेन-देन लाइव ऑडिट' : '⚡ Recent User Activities & Live Transactions'}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                      {transactions.filter((t) => t.status === 'PENDING').length} {isHi ? 'लंबित अप्रूवल' : 'Pending'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {isHi
+                      ? 'यूज़र्स द्वारा किए जा रहे डिपॉजिट, विड्रॉल व लेनदेन। हाथों-हाथ अप्रूव, रिजेक्ट या विवरण एडिट करें।'
+                      : 'Live user deposits, withdrawals, and plan actions. Approve, reject, or edit details in 1-click.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveSubTab('TRANSACTIONS')}
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all cursor-pointer shadow-md shadow-purple-600/30 flex items-center gap-1.5"
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'सभी देखें व ऑडिट करें →' : 'Full Audit Tab →'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Filter Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button
+                  onClick={() => setOverviewTxnFilter('ALL')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    overviewTxnFilter === 'ALL'
+                      ? 'bg-purple-600 text-white shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {isHi ? `सभी (${transactions.length})` : `All (${transactions.length})`}
+                </button>
+                <button
+                  onClick={() => setOverviewTxnFilter('PENDING')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    overviewTxnFilter === 'PENDING'
+                      ? 'bg-amber-500 text-slate-950 shadow'
+                      : 'text-slate-400 hover:text-amber-300'
+                  }`}
+                >
+                  {isHi
+                    ? `⏳ लंबित (${transactions.filter((t) => t.status === 'PENDING').length})`
+                    : `⏳ Pending (${transactions.filter((t) => t.status === 'PENDING').length})`}
+                </button>
+                <button
+                  onClick={() => setOverviewTxnFilter('DEPOSIT')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    overviewTxnFilter === 'DEPOSIT'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-400 hover:text-emerald-300'
+                  }`}
+                >
+                  {isHi ? '📥 जमा (Deposits)' : '📥 Deposits'}
+                </button>
+                <button
+                  onClick={() => setOverviewTxnFilter('WITHDRAWAL')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    overviewTxnFilter === 'WITHDRAWAL'
+                      ? 'bg-rose-600 text-white shadow'
+                      : 'text-slate-400 hover:text-rose-300'
+                  }`}
+                >
+                  {isHi ? '📤 निकासी (Withdrawals)' : '📤 Withdrawals'}
+                </button>
+              </div>
+
+              <span className="text-[11px] text-slate-400 font-mono">
+                {isHi ? 'नवीनतम रिकॉर्ड प्रदर्शित' : 'Showing recent live records'}
+              </span>
+            </div>
+
+            {/* Recent Items List */}
+            <div className="space-y-2.5">
+              {recentFilteredTxns.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-950/60 rounded-xl border border-slate-800">
+                  {isHi ? 'कोई रिकॉर्ड नहीं मिला।' : 'No activity records found.'}
+                </div>
+              ) : (
+                recentFilteredTxns.slice(0, 10).map((t) => {
+                  const isPositive =
+                    t.type === 'DEPOSIT' ||
+                    t.type === 'RETURN_PAYOUT' ||
+                    t.type === 'CAPITAL_RETURN';
+
+                  return (
+                    <div
+                      key={t.id}
+                      className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 hover:border-slate-700 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-inner"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div
+                          className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                            isPositive
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}
+                        >
+                          {isPositive ? (
+                            <ArrowDownLeft className="w-4 h-4" />
+                          ) : (
+                            <ArrowUpRight className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-white text-xs">{t.userName || t.userLoginId || 'Investor Account'}</span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-purple-300 border border-slate-700 font-mono">
+                              {t.type}
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                t.status === 'SUCCESS'
+                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                  : t.status === 'PENDING'
+                                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse'
+                                  : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                              }`}
+                            >
+                              {t.status}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mt-1 font-mono">
+                            <span>Ref/UTR: <strong className="text-slate-200">{t.referenceId || t.id}</strong></span>
+                            <span>{t.method || 'UPI'}</span>
+                            <span className="text-slate-500">{new Date(t.timestamp).toLocaleString()}</span>
+                          </div>
+                          {(isHi && t.noteHi) || t.note ? (
+                            <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-md">
+                              {isHi && t.noteHi ? t.noteHi : t.note}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+                        <div className="text-right">
+                          <span className={`text-base font-bold font-mono block ${isPositive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            {isPositive ? '+' : '-'}{formatINR(t.amount)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {t.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleQuickApprove(t.id)}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center gap-1"
+                                title="Approve immediately"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>{isHi ? 'अप्रूव' : 'Approve'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleRejectTransaction(t.id)}
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold transition-all cursor-pointer"
+                                title="Reject transaction"
+                              >
+                                {isHi ? 'अस्वीकार' : 'Reject'}
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            onClick={() => handleOpenEditTxn(t)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-400 hover:text-purple-300 border border-slate-700 text-xs transition-all cursor-pointer flex items-center gap-1"
+                            title={isHi ? 'विवरण एडिट करें' : 'Edit Details'}
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline text-[11px] font-medium">{isHi ? 'एडिट' : 'Edit'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 

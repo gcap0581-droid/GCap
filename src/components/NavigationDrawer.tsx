@@ -25,6 +25,11 @@ import {
   Clock,
   ExternalLink,
   Sparkles,
+  Users,
+  Receipt,
+  Database,
+  Activity,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   Language,
@@ -56,6 +61,7 @@ interface NavigationDrawerProps {
   isSimulating: boolean;
   isAdminHubActive?: boolean;
   onToggleAdminHub?: () => void;
+  onSelectAdminSubTab?: (tab: 'OVERVIEW' | 'TRANSACTIONS' | 'USERS' | 'TREASURY' | 'INVESTMENTS' | 'PLANS') => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onOpenProfile?: () => void;
@@ -83,6 +89,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   isSimulating,
   isAdminHubActive,
   onToggleAdminHub,
+  onSelectAdminSubTab,
   viewMode,
   onViewModeChange,
   onOpenProfile,
@@ -510,22 +517,121 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             )}
           </div>
 
-          {/* MENU 5: एडमिन हब (यदि एडमिन हो) */}
-          {isAdmin && onToggleAdminHub && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 overflow-hidden">
-              <button
-                onClick={() => {
-                  onClose();
-                  onToggleAdminHub();
-                }}
-                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left font-bold text-sm text-amber-300 hover:bg-amber-500/20 transition-colors"
-              >
+          {/* MENU 5: एडमिन मास्टर कंट्रोल हब (यदि एडमिन हो) */}
+          {isAdmin && (
+            <div className="rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-950/40 to-slate-900 overflow-hidden shadow-lg space-y-1">
+              <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10">
                 <div className="flex items-center gap-2.5">
                   <Award className="w-5 h-5 text-amber-400" />
-                  <span>{isAdminHubActive ? (isHi ? 'इन्वेस्टर व्यू पर जाएं' : 'Switch to User View') : (isHi ? '👑 एडमिन कंट्रोल पैनल' : '👑 Admin Control Hub')}</span>
+                  <span className="font-bold text-sm text-amber-300">
+                    {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
+                  </span>
                 </div>
-                <ExternalLink className="w-4 h-4 text-amber-400" />
-              </button>
+                {onToggleAdminHub && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onToggleAdminHub();
+                    }}
+                    className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 transition-colors border border-amber-500/30 cursor-pointer"
+                  >
+                    {isAdminHubActive ? (isHi ? 'यूज़र व्यू' : 'User View') : (isHi ? 'एडमिन हब' : 'Admin Hub')}
+                  </button>
+                )}
+              </div>
+
+              {/* Submenu Links */}
+              <div className="p-2 space-y-1 text-xs">
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('OVERVIEW');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-slate-200 hover:bg-amber-500/15 transition-colors font-medium cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <span>{isHi ? 'मास्टर एडमिन ओवरव्यू' : 'Master Overview'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('TRANSACTIONS');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-purple-300 hover:bg-purple-500/15 transition-colors font-semibold cursor-pointer border border-purple-500/20 bg-purple-500/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-purple-400" />
+                    <span>{isHi ? '💳 लेन-देन: एडिट व अप्रूव करें' : '💳 Approve & Edit Transactions'}</span>
+                  </div>
+                  <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono font-bold">Audit</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('OVERVIEW');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-slate-200 hover:bg-amber-500/15 transition-colors font-medium cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-400" />
+                    <span>{isHi ? '⚡ यूज़र लाइव एक्टिविटीज' : '⚡ Recent User Activities'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('USERS');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-slate-200 hover:bg-amber-500/15 transition-colors font-medium cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-cyan-400" />
+                    <span>{isHi ? '👥 यूज़र अकाउंट्स व पासवर्ड' : '👥 Users & Passwords'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('TREASURY');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-slate-200 hover:bg-amber-500/15 transition-colors font-medium cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <span>{isHi ? '📈 कंपनी ट्रेजरी बैलेंस' : '📈 Company Treasury'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onSelectAdminSubTab) onSelectAdminSubTab('INVESTMENTS');
+                    else if (onToggleAdminHub) onToggleAdminHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg flex items-center justify-between text-slate-200 hover:bg-amber-500/15 transition-colors font-medium cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <span>{isHi ? '📊 निवेश पोर्टफोलियो (Portfolios)' : '📊 Active Portfolios'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+              </div>
             </div>
           )}
 
