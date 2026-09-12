@@ -283,6 +283,36 @@ export async function apiSaveBankDetails(
 }
 
 /**
+ * Admin adjusts a user's wallet (Add amount, Deduct amount, or Direct balance set)
+ */
+export async function apiAdminAdjustUserWallet(
+  userId: string,
+  wallet: Partial<Wallet>,
+  adjustment?: {
+    type: 'ADD' | 'DEDUCT' | 'SET';
+    targetWallet: 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned';
+    amount: number;
+    reason?: string;
+  },
+  adminName?: string
+): Promise<{ success: boolean; wallet?: Wallet; error?: string }> {
+  if (!userId) {
+    return { success: false, error: 'User ID is required' };
+  }
+
+  try {
+    const res = await apiFetch(`${API_BASE}/admin/user-wallet/adjust`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, wallet, adjustment, adminName }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+/**
  * Updates wallet on server (supports either (userId, wallet) or (wallet, userId))
  */
 export async function apiUpdateWallet(

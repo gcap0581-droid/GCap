@@ -78,6 +78,7 @@ import { AdminApprovalPasswordModal } from './admin/AdminApprovalPasswordModal';
 import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
+import { fetchCentralState, apiAdminAdjustUserWallet } from '../utils/centralSync';
 
 interface AdminPanelProps {
   adminUser: UserProfile;
@@ -201,8 +202,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
 
-  // Users state from auth storage
+  // Users and Wallets state
   const [usersList, setUsersList] = useState<UserProfile[]>(getAllUsers);
+  const [walletsMap, setWalletsMap] = useState<Record<string, Wallet>>({});
   const [isSyncingUsers, setIsSyncingUsers] = useState(false);
 
   // Modals state
@@ -211,6 +213,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [userModalInitialTab, setUserModalInitialTab] = useState<'PROFILE' | 'WALLET' | 'BANK' | 'INVESTMENT'>('PROFILE');
 
   const [txnModalOpen, setTxnModalOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
@@ -224,12 +227,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [agreementModalOpen, setAgreementModalOpen] = useState(false);
   const [agreementUser, setAgreementUser] = useState<UserProfile | null>(null);
 
-  // Refresh and sync users list with centralized server
+  // Refresh and sync users list and all user wallets with centralized server
   const refreshUsers = async () => {
     setIsSyncingUsers(true);
     try {
-      const updated = await syncUsersWithServer();
+      const [updated, centralState] = await Promise.all([
+        syncUsersWithServer(),
+        fetchCentralState(undefined, 'ADMIN'),
+      ]);
       setUsersList(updated);
+      if (centralState?.wallets) {
+        setWalletsMap(centralState.wallets);
+      }
     } catch {
       setUsersList(getAllUsers());
     } finally {
@@ -286,42 +295,66 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // User Actions
   const handleOpenAddUser = () => {
     setSelectedUser(null);
+    setUserModalInitialTab('PROFILE');
     setUserModalOpen(true);
   };
 
   const handleOpenEditUser = (user: UserProfile) => {
     setSelectedUser(user);
+    setUserModalInitialTab('PROFILE');
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditUserWallet = (user: UserProfile) => {
+    setSelectedUser(user);
+    setUserModalInitialTab('WALLET');
     setUserModalOpen(true);
   };
 
   const handleSaveUser = async (data: {
     userId?: string;
     name: string;
+    loginId?: string;
     phone: string;
     email: string;
     password?: string;
     role: UserRole;
     status: 'ACTIVE' | 'BLOCKED';
     joinedDate?: string;
+    referralCode?: string;
+    referredBy?: string;
+    bankDetails?: any;
+    walletUpdates?: Partial<Wallet>;
+    walletAdjustment?: {
+      type: 'ADD' | 'DEDUCT' | 'SET';
+      targetWallet: 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned';
+      amount: number;
+      reason?: string;
+    };
     backdatedPlanId?: string;
     backdatedAmount?: number;
     backdatedWithdrawal?: number;
   }) => {
     setIsSyncingUsers(true);
     try {
+      const targetUserId = data.userId || (data.phone.trim().replace(/[^0-9]/g, ""));
+      
       if (data.userId) {
         const res = await adminUpdateUserAsync(data.userId, {
           name: data.name,
+          loginId: data.loginId,
           phone: data.phone,
           email: data.email,
           password: data.password,
           role: data.role,
           status: data.status,
           joinedDate: data.joinedDate,
+          referralCode: data.referralCode,
+          referredBy: data.referredBy,
+          bankDetails: data.bankDetails,
         });
         if (!res.success) {
           console.warn('User update error:', res.error);
-          return;
         }
         if (data.password && data.password.trim()) {
           audioAnnouncer.announcePasswordChange({
@@ -332,19 +365,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       } else {
         const res = await adminAddUserAsync({
           name: data.name,
-          loginId: data.phone.trim().replace(/[^0-9]/g, ""),
+          loginId: data.loginId || data.phone.trim().replace(/[^0-9]/g, ""),
           phone: data.phone,
           email: data.email,
           password: data.password,
           role: data.role,
           status: data.status,
           joinedDate: data.joinedDate,
+          referralCode: data.referralCode,
+          referredBy: data.referredBy,
         });
         if (!res.success) {
           console.warn('User add error:', res.error);
-          return;
         }
       }
+
+      // Handle Wallet Updates and Adjustments if present
+      if (targetUserId && (data.walletUpdates || data.walletAdjustment)) {
+        await apiAdminAdjustUserWallet(
+          targetUserId,
+          data.walletUpdates || {},
+          data.walletAdjustment,
+          adminUser?.name || 'Super Admin'
+        );
+      }
+
       await refreshUsers();
     } finally {
       setIsSyncingUsers(false);
@@ -1102,9 +1147,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeSubTab === 'USERS' && (
         <AdminUsersTab
           users={usersList}
+          wallets={walletsMap}
           language={language}
           onAddUser={handleOpenAddUser}
           onEditUser={handleOpenEditUser}
+          onEditUserWallet={handleOpenEditUserWallet}
           onToggleUserStatus={handleToggleUserStatus}
           onDeleteUser={handleDeleteUser}
           onViewAgreement={(user) => {
@@ -1179,6 +1226,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         isOpen={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         user={selectedUser}
+        wallet={selectedUser ? (walletsMap[selectedUser.id] || walletsMap[selectedUser.loginId]) : undefined}
+        initialTab={userModalInitialTab}
         onSave={handleSaveUser}
         language={language}
       />

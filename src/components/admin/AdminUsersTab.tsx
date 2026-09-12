@@ -14,14 +14,19 @@ import {
   UserX,
   RefreshCw,
   FileCheck,
+  Wallet as WalletIcon,
+  Sparkles,
+  ArrowUpDown,
 } from 'lucide-react';
-import { Language, UserProfile } from '../../types';
+import { Language, UserProfile, Wallet } from '../../types';
 
 interface AdminUsersTabProps {
   users: UserProfile[];
+  wallets?: Record<string, Wallet>;
   language: Language;
   onAddUser: () => void;
   onEditUser: (user: UserProfile) => void;
+  onEditUserWallet?: (user: UserProfile) => void;
   onToggleUserStatus: (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED') => void;
   onDeleteUser: (userId: string) => void;
   onViewAgreement?: (user: UserProfile) => void;
@@ -31,9 +36,11 @@ interface AdminUsersTabProps {
 
 export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   users,
+  wallets = {},
   language,
   onAddUser,
   onEditUser,
+  onEditUserWallet,
   onToggleUserStatus,
   onDeleteUser,
   onViewAgreement,
@@ -83,8 +90,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
             {isHi
-              ? `कुल पंजीकृत खाते: ${users.length} • सभी डिवाइसेज़ व एडमिन सत्रों पर एक ही केंद्रीय डेटाबेस से रीयल-टाइम सिंक रहता है`
-              : `Total Accounts: ${users.length} • Single authoritative central database synchronized across all admin sessions in real time`}
+              ? `कुल पंजीकृत खाते: ${users.length} • एडमिन किसी भी यूज़र का वॉलेट बैलेंस, प्रोफ़ाइल, पासवर्ड और सभी विवरण सीधे एडिट कर सकता है`
+              : `Total Accounts: ${users.length} • Full administrative control over user wallets, balances, profiles, passwords, and banks`}
           </p>
         </div>
 
@@ -152,16 +159,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
               <tr>
                 <th className="py-3 px-4">{isHi ? 'यूज़र / नाम' : 'User / Name'}</th>
                 <th className="py-3 px-4">{isHi ? 'लॉगिन आईडी व फ़ोन' : 'Login ID & Phone'}</th>
-                <th className="py-3 px-4">{isHi ? 'रोल' : 'Role'}</th>
-                <th className="py-3 px-4">{isHi ? 'स्थिति' : 'Status'}</th>
-                <th className="py-3 px-4">{isHi ? 'शामिल होने की तिथि' : 'Joined Date'}</th>
+                <th className="py-3 px-4">{isHi ? 'वॉलेट शेष (Live Balances)' : 'Wallet Balances'}</th>
+                <th className="py-3 px-4">{isHi ? 'स्थिति / रोल' : 'Status & Role'}</th>
                 <th className="py-3 px-4 text-right">{isHi ? 'कार्रवाई (Actions)' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                  <td colSpan={5} className="py-8 text-center text-slate-500">
                     {isHi ? 'कोई यूज़र नहीं मिला।' : 'No users found matching query.'}
                   </td>
                 </tr>
@@ -169,6 +175,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 filteredUsers.map((u) => {
                   const isAdmin = u.role === 'ADMIN';
                   const isBlocked = u.status === 'BLOCKED';
+                  const userWallet = wallets[u.id] || wallets[u.loginId] || {
+                    cashBalance: 0,
+                    gpBalance: 0,
+                    totalEarned: 0,
+                    royaltyEarned: 0,
+                    totalInvested: 0,
+                    pendingWithdrawals: 0,
+                    pendingDeposits: 0,
+                  };
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">
@@ -176,7 +191,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                            className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                               isAdmin
                                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                                 : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
@@ -185,7 +200,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             {isAdmin ? '👑' : (u.name || u.loginId || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-bold text-white flex items-center gap-1.5">
+                            <div className="font-bold text-white flex items-center gap-1.5 flex-wrap">
                               <span>{u.name || u.loginId || 'Investor'}</span>
                               {(() => {
                                 const todayStr = new Date().toISOString().split('T')[0];
@@ -217,62 +232,99 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <td className="py-3.5 px-4 font-mono">
                         <div className="text-slate-200 font-bold">{u.loginId}</div>
                         <div className="text-[11px] text-slate-400">{u.phone}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">Joined: {u.joinedDate}</div>
                       </td>
 
-                      {/* Role */}
+                      {/* Wallet Balances Column */}
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                            isAdmin
-                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                              : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                          }`}
-                        >
-                          {isAdmin ? 'SUPER ADMIN' : 'INVESTOR'}
-                        </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] px-2 py-0.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 font-mono font-bold">
+                              💵 ₹{userWallet.cashBalance.toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-[11px] px-2 py-0.5 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-mono font-bold">
+                              🪙 {userWallet.gpBalance.toLocaleString('en-IN')} GP
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                            <span>Earned: <strong className="text-amber-300 font-mono">₹{userWallet.totalEarned.toLocaleString('en-IN')}</strong></span>
+                            {userWallet.royaltyEarned > 0 && (
+                              <span>Royalty: <strong className="text-purple-300 font-mono">₹{userWallet.royaltyEarned.toLocaleString('en-IN')}</strong></span>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
-                      {/* Status */}
+                      {/* Status & Role */}
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            isBlocked
-                              ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isBlocked ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'
-                            }`}
-                          ></span>
-                          {isBlocked ? (isHi ? 'निलंबित' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
-                        </span>
-                      </td>
-
-                      {/* Joined Date */}
-                      <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
-                        {u.joinedDate}
+                        <div className="space-y-1.5">
+                          <div>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                isAdmin
+                                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              }`}
+                            >
+                              {isAdmin ? 'SUPER ADMIN' : 'INVESTOR'}
+                            </span>
+                          </div>
+                          <div>
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isBlocked
+                                  ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isBlocked ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'
+                                }`}
+                              ></span>
+                              {isBlocked ? (isHi ? 'निलंबित' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
+                            </span>
+                          </div>
+                        </div>
                       </td>
 
                       {/* Action Buttons */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* Quick Wallet Edit Button */}
+                          <button
+                            onClick={() => onEditUserWallet ? onEditUserWallet(u) : onEditUser(u)}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm shadow-emerald-500/10"
+                            title={isHi ? 'वॉलेट राशि बदलें / जोड़ें / घटाएं' : 'Edit or adjust user wallet balances'}
+                          >
+                            <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{isHi ? '💰 वॉलेट एडिट' : '💰 Wallet'}</span>
+                          </button>
+
+                          {/* Edit User Profile & Password Button */}
+                          <button
+                            onClick={() => onEditUser(u)}
+                            className="px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                            title={isHi ? 'पूरी प्रोफ़ाइल, पासवर्ड व बैंक विवरण संपादित करें' : 'Edit profile, password, bank, etc.'}
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>{isHi ? '✏️ प्रोफ़ाइल' : 'Edit'}</span>
+                          </button>
+
                           {/* View & Print Legal Agreement */}
                           <button
                             onClick={() => onViewAgreement && onViewAgreement(u)}
-                            className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                            className="p-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer shadow-sm"
                             title={isHi ? 'कानूनी अनुबंध पत्र देखें / प्रिंट करें' : 'View & Print Legal Agreement PDF'}
                           >
                             <FileCheck className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="hidden sm:inline">{isHi ? 'अनुबंध PDF' : 'Agreement'}</span>
                           </button>
 
                           {/* Toggle Block / Unblock */}
                           <button
                             onClick={() => onToggleUserStatus(u.id, u.status)}
                             disabled={u.loginId === 'admin'}
-                            className={`p-1.5 rounded-lg border text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                            className={`p-1.5 rounded-xl border text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
                               isBlocked
                                 ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                                 : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
@@ -282,20 +334,11 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             {isBlocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
                           </button>
 
-                          {/* Edit User */}
-                          <button
-                            onClick={() => onEditUser(u)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition-all cursor-pointer"
-                            title={isHi ? 'यूज़र संपादित करें' : 'Edit User'}
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                          </button>
-
                           {/* Delete User */}
                           <button
                             onClick={() => setDeleteConfirmId(u.id)}
                             disabled={u.loginId === 'admin'}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                             title={isHi ? 'यूज़र हटाएं' : 'Delete User'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />

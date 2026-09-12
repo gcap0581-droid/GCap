@@ -1306,6 +1306,76 @@ async function startServer() {
     res.json({ success: true, details });
   });
 
+  // POST: Admin Adjust User Wallet (Add, Deduct, or Direct Set)
+  app.post("/api/admin/user-wallet/adjust", (req, res) => {
+    const { userId, wallet, adjustment, adminName } = req.body || {};
+    if (!userId) {
+      return res.status(400).json({ success: false, error: "User ID is required" });
+    }
+
+    const db = ensureDb();
+    const user = db.users.find((u) => u.id === userId);
+    const existingWallet = db.wallets[userId] || { ...DEFAULT_WALLET };
+
+    let updatedWallet = { ...existingWallet };
+    if (wallet && typeof wallet === 'object') {
+      updatedWallet = {
+        cashBalance: typeof wallet.cashBalance === 'number' ? Math.max(0, wallet.cashBalance) : existingWallet.cashBalance,
+        gpBalance: typeof wallet.gpBalance === 'number' ? Math.max(0, wallet.gpBalance) : existingWallet.gpBalance,
+        totalInvested: typeof wallet.totalInvested === 'number' ? Math.max(0, wallet.totalInvested) : existingWallet.totalInvested,
+        totalEarned: typeof wallet.totalEarned === 'number' ? Math.max(0, wallet.totalEarned) : existingWallet.totalEarned,
+        royaltyEarned: typeof wallet.royaltyEarned === 'number' ? Math.max(0, wallet.royaltyEarned) : existingWallet.royaltyEarned,
+        pendingWithdrawals: typeof wallet.pendingWithdrawals === 'number' ? Math.max(0, wallet.pendingWithdrawals) : existingWallet.pendingWithdrawals,
+        pendingDeposits: typeof wallet.pendingDeposits === 'number' ? Math.max(0, wallet.pendingDeposits) : existingWallet.pendingDeposits,
+      };
+    }
+
+    db.wallets[userId] = updatedWallet;
+
+    // If a specific adjustment transaction was requested, record it in user transactions ledger
+    if (adjustment && adjustment.amount > 0) {
+      const amount = Number(adjustment.amount);
+      const adjType = adjustment.type; // 'ADD' | 'DEDUCT' | 'SET'
+      const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
+      const reason = adjustment.reason?.trim() || 'Admin manual balance adjustment';
+      
+      const targetLabelEn = targetWallet === 'cashBalance' ? 'Cash Balance' : targetWallet === 'gpBalance' ? 'GP Balance' : targetWallet === 'totalEarned' ? 'Total Earnings' : 'Royalty Balance';
+      const targetLabelHi = targetWallet === 'cashBalance' ? 'नकद बैलेंस' : targetWallet === 'gpBalance' ? 'GP बैलेंस' : targetWallet === 'totalEarned' ? 'कुल कमाई' : 'रॉयल्टी बैलेंस';
+
+      const txnType = adjType === 'ADD'
+        ? (targetWallet === 'totalEarned' ? 'RETURN_PAYOUT' : 'DEPOSIT')
+        : 'WITHDRAWAL';
+
+      const newTxn: Transaction = {
+        id: `txn-adm-adj-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        userId: userId,
+        userLoginId: user?.loginId || userId,
+        userName: user?.name || 'User',
+        userPhone: user?.phone || '',
+        type: txnType,
+        amount: amount,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        status: 'SUCCESS',
+        referenceId: 'ADM' + Math.floor(10000000 + Math.random() * 90000000),
+        note: `Admin (${adminName || 'Super Admin'}) ${adjType === 'ADD' ? 'credited' : 'deducted'} ₹${amount} ${adjType === 'ADD' ? 'to' : 'from'} ${targetLabelEn}. Reason: ${reason}`,
+        noteHi: `एडमिन द्वारा ₹${amount} ${targetLabelHi} में ${adjType === 'ADD' ? 'जोड़ा (Credit)' : 'घटाया (Debit)'} गया। कारण: ${reason}`,
+      };
+
+      db.transactions.unshift(newTxn);
+      broadcastRealtimeEvent("transaction_created", { transaction: newTxn, userId, timestamp: Date.now() });
+    }
+
+    db.lastUpdated = new Date().toISOString();
+    saveDb(db);
+
+    broadcastRealtimeEvent("wallet_updated", { userId, wallet: updatedWallet, timestamp: Date.now() });
+    broadcastRealtimeEvent("state_changed", { type: "ADMIN_WALLET_ADJUST", userId, timestamp: Date.now() });
+
+    console.log(`[GCap Admin] Wallet adjusted for user ${user?.name || userId}:`, updatedWallet);
+    res.json({ success: true, wallet: updatedWallet });
+  });
+
   // POST: Update Wallet directly
   app.post("/api/wallet/update", (req, res) => {
     const { userId, wallet } = req.body || {};
@@ -1857,13 +1927,20 @@ async function startServer() {
     }
 
     const current = db.users[targetIdx];
-    if (updates.name) current.name = updates.name.trim();
-    if (updates.phone) current.phone = updates.phone.trim();
-    if (updates.email) current.email = updates.email.trim();
+    if (updates.name !== undefined) current.name = updates.name.trim();
+    if (updates.loginId !== undefined && updates.loginId.trim()) current.loginId = updates.loginId.trim();
+    if (updates.phone !== undefined) current.phone = updates.phone.trim();
+    if (updates.email !== undefined) current.email = updates.email.trim();
     if (updates.password && updates.password.trim()) current.passwordHash = updates.password.trim();
-    if (updates.role) current.role = updates.role;
-    if (updates.status) current.status = updates.status;
-    if (updates.joinedDate) current.joinedDate = updates.joinedDate;
+    if (updates.role !== undefined) current.role = updates.role;
+    if (updates.status !== undefined) current.status = updates.status;
+    if (updates.joinedDate !== undefined) current.joinedDate = updates.joinedDate;
+    if (updates.referralCode !== undefined) current.referralCode = updates.referralCode.trim();
+    if (updates.referredBy !== undefined) current.referredBy = updates.referredBy.trim();
+
+    if (updates.bankDetails && typeof updates.bankDetails === 'object') {
+      db.bankDetails[userId] = updates.bankDetails;
+    }
 
     saveDb(db);
 
