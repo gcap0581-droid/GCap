@@ -82,10 +82,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       setError(isHi ? 'कृपया मान्य पूरा नाम दर्ज करें।' : 'Valid full name is required.');
       return;
     }
-    if (!loginId.trim() || loginId.length < 3) {
-      setError(isHi ? 'लॉगिन आईडी कम से कम 3 अक्षरों की होनी चाहिए।' : 'Login ID must be at least 3 characters.');
-      return;
-    }
     if (!phone.trim()) {
       setError(isHi ? 'कृपया मोबाइल नंबर दर्ज करें।' : 'Phone number is required.');
       return;

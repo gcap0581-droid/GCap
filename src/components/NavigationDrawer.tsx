@@ -216,7 +216,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
                   <Layers className="w-5 h-5" />
                 </div>
-                <span>{isHi ? '1. निवेश योजनाएँ (Plans)' : '1. Investment Schemes'}</span>
+                <span>1. Investment Schemes</span>
               </div>
               {expandedMenu === 'investments' ? (
                 <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -240,7 +240,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    <span>{isHi ? 'उपलब्ध सभी प्लान्स (641D / 365D)' : 'All Investment Plans'}</span>
+                    <span>All Investment Plans</span>
                   </div>
                   <span className="text-[11px] text-amber-400 font-mono">1.8% - 3.5%</span>
                 </button>
@@ -258,7 +258,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span>{isHi ? 'माई पोर्टफोलियो (सक्रिय निवेश)' : 'My Active Portfolio'}</span>
+                    <span>My Active Portfolio</span>
                   </div>
                   <span className="text-[11px] text-emerald-400 font-bold">Live</span>
                 </button>
@@ -276,7 +276,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                    <span>{isHi ? 'दैनिक ROI मुनाफा कैलकुलेटर' : 'Daily ROI Calculator'}</span>
+                    <span>Daily ROI Calculator</span>
                   </div>
                   <Calculator className="w-4 h-4 text-cyan-400" />
                 </button>

@@ -565,303 +565,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
       </div>
 
-      {/* Navigation Sub-Tabs & Mobile Menu Grid */}
-      <div className="space-y-4">
-        {/* Mobile Grid Menu (when OVERVIEW is selected) */}
-        {activeSubTab === 'OVERVIEW' ? (
-          <div className="block sm:hidden space-y-3">
-            <div className="text-[11px] uppercase font-bold text-amber-400 px-1 tracking-wider">
-              {isHi ? '⚙️ एडमिन कंट्रोल पैनल मेन्यू (ADMIN MENU)' : '⚙️ ADMIN HUB CONTROLS'}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  id: 'MESSAGES' as const,
-                  title: isHi ? 'संदेश व लाइव' : 'Messages',
-                  subtitle: isHi ? `${messages.length} संदेश` : `${messages.length} alerts`,
-                  icon: Bell,
-                  color: 'from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/20 text-amber-400',
-                  badge: String(messages.length),
-                  badgeColor: 'bg-amber-500/20 text-amber-300'
-                },
-                {
-                  id: 'TREASURY' as const,
-                  title: isHi ? 'कंपनी खजाना' : 'Treasury',
-                  subtitle: isLowBalance ? (isHi ? 'कम बैलेंस!' : 'Low balance!') : formatINR(treasury.balance),
-                  icon: Building2,
-                  color: 'from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20 text-emerald-400',
-                  badge: isLowBalance ? (isHi ? 'चेतावनी' : 'Alert') : 'OK',
-                  badgeColor: isLowBalance ? 'bg-rose-500/25 text-rose-300 animate-pulse' : 'bg-emerald-500/25 text-emerald-300'
-                },
-                {
-                  id: 'INVESTMENTS' as const,
-                  title: isHi ? 'सक्रिय निवेश' : 'Portfolios',
-                  subtitle: isHi ? `${investments.length} योजनाएं` : `${investments.length} active plans`,
-                  icon: Zap,
-                  color: 'from-indigo-500/10 via-indigo-500/5 to-transparent border-indigo-500/20 text-indigo-400',
-                  badge: String(investments.length),
-                  badgeColor: 'bg-indigo-500/25 text-indigo-300'
-                },
-                {
-                  id: 'PLANS' as const,
-                  title: isHi ? 'प्लान्स प्रबंधन' : 'Plans CRUD',
-                  subtitle: isHi ? 'प्लान्स जोड़ें/संपादित करें' : 'Manage Plans',
-                  icon: Layers,
-                  color: 'from-rose-500/10 via-rose-500/5 to-transparent border-rose-500/20 text-rose-400',
-                  badge: String(plans.length),
-                  badgeColor: 'bg-rose-500/25 text-rose-300'
-                },
-                {
-                  id: 'USERS' as const,
-                  title: isHi ? 'यूज़र्स प्रबंधन' : 'Users CRUD',
-                  subtitle: isHi ? 'कस्टमर सूची व प्रोफाइल' : 'Customers DB',
-                  icon: Users,
-                  color: 'from-cyan-500/10 via-cyan-500/5 to-transparent border-cyan-500/20 text-cyan-400',
-                  badge: String(usersList.length),
-                  badgeColor: 'bg-cyan-500/25 text-cyan-300'
-                },
-                {
-                  id: 'TRANSACTIONS' as const,
-                  title: isHi ? 'लेनदेन मैनेजर' : 'Txns CRUD',
-                  subtitle: isHi ? 'डिपॉजिट व विड्रॉल' : 'Transactions list',
-                  icon: Clock,
-                  color: 'from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20 text-purple-400',
-                  badge: String(transactions.length),
-                  badgeColor: 'bg-purple-500/25 text-purple-300'
-                },
-                {
-                  id: 'BACKUP' as const,
-                  title: isHi ? 'डेटा बैकअप' : 'Backups',
-                  subtitle: isHi ? 'रिस्टोर व स्नैपशॉट' : 'Snapshots & Rollback',
-                  icon: Database,
-                  color: 'from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 text-blue-400',
-                  badge: 'Auto',
-                  badgeColor: 'bg-blue-500/25 text-blue-300'
-                },
-                {
-                  id: 'COMPANY_PROFILE' as const,
-                  title: isHi ? 'कंपनी प्रोफाइल' : 'Company Profile',
-                  subtitle: 'GCap Pvt Ltd',
-                  icon: ShieldCheck,
-                  color: 'from-teal-500/10 via-teal-500/5 to-transparent border-teal-500/20 text-teal-400',
-                  badge: 'Legal',
-                  badgeColor: 'bg-teal-500/25 text-teal-300'
-                },
-                {
-                  id: 'OTA' as const,
-                  title: isHi ? 'लाइव OTA' : 'OTA UI Engine',
-                  subtitle: `v${liveConfig.appVersion}`,
-                  icon: Radio,
-                  color: 'from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/20 text-pink-400',
-                  badge: 'v2.7',
-                  badgeColor: 'bg-pink-500/25 text-pink-300 animate-pulse'
-                }
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveSubTab(item.id)}
-                    className={`w-full text-left p-3 rounded-2xl bg-gradient-to-br ${item.color} border flex flex-col justify-between h-24 shadow-md transition-all cursor-pointer active:scale-95`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-black font-mono tracking-wider ${item.badgeColor}`}>
-                        {item.badge}
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <div className="font-extrabold text-[12px] text-white tracking-tight truncate">{item.title}</div>
-                      <div className="text-[9px] text-slate-400 truncate">{item.subtitle}</div>
-                    </div>
-                  </button>
-                );
-              })}
+          {/* Navigation Sub-Tabs & Mobile Menu Grid */}
+        <div className="space-y-4">
+          <div className="hidden sm:flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1 gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <button
+                id="tab-admin-overview"
+                onClick={() => setActiveSubTab('OVERVIEW')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeSubTab === 'OVERVIEW'
+                    ? 'bg-slate-800 text-amber-300 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+              </button>
+              <button
+                id="tab-admin-txns"
+                onClick={() => setActiveSubTab('TRANSACTIONS')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeSubTab === 'TRANSACTIONS'
+                    ? 'bg-slate-800 text-purple-400 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+              </button>
+              <button
+                id="tab-admin-users"
+                onClick={() => setActiveSubTab('USERS')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeSubTab === 'USERS'
+                    ? 'bg-slate-800 text-cyan-400 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsMasterToolsOpen(!isMasterToolsOpen)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
+              >
+                <Sliders className="w-4 h-4" />
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="block sm:hidden">
-            <button
-              onClick={() => setActiveSubTab('OVERVIEW')}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-900 hover:bg-slate-850 border border-amber-500/30 text-amber-400 rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{isHi ? '← वापस एडमिन मुख्य ओवरव्यू (Admin Hub Menu)' : '← Back to Admin Hub Menu'}</span>
-            </button>
-          </div>
-        )}
-
-        <div className="hidden sm:flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1 gap-1">
-        <div className="flex flex-wrap items-center gap-1">
-          {activeSubTab !== 'OVERVIEW' && (
-            <button
-              onClick={() => setActiveSubTab('OVERVIEW')}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer active:scale-95 mr-1"
-              title={isHi ? 'मुख्य अवलोकन पर वापस लौटें' : 'Back to Overview'}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{isHi ? '← बैक (अवलोकन)' : '← Back (Overview)'}</span>
-            </button>
+          {/* Master Tools Menu (Visible when toggled) */}
+          {isMasterToolsOpen && (
+            <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <button onClick={() => setActiveSubTab('MESSAGES')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Bell className="w-4 h-4" /> Messages
+              </button>
+              <button onClick={() => setActiveSubTab('TREASURY')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Building2 className="w-4 h-4" /> Treasury
+              </button>
+              <button onClick={() => setActiveSubTab('INVESTMENTS')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Zap className="w-4 h-4" /> Investments
+              </button>
+              <button onClick={() => setActiveSubTab('PLANS')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Layers className="w-4 h-4" /> Plans
+              </button>
+              <button onClick={() => setActiveSubTab('BACKUP')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Database className="w-4 h-4" /> Backup
+              </button>
+              <button onClick={() => setActiveSubTab('COMPANY_PROFILE')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
+                <Building2 className="w-4 h-4" /> Profile
+              </button>
+            </div>
           )}
-
-          <button
-            id="tab-admin-overview"
-            onClick={() => setActiveSubTab('OVERVIEW')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeSubTab === 'OVERVIEW'
-                ? 'bg-slate-800 text-amber-300 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-          <TrendingUp className="w-4 h-4" />
-          <span>{isHi ? 'सिस्टम अवलोकन' : 'Overview'}</span>
-        </button>
-
-        <button
-          id="tab-admin-messages"
-          onClick={() => setActiveSubTab('MESSAGES')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'MESSAGES'
-              ? 'bg-amber-500 text-slate-950 font-bold shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Bell className="w-4 h-4" />
-          <span>{isHi ? 'संदेश व लाइव अलर्ट' : 'Messages & Alerts'}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-slate-900/80 text-amber-300 font-mono text-[10px] font-bold">
-            {messages.length}
-          </span>
-        </button>
-
-        <button
-          id="tab-admin-treasury"
-          onClick={() => setActiveSubTab('TREASURY')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'TREASURY'
-              ? 'bg-slate-800 text-emerald-400 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>{isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Treasury'}</span>
-          {isLowBalance ? (
-            <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-black animate-pulse">
-              ⚠️ {isHi ? 'कम' : 'LOW'}
-            </span>
-          ) : (
-            <span className="px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300 font-mono text-[10px]">
-              {formatINR(treasury.balance)}
-            </span>
-          )}
-        </button>
-
-        <button
-          id="tab-admin-investments"
-          onClick={() => setActiveSubTab('INVESTMENTS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'INVESTMENTS'
-              ? 'bg-slate-800 text-emerald-400 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Zap className="w-4 h-4 text-emerald-400" />
-          <span>{isHi ? 'निवेश व 6h चक्र (Portfolios)' : 'Portfolios & 6h Cycles'}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">
-            {investments.length}
-          </span>
-        </button>
-
-        <button
-          id="tab-admin-plans"
-          onClick={() => setActiveSubTab('PLANS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'PLANS'
-              ? 'bg-slate-800 text-emerald-400 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>{isHi ? 'प्लान्स प्रबंधन (Plans CRUD)' : 'Plans Manager'} ({plans.length})</span>
-        </button>
-
-        <button
-          id="tab-admin-users"
-          onClick={() => setActiveSubTab('USERS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'USERS'
-              ? 'bg-slate-800 text-cyan-400 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>{isHi ? 'यूज़र्स प्रबंधन (Users CRUD)' : 'Users Manager'} ({usersList.length})</span>
-        </button>
-
-        <button
-          id="tab-admin-txns"
-          onClick={() => setActiveSubTab('TRANSACTIONS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'TRANSACTIONS'
-              ? 'bg-slate-800 text-purple-400 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>{isHi ? 'लेनदेन प्रबंधन (Txns CRUD)' : 'Transactions'} ({transactions.length})</span>
-        </button>
-
-        <button
-          id="tab-admin-backup"
-          onClick={() => setActiveSubTab('BACKUP')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'BACKUP'
-              ? 'bg-slate-800 text-indigo-300 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Database className="w-4 h-4 text-indigo-400" />
-          <span>{isHi ? 'डेटा बैकअप व रिस्टोर' : 'Backup & Restore'}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-[10px] font-bold">
-            12 AM Auto ({backups.length})
-          </span>
-        </button>
-
-        <button
-          id="tab-admin-company-profile"
-          onClick={() => setActiveSubTab('COMPANY_PROFILE')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'COMPANY_PROFILE'
-              ? 'bg-slate-800 text-amber-400 shadow-sm border border-amber-500/30'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Building2 className="w-4 h-4 text-amber-400" />
-          <span>{isHi ? '🏢 GCap कंपनी प्रोफ़ाइल (Pvt Ltd)' : '🏢 GCap Company Profile'}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">
-            Pvt Ltd
-          </span>
-        </button>
-
-        <button
-          id="tab-admin-ota"
-          onClick={() => setActiveSubTab('OTA')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-            activeSubTab === 'OTA'
-              ? 'bg-emerald-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-          <span>{isHi ? 'लाइव इन-ऐप OTA व इंटरफ़ेस' : 'Live OTA & UI Engine'}</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono text-[10px] font-bold">
-            {liveConfig.appVersion}
-          </span>
-        </button>
         </div>
-        </div>
-      </div>
 
       {/* TAB 1: OVERVIEW */}
       {activeSubTab === 'OVERVIEW' && (
