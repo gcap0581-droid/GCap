@@ -151,17 +151,191 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* Users List - Responsive Views */}
+      {/* Mobile & Tablet Card Layout (Visible on small & medium screens) */}
+      <div className="block lg:hidden space-y-3">
+        {filteredUsers.length === 0 ? (
+          <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-500 text-xs">
+            {isHi ? 'कोई यूज़र नहीं मिला।' : 'No users found matching query.'}
+          </div>
+        ) : (
+          filteredUsers.map((u) => {
+            const isAdmin = u.role === 'ADMIN';
+            const isBlocked = u.status === 'BLOCKED';
+            const userWallet = wallets[u.id] || wallets[u.loginId] || {
+              cashBalance: 0,
+              gpBalance: 0,
+              totalEarned: 0,
+              royaltyEarned: 0,
+              totalInvested: 0,
+              pendingWithdrawals: 0,
+              pendingDeposits: 0,
+            };
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const isNew =
+              u.joinedDate === todayStr ||
+              (u.id.startsWith('usr-') && Date.now() - Number(u.id.replace('usr-', '')) < 24 * 60 * 60 * 1000);
+
+            return (
+              <div
+                key={u.id}
+                className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 space-y-3.5 shadow-lg transition-all"
+              >
+                {/* User Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 shadow-md ${
+                        isAdmin
+                          ? 'bg-gradient-to-br from-amber-500/30 to-amber-700/20 text-amber-300 border border-amber-500/40'
+                          : 'bg-gradient-to-br from-cyan-500/30 to-blue-700/20 text-cyan-300 border border-cyan-500/40'
+                      }`}
+                    >
+                      {isAdmin ? '👑' : (u.name || u.loginId || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-white text-sm">{u.name || u.loginId || 'Investor'}</span>
+                        {isNew && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 uppercase tracking-wider animate-pulse">
+                            {isHi ? '✨ नया' : '✨ NEW'}
+                          </span>
+                        )}
+                        {u.referralCode && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">
+                            {u.referralCode}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                        <span className="font-mono text-cyan-300 font-semibold">{u.loginId}</span>
+                        <span>•</span>
+                        <span>{u.phone}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role & Status Badge */}
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isAdmin
+                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                      }`}
+                    >
+                      {isAdmin ? 'SUPER ADMIN' : 'INVESTOR'}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isBlocked
+                          ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                          : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isBlocked ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'}`} />
+                      {isBlocked ? (isHi ? 'निलंबित' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Balances Grid on Card */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2.5 bg-slate-950/80 rounded-xl border border-slate-800/80">
+                  <div className="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
+                    <span className="text-[10px] text-slate-400 block">{isHi ? 'नकद शेष (Cash)' : 'Cash Balance'}</span>
+                    <span className="text-xs font-bold text-emerald-400 font-mono">
+                      ₹{userWallet.cashBalance.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-cyan-950/30 border border-cyan-500/20">
+                    <span className="text-[10px] text-slate-400 block">{isHi ? 'GP पॉइंट्स' : 'GP Points'}</span>
+                    <span className="text-xs font-bold text-cyan-300 font-mono">
+                      {userWallet.gpBalance.toLocaleString('en-IN')} GP
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-amber-950/30 border border-amber-500/20">
+                    <span className="text-[10px] text-slate-400 block">{isHi ? 'कुल कमाई' : 'Total Earned'}</span>
+                    <span className="text-xs font-bold text-amber-400 font-mono">
+                      ₹{userWallet.totalEarned.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-purple-950/30 border border-purple-500/20">
+                    <span className="text-[10px] text-slate-400 block">{isHi ? 'रॉयल्टी' : 'Royalty'}</span>
+                    <span className="text-xs font-bold text-purple-300 font-mono">
+                      ₹{userWallet.royaltyEarned.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Action Toolbar */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => (onEditUserWallet ? onEditUserWallet(u) : onEditUser(u))}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                    >
+                      <WalletIcon className="w-3.5 h-3.5" />
+                      <span>{isHi ? '💰 वॉलेट एडिट' : '💰 Edit Wallet'}</span>
+                    </button>
+                    <button
+                      onClick={() => onEditUser(u)}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>{isHi ? '✏️ प्रोफ़ाइल' : 'Profile'}</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {onViewAgreement && (
+                      <button
+                        onClick={() => onViewAgreement(u)}
+                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 cursor-pointer"
+                        title={isHi ? 'अनुबंध पत्र देखें' : 'View Agreement'}
+                      >
+                        <FileCheck className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onToggleUserStatus(u.id, u.status)}
+                      disabled={u.loginId === 'admin'}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 ${
+                        isBlocked
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      }`}
+                      title={isBlocked ? 'Unblock' : 'Block'}
+                    >
+                      {isBlocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(u.id)}
+                      disabled={u.loginId === 'admin'}
+                      className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 cursor-pointer disabled:opacity-30"
+                      title={isHi ? 'यूज़र हटाएं' : 'Delete'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table View (Visible on Large Screens) */}
+      <div className="hidden lg:block bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
+            <thead className="bg-slate-950/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">{isHi ? 'यूज़र / नाम' : 'User / Name'}</th>
-                <th className="py-3 px-4">{isHi ? 'लॉगिन आईडी व फ़ोन' : 'Login ID & Phone'}</th>
-                <th className="py-3 px-4">{isHi ? 'वॉलेट शेष (Live Balances)' : 'Wallet Balances'}</th>
-                <th className="py-3 px-4">{isHi ? 'स्थिति / रोल' : 'Status & Role'}</th>
-                <th className="py-3 px-4 text-right">{isHi ? 'कार्रवाई (Actions)' : 'Actions'}</th>
+                <th className="py-3.5 px-4">{isHi ? 'यूज़र / नाम' : 'User / Name'}</th>
+                <th className="py-3.5 px-4">{isHi ? 'लॉगिन आईडी व फ़ोन' : 'Login ID & Phone'}</th>
+                <th className="py-3.5 px-4">{isHi ? 'वॉलेट शेष (Live Balances)' : 'Wallet Balances'}</th>
+                <th className="py-3.5 px-4">{isHi ? 'स्थिति / रोल' : 'Status & Role'}</th>
+                <th className="py-3.5 px-4 text-right">{isHi ? 'कार्रवाई (Actions)' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
@@ -293,7 +467,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           {/* Quick Wallet Edit Button */}
                           <button
-                            onClick={() => onEditUserWallet ? onEditUserWallet(u) : onEditUser(u)}
+                            onClick={() => (onEditUserWallet ? onEditUserWallet(u) : onEditUser(u))}
                             className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm shadow-emerald-500/10"
                             title={isHi ? 'वॉलेट राशि बदलें / जोड़ें / घटाएं' : 'Edit or adjust user wallet balances'}
                           >

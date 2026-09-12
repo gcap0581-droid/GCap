@@ -564,85 +564,154 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           {/* TAB 2: WALLET & BALANCES MANAGEMENT */}
           {activeTab === 'WALLET' && (
             <div className="space-y-4">
-              <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl flex items-start gap-2.5">
-                <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-950 border border-emerald-500/30 rounded-2xl flex items-start gap-3 shadow-md">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
                 <div className="text-xs text-slate-300">
-                  <span className="font-bold text-emerald-300 block mb-0.5">
-                    {isHi ? 'एडमिन वॉलेट नियंत्रण (Admin Direct Wallet Control)' : 'Direct Wallet Management'}
-                  </span>
-                  {isHi
-                    ? 'आप इस यूज़र के वॉलेट में राशि जोड़ (Credit) सकते हैं, घटा (Debit) सकते हैं, या सीधे किसी भी बैलेंस का मान बदल सकते हैं।'
-                    : 'Add or deduct funds from this user wallet, or set direct balances with an audit reason.'}
+                  <div className="font-bold text-emerald-300 text-sm flex items-center gap-2 mb-0.5">
+                    <span>{isHi ? 'एडमिन वॉलेट नियंत्रण एवं रीयल-टाइम क्रेडिट/डेबिट' : 'Admin Wallet Control & Live Payout Console'}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {isHi
+                      ? 'आप यूज़र के किसी भी वॉलेट का लाइव बैलेंस सीधे संपादित कर सकते हैं या त्वरित ऑपरेटर से राशि जोड़/घटा सकते हैं।'
+                      : 'Directly modify user balances or use the quick credit/debit operator with instant audit history.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Balances Grid */}
+              {/* Balances Stat Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-950 border border-emerald-500/30 rounded-xl">
-                  <span className="text-[11px] text-slate-400 block">{isHi ? 'नकद शेष (Cash ₹)' : 'Cash Balance (₹)'}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={cashBalance}
-                    onChange={(e) => setCashBalance(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full mt-1 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-emerald-400 font-mono focus:border-emerald-400 focus:outline-none"
-                  />
+                <div className="p-3 bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/30 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
+                      <span>💵</span>
+                      <span>{isHi ? 'नकद शेष' : 'Cash (₹)'}</span>
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">
+                      LIVE
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-emerald-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={cashBalance}
+                        onChange={(e) => setCashBalance(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-emerald-400 font-mono focus:border-emerald-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-cyan-500/30 rounded-xl">
-                  <span className="text-[11px] text-slate-400 block">{isHi ? 'GP शेष (GP Points)' : 'GP Balance (GP)'}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={gpBalance}
-                    onChange={(e) => setGpBalance(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full mt-1 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-cyan-300 font-mono focus:border-cyan-400 focus:outline-none"
-                  />
+                <div className="p-3 bg-gradient-to-b from-slate-900 to-slate-950 border border-cyan-500/30 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1">
+                      <span>🪙</span>
+                      <span>{isHi ? 'GP पॉइंट्स' : 'GP Points'}</span>
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 font-mono font-bold">
+                      POINTS
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={gpBalance}
+                      onChange={(e) => setGpBalance(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-cyan-300 font-mono focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-amber-500/30 rounded-xl">
-                  <span className="text-[11px] text-slate-400 block">{isHi ? 'कुल कमाई (Total Earned ₹)' : 'Total Earned (₹)'}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={totalEarned}
-                    onChange={(e) => setTotalEarned(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full mt-1 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-amber-400 font-mono focus:border-amber-400 focus:outline-none"
-                  />
+                <div className="p-3 bg-gradient-to-b from-slate-900 to-slate-950 border border-amber-500/30 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                      <span>📈</span>
+                      <span>{isHi ? 'कुल कमाई' : 'Earned (₹)'}</span>
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-amber-400 font-bold">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={totalEarned}
+                        onChange={(e) => setTotalEarned(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-amber-400 font-mono focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-slate-950 border border-purple-500/30 rounded-xl">
-                  <span className="text-[11px] text-slate-400 block">{isHi ? 'रॉयल्टी शेष (Royalty ₹)' : 'Royalty Earned (₹)'}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={royaltyEarned}
-                    onChange={(e) => setRoyaltyEarned(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full mt-1 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-sm font-bold text-purple-300 font-mono focus:border-purple-400 focus:outline-none"
-                  />
+                <div className="p-3 bg-gradient-to-b from-slate-900 to-slate-950 border border-purple-500/30 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-purple-300 flex items-center gap-1">
+                      <span>👑</span>
+                      <span>{isHi ? 'रॉयल्टी' : 'Royalty (₹)'}</span>
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-purple-300 font-bold">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={royaltyEarned}
+                        onChange={(e) => setRoyaltyEarned(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-purple-300 font-mono focus:border-purple-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Quick Add / Deduct Action Box */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-white">
-                  <ArrowRightLeft className="w-4 h-4 text-cyan-400" />
-                  <span>{isHi ? 'त्वरित राशि जोड़ें / घटाएं (Quick Credit / Debit Operator)' : 'Quick Balance Adjustment Tool'}</span>
+              {/* Quick Add / Deduct Action Operator */}
+              <div className="p-4 bg-slate-950/90 border border-slate-800 rounded-2xl space-y-3.5 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <ArrowRightLeft className="w-4 h-4 text-cyan-400" />
+                    <span>{isHi ? 'त्वरित ऑपरेटर (Quick Balance Adjustment)' : 'Quick Adjustment Tool'}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">{isHi ? 'ऑटो पासबुक एंट्री' : 'Auto Passbook Log'}</span>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  <span className="text-[11px] text-slate-400 font-semibold shrink-0">{isHi ? 'त्वरित राशि:' : 'Quick Select:'}</span>
+                  {[500, 1000, 2000, 5000, 10000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setAdjAmount(String(amt))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer ${
+                        adjAmount === String(amt)
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm'
+                          : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      +₹{amt.toLocaleString('en-IN')}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      {isHi ? 'कार्रवाई (Action):' : 'Action Type:'}
+                      {isHi ? 'कार्रवाई प्रकार:' : 'Action Type:'}
                     </label>
                     <select
                       value={adjType}
                       onChange={(e) => setAdjType(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-cyan-400 focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-medium focus:border-cyan-400 focus:outline-none"
                     >
                       <option value="ADD">➕ {isHi ? 'राशि जोड़ें (Credit / Add)' : 'Add / Credit Amount'}</option>
                       <option value="DEDUCT">➖ {isHi ? 'राशि घटाएं (Debit / Deduct)' : 'Deduct / Debit Amount'}</option>
@@ -652,23 +721,23 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      {isHi ? 'वॉलेट चुनें (Target Wallet):' : 'Target Balance:'}
+                      {isHi ? 'लक्ष्य वॉलेट:' : 'Target Balance:'}
                     </label>
                     <select
                       value={adjTarget}
                       onChange={(e) => setAdjTarget(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:border-cyan-400 focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-medium focus:border-cyan-400 focus:outline-none"
                     >
-                      <option value="cashBalance">💵 {isHi ? 'नकद बैलेंस (Cash Balance ₹)' : 'Cash Balance (₹)'}</option>
-                      <option value="gpBalance">🪙 {isHi ? 'GP बैलेंस (GP Points)' : 'GP Balance (GP)'}</option>
-                      <option value="totalEarned">📈 {isHi ? 'कुल कमाई (Total Earnings ₹)' : 'Total Earnings (₹)'}</option>
+                      <option value="cashBalance">💵 {isHi ? 'नकद बैलेंस (Cash ₹)' : 'Cash Balance (₹)'}</option>
+                      <option value="gpBalance">🪙 {isHi ? 'GP पॉइंट्स (GP)' : 'GP Balance (GP)'}</option>
+                      <option value="totalEarned">📈 {isHi ? 'कुल कमाई (Total Earned ₹)' : 'Total Earnings (₹)'}</option>
                       <option value="royaltyEarned">👑 {isHi ? 'रॉयल्टी बैलेंस (Royalty ₹)' : 'Royalty Balance (₹)'}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                      {isHi ? 'राशि (Amount ₹):' : 'Amount (₹ / GP):'}
+                      {isHi ? 'राशि दर्ज करें:' : 'Amount:'}
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -683,7 +752,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                       <button
                         type="button"
                         onClick={handleApplyQuickAdjustment}
-                        className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer"
+                        className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer shadow-md shadow-cyan-600/20"
                       >
                         {isHi ? 'लागू करें' : 'Apply'}
                       </button>
@@ -693,20 +762,15 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                    {isHi ? 'समायोजन का कारण / नोट (Adjustment Reason / Audit Note):' : 'Reason / Audit Note:'}
+                    {isHi ? 'समायोजन नोट (Audit Reason):' : 'Audit Reason / Note:'}
                   </label>
                   <input
                     type="text"
                     value={adjReason}
                     onChange={(e) => setAdjReason(e.target.value)}
-                    placeholder={isHi ? 'e.g. एडमिन बोनस / फंड सुधार' : 'e.g. Admin bonus, deposit credit, or correction'}
-                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-200 focus:border-cyan-400 focus:outline-none"
+                    placeholder={isHi ? 'e.g. एडमिन बोनस / जमा क्रेडिट' : 'e.g. Admin bonus or manual adjustment'}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-200 focus:border-cyan-400 focus:outline-none"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    {isHi
-                      ? 'यदि आप त्वरित ऑपरेटर का उपयोग करते हैं, तो यूज़र की पासबुक/ट्रांज़ैक्शन हिस्ट्री में यह नोट स्वतः दर्ज हो जाएगा।'
-                      : 'If adjustment is applied, an official transaction ledger entry will be logged under the user account.'}
-                  </p>
                 </div>
               </div>
             </div>
