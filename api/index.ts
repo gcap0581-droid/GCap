@@ -1,103 +1,45 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
+// Vercel Serverless Function - Transparent Proxy to GCap Central Cloud Run Backend
 
-// Vercel Serverless Function entry point for GCap API routes
-const app = express();
+const CLOUD_RUN_CENTRAL_URL = 'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-// CORS middleware
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") {
+export default async function handler(req: any, res: any) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  next();
-});
 
-// Database path synchronized with /server.ts
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "server-db.json");
-
-function ensureVercelDb() {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    const rawUrl = req.url || '';
+    const cleanUrl = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`;
+    const targetUrl = `${CLOUD_RUN_CENTRAL_URL}${cleanUrl}`;
+
+    const headers: Record<string, string> = {};
+    if (req.headers['content-type']) {
+      headers['Content-Type'] = req.headers['content-type'];
     }
-    if (!fs.existsSync(DB_FILE)) {
-      const initial = {
-        users: [
-          {
-            id: "usr-admin-01",
-            loginId: "admin",
-            name: "Super Administrator",
-            role: "ADMIN",
-            phone: "9876543210",
-            email: "admin@gcap.in",
-            status: "ACTIVE",
-            passwordHash: "admin123"
-          }
-        ],
-        wallets: { "usr-admin-01": { cashBalance: 500000, gpBalance: 10000, totalInvested: 0, totalEarned: 0, royaltyEarned: 0, pendingWithdrawals: 0, pendingDeposits: 0 } },
-        investments: [],
-        transactions: [],
-        plans: [],
-        rules: {},
-        liveConfig: {},
-        bankDetails: {},
-        treasury: { balance: 1000000 },
-        treasuryLogs: []
-      };
-      fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), "utf-8");
-      return initial;
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-  } catch (e) {
-    return { users: [], wallets: {}, investments: [], transactions: [], plans: [], rules: {}, liveConfig: {}, bankDetails: {}, treasury: { balance: 1000000 }, treasuryLogs: [] };
+
+    const fetchOptions: RequestInit = {
+      method: req.method,
+      headers,
+    };
+
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    }
+
+    const response = await fetch(targetUrl, fetchOptions);
+    const contentType = response.headers.get('content-type') || 'application/json';
+    res.setHeader('Content-Type', contentType);
+
+    const data = await response.text();
+    res.status(response.status).send(data);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to proxy to central server' });
   }
 }
-
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", service: "GCap Vercel API", timestamp: Date.now() });
-});
-
-// Get users endpoint
-app.get("/api/users", (req, res) => {
-  const db = ensureVercelDb();
-  res.json({ success: true, users: db.users.map(({ passwordHash: _, ...u }: any) => u) });
-});
-
-// Sync endpoint
-app.post("/api/users/sync", (req, res) => {
-  try {
-    const { users } = req.body || {};
-    const db = ensureVercelDb();
-    if (Array.isArray(users)) {
-      for (const u of users) {
-        const existingIdx = db.users.findIndex((x: any) => x.id === u.id || x.phone === u.phone || (u.loginId && x.loginId?.toLowerCase() === u.loginId.toLowerCase()));
-        if (existingIdx >= 0) {
-          db.users[existingIdx] = { ...db.users[existingIdx], ...u };
-        } else {
-          db.users.push(u);
-        }
-      }
-      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-    }
-    res.json({ success: true, users: db.users.map(({ passwordHash: _, ...u }: any) => u) });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Catch-all API fallback
-app.all("/api/*all", (req, res) => {
-  const db = ensureVercelDb();
-  res.json({ success: true, message: "GCap API endpoint active on Vercel", path: req.path, dataCount: db.users?.length || 0 });
-});
-
-export default app;
