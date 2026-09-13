@@ -1,5 +1,6 @@
 import { UserProfile } from '../types';
 import { subscribeToRealtimeEvents } from './realtimeSync';
+import { apiFetch } from './apiConfig';
 
 const AUTH_USER_KEY = 'gcap_active_session_v1';
 
@@ -73,7 +74,7 @@ export async function loginUserAsync(
 
   // 1. Primary: Express Central Auth Endpoint (/api/auth/login)
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ loginId: trimmedId, password: trimmedPass }),
@@ -142,7 +143,7 @@ export async function registerUserAsync(data: {
   }
 
   try {
-    const response = await fetch('/api/register', {
+    const response = await apiFetch('/api/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export function getAllUsers(): UserProfile[] {
 
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
   try {
-    const res = await fetch('/api/users');
+    const res = await apiFetch('/api/users');
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users)) {
@@ -264,7 +265,7 @@ export async function syncUsersWithServer(): Promise<UserProfile[]> {
 
 export async function adminAddUserAsync(data: any): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
-    const res = await fetch('/api/users/add', {
+    const res = await apiFetch('/api/users/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -322,14 +323,14 @@ export function adminAddUser(data: any): { success: boolean; user?: UserProfile;
 
 export async function adminDeleteUserAsync(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    let res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+    let res = await apiFetch(`/api/users/${encodeURIComponent(userId)}`, {
       method: 'DELETE',
     });
     let data = await res.json().catch(() => ({}));
     
     if (!res.ok && !data.success) {
       // Fallback to POST /api/users/delete
-      res = await fetch('/api/users/delete', {
+      res = await apiFetch('/api/users/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
@@ -375,7 +376,7 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
       cleanUpdates.password = cleanUpdates.passwordHash;
     }
 
-    const res = await fetch('/api/users/update', {
+    const res = await apiFetch('/api/users/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, updates: cleanUpdates }),
