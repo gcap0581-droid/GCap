@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
-import { getFirestore as getClientFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch } from "firebase/firestore";
+import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot } from "firebase/firestore";
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
 let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
@@ -422,8 +422,10 @@ try {
       } else {
         clientApp = getClientApps()[0];
       }
-      firestore = getClientFirestore(clientApp, config.firestoreDatabaseId || "(default)");
-      console.log("[Firebase] Successfully initialized Firestore Client with database:", config.firestoreDatabaseId || "(default)");
+      firestore = clientInitializeFirestore(clientApp, {
+        experimentalForceLongPolling: true,
+      }, config.firestoreDatabaseId || "(default)");
+      console.log("[Firebase] Successfully initialized Firestore Client with long-polling and database:", config.firestoreDatabaseId || "(default)");
     }
   } else {
     console.warn("[Firebase] No firebase-applet-config.json found.");
@@ -432,15 +434,59 @@ try {
   console.error("[Firebase] Error initializing Firestore Client:", err);
 }
 
-// Helper to remove any undefined properties before writing to Firestore
-function cleanForFirestore<T>(obj: T): T {
-  if (!obj) return obj;
-  return JSON.parse(JSON.stringify(obj));
+// Helper to remove any undefined properties and flatten nested arrays before writing to Firestore
+function cleanForFirestore<T>(input: T): any {
+  if (input === null || input === undefined) return input;
+
+  function sanitize(val: any): any {
+    if (val === null || val === undefined) return null;
+    if (Array.isArray(val)) {
+      const flattened: any[] = [];
+      for (const item of val) {
+        if (Array.isArray(item)) {
+          // Firestore does NOT support nested arrays! Flatten recursive array items into this array.
+          const subItems = sanitize(item);
+          if (Array.isArray(subItems)) {
+            flattened.push(...subItems);
+          } else {
+            flattened.push(subItems);
+          }
+        } else {
+          flattened.push(sanitize(item));
+        }
+      }
+      return flattened;
+    }
+    if (typeof val === "object") {
+      const obj: Record<string, any> = {};
+      for (const [k, v] of Object.entries(val)) {
+        if (v !== undefined) {
+          obj[k] = sanitize(v);
+        }
+      }
+      return obj;
+    }
+    return val;
+  }
+
+  return sanitize(JSON.parse(JSON.stringify(input)));
 }
+
+let isFirestoreQuotaExhausted = false;
+let quotaExhaustedTime = 0;
 
 // Function to save the DB to Firestore
 async function saveToFirestore(db: ServerDB): Promise<void> {
   if (!firestore) return;
+  if (isFirestoreQuotaExhausted) {
+    // Retry after 1 hour (3600000 ms)
+    if (Date.now() - quotaExhaustedTime > 3600000) {
+      isFirestoreQuotaExhausted = false;
+      console.log("[Firebase] Quota cooling period over. Retrying Firestore connection...");
+    } else {
+      return;
+    }
+  }
   try {
     const batch = clientWriteBatch(firestore);
     
@@ -472,7 +518,14 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
     await batch.commit();
     console.log("[Firebase] Successfully batch-saved full DB state to Firestore via Client SDK!");
   } catch (err) {
-    console.error("[Firebase] Error saving to Firestore:", err);
+    const errMsg = String(err && (err as any).message || err || "").toLowerCase();
+    if (errMsg.includes("resource_exhausted") || errMsg.includes("quota")) {
+      isFirestoreQuotaExhausted = true;
+      quotaExhaustedTime = Date.now();
+      console.warn("[Firebase Warning] Firestore daily write quota limit reached. Temporarily pausing Firestore writes to prevent error logs. Server is operating safely on fast local file persistence!");
+    } else {
+      console.error("[Firebase] Error saving to Firestore:", err);
+    }
   }
 }
 
@@ -584,7 +637,19 @@ function ensureDb(): ServerDB {
     if (!parsed.liveConfig || typeof parsed.liveConfig !== "object") parsed.liveConfig = DEFAULT_LIVE_CONFIG;
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
-    if (!parsed.treasuryLogs || !Array.isArray(parsed.treasuryLogs)) parsed.treasuryLogs = INITIAL_LOGS;
+    if (!parsed.treasuryLogs || !Array.isArray(parsed.treasuryLogs)) {
+      parsed.treasuryLogs = INITIAL_LOGS;
+    } else {
+      const flatLogs: any[] = [];
+      for (const item of parsed.treasuryLogs) {
+        if (Array.isArray(item)) {
+          flatLogs.push(...item.flat(2).filter((l: any) => l && typeof l === "object" && !Array.isArray(l)));
+        } else if (item && typeof item === "object") {
+          flatLogs.push(item);
+        }
+      }
+      parsed.treasuryLogs = flatLogs;
+    }
     if (!parsed.messages || !Array.isArray(parsed.messages)) {
       parsed.messages = [
         {
@@ -655,6 +720,9 @@ function ensureDb(): ServerDB {
   }
 }
 
+let firestoreSaveTimeout: NodeJS.Timeout | null = null;
+let pendingDbToSave: ServerDB | null = null;
+
 function saveDb(db: ServerDB): void {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -662,22 +730,52 @@ function saveDb(db: ServerDB): void {
     }
     db.lastUpdated = new Date().toISOString();
     
-    // Save locally
+    // Save locally instantly to ensure 100% data durability and memory match on server
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
     
     // Set local tracking timestamp to avoid redundant self-loading triggers
     lastSyncedTimestamp = db.lastUpdated;
     
-    // Write asynchronously to Firestore
+    // Schedule debounced write to Firestore to stay safely within free tier daily write limits (20,000 writes/day)
     if (firestore) {
-      saveToFirestore(db).catch(err => {
-        console.error("[Firebase] Async save to Firestore failed:", err);
-      });
+      pendingDbToSave = db;
+      if (!firestoreSaveTimeout) {
+        firestoreSaveTimeout = setTimeout(async () => {
+          if (pendingDbToSave) {
+            const dbToSave = pendingDbToSave;
+            pendingDbToSave = null;
+            firestoreSaveTimeout = null;
+            try {
+              await saveToFirestore(dbToSave);
+            } catch (err) {
+              console.error("[Firebase] Debounced save to Firestore failed:", err);
+            }
+          }
+        }, 12000); // Debounce for 12 seconds to group multiple successive edits into 1 batch!
+      }
     }
   } catch (err) {
     console.error("Error saving server DB:", err);
   }
 }
+
+// Flush any pending save on process exit
+function flushPendingFirestoreSave() {
+  if (firestore && pendingDbToSave) {
+    const dbToSave = pendingDbToSave;
+    pendingDbToSave = null;
+    if (firestoreSaveTimeout) {
+      clearTimeout(firestoreSaveTimeout);
+      firestoreSaveTimeout = null;
+    }
+    saveToFirestore(dbToSave).catch(err => {
+      console.error("[Firebase] Flush on exit failed:", err);
+    });
+  }
+}
+
+process.on("SIGTERM", flushPendingFirestoreSave);
+process.on("SIGINT", flushPendingFirestoreSave);
 
 async function startServer() {
   const app = express();
@@ -787,8 +885,8 @@ async function startServer() {
 
         // Setup real-time listener to keep everything synchronized 100% in real-time worldwide
         console.log("[Firebase] Setting up worldwide real-time snapshot listener...");
-        firestore.collection("gcap_database").doc("metadata").onSnapshot(async (docSnap: any) => {
-          if (docSnap.exists) {
+        clientOnSnapshot(clientDoc(firestore, "gcap_database", "metadata"), async (docSnap: any) => {
+          if (docSnap.exists()) {
             const data = docSnap.data();
             const firestoreLastUpdated = data?.lastUpdated;
             if (firestoreLastUpdated && firestoreLastUpdated !== lastSyncedTimestamp) {
@@ -1349,7 +1447,18 @@ async function startServer() {
       db.treasury = { ...db.treasury, ...treasury };
     }
     if (log) {
-      db.treasuryLogs.unshift(log);
+      if (Array.isArray(log)) {
+        const incomingLogs = log.flat(2).filter((l: any) => l && typeof l === "object" && !Array.isArray(l));
+        const existingIds = new Set(db.treasuryLogs.map((l: any) => l.id));
+        for (const item of incomingLogs) {
+          if (!item.id || !existingIds.has(item.id)) {
+            db.treasuryLogs.unshift(item);
+            if (item.id) existingIds.add(item.id);
+          }
+        }
+      } else if (typeof log === "object") {
+        db.treasuryLogs.unshift(log);
+      }
     }
     saveDb(db);
 

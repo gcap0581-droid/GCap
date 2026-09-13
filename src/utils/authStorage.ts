@@ -176,35 +176,31 @@ export async function registerUserAsync(data: {
   const cleanPhone = data.phone.replace(/[^0-9]/g, '');
   
   try {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('phone', '==', cleanPhone));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-        return { success: false, error: 'यह मोबाइल नंबर पहले से पंजीकृत है।' };
-    }
-
-    const newUser = {
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         name: data.name,
         phone: cleanPhone,
-        loginId: data.loginId ? data.loginId.trim() : cleanPhone,
-        email: data.email || '',
-        referralCode: data.referralCode || '',
-        passwordHash: data.password,
+        loginId: data.loginId,
+        email: data.email,
         password: data.password,
-        role: 'USER' as const,
-        status: 'ACTIVE' as const,
-        joinedDate: new Date().toISOString().split('T')[0]
-    };
+        referralCode: data.referralCode,
+      }),
+    });
     
-    const docRef = await addDoc(usersRef, newUser);
-    const profile = { id: docRef.id, ...newUser } as unknown as UserProfile;
-    
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
-    return { success: true, user: profile };
+    const result = await response.json();
+    if (result.success && result.user) {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
+      return { success: true, user: result.user };
+    } else {
+      return { success: false, error: result.error || 'पंजीकरण विफल रहा।' };
+    }
   } catch (err) {
-    console.error('Register error:', err);
-    return { success: false, error: 'पंजीकरण विफल रहा।' };
+    console.error('Register API error:', err);
+    return { success: false, error: 'सर्वर त्रुटि, कृपया पुनः प्रयास करें।' };
   }
 }
 
