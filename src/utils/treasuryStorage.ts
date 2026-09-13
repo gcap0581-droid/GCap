@@ -1,4 +1,5 @@
 import { CompanyTreasury, TreasuryLog } from '../types';
+import { apiUpdateTreasury } from './centralSync';
 
 const TREASURY_STORAGE_KEY = 'gcap_company_treasury_v1';
 const TREASURY_LOGS_STORAGE_KEY = 'gcap_treasury_logs_v1';
@@ -50,7 +51,11 @@ export function getStoredTreasury(): CompanyTreasury {
 
 export function setStoredTreasury(treasury: CompanyTreasury) {
   try {
-    localStorage.setItem(TREASURY_STORAGE_KEY, JSON.stringify(treasury));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TREASURY_STORAGE_KEY, JSON.stringify(treasury));
+    }
+    const currentLogs = getStoredTreasuryLogs();
+    apiUpdateTreasury(treasury, currentLogs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
   } catch (err) {
     console.error('Failed to save company treasury:', err);
   }
@@ -58,9 +63,8 @@ export function setStoredTreasury(treasury: CompanyTreasury) {
 
 export function getStoredTreasuryLogs(): TreasuryLog[] {
   try {
-    const raw = localStorage.getItem(TREASURY_LOGS_STORAGE_KEY);
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(TREASURY_LOGS_STORAGE_KEY) : null;
     if (!raw) {
-      setStoredTreasuryLogs(INITIAL_LOGS);
       return INITIAL_LOGS;
     }
     return JSON.parse(raw);
@@ -71,7 +75,11 @@ export function getStoredTreasuryLogs(): TreasuryLog[] {
 
 export function setStoredTreasuryLogs(logs: TreasuryLog[]) {
   try {
-    localStorage.setItem(TREASURY_LOGS_STORAGE_KEY, JSON.stringify(logs));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TREASURY_LOGS_STORAGE_KEY, JSON.stringify(logs));
+    }
+    const currentTreasury = getStoredTreasury();
+    apiUpdateTreasury(currentTreasury, logs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
   } catch (err) {
     console.error('Failed to save treasury logs:', err);
   }

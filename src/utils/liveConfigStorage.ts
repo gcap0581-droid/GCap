@@ -1,4 +1,5 @@
 import { LiveInterfaceConfig, OtaEventPayload, OtaUpdateType, ThemeAccent } from '../types';
+import { apiSaveLiveConfig } from './centralSync';
 
 const LIVE_CONFIG_STORAGE_KEY = 'gcap_live_interface_config_v1';
 const OTA_HISTORY_STORAGE_KEY = 'gcap_ota_history_v1';
@@ -41,7 +42,10 @@ export function getStoredLiveConfig(): LiveInterfaceConfig {
 
 export function saveStoredLiveConfig(config: LiveInterfaceConfig): void {
   try {
-    localStorage.setItem(LIVE_CONFIG_STORAGE_KEY, JSON.stringify(config));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LIVE_CONFIG_STORAGE_KEY, JSON.stringify(config));
+    }
+    apiSaveLiveConfig(config).catch((err) => console.warn('Background apiSaveLiveConfig error:', err));
   } catch (err) {
     console.error('Failed to save live config:', err);
   }

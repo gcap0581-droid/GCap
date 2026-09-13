@@ -1,26 +1,24 @@
 import { InvestmentPlan } from '../types';
 import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
 import { broadcastOtaUpdate } from './liveConfigStorage';
+import { apiSavePlans } from './centralSync';
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
 
 export function getStoredPlans(): InvestmentPlan[] {
   try {
-    const raw = localStorage.getItem(PLANS_STORAGE_KEY);
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(PLANS_STORAGE_KEY) : null;
     if (!raw) {
-      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
       return DEFAULT_PLANS;
     }
     const parsed: InvestmentPlan[] = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
       return DEFAULT_PLANS;
     }
     // Auto-migrate: ensure the 641-day short-term plan (0.164%) and 365-day long-term plan (0.124%) are active
     const shortTermPlan = parsed.find((p) => p.id === 'short-term');
     const longTermPlan = parsed.find((p) => p.id === 'long-term');
     if (!shortTermPlan || shortTermPlan.dailyRoiPercent !== 0.164 || !longTermPlan || longTermPlan.dailyRoiPercent !== 0.124) {
-      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(DEFAULT_PLANS));
       return DEFAULT_PLANS;
     }
     return parsed;
@@ -32,7 +30,10 @@ export function getStoredPlans(): InvestmentPlan[] {
 
 export function saveStoredPlans(plans: InvestmentPlan[], broadcast = true): void {
   try {
-    localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(plans));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(plans));
+    }
+    apiSavePlans(plans).catch((err) => console.warn('Background apiSavePlans error:', err));
     if (broadcast) {
       broadcastOtaUpdate(
         'PLANS',

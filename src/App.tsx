@@ -295,7 +295,9 @@ export default function App() {
 
     const syncWithCentralDb = async () => {
       try {
-        const state = await fetchCentralState(currentUser.id, currentUser.role);
+        const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
+        const primarySyncId = userPhoneDigits || currentUser.id;
+        const state = await fetchCentralState(primarySyncId, currentUser.role);
         if (isCancelled || !state || !state.success) return;
 
         // Sync Global Plans, Rules, LiveConfig
@@ -366,11 +368,17 @@ export default function App() {
     // Instant SSE Real-Time Sync on any activity anywhere
     const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
       if (event.type === 'wallet_updated' && event.wallet && currentUser) {
-        const targetId = event.userId;
+        const rawTarget = String(event.userId || "").trim();
+        const targetPhone10 = rawTarget.replace(/[^0-9]/g, "").slice(-10);
         const curId = currentUser.id;
         const curLoginId = currentUser.loginId;
-        const curPhone = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "") : "";
-        if (targetId && (targetId === curId || targetId === curLoginId || targetId === curPhone)) {
+        const curPhone10 = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
+        if (
+          !rawTarget ||
+          rawTarget === curId ||
+          rawTarget === curLoginId ||
+          (targetPhone10 && curPhone10 && targetPhone10 === curPhone10)
+        ) {
           setWallet(event.wallet);
           setStoredWallet(event.wallet);
         }

@@ -431,6 +431,12 @@ try {
   console.error("[Firebase] Error initializing firebase-admin:", err);
 }
 
+// Helper to remove any undefined properties before writing to Firestore
+function cleanForFirestore<T>(obj: T): T {
+  if (!obj) return obj;
+  return JSON.parse(JSON.stringify(obj));
+}
+
 // Function to save the DB to Firestore
 async function saveToFirestore(db: ServerDB): Promise<void> {
   if (!firestore) return;
@@ -438,18 +444,18 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
     const dbRef = firestore.collection("gcap_database");
     const batch = firestore.batch();
 
-    batch.set(dbRef.doc("users"), { data: db.users || [] });
-    batch.set(dbRef.doc("wallets"), { data: db.wallets || {} });
-    batch.set(dbRef.doc("investments"), { data: db.investments || [] });
-    batch.set(dbRef.doc("transactions"), { data: db.transactions || [] });
-    batch.set(dbRef.doc("plans"), { data: db.plans || [] });
-    if (db.rules) batch.set(dbRef.doc("rules"), { data: db.rules });
-    if (db.liveConfig) batch.set(dbRef.doc("liveConfig"), { data: db.liveConfig });
-    batch.set(dbRef.doc("bankDetails"), { data: db.bankDetails || {} });
-    if (db.treasury) batch.set(dbRef.doc("treasury"), { data: db.treasury });
-    batch.set(dbRef.doc("treasuryLogs"), { data: db.treasuryLogs || [] });
-    batch.set(dbRef.doc("messages"), { data: db.messages || [] });
-    batch.set(dbRef.doc("deletedUserIds"), { data: db.deletedUserIds || [] });
+    batch.set(dbRef.doc("users"), { data: cleanForFirestore(db.users || []) });
+    batch.set(dbRef.doc("wallets"), { data: cleanForFirestore(db.wallets || {}) });
+    batch.set(dbRef.doc("investments"), { data: cleanForFirestore(db.investments || []) });
+    batch.set(dbRef.doc("transactions"), { data: cleanForFirestore(db.transactions || []) });
+    batch.set(dbRef.doc("plans"), { data: cleanForFirestore(db.plans || []) });
+    if (db.rules) batch.set(dbRef.doc("rules"), { data: cleanForFirestore(db.rules) });
+    if (db.liveConfig) batch.set(dbRef.doc("liveConfig"), { data: cleanForFirestore(db.liveConfig) });
+    batch.set(dbRef.doc("bankDetails"), { data: cleanForFirestore(db.bankDetails || {}) });
+    if (db.treasury) batch.set(dbRef.doc("treasury"), { data: cleanForFirestore(db.treasury) });
+    batch.set(dbRef.doc("treasuryLogs"), { data: cleanForFirestore(db.treasuryLogs || []) });
+    batch.set(dbRef.doc("messages"), { data: cleanForFirestore(db.messages || []) });
+    batch.set(dbRef.doc("deletedUserIds"), { data: cleanForFirestore(db.deletedUserIds || []) });
     batch.set(dbRef.doc("metadata"), { lastUpdated: db.lastUpdated || new Date().toISOString() });
 
     await batch.commit();
@@ -955,20 +961,63 @@ async function startServer() {
     // Regular user gets their own transactions, investments, wallet, plus global plans/rules
     const reqUserId = userId && typeof userId === "string" ? String(userId).trim() : "";
     const reqDigits = reqUserId.replace(/[^0-9]/g, "");
-    const foundUser = reqUserId ? db.users.find((u) => u.id === reqUserId || (u.loginId && u.loginId.toLowerCase() === reqUserId.toLowerCase()) || (reqDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === reqDigits)) : null;
-    
+    const reqPhone10 = reqDigits.length >= 10 ? reqDigits.slice(-10) : reqDigits;
+
+    const foundUser = reqUserId
+      ? db.users.find((u) => {
+          const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
+          return (
+            (reqPhone10 && uPhone10 && uPhone10 === reqPhone10) ||
+            u.id === reqUserId ||
+            (u.loginId && u.loginId.toLowerCase() === reqUserId.toLowerCase())
+          );
+        })
+      : null;
+
+    const uPhone10 = foundUser ? (foundUser.phone || "").replace(/[^0-9]/g, "").slice(-10) : reqPhone10;
+    const uPhoneClean = foundUser ? (foundUser.phone || "").replace(/[^0-9]/g, "") : reqDigits;
+
     const userWallet = reqUserId
-      ? (db.wallets[reqUserId] || (foundUser?.id ? db.wallets[foundUser.id] : null) || (foundUser?.loginId ? db.wallets[foundUser.loginId] : null) || (foundUser?.phone ? db.wallets[foundUser.phone.replace(/[^0-9]/g, "")] : null) || DEFAULT_WALLET)
+      ? (
+          (uPhone10 ? db.wallets[uPhone10] : null) ||
+          (uPhoneClean ? db.wallets[uPhoneClean] : null) ||
+          db.wallets[reqUserId] ||
+          (foundUser?.id ? db.wallets[foundUser.id] : null) ||
+          (foundUser?.loginId ? db.wallets[foundUser.loginId] : null) ||
+          (foundUser?.phone ? db.wallets[foundUser.phone] : null) ||
+          DEFAULT_WALLET
+        )
       : DEFAULT_WALLET;
-    
+
     const effectiveId = foundUser ? foundUser.id : reqUserId;
     const userTxns = reqUserId
-      ? db.transactions.filter((t) => t.userId === effectiveId || t.userId === reqUserId || (foundUser && (t.userLoginId === foundUser.loginId || t.userPhone === foundUser.phone)) || !t.userId)
+      ? db.transactions.filter((t) => {
+          const tPhone10 = (t.userPhone || t.userId || "").replace(/[^0-9]/g, "").slice(-10);
+          return (
+            (uPhone10 && tPhone10 === uPhone10) ||
+            t.userId === effectiveId ||
+            t.userId === reqUserId ||
+            (foundUser && (t.userLoginId === foundUser.loginId || t.userPhone === foundUser.phone)) ||
+            !t.userId
+          );
+        })
       : db.transactions;
+
     const userInvs = reqUserId
-      ? db.investments.filter((i) => i.userId === effectiveId || i.userId === reqUserId || !i.userId)
+      ? db.investments.filter((i) => {
+          const iPhone10 = (i.userPhone || i.userId || "").replace(/[^0-9]/g, "").slice(-10);
+          return (
+            (uPhone10 && iPhone10 === uPhone10) ||
+            i.userId === effectiveId ||
+            i.userId === reqUserId ||
+            !i.userId
+          );
+        })
       : db.investments;
-    const userBank = reqUserId ? (db.bankDetails[effectiveId] || db.bankDetails[reqUserId] || null) : null;
+
+    const userBank = reqUserId
+      ? ((uPhone10 ? db.bankDetails[uPhone10] : null) || db.bankDetails[effectiveId] || db.bankDetails[reqUserId] || null)
+      : null;
 
     res.json({
       success: true,
@@ -1412,7 +1461,11 @@ async function startServer() {
     if (effectiveUserId) keysToSave.add(effectiveUserId);
     if (user?.id) keysToSave.add(user.id);
     if (user?.loginId) keysToSave.add(user.loginId);
-    if (user?.phone) keysToSave.add(user.phone.replace(/[^0-9]/g, ""));
+    if (user?.phone) {
+      const cleanP = user.phone.replace(/[^0-9]/g, "");
+      if (cleanP) keysToSave.add(cleanP);
+      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
+    }
 
     keysToSave.forEach((k) => {
       if (k) db.wallets[k] = { ...updatedWallet };
@@ -1453,7 +1506,11 @@ async function startServer() {
     keysToSave.add(cleanId);
     if (user?.id) keysToSave.add(user.id);
     if (user?.loginId) keysToSave.add(user.loginId);
-    if (user?.phone) keysToSave.add(user.phone.replace(/[^0-9]/g, ""));
+    if (user?.phone) {
+      const cleanP = user.phone.replace(/[^0-9]/g, "");
+      if (cleanP) keysToSave.add(cleanP);
+      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
+    }
 
     keysToSave.forEach((k) => {
       if (k) db.wallets[k] = updated;

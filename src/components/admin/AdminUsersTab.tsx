@@ -164,15 +164,21 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           filteredUsers.map((u) => {
             const isAdmin = u.role === 'ADMIN';
             const isBlocked = u.status === 'BLOCKED';
-            const userWallet = wallets[u.id] || wallets[u.loginId] || {
-              cashBalance: 0,
-              gpBalance: 0,
-              totalEarned: 0,
-              royaltyEarned: 0,
-              totalInvested: 0,
-              pendingWithdrawals: 0,
-              pendingDeposits: 0,
-            };
+            const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
+            const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
+            const userWallet =
+              (uPhone10 ? wallets[uPhone10] : null) ||
+              (uPhoneClean ? wallets[uPhoneClean] : null) ||
+              wallets[u.id] ||
+              (u.loginId ? wallets[u.loginId] : null) || {
+                cashBalance: 0,
+                gpBalance: 0,
+                totalEarned: 0,
+                royaltyEarned: 0,
+                totalInvested: 0,
+                pendingWithdrawals: 0,
+                pendingDeposits: 0,
+              };
 
             const todayStr = new Date().toISOString().split('T')[0];
             const isNew =
@@ -351,15 +357,21 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 filteredUsers.map((u) => {
                   const isAdmin = u.role === 'ADMIN';
                   const isBlocked = u.status === 'BLOCKED';
-                  const userWallet = wallets[u.id] || wallets[u.loginId] || {
-                    cashBalance: 0,
-                    gpBalance: 0,
-                    totalEarned: 0,
-                    royaltyEarned: 0,
-                    totalInvested: 0,
-                    pendingWithdrawals: 0,
-                    pendingDeposits: 0,
-                  };
+                  const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
+                  const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
+                  const userWallet =
+                    (uPhone10 ? wallets[uPhone10] : null) ||
+                    (uPhoneClean ? wallets[uPhoneClean] : null) ||
+                    wallets[u.id] ||
+                    (u.loginId ? wallets[u.loginId] : null) || {
+                      cashBalance: 0,
+                      gpBalance: 0,
+                      totalEarned: 0,
+                      royaltyEarned: 0,
+                      totalInvested: 0,
+                      pendingWithdrawals: 0,
+                      pendingDeposits: 0,
+                    };
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">

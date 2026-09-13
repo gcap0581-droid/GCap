@@ -393,10 +393,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         if (adjustRes.success && adjustRes.wallet) {
           const w = adjustRes.wallet;
           const cleanPhone = data.phone.trim().replace(/[^0-9]/g, "");
+          const cleanPhone10 = cleanPhone.slice(-10);
           setWalletsMap((prev) => ({
             ...prev,
             [targetUserId]: w,
             ...(cleanPhone ? { [cleanPhone]: w } : {}),
+            ...(cleanPhone10 ? { [cleanPhone10]: w } : {}),
             ...(data.loginId ? { [data.loginId]: w } : {}),
           }));
         }
