@@ -107,6 +107,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
+    if (!regName.trim() || regName.trim().length < 2) {
+      setErrorMessage(isHi ? 'कृपया अपना पूरा नाम दर्ज करें।' : 'Please enter your full name.');
+      return;
+    }
+
+    const cleanDigits = regPhone.replace(/[^0-9]/g, '');
+    if (!cleanDigits || cleanDigits.length < 10) {
+      setErrorMessage(isHi ? 'कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    if (!regPassword.trim() || regPassword.trim().length < 4) {
+      setErrorMessage(isHi ? 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' : 'Password must be at least 4 characters long.');
+      return;
+    }
+
     if (!agreeTerms) {
       setErrorMessage(isHi ? 'कृपया नियम व शर्तों को स्वीकार करें' : 'Please accept terms & conditions');
       return;
@@ -117,8 +133,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     try {
       const res = await registerUserAsync({
         name: regName,
-        loginId: regLoginId,
-        phone: regPhone,
+        loginId: cleanDigits.slice(-10),
+        phone: cleanDigits.slice(-10),
         email: regEmail,
         password: regPassword,
         referralCode: regReferral,

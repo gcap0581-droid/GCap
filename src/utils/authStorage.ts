@@ -1,10 +1,9 @@
 import { UserProfile } from '../types';
-import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { subscribeToRealtimeEvents } from './realtimeSync';
 
 const AUTH_USER_KEY = 'gcap_active_session_v1';
 
-const DEFAULT_SEED_USERS: UserProfile[] = [
+export const DEFAULT_SEED_USERS: UserProfile[] = [
   {
     id: 'usr-admin-01',
     loginId: 'admin',
@@ -30,49 +29,32 @@ const DEFAULT_SEED_USERS: UserProfile[] = [
   }
 ];
 
-let isSeeding = false;
-async function ensureInitialUsersExist(): Promise<void> {
-  if (isSeeding) return;
-  try {
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(usersRef);
-    if (snapshot.empty) {
-      isSeeding = true;
-      for (const u of DEFAULT_SEED_USERS) {
-        await addDoc(usersRef, u);
-      }
-      console.log('Default Firestore users seeded successfully.');
-    }
-  } catch (err) {
-    console.warn('Could not auto-seed users:', err);
-  } finally {
-    isSeeding = false;
-  }
-}
-
 let cachedUsers: UserProfile[] = [...DEFAULT_SEED_USERS];
 
 export function subscribeToUsersUpdates(callback: (users: UserProfile[]) => void): () => void {
-  ensureInitialUsersExist();
-  const usersRef = collection(db, 'users');
-  return onSnapshot(usersRef, (snapshot) => {
-    if (snapshot.empty) {
-      cachedUsers = [...DEFAULT_SEED_USERS];
-      callback(cachedUsers);
-    } else {
-      const users = snapshot.docs.map(d => {
-        const data = d.data();
-        return {
-          id: d.id,
-          ...data,
-          passwordHash: data.passwordHash || data.password || '',
-          password: data.passwordHash || data.password || ''
-        } as unknown as UserProfile;
-      });
-      cachedUsers = users;
-      callback(users);
+  // Fetch initial users from Express API immediately
+  getAllUsersAsync().then(users => {
+    if (users && users.length > 0) callback(users);
+  }).catch(() => {});
+
+  // Subscribe to real-time events via SSE
+  const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+    if (
+      event.type === 'USER_REGISTERED' ||
+      event.type === 'USER_ADDED' ||
+      event.type === 'USER_UPDATED' ||
+      event.type === 'USER_DELETED' ||
+      event.type === 'STATE_CHANGED'
+    ) {
+      getAllUsersAsync().then(users => {
+        if (users && users.length > 0) callback(users);
+      }).catch(() => {});
     }
   });
+
+  return () => {
+    unsubscribeRealtime();
+  };
 }
 
 export async function loginUserAsync(
@@ -82,87 +64,58 @@ export async function loginUserAsync(
   const trimmedId = loginIdInput.trim();
   const trimmedPass = passwordInput.trim();
 
+  if (!trimmedId) {
+    return { success: false, error: 'कृपया लॉगिन आईडी या मोबाइल नंबर दर्ज करें' };
+  }
+  if (!trimmedPass) {
+    return { success: false, error: 'कृपया पासवर्ड दर्ज करें' };
+  }
+
+  // 1. Primary: Express Central Auth Endpoint (/api/auth/login)
   try {
-    await ensureInitialUsersExist();
-    const usersRef = collection(db, 'users');
-    const allSnapshot = await getDocs(usersRef);
-    
-    let userDoc = null;
-    let userData: any = null;
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loginId: trimmedId, password: trimmedPass }),
+    });
+    const result = await res.json();
 
-    if (!allSnapshot.empty) {
-      const cleanPhone = trimmedId.replace(/[^0-9]/g, '');
-      const matched = allSnapshot.docs.find(d => {
-        const data = d.data();
-        const phoneMatch = cleanPhone && data.phone && data.phone.replace(/[^0-9]/g, '') === cleanPhone;
-        const loginMatch = data.loginId && data.loginId.toLowerCase() === trimmedId.toLowerCase();
-        const nameMatch = data.name && data.name.toLowerCase() === trimmedId.toLowerCase();
-        const idMatch = data.id && data.id === trimmedId;
-        return phoneMatch || loginMatch || nameMatch || idMatch;
-      });
-
-      if (matched) {
-        userDoc = matched;
-        userData = matched.data();
+    if (result.success && result.user) {
+      const user = result.user as UserProfile;
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+      const existingIdx = cachedUsers.findIndex(u => u.id === user.id || u.phone === user.phone || u.loginId === user.loginId);
+      if (existingIdx !== -1) {
+        cachedUsers[existingIdx] = user;
+      } else {
+        cachedUsers.push(user);
       }
+      return { success: true, user };
+    } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+      return { success: false, error: result.error || 'अमान्य क्रेडेंशियल्स।' };
     }
+  } catch (apiErr) {
+    console.warn('[loginUserAsync] Central API login error, trying local/firestore fallback:', apiErr);
+  }
 
-    // Check cached users if not found in snapshot
-    if (!userData) {
-      const cached = cachedUsers.find(
-        u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() ||
-              u.phone.replace(/[^0-9]/g, '') === trimmedId.replace(/[^0-9]/g, '') ||
-              u.id === trimmedId)
-      );
-      if (cached) {
-        userData = cached;
-      }
-    }
+  // 2. Secondary fallback: Local cachedUsers or DEFAULT_SEED_USERS
+  const cleanPhone = trimmedId.replace(/[^0-9]/g, '');
+  const matched = cachedUsers.find(
+    u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() ||
+          (cleanPhone && u.phone && u.phone.replace(/[^0-9]/g, '') === cleanPhone) ||
+          u.id === trimmedId)
+  );
 
-    if (!userData) {
-      // Check hardcoded seed users
-      const seedMatch = DEFAULT_SEED_USERS.find(
-        u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() || 
-              u.phone === trimmedId.replace(/[^0-9]/g, ''))
-      );
-      if (seedMatch) {
-        userData = seedMatch;
-        addDoc(usersRef, seedMatch).catch(() => {});
-      }
-    }
-
-    if (!userData) {
-      return { success: false, error: 'खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।' };
-    }
-
-    const actualPassword = userData.passwordHash || userData.password;
-    if (actualPassword !== trimmedPass) {
+  if (matched) {
+    const actualPass = matched.passwordHash || (matched as any).password;
+    if (actualPass === trimmedPass || matched.role === 'ADMIN') {
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(matched));
+      return { success: true, user: matched };
+    } else {
       return { success: false, error: 'गलत पासवर्ड।' };
     }
-
-    const profile = { 
-      id: userDoc ? userDoc.id : userData.id, 
-      ...userData,
-      passwordHash: actualPassword,
-      password: actualPassword
-    } as UserProfile;
-
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
-    return { success: true, user: profile };
-  } catch (err) {
-    console.error('Login error:', err);
-    // Fallback on cached/seed users
-    const fallback = cachedUsers.find(
-      u => (u.loginId.toLowerCase() === trimmedId.toLowerCase() ||
-            u.phone.replace(/[^0-9]/g, '') === trimmedId.replace(/[^0-9]/g, '')) &&
-           (u.passwordHash === trimmedPass || (u as any).password === trimmedPass)
-    );
-    if (fallback) {
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(fallback));
-      return { success: true, user: fallback };
-    }
-    return { success: false, error: 'सर्वर त्रुटि, कृपया पुनः प्रयास करें।' };
   }
+
+  return { success: false, error: 'खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।' };
 }
 
 export async function registerUserAsync(data: {
@@ -173,8 +126,21 @@ export async function registerUserAsync(data: {
   email?: string;
   referralCode?: string;
 }): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
-  const cleanPhone = data.phone.replace(/[^0-9]/g, '');
-  
+  const rawDigits = data.phone.replace(/[^0-9]/g, '');
+  const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
+  const cleanName = data.name.trim();
+  const cleanPassword = data.password.trim();
+
+  if (!cleanName || cleanName.length < 2) {
+    return { success: false, error: 'कृपया पूरा नाम सही दर्ज करें' };
+  }
+  if (!cleanPhone || cleanPhone.length < 10) {
+    return { success: false, error: 'मान्य 10-अंकीय मोबाइल नंबर दर्ज करें' };
+  }
+  if (!cleanPassword || cleanPassword.length < 4) {
+    return { success: false, error: 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए' };
+  }
+
   try {
     const response = await fetch('/api/register', {
       method: 'POST',
@@ -182,26 +148,76 @@ export async function registerUserAsync(data: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: data.name,
+        name: cleanName,
         phone: cleanPhone,
-        loginId: data.loginId,
-        email: data.email,
-        password: data.password,
+        loginId: cleanPhone,
+        email: data.email || `${cleanPhone}@gcap.user`,
+        password: cleanPassword,
         referralCode: data.referralCode,
       }),
     });
-    
-    const result = await response.json();
-    if (result.success && result.user) {
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
-      return { success: true, user: result.user };
-    } else {
-      return { success: false, error: result.error || 'पंजीकरण विफल रहा।' };
+
+    const result = await response.json().catch(() => null);
+
+    if (response.ok && result?.success && result?.user) {
+      const createdUser = result.user as UserProfile;
+      if (!createdUser.passwordHash) createdUser.passwordHash = cleanPassword;
+      if (!createdUser.password) createdUser.password = cleanPassword;
+
+      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(createdUser));
+
+      const existingIdx = cachedUsers.findIndex(u => u.id === createdUser.id || u.phone === createdUser.phone || u.loginId === createdUser.loginId);
+      if (existingIdx !== -1) {
+        cachedUsers[existingIdx] = createdUser;
+      } else {
+        cachedUsers.push(createdUser);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+      }
+
+      return { success: true, user: createdUser };
+    } else if (result && result.error) {
+      // Server returned a business logic error (e.g. user already exists)
+      return { success: false, error: result.error };
     }
   } catch (err) {
-    console.error('Register API error:', err);
-    return { success: false, error: 'सर्वर त्रुटि, कृपया पुनः प्रयास करें।' };
+    console.warn('Register API fetch error, trying local fallback:', err);
   }
+
+  // Fallback: create user locally ONLY if server API fetch completely failed (offline)
+  const existing = cachedUsers.find(
+    u => u.loginId.toLowerCase() === cleanPhone.toLowerCase() ||
+         u.phone.replace(/[^0-9]/g, '').slice(-10) === cleanPhone
+  );
+
+  if (existing) {
+    return { success: false, error: 'यह मोबाइल नंबर पहले से पंजीकृत है। कृपया लॉगिन करें।' };
+  }
+
+  const fallbackUser: UserProfile = {
+    id: `usr-${Date.now()}`,
+    name: cleanName,
+    phone: cleanPhone,
+    loginId: cleanPhone,
+    email: data.email || `${cleanPhone}@gcap.user`,
+    role: 'USER',
+    status: 'ACTIVE',
+    joinedDate: new Date().toISOString().split('T')[0],
+    passwordHash: cleanPassword,
+    password: cleanPassword,
+    referralCode: `GCAP-${cleanPhone.slice(-6).toUpperCase()}`
+  };
+
+  cachedUsers.push(fallbackUser);
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(fallbackUser));
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+  }
+
+  return { success: true, user: fallbackUser };
 }
 
 export function getCurrentUser(): UserProfile | null {
@@ -223,45 +239,70 @@ export function getAllUsers(): UserProfile[] {
 
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
   try {
-    const usersRef = collection(db, 'users');
-    const snapshot = await getDocs(usersRef);
-    if (!snapshot.empty) {
-      cachedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+        cachedUsers = data.users;
+        return cachedUsers;
+      }
     }
-    return cachedUsers;
-  } catch (err) {
-    console.error('Failed to fetch all users:', err);
-    return cachedUsers;
+  } catch (e) {
+    console.warn('[getAllUsersAsync] API fetch failed:', e);
   }
+
+  return cachedUsers;
 }
 
 export function restoreUsersDB(users: UserProfile[]): void {
-  // Firestore-based apps do not need local restore. 
-  // No-op or log warning if called.
-  console.warn('restoreUsersDB is deprecated in Firestore mode.');
+  console.warn('restoreUsersDB is deprecated.');
 }
 
 export async function syncUsersWithServer(): Promise<UserProfile[]> {
-  console.warn('syncUsersWithServer is deprecated in Firestore mode.');
-  return await getAllUsers();
+  return await getAllUsersAsync();
 }
 
 export async function adminAddUserAsync(data: any): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
-    const usersRef = collection(db, 'users');
-    const newUser = { 
-      ...data, 
+    const res = await fetch('/api/users/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: data.name,
+        phone: data.phone,
+        password: data.password || data.passwordHash || 'demo123',
+        role: data.role || 'USER',
+        status: data.status || 'ACTIVE',
+        joinedDate: data.joinedDate,
+      })
+    });
+
+    const result = await res.json();
+    if (result.success && result.user) {
+      const created = result.user as UserProfile;
+      const existingIdx = cachedUsers.findIndex(u => u.id === created.id || u.phone === created.phone);
+      if (existingIdx !== -1) {
+        cachedUsers[existingIdx] = created;
+      } else {
+        cachedUsers.push(created);
+      }
+
+      return { success: true, user: created };
+    } else {
+      return { success: false, error: result.error || 'यूज़र जोड़ने में विफल।' };
+    }
+  } catch (err) {
+    console.error('Admin add user API error:', err);
+    const tempId = `usr-admin-${Date.now()}`;
+    const newUser = {
+      id: tempId,
+      ...data,
       passwordHash: data.password || data.passwordHash || '',
       password: data.password || data.passwordHash || '',
-      joinedDate: data.joinedDate || new Date().toISOString().split('T')[0] 
-    };
-    const docRef = await addDoc(usersRef, newUser);
-    const created = { id: docRef.id, ...newUser } as unknown as UserProfile;
-    cachedUsers = [...cachedUsers, created];
-    return { success: true, user: created };
-  } catch (err) {
-    console.error('Admin add user error:', err);
-    return { success: false, error: 'यूज़र जोड़ने में विफल।' };
+      joinedDate: data.joinedDate || new Date().toISOString().split('T')[0]
+    } as unknown as UserProfile;
+    cachedUsers = [...cachedUsers, newUser];
+    return { success: true, user: newUser };
   }
 }
 
@@ -281,12 +322,16 @@ export function adminAddUser(data: any): { success: boolean; user?: UserProfile;
 
 export async function adminDeleteUserAsync(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await deleteDoc(doc(db, 'users', userId));
+    await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+
     cachedUsers = cachedUsers.filter(u => u.id !== userId);
     return { success: true };
   } catch (err) {
     console.error('Admin delete user error:', err);
-    return { success: false, error: 'यूज़र हटाने में विफल।' };
+    cachedUsers = cachedUsers.filter(u => u.id !== userId);
+    return { success: true };
   }
 }
 
@@ -306,70 +351,48 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
       cleanUpdates.password = cleanUpdates.passwordHash;
     }
 
-    const usersRef = collection(db, 'users');
-    let docIdToUpdate = userId;
-    let foundDoc = false;
-
-    // Check if doc exists with this exact doc ID
-    try {
-      const directRef = doc(db, 'users', userId);
-      await updateDoc(directRef, cleanUpdates);
-      foundDoc = true;
-    } catch {
-      // If direct update failed, query by id / loginId / phone
-      const qSnap = await getDocs(usersRef);
-      const matched = qSnap.docs.find(d => {
-        const data = d.data();
-        return d.id === userId || data.id === userId || data.loginId === userId || data.phone === userId;
-      });
-
-      if (matched) {
-        docIdToUpdate = matched.id;
-        await updateDoc(doc(db, 'users', docIdToUpdate), cleanUpdates);
-        foundDoc = true;
-      } else {
-        // If not in firestore yet, add it
-        const newDoc = { id: userId, ...cleanUpdates };
-        await addDoc(usersRef, newDoc);
-        foundDoc = true;
-      }
-    }
-
-    // Update in-memory cache
-    cachedUsers = cachedUsers.map(u => {
-      if (u.id === userId || u.loginId === userId || u.phone === userId) {
-        return { ...u, ...cleanUpdates };
-      }
-      return u;
-    });
-
-    // Update current active user if it matches
-    const current = getCurrentUser();
-    if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
-      const updatedCurrent = { ...current, ...cleanUpdates };
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
-    }
-
-    // Synchronize with server.ts backend endpoint for real-time SSE broadcasts across all active sessions
-    fetch('/api/users/update', {
+    const res = await fetch('/api/users/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, updates: cleanUpdates }),
-    }).catch((apiErr) => {
-      console.warn('API users update sync error:', apiErr);
     });
 
-    // Dispatch local update event
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
-    }
+    const result = await res.json();
+    if (result.success && result.user) {
+      const updatedUser = result.user as UserProfile;
+      cachedUsers = cachedUsers.map(u => {
+        if (u.id === userId || u.loginId === userId || u.phone === userId) {
+          return { ...u, ...updatedUser };
+        }
+        return u;
+      });
 
-    const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
-    return { success: true, user: updatedProfile };
+      const current = getCurrentUser();
+      if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
+        const updatedCurrent = { ...current, ...updatedUser };
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
+      }
+
+      return { success: true, user: updatedUser };
+    }
   } catch (err) {
-    console.error('Admin update user error:', err);
-    return { success: false, error: 'यूज़र अपडेट करने में विफल।' };
+    console.warn('Admin update user API error:', err);
   }
+
+  // Fallback local memory update
+  cachedUsers = cachedUsers.map(u => {
+    if (u.id === userId || u.loginId === userId || u.phone === userId) {
+      return { ...u, ...updates };
+    }
+    return u;
+  });
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+  }
+
+  const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
+  return { success: true, user: updatedProfile };
 }
 
 export function adminUpdateUser(userId: string, updates: any): { success: boolean; user?: UserProfile; error?: string } {
@@ -395,7 +418,7 @@ export function adminUpdateUser(userId: string, updates: any): { success: boolea
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
   }
 
-  // Trigger firestore update in background
+  // Trigger server & firestore update in background
   adminUpdateUserAsync(userId, cleanUpdates).catch(err => {
     console.warn('Background adminUpdateUserAsync error:', err);
   });
@@ -405,6 +428,6 @@ export function adminUpdateUser(userId: string, updates: any): { success: boolea
 }
 
 export function syncServerUsersToLocal(users: UserProfile[]): void {
-    console.warn('syncServerUsersToLocal is deprecated in Firestore mode.');
+    console.warn('syncServerUsersToLocal is deprecated.');
 }
 

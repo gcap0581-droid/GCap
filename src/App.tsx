@@ -354,9 +354,9 @@ export default function App() {
       }
     };
 
-    // Run immediately, then poll every 1500ms as fallback
+    // Run immediately, then poll every 4000ms as light fallback (SSE handles instant pushes)
     syncWithCentralDb();
-    const interval = setInterval(syncWithCentralDb, 1500);
+    const interval = setInterval(syncWithCentralDb, 4000);
 
     const handleResume = () => {
       if (document.visibilityState === 'visible') {

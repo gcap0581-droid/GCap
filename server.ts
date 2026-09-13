@@ -3,7 +3,11 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
-import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot } from "firebase/firestore";
+import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot, setLogLevel } from "firebase/firestore";
+
+try {
+  setLogLevel("silent");
+} catch (_) {}
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
 let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
@@ -794,52 +798,8 @@ async function startServer() {
     next();
   });
 
-  // Server-Side Master Database Proxy for GCap Cloud Run Multi-Container Sync
-  // If request hits the Shared/Preview App container (host contains "ais-pre-"),
-  // proxy the database request server-side directly to the Master Dev App container.
-  // This bypasses browser-side CORS blocks, sandboxing, and session isolation.
-  app.use((req, res, next) => {
-    const host = req.headers.host || "";
-    if (
-      host.includes("ais-pre-") &&
-      req.path.startsWith("/api") &&
-      req.path !== "/api/health" &&
-      req.path !== "/api/realtime/stream"
-    ) {
-      const devHost = host.replace("ais-pre-", "ais-dev-");
-      const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-      const devOrigin = `${protocol}://${devHost}`;
-      const targetUrl = `${devOrigin}${req.originalUrl}`;
-      const method = req.method;
-      
-      const headers: Record<string, string> = {};
-      for (const [key, val] of Object.entries(req.headers)) {
-        if (typeof val === "string" && key.toLowerCase() !== "host") {
-          headers[key] = val;
-        }
-      }
+  // Express API Middleware
 
-      fetch(targetUrl, {
-        method,
-        headers,
-        body: ["GET", "HEAD"].includes(method) ? undefined : JSON.stringify(req.body),
-      })
-        .then(async (proxyRes) => {
-          res.status(proxyRes.status);
-          proxyRes.headers.forEach((val, key) => {
-            res.setHeader(key, val);
-          });
-          const text = await proxyRes.text();
-          res.send(text);
-        })
-        .catch((err) => {
-          console.error("[Master Proxy] Error proxying API request:", err);
-          next();
-        });
-      return;
-    }
-    next();
-  });
 
   // Health check
   app.get("/api/health", (_req, res) => {
@@ -2267,6 +2227,39 @@ async function startServer() {
     broadcastRealtimeEvent("state_changed", { type: "USER_DELETE", timestamp: Date.now() });
 
     res.json({ success: true, message: "User deleted successfully", remaining: db.users.length });
+  });
+
+  // POST: Admin Delete User (Alias)
+  app.post("/api/users/delete", (req, res) => {
+    const { userId } = req.body || {};
+    if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
+
+    const db = ensureDb();
+    const target = db.users.find((u) => u.id === userId);
+    if (!target) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+    if (target.loginId.toLowerCase() === "admin" || target.role === "ADMIN") {
+      return res.status(400).json({ success: false, error: "मुख्य एडमिन खाते को हटाया नहीं जा सकता।" });
+    }
+
+    db.users = db.users.filter((u) => u.id !== userId);
+    if (!db.deletedUserIds) db.deletedUserIds = [];
+    if (!db.deletedUserIds.includes(userId)) {
+      db.deletedUserIds.push(userId);
+    }
+    delete db.wallets[userId];
+    delete db.bankDetails[userId];
+    saveDb(db);
+
+    broadcastRealtimeEvent("user_deleted", { userId, timestamp: Date.now() });
+    broadcastRealtimeEvent("users_updated", {
+      users: db.users.map(({ passwordHash: _, ...p }) => p),
+      timestamp: Date.now(),
+    });
+    broadcastRealtimeEvent("state_changed", { type: "USER_DELETE", timestamp: Date.now() });
+
+    res.json({ success: true, message: "User deleted successfully" });
   });
 
   // Anti-cache middleware for HTML, manifest, and service worker files

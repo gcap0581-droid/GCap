@@ -1,34 +1,19 @@
 // Central API Configuration and Resilient Fetch Engine
-// Connects any device, browser, Vercel deployment, or Android WebView
-// to the authoritative Google Cloud Run central server.
 
 export function getCentralServerOrigin(): string {
   if (typeof window === 'undefined') {
     return 'https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app';
   }
-  const host = window.location.host;
-  const protocol = window.location.protocol;
-  if (host.includes('ais-pre-')) {
-    return `${protocol}//${host.replace('ais-pre-', 'ais-dev-')}`;
-  }
-  return `${protocol}//${host}`;
+  return window.location.origin;
 }
 
 export const CENTRAL_SERVER_ORIGIN = getCentralServerOrigin();
 
 /**
- * Returns true if current environment is the central development server.
- * The shared app container (which contains 'ais-pre-') is routed directly to the
- * main 'ais-dev-' container, ensuring BOTH systems share the exact same database.
+ * Returns true if running in browser or direct Cloud Run environment
  */
 export function isDirectServerHost(): boolean {
-  if (typeof window === 'undefined') return true;
-  const host = window.location.hostname;
-  return (
-    host === 'localhost' ||
-    host === '127.0.0.1' ||
-    (host.includes('run.app') && host.includes('ais-dev-'))
-  );
+  return true;
 }
 
 /**
@@ -43,45 +28,29 @@ export function buildApiPath(endpoint: string): string {
 }
 
 /**
- * Resilient API Fetcher:
- * 1. If hosted on Vercel or PWA (non-direct host), immediately uses CENTRAL_SERVER_ORIGIN
- *    for real-time master synchronization of users and investments.
- * 2. Fallbacks gracefully to relative paths if needed.
+ * Fast Resilient API Fetcher: Uses direct relative endpoints
  */
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const relativePath = buildApiPath(endpoint);
-
-  if (!isDirectServerHost()) {
-    const directUrl = `${CENTRAL_SERVER_ORIGIN}${relativePath}`;
-    try {
-      const res = await fetch(directUrl, options);
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && !contentType.includes('text/html')) {
-        return res;
-      }
-    } catch (err) {
-      console.warn('Direct central server connection attempt failed, falling back:', err);
-    }
-  }
 
   try {
     const res = await fetch(relativePath, options);
     const contentType = res.headers.get('content-type') || '';
 
-    // If server returned an HTML file instead of JSON (common on Vercel SPA fallback),
-    // switch to the authoritative central server directly.
     if (res.ok && contentType.includes('text/html') && relativePath.startsWith('/api')) {
-      throw new Error('Static HTML SPA fallback intercepted API route');
+      // If server returned HTML SPA fallback, retry with absolute current origin
+      const absoluteUrl = `${window.location.origin}${relativePath}`;
+      return await fetch(absoluteUrl, options);
     }
 
     return res;
   } catch (err) {
-    // If not running directly on Cloud Run, failover to central Cloud Run origin directly
-    if (!isDirectServerHost()) {
-      const fallbackUrl = `${CENTRAL_SERVER_ORIGIN}${relativePath}`;
+    if (typeof window !== 'undefined') {
+      const fallbackUrl = `${window.location.origin}${relativePath}`;
       return await fetch(fallbackUrl, options);
     }
     throw err;
   }
 }
+
 
