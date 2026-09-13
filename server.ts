@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { initializeApp, getApps } from "firebase-admin/app";
+import { initializeApp, getApps, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
@@ -416,12 +416,16 @@ try {
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (config.projectId) {
+      let adminApp;
       if (getApps().length === 0) {
-        initializeApp({
+        adminApp = initializeApp({
           projectId: config.projectId,
+          credential: applicationDefault(),
         });
+      } else {
+        adminApp = getApps()[0];
       }
-      firestore = getFirestore(undefined, config.firestoreDatabaseId || "(default)");
+      firestore = getFirestore(adminApp, config.firestoreDatabaseId || "(default)");
       console.log("[Firebase] Successfully initialized Firestore with database:", config.firestoreDatabaseId || "(default)");
     }
   } else {

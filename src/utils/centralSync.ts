@@ -249,7 +249,7 @@ export async function apiSaveLiveConfig(
  */
 export async function apiUpdateTreasury(
   treasury: CompanyTreasury,
-  log?: TreasuryLog
+  log?: TreasuryLog | TreasuryLog[]
 ): Promise<{ success: boolean; treasury?: CompanyTreasury; logs?: TreasuryLog[]; error?: string }> {
   try {
     const res = await apiFetch(`${API_BASE}/treasury/update`, {

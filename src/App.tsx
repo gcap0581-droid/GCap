@@ -367,7 +367,7 @@ export default function App() {
 
     // Instant SSE Real-Time Sync on any activity anywhere
     const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
-      if (event.type === 'wallet_updated' && event.wallet && currentUser) {
+      if (event.type === 'WALLET_UPDATED' && event.wallet && currentUser) {
         const rawTarget = String(event.userId || "").trim();
         const targetPhone10 = rawTarget.replace(/[^0-9]/g, "").slice(-10);
         const curId = currentUser.id;

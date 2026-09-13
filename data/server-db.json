@@ -48,7 +48,7 @@
       "passwordHash": "Password123"
     }
   ],
-  "lastUpdated": "2026-09-12T14:49:23.239Z",
+  "lastUpdated": "2026-09-13T02:01:48.073Z",
   "wallets": {
     "usr-admin-01": {
       "cashBalance": 0,
@@ -85,10 +85,35 @@
       "royaltyEarned": 0,
       "pendingWithdrawals": 0,
       "pendingDeposits": 0
+    },
+    "SRfWamlrfE6a6c5KQFBT": {
+      "cashBalance": 40000,
+      "gpBalance": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
     }
   },
   "investments": [],
-  "transactions": [],
+  "transactions": [
+    {
+      "id": "txn-adm-adj-1789263436869-9473",
+      "userId": "SRfWamlrfE6a6c5KQFBT",
+      "userLoginId": "SRfWamlrfE6a6c5KQFBT",
+      "userName": "User",
+      "userPhone": "",
+      "type": "DEPOSIT",
+      "amount": 20000,
+      "date": "2026-09-13T01:37:16.869Z",
+      "timestamp": 1789263436869,
+      "status": "SUCCESS",
+      "referenceId": "ADM44723998",
+      "note": "Admin (GCap System Admin) credited ₹20000 to Cash Balance. Reason: एडमिन द्वारा मैनुअल समायोजन",
+      "noteHi": "एडमिन द्वारा ₹20000 नकद बैलेंस में जोड़ा (Credit) गया। कारण: एडमिन द्वारा मैनुअल समायोजन"
+    }
+  ],
   "plans": [
     {
       "id": "short-term",
