@@ -54,18 +54,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
   const filteredUsers = users.filter((u) => {
     if (!u) return false;
+    const uPhone = String(u.phone || '').trim();
+    const uCleanPhone = uPhone.replace(/[^0-9]/g, '');
     const uName = String(u.name || '').toLowerCase();
     const uLogin = String(u.loginId || '').toLowerCase();
-    const uPhone = String(u.phone || '');
-    const uEmail = String(u.email || '').toLowerCase();
     const search = searchTerm.toLowerCase().trim();
+    const searchClean = search.replace(/[^0-9]/g, '');
 
+    // Primary matching by Mobile Number first, then Name/ID if entered
     const matchesSearch =
       !search ||
-      uName.includes(search) ||
-      uLogin.includes(search) ||
+      (searchClean && uCleanPhone.includes(searchClean)) ||
       uPhone.includes(search) ||
-      uEmail.includes(search);
+      uName.includes(search) ||
+      uLogin.includes(search);
 
     const matchesRole = filterRole === 'ALL' || u.role === filterRole;
     return matchesSearch && matchesRole;
@@ -128,7 +130,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={isHi ? 'नाम, मोबाइल, आईडी से खोजें...' : 'Search by name, ID, phone...'}
+            placeholder={isHi ? 'मोबाइल नंबर / यूज़र नाम से खोजें...' : 'Search by Mobile Number / Name...'}
             className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700/80 rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
           />
         </div>
