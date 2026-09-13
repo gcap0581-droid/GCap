@@ -2,8 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { initializeApp, getApps, applicationDefault } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
+import { getFirestore as getClientFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch } from "firebase/firestore";
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
 let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
@@ -416,23 +416,20 @@ try {
   if (fs.existsSync(configPath)) {
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (config.projectId) {
-      let adminApp;
-      if (getApps().length === 0) {
-        adminApp = initializeApp({
-          projectId: config.projectId,
-          credential: applicationDefault(),
-        });
+      let clientApp;
+      if (getClientApps().length === 0) {
+        clientApp = initializeClientApp(config);
       } else {
-        adminApp = getApps()[0];
+        clientApp = getClientApps()[0];
       }
-      firestore = getFirestore(adminApp, config.firestoreDatabaseId || "(default)");
-      console.log("[Firebase] Successfully initialized Firestore with database:", config.firestoreDatabaseId || "(default)");
+      firestore = getClientFirestore(clientApp, config.firestoreDatabaseId || "(default)");
+      console.log("[Firebase] Successfully initialized Firestore Client with database:", config.firestoreDatabaseId || "(default)");
     }
   } else {
     console.warn("[Firebase] No firebase-applet-config.json found.");
   }
 } catch (err) {
-  console.error("[Firebase] Error initializing firebase-admin:", err);
+  console.error("[Firebase] Error initializing Firestore Client:", err);
 }
 
 // Helper to remove any undefined properties before writing to Firestore
@@ -445,25 +442,35 @@ function cleanForFirestore<T>(obj: T): T {
 async function saveToFirestore(db: ServerDB): Promise<void> {
   if (!firestore) return;
   try {
-    const dbRef = firestore.collection("gcap_database");
-    const batch = firestore.batch();
+    const batch = clientWriteBatch(firestore);
+    
+    const docs = [
+      { id: "users", data: db.users || [] },
+      { id: "wallets", data: db.wallets || {} },
+      { id: "investments", data: db.investments || [] },
+      { id: "transactions", data: db.transactions || [] },
+      { id: "plans", data: db.plans || [] },
+      { id: "rules", data: db.rules || null },
+      { id: "liveConfig", data: db.liveConfig || null },
+      { id: "bankDetails", data: db.bankDetails || {} },
+      { id: "treasury", data: db.treasury || null },
+      { id: "treasuryLogs", data: db.treasuryLogs || [] },
+      { id: "messages", data: db.messages || [] },
+      { id: "deletedUserIds", data: db.deletedUserIds || [] }
+    ];
 
-    batch.set(dbRef.doc("users"), { data: cleanForFirestore(db.users || []) });
-    batch.set(dbRef.doc("wallets"), { data: cleanForFirestore(db.wallets || {}) });
-    batch.set(dbRef.doc("investments"), { data: cleanForFirestore(db.investments || []) });
-    batch.set(dbRef.doc("transactions"), { data: cleanForFirestore(db.transactions || []) });
-    batch.set(dbRef.doc("plans"), { data: cleanForFirestore(db.plans || []) });
-    if (db.rules) batch.set(dbRef.doc("rules"), { data: cleanForFirestore(db.rules) });
-    if (db.liveConfig) batch.set(dbRef.doc("liveConfig"), { data: cleanForFirestore(db.liveConfig) });
-    batch.set(dbRef.doc("bankDetails"), { data: cleanForFirestore(db.bankDetails || {}) });
-    if (db.treasury) batch.set(dbRef.doc("treasury"), { data: cleanForFirestore(db.treasury) });
-    batch.set(dbRef.doc("treasuryLogs"), { data: cleanForFirestore(db.treasuryLogs || []) });
-    batch.set(dbRef.doc("messages"), { data: cleanForFirestore(db.messages || []) });
-    batch.set(dbRef.doc("deletedUserIds"), { data: cleanForFirestore(db.deletedUserIds || []) });
-    batch.set(dbRef.doc("metadata"), { lastUpdated: db.lastUpdated || new Date().toISOString() });
+    for (const d of docs) {
+      if (d.data !== null) {
+        const ref = clientDoc(firestore, "gcap_database", d.id);
+        batch.set(ref, { data: cleanForFirestore(d.data) });
+      }
+    }
+
+    const metaRef = clientDoc(firestore, "gcap_database", "metadata");
+    batch.set(metaRef, { lastUpdated: db.lastUpdated || new Date().toISOString() });
 
     await batch.commit();
-    console.log("[Firebase] Successfully batch-saved full DB state to Firestore!");
+    console.log("[Firebase] Successfully batch-saved full DB state to Firestore via Client SDK!");
   } catch (err) {
     console.error("[Firebase] Error saving to Firestore:", err);
   }
@@ -473,20 +480,19 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
 async function loadFromFirestore(): Promise<ServerDB | null> {
   if (!firestore) return null;
   try {
-    const dbRef = firestore.collection("gcap_database");
     const docs = [
       "users", "wallets", "investments", "transactions", "plans", "rules", 
       "liveConfig", "bankDetails", "treasury", "treasuryLogs", "messages", 
       "deletedUserIds", "metadata"
     ];
     
-    const snaps = await Promise.all(docs.map(docId => dbRef.doc(docId).get()));
+    const snaps = await Promise.all(docs.map(docId => getClientDoc(clientDoc(firestore, "gcap_database", docId))));
     const snapMap: Record<string, any> = {};
     docs.forEach((docId, index) => {
       snapMap[docId] = snaps[index];
     });
 
-    if (!snapMap["users"].exists) {
+    if (!snapMap["users"].exists()) {
       console.log("[Firebase] Firestore 'users' document does not exist. Needs initialization.");
       return null;
     }
