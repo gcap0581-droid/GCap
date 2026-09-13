@@ -226,13 +226,36 @@ export function getAllUsers(): UserProfile[] {
   return cachedUsers;
 }
 
+const PERMANENT_BLACKLIST = new Set([
+  'usr-user-01', 'demo', 'demo user',
+  'usr-1789039307103', '9876500001', 'test new user',
+  'usr-1789122599824', '9876500002', 'live realtime test'
+]);
+
+function filterBlacklisted(users: UserProfile[]): UserProfile[] {
+  return users.filter(u => {
+    if (!u) return false;
+    const id = String(u.id || '').toLowerCase();
+    const login = String(u.loginId || '').toLowerCase();
+    const name = String(u.name || '').toLowerCase();
+    const phone = String(u.phone || '').replace(/[^0-9]/g, '');
+    const phone10 = phone.slice(-10);
+    if (PERMANENT_BLACKLIST.has(id)) return false;
+    if (PERMANENT_BLACKLIST.has(login)) return false;
+    if (PERMANENT_BLACKLIST.has(name)) return false;
+    if (phone && PERMANENT_BLACKLIST.has(phone)) return false;
+    if (phone10 && PERMANENT_BLACKLIST.has(phone10)) return false;
+    return true;
+  });
+}
+
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
   try {
     const res = await apiFetch('/api/users');
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.users)) {
-        cachedUsers = data.users;
+        cachedUsers = filterBlacklisted(data.users);
         return cachedUsers;
       }
     }
@@ -240,7 +263,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
     console.warn('[getAllUsersAsync] API fetch failed:', e);
   }
 
-  return cachedUsers;
+  return filterBlacklisted(cachedUsers);
 }
 
 export function restoreUsersDB(users: UserProfile[]): void {

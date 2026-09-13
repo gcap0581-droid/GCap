@@ -602,23 +602,41 @@ function ensureDb(): ServerDB {
     // Reconcile and ensure all fields exist
     let needsSave = false;
     if (!parsed.users || !Array.isArray(parsed.users)) parsed.users = DEFAULT_ACCOUNTS;
-    if (parsed.deletedUserIds && Array.isArray(parsed.deletedUserIds) && parsed.deletedUserIds.length > 0) {
-      const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
-      const initialUserCount = parsed.users.length;
-      parsed.users = parsed.users.filter((u: StoredAccount) => {
-        if (!u) return false;
-        if (delSet.has(String(u.id).toLowerCase())) return false;
-        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-        if (u.phone && delSet.has(String(u.phone).toLowerCase())) return false;
-        const uPhoneDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
-        if (uPhoneDigits && delSet.has(uPhoneDigits)) return false;
-        const uPhone10 = uPhoneDigits.length >= 10 ? uPhoneDigits.slice(-10) : "";
-        if (uPhone10 && delSet.has(uPhone10)) return false;
-        return true;
-      });
-      if (parsed.users.length !== initialUserCount) {
+    
+    // Permanent blacklist of unwanted test/demo users to prevent zombie accounts
+    const PERMANENT_BLACKLIST = new Set([
+      "usr-user-01", "demo", "demo user",
+      "usr-1789039307103", "9876500001", "test new user",
+      "usr-1789122599824", "9876500002", "live realtime test"
+    ]);
+
+    if (!parsed.deletedUserIds || !Array.isArray(parsed.deletedUserIds)) {
+      parsed.deletedUserIds = [];
+    }
+    PERMANENT_BLACKLIST.forEach((item) => {
+      if (!parsed.deletedUserIds.includes(item)) {
+        parsed.deletedUserIds.push(item);
         needsSave = true;
       }
+    });
+
+    const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
+    const initialUserCount = parsed.users.length;
+    parsed.users = parsed.users.filter((u: StoredAccount) => {
+      if (!u) return false;
+      if (delSet.has(String(u.id || '').toLowerCase())) return false;
+      if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
+      if (u.name && delSet.has(String(u.name).toLowerCase())) return false;
+      if (u.phone && delSet.has(String(u.phone).toLowerCase())) return false;
+      const uPhoneDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+      if (uPhoneDigits && delSet.has(uPhoneDigits)) return false;
+      const uPhone10 = uPhoneDigits.length >= 10 ? uPhoneDigits.slice(-10) : "";
+      if (uPhone10 && delSet.has(uPhone10)) return false;
+      return true;
+    });
+
+    if (parsed.users.length !== initialUserCount) {
+      needsSave = true;
     }
     if (!parsed.wallets || typeof parsed.wallets !== "object") parsed.wallets = {};
     if (!parsed.investments || !Array.isArray(parsed.investments)) parsed.investments = [];
@@ -704,6 +722,15 @@ function ensureDb(): ServerDB {
       }
     });
 
+    // Clean up orphaned wallets of removed users
+    const validUserIds = new Set(parsed.users.map((u: StoredAccount) => u.id));
+    for (const wid of Object.keys(parsed.wallets)) {
+      if (!validUserIds.has(wid)) {
+        delete parsed.wallets[wid];
+        needsSave = true;
+      }
+    }
+
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
       saveDb(parsed);
     }
@@ -713,7 +740,7 @@ function ensureDb(): ServerDB {
     console.error("Error reading server DB:", err);
     return {
       users: DEFAULT_ACCOUNTS,
-      wallets: { "usr-user-01": { ...DEFAULT_WALLET } },
+      wallets: {},
       investments: [],
       transactions: [],
       plans: DEFAULT_PLANS,
@@ -833,10 +860,13 @@ async function startServer() {
       console.log("[Firebase] Performing initial startup database synchronization...");
       loadFromFirestore().then(async (remoteDb) => {
         if (remoteDb) {
-          // Remote Firestore has data! Seed the local file with it.
-          lastSyncedTimestamp = remoteDb.lastUpdated || new Date().toISOString();
+          // Remote Firestore has data! Sanitize and clean it
           fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
-          console.log(`[Firebase] Initial sync complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
+          const cleanedDb = ensureDb();
+          lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
+          fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
+          await saveToFirestore(cleanedDb);
+          console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
         } else {
           // Firestore is empty. Seed Firestore with whatever we have in DB_FILE.
           console.log("[Firebase] Firestore is empty. Seeding Firestore with local database state...");
@@ -856,8 +886,10 @@ async function startServer() {
               console.log(`[Firebase Realtime] Remote database update detected (${firestoreLastUpdated}). Syncing...`);
               const updatedDb = await loadFromFirestore();
               if (updatedDb) {
-                lastSyncedTimestamp = updatedDb.lastUpdated;
                 fs.writeFileSync(DB_FILE, JSON.stringify(updatedDb, null, 2), "utf-8");
+                const cleaned = ensureDb();
+                lastSyncedTimestamp = cleaned.lastUpdated;
+                fs.writeFileSync(DB_FILE, JSON.stringify(cleaned, null, 2), "utf-8");
                 console.log("[Firebase Realtime] Synchronized database successfully in real-time.");
                 
                 // Broadcast change to all connected SSE clients so they refresh instantly!
