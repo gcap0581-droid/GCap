@@ -15,18 +15,6 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
     passwordHash: 'gcap@admin1978'
-  },
-  {
-    id: 'usr-user-01',
-    loginId: 'demo',
-    name: 'Demo User',
-    role: 'USER',
-    phone: '9000000000',
-    email: 'demo@gcap.in',
-    referralCode: 'GCAP-DEMO',
-    joinedDate: '2026-08-15',
-    status: 'ACTIVE',
-    passwordHash: 'demo123'
   }
 ];
 

@@ -248,18 +248,6 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "gcap@admin1978",
   },
-  {
-    id: "usr-user-01",
-    loginId: "Demo",
-    name: "Demo",
-    role: "USER",
-    phone: "9000000000",
-    email: "demo@gcap.in",
-    referralCode: "GCAP-DEMO",
-    joinedDate: "2026-08-15",
-    status: "ACTIVE",
-    passwordHash: "demo123",
-  },
 ];
 
 const DEFAULT_WALLET: Wallet = {
@@ -585,9 +573,7 @@ function ensureDb(): ServerDB {
     if (!fs.existsSync(DB_FILE)) {
       const initial: ServerDB = {
         users: DEFAULT_ACCOUNTS,
-        wallets: {
-          "usr-user-01": { ...DEFAULT_WALLET },
-        },
+        wallets: {},
         investments: [],
         transactions: [],
         plans: DEFAULT_PLANS,
