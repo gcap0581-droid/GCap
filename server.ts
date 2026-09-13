@@ -10,7 +10,7 @@ try {
 } catch (_) {}
 
 // Stable server deployment/build identifier (persists during the lifetime of this server process, updates when restarted by GitHub/AI Studio deploy)
-let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || `${Date.now()}`;
+let SERVER_BUILD_ID = process.env.BUILD_ID || process.env.VITE_BUILD_ID || "gcap_v2.5.3";
 const SERVER_BOOT_TIME = new Date().toISOString();
 
 interface StoredAccount {
@@ -253,7 +253,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     loginId: "Demo",
     name: "Demo",
     role: "USER",
-    phone: "+91 98765 43210",
+    phone: "9000000000",
     email: "demo@gcap.in",
     referralCode: "GCAP-DEMO",
     joinedDate: "2026-08-15",
@@ -614,8 +614,26 @@ function ensureDb(): ServerDB {
     const parsed: any = JSON.parse(raw);
 
     // Reconcile and ensure all fields exist
+    let needsSave = false;
     if (!parsed.users || !Array.isArray(parsed.users)) parsed.users = DEFAULT_ACCOUNTS;
-    if (!parsed.deletedUserIds || !Array.isArray(parsed.deletedUserIds)) parsed.deletedUserIds = [];
+    if (parsed.deletedUserIds && Array.isArray(parsed.deletedUserIds) && parsed.deletedUserIds.length > 0) {
+      const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
+      const initialUserCount = parsed.users.length;
+      parsed.users = parsed.users.filter((u: StoredAccount) => {
+        if (!u) return false;
+        if (delSet.has(String(u.id).toLowerCase())) return false;
+        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
+        if (u.phone && delSet.has(String(u.phone).toLowerCase())) return false;
+        const uPhoneDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+        if (uPhoneDigits && delSet.has(uPhoneDigits)) return false;
+        const uPhone10 = uPhoneDigits.length >= 10 ? uPhoneDigits.slice(-10) : "";
+        if (uPhone10 && delSet.has(uPhone10)) return false;
+        return true;
+      });
+      if (parsed.users.length !== initialUserCount) {
+        needsSave = true;
+      }
+    }
     if (!parsed.wallets || typeof parsed.wallets !== "object") parsed.wallets = {};
     if (!parsed.investments || !Array.isArray(parsed.investments)) parsed.investments = [];
     if (!parsed.transactions || !Array.isArray(parsed.transactions)) parsed.transactions = [];
@@ -628,7 +646,6 @@ function ensureDb(): ServerDB {
         ...parsed.rules,
       };
     }
-    let needsSave = false;
     // Force set user's specific company details if legacy defaults are present
     if (parsed.rules.companyUpiId === "gcap.pay@hdfcbank" || !parsed.rules.companyUpiId) {
       parsed.rules.companyUpiId = "8603504808@axisbank";
@@ -1799,63 +1816,51 @@ async function startServer() {
     }
 
     const db = ensureDb();
-    const cleanPhone = trimmedId.replace(/[^0-9]/g, "");
-    // If input had a country code (like 91), try to extract last 10 digits
-    const normalizedPhone = cleanPhone.length > 10 ? cleanPhone.slice(-10) : cleanPhone;
+    const cleanDigits = trimmedId.replace(/[^0-9]/g, "");
+    const normalizedPhone = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : "";
 
-    const account = db.users.find(
-      (acc) => {
-        const accPhone = acc.phone.replace(/[^0-9]/g, "").slice(-10);
-        console.log(`[LOGIN DEBUG] Checking user: ${acc.phone} (normalized: ${accPhone}) against input: ${normalizedPhone}`);
-        return (
-          acc.loginId.toLowerCase() === trimmedId ||
-          (acc.email && acc.email.toLowerCase() === trimmedId) ||
-          accPhone === normalizedPhone
-        );
-      }
-    );
+    const account = db.users.find((acc) => {
+      const accCleanDigits = acc.phone ? acc.phone.replace(/[^0-9]/g, "") : "";
+      const accPhone10 = accCleanDigits.length >= 10 ? accCleanDigits.slice(-10) : "";
+      const accLoginId = (acc.loginId || "").toLowerCase();
+      const accEmail = (acc.email || "").toLowerCase();
+
+      if (acc.id === trimmedId) return true;
+      if (accLoginId === trimmedId) return true;
+      if (accEmail === trimmedId) return true;
+      if (normalizedPhone && accPhone10 && accPhone10 === normalizedPhone) return true;
+      return false;
+    });
 
     if (!account) {
-      console.log(`[LOGIN DEBUG] No account found for input: ${normalizedPhone}`);
+      console.log(`[LOGIN DEBUG] No account found for input: ${trimmedId} (normalized phone: ${normalizedPhone})`);
       return res.status(404).json({
         success: false,
         error: "खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।",
       });
     }
 
-    console.log(`[LOGIN DEBUG] Account found: ${account.phone}. Comparing password: ${trimmedPass} against hash: ${account.passwordHash}`);
-    if (account.passwordHash !== trimmedPass) {
-       console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone}`);
-       return res.status(401).json({ success: false, error: "गलत पासवर्ड।" });
-    }
-
     const isAdmin =
       account.role === "ADMIN" ||
-      account.loginId.toLowerCase() === "admin" ||
+      (account.loginId || "").toLowerCase() === "admin" ||
       trimmedId === "admin";
 
-    if (isAdmin) {
-      if (
-        trimmedPass === "gcap@admin1978" ||
-        account.passwordHash === trimmedPass
-      ) {
-        if (account.passwordHash !== "gcap@admin1978") {
-          account.passwordHash = "gcap@admin1978";
-          saveDb(db);
-        }
-      } else {
-        return res.status(401).json({
-          success: false,
-          error: "गलत पासवर्ड।",
-        });
-      }
-    } else {
-      if (account.passwordHash !== trimmedPass) {
-        return res.status(401).json({
-          success: false,
-          error: "गलत पासवर्ड। कृपया पुनः प्रयास करें।",
-        });
-      }
+    const isPassCorrect =
+      account.passwordHash === trimmedPass ||
+      (account as any).password === trimmedPass ||
+      (isAdmin && trimmedPass === "gcap@admin1978");
+
+    if (!isPassCorrect) {
+      console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone || account.loginId}`);
+      return res.status(401).json({
+        success: false,
+        error: "गलत पासवर्ड। कृपया सही पासवर्ड दर्ज करें।",
+      });
+    }
+
+    if (isAdmin && account.passwordHash !== "gcap@admin1978" && trimmedPass === "gcap@admin1978") {
+      account.passwordHash = "gcap@admin1978";
+      saveDb(db);
     }
 
     if (account.status === "BLOCKED") {
@@ -1877,7 +1882,7 @@ async function startServer() {
     res.json({
       success: true,
       user: profile,
-      account: account, // Returns account with passwordHash so client local storage is synchronously updated
+      account: account,
     });
   });
 
@@ -1912,8 +1917,9 @@ async function startServer() {
     const { name, loginId, phone, email, password, referralCode } = req.body || {};
 
     const cleanName = String(name || "").trim();
-    const cleanPhone = String(phone || "").trim().replace(/[^0-9]/g, "");
-    const cleanLoginId = String(loginId || cleanPhone).trim().toLowerCase();
+    const cleanDigits = String(phone || loginId || "").replace(/[^0-9]/g, "");
+    const cleanPhone = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+    const cleanLoginId = cleanPhone || String(loginId || "").trim().toLowerCase();
     const cleanPassword = String(password || "").trim();
 
     if (!cleanName || cleanName.length < 2) {
@@ -1927,11 +1933,15 @@ async function startServer() {
     }
 
     const db = ensureDb();
-    const existing = db.users.find(
-      (acc) =>
-        acc.loginId.toLowerCase() === cleanLoginId ||
-        acc.phone.replace(/[^0-9]/g, "") === cleanPhone
-    );
+    const existing = db.users.find((acc) => {
+      const accDigits = acc.phone ? acc.phone.replace(/[^0-9]/g, "") : "";
+      const accPhone10 = accDigits.length >= 10 ? accDigits.slice(-10) : "";
+      const accLoginId = (acc.loginId || "").toLowerCase();
+
+      if (accLoginId === cleanLoginId) return true;
+      if (accPhone10 && cleanPhone && accPhone10 === cleanPhone) return true;
+      return false;
+    });
 
     if (existing) {
       return res.status(400).json({
@@ -1945,10 +1955,10 @@ async function startServer() {
       loginId: cleanLoginId,
       name: cleanName,
       role: "USER",
-      phone: String(phone || "").trim(),
+      phone: cleanPhone,
       email: String(email || "").trim() || `${cleanPhone}@gcap.user`,
       referralCode: `GCAP-${cleanPhone.slice(-6).toUpperCase()}`,
-      referredBy: referralCode ? String(referralCode).trim().toUpperCase() : undefined,
+      referredBy: referralCode ? String(referralCode).trim().toUpperCase() : "GCAP-DIRECT",
       joinedDate: new Date().toISOString().split("T")[0],
       status: "ACTIVE",
       passwordHash: cleanPassword,
@@ -2191,75 +2201,104 @@ async function startServer() {
   });
 
   // DELETE: Admin Delete User
-  app.delete("/api/users/:id", (req, res) => {
-    const userId = req.params.id;
-    const db = ensureDb();
-
-    const target = db.users.find((u) => u.id === userId);
-    if (!target) {
-      return res.status(404).json({ success: false, error: "User not found" });
+  const performDeleteUser = (rawUserId: string, res: express.Response) => {
+    const userId = String(rawUserId || "").trim();
+    if (!userId) {
+      return res.status(400).json({ success: false, error: "User ID required" });
     }
-    if (target.loginId.toLowerCase() === "admin" || target.role === "ADMIN") {
+
+    const db = ensureDb();
+    const cleanDigits = userId.replace(/[^0-9]/g, "");
+    const cleanPhone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : "";
+    const lowerUserId = userId.toLowerCase();
+
+    const target = db.users.find((u) => {
+      if (!u) return false;
+      if (u.id === userId) return true;
+      if (u.loginId && u.loginId.toLowerCase() === lowerUserId) return true;
+      if (u.phone === userId) return true;
+      const uDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+      const uPhone10 = uDigits.length >= 10 ? uDigits.slice(-10) : "";
+      if (cleanPhone10 && uPhone10 && cleanPhone10 === uPhone10) return true;
+      return false;
+    });
+
+    if (!target) {
+      return res.status(404).json({ success: false, error: "यूज़र खाता नहीं मिला।" });
+    }
+
+    if ((target.loginId || "").toLowerCase() === "admin" || target.role === "ADMIN") {
       return res.status(400).json({ success: false, error: "मुख्य एडमिन खाते को हटाया नहीं जा सकता।" });
     }
 
-    db.users = db.users.filter((u) => u.id !== userId);
+    const targetId = target.id;
+    const targetLogin = (target.loginId || "").toLowerCase();
+    const targetPhone = target.phone || "";
+    const targetPhone10 = targetPhone.replace(/[^0-9]/g, "").slice(-10);
+
+    // Remove user from users array
+    db.users = db.users.filter((u) => {
+      if (!u) return false;
+      if (u.id === targetId) return false;
+      if (targetLogin && (u.loginId || "").toLowerCase() === targetLogin) return false;
+      if (targetPhone10 && (u.phone || "").replace(/[^0-9]/g, "").slice(-10) === targetPhone10) return false;
+      return true;
+    });
+
+    // Record in deletedUserIds tombstone list to prevent any revival
     if (!db.deletedUserIds) db.deletedUserIds = [];
-    if (!db.deletedUserIds.includes(userId)) {
-      db.deletedUserIds.push(userId);
+    if (targetId && !db.deletedUserIds.includes(targetId)) db.deletedUserIds.push(targetId);
+    if (targetLogin && !db.deletedUserIds.includes(targetLogin)) db.deletedUserIds.push(targetLogin);
+    if (targetPhone && !db.deletedUserIds.includes(targetPhone)) db.deletedUserIds.push(targetPhone);
+    if (targetPhone10 && !db.deletedUserIds.includes(targetPhone10)) db.deletedUserIds.push(targetPhone10);
+    if (userId && !db.deletedUserIds.includes(userId)) db.deletedUserIds.push(userId);
+
+    // Cleanup wallet & bank records
+    if (targetId) {
+      delete db.wallets[targetId];
+      delete db.bankDetails[targetId];
     }
-    if (target.phone && !db.deletedUserIds.includes(target.phone)) {
-      db.deletedUserIds.push(target.phone);
-    }
-    if (target.loginId && !db.deletedUserIds.includes(target.loginId.toLowerCase())) {
-      db.deletedUserIds.push(target.loginId.toLowerCase());
+    if (targetLogin) delete db.wallets[targetLogin];
+    if (targetPhone) delete db.wallets[targetPhone];
+    if (targetPhone10) delete db.wallets[targetPhone10];
+    if (userId) {
+      delete db.wallets[userId];
+      delete db.bankDetails[userId];
     }
 
-    delete db.wallets[userId];
-    delete db.bankDetails[userId];
+    // Save DB to disk and schedule cloud sync
     saveDb(db);
 
-    broadcastRealtimeEvent("user_deleted", { userId, timestamp: Date.now() });
+    // Realtime notification
+    broadcastRealtimeEvent("user_deleted", { userId: targetId, timestamp: Date.now() });
     broadcastRealtimeEvent("users_updated", {
       users: db.users.map(({ passwordHash: _, ...p }) => p),
       timestamp: Date.now(),
     });
     broadcastRealtimeEvent("state_changed", { type: "USER_DELETE", timestamp: Date.now() });
 
-    res.json({ success: true, message: "User deleted successfully", remaining: db.users.length });
+    console.log(`[Admin Delete] User deleted successfully: ${target.name} (${targetId} / ${targetPhone})`);
+    return res.json({
+      success: true,
+      message: "यूज़र खाता सफलतापूर्वक हटा दिया गया है।",
+      remaining: db.users.length,
+      deletedUser: {
+        id: targetId,
+        name: target.name,
+        phone: target.phone,
+        loginId: target.loginId,
+      },
+    });
+  };
+
+  app.delete("/api/users/:id", (req, res) => {
+    performDeleteUser(req.params.id, res);
   });
 
-  // POST: Admin Delete User (Alias)
+  // POST: Admin Delete User (Alias for HTTP clients / proxies that block DELETE)
   app.post("/api/users/delete", (req, res) => {
     const { userId } = req.body || {};
-    if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
-
-    const db = ensureDb();
-    const target = db.users.find((u) => u.id === userId);
-    if (!target) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-    if (target.loginId.toLowerCase() === "admin" || target.role === "ADMIN") {
-      return res.status(400).json({ success: false, error: "मुख्य एडमिन खाते को हटाया नहीं जा सकता।" });
-    }
-
-    db.users = db.users.filter((u) => u.id !== userId);
-    if (!db.deletedUserIds) db.deletedUserIds = [];
-    if (!db.deletedUserIds.includes(userId)) {
-      db.deletedUserIds.push(userId);
-    }
-    delete db.wallets[userId];
-    delete db.bankDetails[userId];
-    saveDb(db);
-
-    broadcastRealtimeEvent("user_deleted", { userId, timestamp: Date.now() });
-    broadcastRealtimeEvent("users_updated", {
-      users: db.users.map(({ passwordHash: _, ...p }) => p),
-      timestamp: Date.now(),
-    });
-    broadcastRealtimeEvent("state_changed", { type: "USER_DELETE", timestamp: Date.now() });
-
-    res.json({ success: true, message: "User deleted successfully" });
+    performDeleteUser(userId, res);
   });
 
   // Anti-cache middleware for HTML, manifest, and service worker files

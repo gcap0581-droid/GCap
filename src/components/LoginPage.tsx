@@ -73,9 +73,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           setAuthMode('REGISTER');
         }
       } else {
-        // Direct registration: Auto-set default official direct sponsor code and lock it
+        // Direct registration: Default to GCAP-DIRECT (editable)
         setRegReferral('GCAP-DIRECT');
-        setIsReferralLocked(true);
+        setIsReferralLocked(false);
       }
     }
   }, []);
@@ -559,28 +559,41 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                         <span>{isHi ? 'रेफरल / स्पॉन्सर कोड' : 'Sponsor / Referral Code'}</span>
                       </label>
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
-                        <Lock className="w-3 h-3 text-amber-400" />
-                        {isHi ? 'सिस्टम द्वारा ऑटो लॉक' : 'Auto Locked'}
-                      </span>
+                      {isReferralLocked ? (
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          {isHi ? 'स्पॉन्सर लॉक' : 'Sponsor Locked'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                          {isHi ? 'वैकल्पिक / डिफ़ॉल्ट' : 'Optional / Default'}
+                        </span>
+                      )}
                     </div>
                     <div className="relative">
                       <input
                         type="text"
                         autoComplete="off"
-                        readOnly={true}
-                        value={regReferral || 'GCAP-DIRECT'}
+                        readOnly={isReferralLocked}
+                        value={regReferral}
+                        onChange={(e) => setRegReferral(e.target.value.toUpperCase())}
                         placeholder="GCAP-DIRECT"
-                        className="w-full px-3.5 py-2 bg-slate-900/90 border border-amber-500/40 rounded-xl text-amber-300 font-mono text-sm uppercase font-bold pr-9 cursor-not-allowed focus:outline-none select-none"
+                        className={`w-full px-3.5 py-2 bg-slate-900/90 border rounded-xl font-mono text-sm uppercase font-bold pr-9 focus:outline-none ${
+                          isReferralLocked
+                            ? 'border-amber-500/40 text-amber-300 cursor-not-allowed select-none'
+                            : 'border-slate-700 text-white focus:border-emerald-500'
+                        }`}
                       />
-                      <Lock className="w-4 h-4 text-amber-400 absolute right-3 top-2.5 pointer-events-none" />
+                      {isReferralLocked && (
+                        <Lock className="w-4 h-4 text-amber-400 absolute right-3 top-2.5 pointer-events-none" />
+                      )}
                     </div>
-                    <p className="text-[10px] text-amber-300/80 mt-1 font-sans flex items-center gap-1">
-                      <span>🔒</span>
+                    <p className="text-[10px] text-slate-400 mt-1 font-sans flex items-center gap-1">
+                      <span>✓</span>
                       <span>
-                        {isHi
-                          ? 'सुरक्षा हेतु रेफरल फ़ील्ड स्वतः लॉक है (बदला नहीं जा सकता)।'
-                          : 'Sponsor referral code is automatically locked by system.'}
+                        {isReferralLocked
+                          ? (isHi ? 'स्पॉन्सर लिंक द्वारा रेफरल कोड सुरक्षित रूप से सेट है।' : 'Sponsor code securely linked from invite.')
+                          : (isHi ? 'यदि कोई स्पॉन्सर नहीं है तो GCAP-DIRECT रहने दें।' : 'Leave as GCAP-DIRECT if you do not have a sponsor.')}
                       </span>
                     </p>
                   </div>

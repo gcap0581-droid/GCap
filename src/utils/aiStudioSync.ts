@@ -128,24 +128,29 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
     const remoteInfo: BuildVersionInfo = await response.json();
     isChecking = false;
 
-    // Compare server build ID against the running JavaScript bundle's compile-time ID
-    const isDifferentFromCurrent = remoteInfo.buildId && remoteInfo.buildId !== CURRENT_BUILD_ID;
+    // Save build ID on first boot to prevent reloading loop
+    const activeSessionBuild = sessionStorage.getItem('gcap_session_build_id');
+    if (!activeSessionBuild) {
+      sessionStorage.setItem('gcap_session_build_id', remoteInfo.buildId || 'v1');
+      return { hasUpdate: false, remoteInfo };
+    }
 
-    if (isDifferentFromCurrent) {
+    // Compare server build ID against active session build ID
+    const isDifferent = remoteInfo.buildId && remoteInfo.buildId !== activeSessionBuild;
+
+    if (isDifferent) {
       updateAvailable = remoteInfo;
       updateListeners.forEach((fn) => fn(remoteInfo));
 
-      // Check if we already reloaded for this build in this browser session to prevent infinite loop
-      const lastSessionReload = sessionStorage.getItem('gcap_last_auto_reload_build');
-      if (autoApplyOnDetect && lastSessionReload !== remoteInfo.buildId) {
-        console.log(`[AutoSync] New GitHub/AI Studio build detected: ${remoteInfo.buildId}. Auto-applying now...`);
+      // ONLY auto-apply if explicitly requested (e.g. Admin force refresh broadcast)
+      if (autoApplyOnDetect && sessionStorage.getItem('gcap_last_auto_reload_build') !== remoteInfo.buildId) {
+        sessionStorage.setItem('gcap_session_build_id', remoteInfo.buildId);
         await applyAiStudioUpdateNow(remoteInfo.buildId);
       }
 
       return { hasUpdate: true, remoteInfo };
     }
 
-    // Matches current build, clear any pending update
     updateAvailable = null;
     return { hasUpdate: false, remoteInfo };
   } catch (err: unknown) {
@@ -155,18 +160,10 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
   }
 }
 
-/**
- * CRITICAL: Immediate Auto-Update on App Launch
- * Runs at 0ms when any installed mobile opens the app.
- * If GitHub/AI Studio deployed new code, updates and reloads right away!
- */
 export async function checkAndAutoApplyOnLaunch(): Promise<void> {
   try {
-    // Only run in browser environment
     if (typeof window === 'undefined') return;
-
-    // Immediately query server
-    await checkForAiStudioUpdate(true);
+    await checkForAiStudioUpdate(false);
   } catch (e) {
     console.warn('[AutoSync] Launch check error:', e);
   }

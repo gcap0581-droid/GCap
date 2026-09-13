@@ -424,8 +424,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleDeleteUser = async (userId: string) => {
     // AdminUsersTab already shows a dedicated confirmation modal, so perform deletion directly
     setIsSyncingUsers(true);
+    const cleanDigits = String(userId || '').replace(/[^0-9]/g, '');
+    const cleanPhone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : '';
+
     // Instantly remove from local list for snappy zero-latency UI response
-    setUsersList((prev) => prev.filter((u) => u.id !== userId));
+    setUsersList((prev) =>
+      prev.filter((u) => {
+        if (!u) return false;
+        if (u.id === userId) return false;
+        if (u.loginId && u.loginId.toLowerCase() === String(userId).toLowerCase()) return false;
+        if (u.phone === userId) return false;
+        const uDigits = (u.phone || '').replace(/[^0-9]/g, '');
+        const uPhone10 = uDigits.length >= 10 ? uDigits.slice(-10) : '';
+        if (cleanPhone10 && uPhone10 && cleanPhone10 === uPhone10) return false;
+        return true;
+      })
+    );
+
     try {
       const res = await adminDeleteUserAsync(userId);
       if (!res.success) {

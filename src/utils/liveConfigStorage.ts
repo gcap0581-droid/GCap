@@ -40,12 +40,14 @@ export function getStoredLiveConfig(): LiveInterfaceConfig {
   }
 }
 
-export function saveStoredLiveConfig(config: LiveInterfaceConfig): void {
+export function saveStoredLiveConfig(config: LiveInterfaceConfig, syncToServer = false): void {
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem(LIVE_CONFIG_STORAGE_KEY, JSON.stringify(config));
     }
-    apiSaveLiveConfig(config).catch((err) => console.warn('Background apiSaveLiveConfig error:', err));
+    if (syncToServer) {
+      apiSaveLiveConfig(config).catch((err) => console.warn('Background apiSaveLiveConfig error:', err));
+    }
   } catch (err) {
     console.error('Failed to save live config:', err);
   }

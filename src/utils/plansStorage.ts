@@ -28,12 +28,14 @@ export function getStoredPlans(): InvestmentPlan[] {
   }
 }
 
-export function saveStoredPlans(plans: InvestmentPlan[], broadcast = true): void {
+export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, syncToServer = false): void {
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(plans));
     }
-    apiSavePlans(plans).catch((err) => console.warn('Background apiSavePlans error:', err));
+    if (syncToServer) {
+      apiSavePlans(plans).catch((err) => console.warn('Background apiSavePlans error:', err));
+    }
     if (broadcast) {
       broadcastOtaUpdate(
         'PLANS',
@@ -51,7 +53,7 @@ export function saveStoredPlans(plans: InvestmentPlan[], broadcast = true): void
 export function addPlan(newPlan: InvestmentPlan): InvestmentPlan[] {
   const plans = getStoredPlans();
   const updated = [...plans, newPlan];
-  saveStoredPlans(updated, true);
+  saveStoredPlans(updated, true, true);
   return updated;
 }
 
@@ -60,7 +62,7 @@ export function updatePlan(updatedPlan: InvestmentPlan): InvestmentPlan[] {
   const index = plans.findIndex((p) => p.id === updatedPlan.id);
   if (index !== -1) {
     plans[index] = updatedPlan;
-    saveStoredPlans(plans, true);
+    saveStoredPlans(plans, true, true);
   }
   return plans;
 }
@@ -68,12 +70,12 @@ export function updatePlan(updatedPlan: InvestmentPlan): InvestmentPlan[] {
 export function deletePlan(planId: string): InvestmentPlan[] {
   const plans = getStoredPlans();
   const filtered = plans.filter((p) => p.id !== planId);
-  saveStoredPlans(filtered, true);
+  saveStoredPlans(filtered, true, true);
   return filtered;
 }
 
 export function resetPlansToDefault(): InvestmentPlan[] {
-  saveStoredPlans(DEFAULT_PLANS, true);
+  saveStoredPlans(DEFAULT_PLANS, true, true);
   return DEFAULT_PLANS;
 }
 

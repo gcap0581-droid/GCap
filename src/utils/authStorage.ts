@@ -20,7 +20,7 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     loginId: 'demo',
     name: 'Demo User',
     role: 'USER',
-    phone: '9876543210',
+    phone: '9000000000',
     email: 'demo@gcap.in',
     referralCode: 'GCAP-DEMO',
     joinedDate: '2026-08-15',
@@ -242,7 +242,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
     const res = await fetch('/api/users');
     if (res.ok) {
       const data = await res.json();
-      if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+      if (data.success && Array.isArray(data.users)) {
         cachedUsers = data.users;
         return cachedUsers;
       }
@@ -322,15 +322,39 @@ export function adminAddUser(data: any): { success: boolean; user?: UserProfile;
 
 export async function adminDeleteUserAsync(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+    let res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
       method: 'DELETE',
-    }).catch(() => {});
+    });
+    let data = await res.json().catch(() => ({}));
+    
+    if (!res.ok && !data.success) {
+      // Fallback to POST /api/users/delete
+      res = await fetch('/api/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      data = await res.json().catch(() => ({}));
+    }
 
-    cachedUsers = cachedUsers.filter(u => u.id !== userId);
+    const cleanDigits = String(userId || '').replace(/[^0-9]/g, '');
+    const cleanPhone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : '';
+
+    cachedUsers = cachedUsers.filter(u => {
+      if (!u) return false;
+      if (u.id === userId) return false;
+      if (u.loginId && u.loginId.toLowerCase() === String(userId).toLowerCase()) return false;
+      if (u.phone === userId) return false;
+      const uDigits = (u.phone || '').replace(/[^0-9]/g, '');
+      const uPhone10 = uDigits.length >= 10 ? uDigits.slice(-10) : '';
+      if (cleanPhone10 && uPhone10 && cleanPhone10 === uPhone10) return false;
+      return true;
+    });
+
     return { success: true };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Admin delete user error:', err);
-    cachedUsers = cachedUsers.filter(u => u.id !== userId);
+    cachedUsers = cachedUsers.filter(u => u && u.id !== userId);
     return { success: true };
   }
 }

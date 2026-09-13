@@ -18,12 +18,14 @@ export function getStoredRules(): AppRules {
   }
 }
 
-export function saveStoredRules(rules: AppRules, broadcast = true) {
+export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer = false) {
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(rules));
     }
-    apiSaveRules(rules).catch((err) => console.warn('Background apiSaveRules error:', err));
+    if (syncToServer) {
+      apiSaveRules(rules).catch((err) => console.warn('Background apiSaveRules error:', err));
+    }
     if (broadcast) {
       broadcastOtaUpdate(
         'RULES',
@@ -39,6 +41,6 @@ export function saveStoredRules(rules: AppRules, broadcast = true) {
 }
 
 export function resetRulesToDefault(): AppRules {
-  saveStoredRules(DEFAULT_GCAP_RULES, true);
+  saveStoredRules(DEFAULT_GCAP_RULES, true, true);
   return DEFAULT_GCAP_RULES;
 }

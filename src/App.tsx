@@ -354,9 +354,9 @@ export default function App() {
       }
     };
 
-    // Run immediately, then poll every 4000ms as light fallback (SSE handles instant pushes)
+    // Run immediately, then poll every 8000ms as light fallback (SSE handles instant pushes)
     syncWithCentralDb();
-    const interval = setInterval(syncWithCentralDb, 4000);
+    const interval = setInterval(syncWithCentralDb, 8000);
 
     const handleResume = () => {
       if (document.visibilityState === 'visible') {
@@ -364,6 +364,14 @@ export default function App() {
       }
     };
     document.addEventListener('visibilitychange', handleResume);
+
+    let debounceTimer: any = null;
+    const debouncedSync = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        syncWithCentralDb();
+      }, 300);
+    };
 
     // Instant SSE Real-Time Sync on any activity anywhere
     const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
@@ -383,11 +391,12 @@ export default function App() {
           setStoredWallet(event.wallet);
         }
       }
-      syncWithCentralDb();
+      debouncedSync();
     });
 
     return () => {
       isCancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleResume);
       unsubscribeRealtime();
