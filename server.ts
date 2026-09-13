@@ -860,7 +860,24 @@ async function startServer() {
       console.log("[Firebase] Performing initial startup database synchronization...");
       loadFromFirestore().then(async (remoteDb) => {
         if (remoteDb) {
-          // Remote Firestore has data! Sanitize and clean it
+          // Merge any users in local DB_FILE with remote Firestore users
+          let localUsers: StoredAccount[] = [];
+          let localWallets: Record<string, any> = {};
+          try {
+            if (fs.existsSync(DB_FILE)) {
+              const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+              if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
+              if (localRaw.wallets) localWallets = localRaw.wallets;
+            }
+          } catch (_) {}
+
+          const userMap = new Map<string, StoredAccount>();
+          (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
+          localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
+
+          remoteDb.users = Array.from(userMap.values());
+          remoteDb.wallets = { ...(remoteDb.wallets || {}), ...localWallets };
+
           fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
           const cleanedDb = ensureDb();
           lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
