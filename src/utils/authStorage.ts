@@ -422,6 +422,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
         referralCode: data.referralCode,
         referredBy: data.referredBy,
         bankDetails: data.bankDetails,
+        permissions: data.permissions,
       })
     });
 
@@ -465,6 +466,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       referralCode: data.referralCode || `GCAP-${String(data.phone || '').slice(-6).toUpperCase()}`,
       referredBy: data.referredBy,
       bankDetails: data.bankDetails,
+      permissions: data.permissions,
     };
 
     const updatedUsers = [...currentUsers.filter(u => u.id !== newUser.id), newUser];

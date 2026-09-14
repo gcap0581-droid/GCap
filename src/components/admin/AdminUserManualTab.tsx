@@ -54,22 +54,64 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         <!DOCTYPE html>
         <html>
           <head>
-            <title>GCap Official Operations SOP & User Manual</title>
+            <title>GCap Assets & Wealth Management - Official Operations SOP & User Manual</title>
             <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
             <style>
-              body { background: #ffffff !important; color: #000000 !important; font-family: sans-serif; padding: 32px; }
               @media print {
-                body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                @page { margin: 10mm; size: A4 portrait; }
+                * {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                body {
+                  background: #ffffff !important;
+                  color: #000000 !important;
+                  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
                 .print\\:hidden { display: none !important; }
+                /* High contrast black & white readability rules */
+                h1, h2, h3, h4, h5, h6, strong, b, th {
+                  color: #000000 !important;
+                  font-weight: 900 !important;
+                }
+                p, td, li, span, div {
+                  color: #0f172a !important;
+                }
+                .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400,
+                .text-emerald-300, .text-emerald-400, .text-cyan-300, .text-cyan-400,
+                .text-amber-300, .text-amber-400, .text-purple-300, .text-purple-400,
+                .text-rose-300, .text-rose-400, .text-teal-300, .text-teal-400 {
+                  color: #000000 !important;
+                }
+                .bg-slate-900, .bg-slate-950, .bg-slate-900\\/80, .bg-slate-950\\/80 {
+                  background-color: #f8fafc !important;
+                  border-color: #94a3b8 !important;
+                }
+                svg {
+                  color: #0f172a !important;
+                  stroke: #0f172a !important;
+                }
+              }
+              body {
+                background: #ffffff;
+                color: #000000;
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 24px;
               }
             </style>
           </head>
-          <body onload="setTimeout(() => { window.focus(); window.print(); window.close(); }, 500);">
-            <div class="max-w-4xl mx-auto space-y-6 bg-white text-slate-900 p-8 shadow-2xl rounded-2xl border border-slate-200">
-              <div class="text-center pb-6 border-b-2 border-emerald-600 mb-6">
-                <h1 class="text-2xl font-black text-slate-900">GCAP ASSET MANAGEMENT PRIVATE LIMITED</h1>
-                <p class="text-sm font-bold text-emerald-700 mt-1">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
-                <p class="text-xs text-slate-500 mt-0.5">Generated on: ${new Date().toLocaleString()} | Official Compliance Document</p>
+          <body onload="setTimeout(() => { window.focus(); window.print(); window.close(); }, 600);">
+            <div class="max-w-4xl mx-auto space-y-6 bg-white text-slate-900 p-8 shadow-2xl rounded-2xl border border-slate-300">
+              <div class="flex items-center justify-center gap-4 pb-6 border-b-2 border-emerald-600 mb-6">
+                <img src="/icon.svg" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
+                <div class="text-left">
+                  <h1 class="text-2xl font-black text-slate-900">GCAP ASSETS & WEALTH MANAGEMENT PRIVATE LIMITED</h1>
+                  <p class="text-sm font-bold text-emerald-700 mt-0.5">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
+                  <p class="text-xs text-slate-500 mt-0.5">Generated on: ${new Date().toLocaleString()} | Official Compliance Document</p>
+                </div>
               </div>
               ${content}
             </div>
@@ -130,13 +172,15 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         {/* Document Corporate Header */}
         <div className="border-b-2 border-emerald-500/40 pb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-3xl flex items-center justify-center shadow-xl shadow-amber-500/20 border-2 border-amber-300 print:border-black">
-              GC
-            </div>
+            <img
+              src="/icon.svg"
+              alt="GCap Logo"
+              className="w-16 h-16 rounded-2xl object-cover shadow-xl shadow-amber-500/20 border-2 border-amber-300 print:border-black shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-black text-white print:text-black tracking-tight">
-                  GCap Capital Growth & Asset Management
+                  GCap Assets & Wealth Management Private Limited
                 </h1>
               </div>
               <p className="text-xs sm:text-sm font-bold text-emerald-400 print:text-slate-700 mt-0.5">
@@ -574,7 +618,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         {/* Corporate Signatory & Official Footer */}
         <div className="pt-8 border-t-2 border-slate-800 print:border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print:text-slate-700">
           <div className="space-y-1 text-center sm:text-left">
-            <div className="font-black text-sm text-white print:text-black">GCap Asset Management Private Limited</div>
+            <div className="font-black text-sm text-white print:text-black">GCap Assets & Wealth Management Private Limited</div>
             <div>कॉर्पोरेट ईमेल: <span className="text-emerald-400 print:text-black font-mono">support@gcapasset.com</span></div>
             <div>हेल्पलाइन टोल-फ्री: <span className="text-amber-300 print:text-black font-mono">1800-GCAP-HELP (1800-4227-4357)</span></div>
             <div className="text-[10px] text-slate-500">पंजीकृत कार्यालय: Corporate Tower, Financial District, Cyberabad</div>

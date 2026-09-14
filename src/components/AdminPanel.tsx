@@ -29,6 +29,7 @@ import {
   CheckCircle2,
   Receipt,
   BookOpen,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   AppRules,
@@ -44,6 +45,7 @@ import {
   BackupDataPayload,
   LiveInterfaceConfig,
   AdminMessage,
+  StaffPermissions,
 } from '../types';
 import { formatINR } from '../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../utils/treasuryStorage';
@@ -71,6 +73,7 @@ import { AdminInvestmentsTab } from './admin/AdminInvestmentsTab';
 import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
+import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
 import { PlanEditModal } from './admin/PlanEditModal';
@@ -125,8 +128,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
-  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL';
-  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL') => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS') => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -175,7 +178,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -205,6 +208,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   });
 
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+
+  // Staff Permissions Enforcement
+  const isStaff = adminUser?.role === 'STAFF';
+  const staffPerms = isStaff ? adminUser?.permissions : undefined;
+
+  const canManageUsers = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageUsers);
+  const canManageWallet = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageWallet);
+  const canManageTransactions = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageTransactions);
+  const canManageSchemes = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageSchemes);
+  const canManageTreasury = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageTreasury);
+  const canManageBroadcast = adminUser?.role === 'ADMIN' || (isStaff && !!staffPerms?.manageBroadcast);
+  const canManageDeductions = adminUser?.role === 'ADMIN' || (isStaff && (staffPerms?.manageDeductions ?? true));
 
   // Users and Wallets state
   const [usersList, setUsersList] = useState<UserProfile[]>(getAllUsers);
@@ -343,6 +358,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     referralCode?: string;
     referredBy?: string;
     bankDetails?: any;
+    permissions?: StaffPermissions;
     walletUpdates?: Partial<Wallet>;
     walletAdjustment?: {
       type: 'ADD' | 'DEDUCT' | 'SET';
@@ -371,6 +387,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           referralCode: data.referralCode,
           referredBy: data.referredBy,
           bankDetails: data.bankDetails,
+          permissions: data.permissions,
         });
         if (!res.success) {
           console.warn('User update error:', res.error);
@@ -394,6 +411,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           referralCode: data.referralCode,
           referredBy: data.referredBy,
           bankDetails: data.bankDetails,
+          permissions: data.permissions,
         });
         if (res.success && res.user?.id) {
           targetUserId = res.user.id;
@@ -699,160 +717,198 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
 
                 {/* USERS */}
-                <button
-                  id="tab-admin-users"
-                  onClick={() => setActiveSubTab('USERS')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'USERS'
-                      ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'USERS' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-300' : 'bg-slate-800 border-slate-700 text-cyan-400'}`}>
-                      <Users className="w-4 h-4" />
+                {canManageUsers && (
+                  <button
+                    id="tab-admin-users"
+                    onClick={() => setActiveSubTab('USERS')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'USERS'
+                        ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'USERS' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-300' : 'bg-slate-800 border-slate-700 text-cyan-400'}`}>
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'USERS' ? 'bg-cyan-500/30 text-cyan-200' : 'bg-slate-800 text-slate-400'}`}>
+                        ACCOUNTS
+                      </span>
                     </div>
-                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'USERS' ? 'bg-cyan-500/30 text-cyan-200' : 'bg-slate-800 text-slate-400'}`}>
-                      ACCOUNTS
-                    </span>
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'यूज़र्स' : 'Users'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'पासवर्ड व बैलेंस' : 'User Database'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'यूज़र्स' : 'Users'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'पासवर्ड व बैलेंस' : 'User Database'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* TRANSACTIONS */}
-                <button
-                  id="tab-admin-txns"
-                  onClick={() => setActiveSubTab('TRANSACTIONS')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'TRANSACTIONS'
-                      ? 'bg-purple-500/10 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/20 border-purple-500/30 text-purple-300' : 'bg-slate-800 border-slate-700 text-purple-400'}`}>
-                      <Clock className="w-4 h-4" />
+                {canManageTransactions && (
+                  <button
+                    id="tab-admin-txns"
+                    onClick={() => setActiveSubTab('TRANSACTIONS')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'TRANSACTIONS'
+                        ? 'bg-purple-500/10 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/20 border-purple-500/30 text-purple-300' : 'bg-slate-800 border-slate-700 text-purple-400'}`}>
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      {transactions.filter(t => t.status === 'PENDING').length > 0 ? (
+                        <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-purple-500 text-slate-950 font-bold animate-pulse">
+                          {transactions.filter(t => t.status === 'PENDING').length} REQ
+                        </span>
+                      ) : (
+                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/30 text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
+                          LEDGER
+                        </span>
+                      )}
                     </div>
-                    {transactions.filter(t => t.status === 'PENDING').length > 0 ? (
-                      <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-purple-500 text-slate-950 font-bold animate-pulse">
-                        {transactions.filter(t => t.status === 'PENDING').length} REQ
-                      </span>
-                    ) : (
-                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/30 text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
-                        LEDGER
-                      </span>
-                    )}
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'लेन-देन' : 'Transactions'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'अप्रूवल व एडिट' : 'Approve & Audit'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'लेन-देन' : 'Transactions'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'अप्रूवल व एडिट' : 'Approve & Audit'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* PLANS */}
-                <button
-                  id="tab-admin-plans"
-                  onClick={() => setActiveSubTab('PLANS')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'PLANS'
-                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'PLANS' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
-                      <Layers className="w-4 h-4" />
+                {canManageSchemes && (
+                  <button
+                    id="tab-admin-plans"
+                    onClick={() => setActiveSubTab('PLANS')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'PLANS'
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'PLANS' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
+                        <Layers className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'PLANS' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                        SCHEMES
+                      </span>
                     </div>
-                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'PLANS' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
-                      SCHEMES
-                    </span>
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'प्लान्स' : 'Plans'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'CRUD मैनेजमेंट' : 'ROI Schemes'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'प्लान्स' : 'Plans'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'CRUD मैनेजमेंट' : 'ROI Schemes'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* MESSAGES */}
-                <button
-                  id="tab-admin-messages"
-                  onClick={() => setActiveSubTab('MESSAGES')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'MESSAGES'
-                      ? 'bg-rose-500/10 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' : 'bg-slate-800 border-slate-700 text-rose-400'}`}>
-                      <Bell className="w-4 h-4" />
+                {canManageBroadcast && (
+                  <button
+                    id="tab-admin-messages"
+                    onClick={() => setActiveSubTab('MESSAGES')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'MESSAGES'
+                        ? 'bg-rose-500/10 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' : 'bg-slate-800 border-slate-700 text-rose-400'}`}>
+                        <Bell className="w-4 h-4" />
+                      </div>
+                      {messages.length > 0 ? (
+                        <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-rose-500 text-slate-950 font-bold">
+                          {messages.length} SMS
+                        </span>
+                      ) : (
+                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-400'}`}>
+                          OTA BROAD
+                        </span>
+                      )}
                     </div>
-                    {messages.length > 0 ? (
-                      <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-rose-500 text-slate-950 font-bold">
-                        {messages.length} SMS
-                      </span>
-                    ) : (
-                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-400'}`}>
-                        OTA BROAD
-                      </span>
-                    )}
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'ब्रॉडकास्ट' : 'Messages'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैसेज भेजें' : 'Send Messages'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'ब्रॉडकास्ट' : 'Messages'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैसेज भेजें' : 'Send Messages'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* TREASURY */}
-                <button
-                  id="tab-admin-treasury"
-                  onClick={() => setActiveSubTab('TREASURY')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'TREASURY'
-                      ? 'bg-teal-500/10 border-teal-500/50 text-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TREASURY' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-slate-800 border-slate-700 text-teal-400'}`}>
-                      <Building2 className="w-4 h-4" />
+                {canManageTreasury && (
+                  <button
+                    id="tab-admin-treasury"
+                    onClick={() => setActiveSubTab('TREASURY')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'TREASURY'
+                        ? 'bg-teal-500/10 border-teal-500/50 text-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TREASURY' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-slate-800 border-slate-700 text-teal-400'}`}>
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TREASURY' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
+                        RESERVES
+                      </span>
                     </div>
-                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TREASURY' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
-                      RESERVES
-                    </span>
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'ट्रेजरी' : 'Treasury'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी का खजाना' : 'Company Reserve'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'ट्रेजरी' : 'Treasury'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी का खजाना' : 'Company Reserve'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* BACKUP */}
-                <button
-                  id="tab-admin-backup"
-                  onClick={() => setActiveSubTab('BACKUP')}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                    activeSubTab === 'BACKUP'
-                      ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
-                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-slate-700 text-indigo-400'}`}>
-                      <Database className="w-4 h-4" />
+                {canManageTreasury && (
+                  <button
+                    id="tab-admin-backup"
+                    onClick={() => setActiveSubTab('BACKUP')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'BACKUP'
+                        ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-slate-700 text-indigo-400'}`}>
+                        <Database className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/30 text-indigo-200' : 'bg-slate-800 text-slate-400'}`}>
+                        CLONES
+                      </span>
                     </div>
-                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/30 text-indigo-200' : 'bg-slate-800 text-slate-400'}`}>
-                      CLONES
-                    </span>
-                  </div>
-                  <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'बैकअप' : 'Backup'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैन्युअल स्नैपशॉट' : 'Snapshots'}</p>
-                  </div>
-                </button>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'बैकअप' : 'Backup'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैन्युअल स्नैपशॉट' : 'Snapshots'}</p>
+                    </div>
+                  </button>
+                )}
+
+                {/* DEDUCTIONS & FEES AUDIT */}
+                {canManageDeductions && (
+                  <button
+                    id="tab-admin-deductions"
+                    onClick={() => setActiveSubTab('DEDUCTIONS')}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                      activeSubTab === 'DEDUCTIONS'
+                        ? 'bg-rose-500/10 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                        : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'DEDUCTIONS' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' : 'bg-slate-800 border-slate-700 text-rose-400'}`}>
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'DEDUCTIONS' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-400'}`}>
+                        AUDIT
+                      </span>
+                    </div>
+                    <div className="leading-tight pt-1">
+                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'कटौती व शुल्क' : 'Deductions'}</h4>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'चार्ज, TDS व ट्रांसफर' : 'Admin & TDS Fees'}</p>
+                    </div>
+                  </button>
+                )}
 
                 {/* USER_MANUAL */}
                 <button
@@ -1563,6 +1619,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           rules={rules}
           plans={plans}
           onBackToHub={() => setActiveSubTab('OVERVIEW')}
+        />
+      )}
+
+      {/* TAB 12: DEDUCTIONS & FEES AUDIT STATEMENT */}
+      {activeSubTab === 'DEDUCTIONS' && (
+        <AdminDeductionsTab
+          transactions={transactions}
+          treasuryLogs={treasuryLogs}
+          language={language}
         />
       )}
 

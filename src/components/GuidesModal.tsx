@@ -197,6 +197,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
               <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border border-amber-500/30 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
+                    <img src="/icon.svg" alt="GCap Logo" className="w-8 h-8 rounded-lg object-cover border border-amber-400 print:border-black shrink-0" />
                     <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
                       DOC #GCAP-641D
                     </span>
@@ -548,7 +549,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
           {/* Footer Official Stamp on Printed PDF */}
           <div className="pt-6 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono flex-wrap gap-2 print:border-black print:text-black">
             <div>
-              <b>GCap Asset Management Official Document</b> • Synchronized System Guidelines
+              <b>GCap Assets & Wealth Management Private Limited Official Document</b> • Synchronized System Guidelines
             </div>
             <div>
               Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

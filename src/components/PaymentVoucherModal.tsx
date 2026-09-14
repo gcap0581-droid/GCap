@@ -96,15 +96,17 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
           
           {/* Printable Header / Company Logo */}
           <div className="flex items-start justify-between border-b border-slate-800 print:border-slate-300 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCap Asset Management'}
-                </span>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/30">
-                  OFFICIAL VOUCHER
-                </span>
-              </div>
+            <div className="flex items-center gap-3">
+              <img src="/icon.svg" alt="GCap Logo" className="w-12 h-12 rounded-xl object-cover border border-amber-500/50 print:border-black shrink-0 shadow-md" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black tracking-tight text-white print:text-black font-sans">
+                    {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
+                  </span>
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/30">
+                    OFFICIAL VOUCHER
+                  </span>
+                </div>
               {profile.registeredAddress && (
                 <p className="text-xs text-slate-400 print:text-slate-600 mt-1">
                   Reg. Corporate Office: {profile.registeredAddress}
@@ -117,6 +119,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                 {profile.gstin && <span>• GST: {profile.gstin}</span>}
               </div>
             </div>
+          </div>
 
             <div className="text-right">
               <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 font-bold text-xs border border-emerald-500/30">

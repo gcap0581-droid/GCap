@@ -675,7 +675,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {viewMode !== 'android' && (
         <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-3 text-center text-xs text-slate-500">
           <p>
-            © 2026 GCap Wealth & Asset Management • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
+            © 2026 GCap Assets & Wealth Management Private Limited • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
           </p>
         </footer>
       )}

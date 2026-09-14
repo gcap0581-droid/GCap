@@ -164,7 +164,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -1101,6 +1101,8 @@ export default function App() {
       referenceId: 'GPTRX' + Math.floor(10000000 + Math.random() * 90000000),
       note: `Transferred ${amount} GP to ${recipient.name} (${recipient.loginId}). Fee: ${fee.toFixed(2)} GP (2%)`,
       noteHi: `${amount} GP ${recipient.name} (${recipient.loginId}) को ट्रांसफर किया गया। शुल्क: ${fee.toFixed(2)} GP`,
+      adminFeeAmount: fee,
+      adminFeePercent: 2,
     };
 
     const recipientTxn: Transaction = {

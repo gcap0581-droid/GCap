@@ -18,8 +18,9 @@ import {
   Sparkles,
   ArrowRightLeft,
   Share2,
+  ShieldCheck,
 } from 'lucide-react';
-import { Language, UserProfile, UserRole, Wallet, BankAccountDetails } from '../../types';
+import { Language, UserProfile, UserRole, Wallet, BankAccountDetails, StaffPermissions } from '../../types';
 
 export interface UserEditModalProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export interface UserEditModalProps {
     backdatedPlanId?: string;
     backdatedAmount?: number;
     backdatedWithdrawal?: number;
+    permissions?: StaffPermissions;
   }) => Promise<void> | void;
   language: Language;
 }
@@ -82,6 +84,14 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [joinedDate, setJoinedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [referralCode, setReferralCode] = useState('');
   const [referredBy, setReferredBy] = useState('');
+
+  // Staff Permission Toggles
+  const [permManageUsers, setPermManageUsers] = useState<boolean>(false);
+  const [permManageWallet, setPermManageWallet] = useState<boolean>(false);
+  const [permManageTransactions, setPermManageTransactions] = useState<boolean>(false);
+  const [permManageSchemes, setPermManageSchemes] = useState<boolean>(false);
+  const [permManageTreasury, setPermManageTreasury] = useState<boolean>(false);
+  const [permManageBroadcast, setPermManageBroadcast] = useState<boolean>(false);
 
   // Wallet Management Fields
   const [cashBalance, setCashBalance] = useState<number>(0);
@@ -130,6 +140,13 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         setTotalEarned(wallet?.totalEarned || 0);
         setRoyaltyEarned(wallet?.royaltyEarned || 0);
 
+        setPermManageUsers(user.permissions?.manageUsers ?? false);
+        setPermManageWallet(user.permissions?.manageWallet ?? false);
+        setPermManageTransactions(user.permissions?.manageTransactions ?? false);
+        setPermManageSchemes(user.permissions?.manageSchemes ?? false);
+        setPermManageTreasury(user.permissions?.manageTreasury ?? false);
+        setPermManageBroadcast(user.permissions?.manageBroadcast ?? false);
+
         setAccountHolder(bankDetails?.accountHolder || user.name || '');
         setAccountNumber(bankDetails?.accountNumber || '');
         setIfscCode(bankDetails?.ifscCode || '');
@@ -157,6 +174,13 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         setGpBalance(0);
         setTotalEarned(0);
         setRoyaltyEarned(0);
+
+        setPermManageUsers(false);
+        setPermManageWallet(false);
+        setPermManageTransactions(false);
+        setPermManageSchemes(false);
+        setPermManageTreasury(false);
+        setPermManageBroadcast(false);
 
         setAccountHolder('');
         setAccountNumber('');
@@ -286,6 +310,14 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         backdatedPlanId: backdatedPlanId || undefined,
         backdatedAmount: backdatedAmount || 0,
         backdatedWithdrawal: backdatedWithdrawal || 0,
+        permissions: role === 'STAFF' ? {
+          manageUsers: permManageUsers,
+          manageWallet: permManageWallet,
+          manageTransactions: permManageTransactions,
+          manageSchemes: permManageSchemes,
+          manageTreasury: permManageTreasury,
+          manageBroadcast: permManageBroadcast,
+        } : undefined,
       });
 
       onClose();
@@ -501,9 +533,105 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white disabled:opacity-60 focus:border-cyan-400 focus:outline-none"
                   >
                     <option value="USER">USER (इन्वेस्टर / निवेशक)</option>
+                    <option value="STAFF">STAFF (कंपनी स्टाफ - जैसे reception, cashier, computer assistant)</option>
                     <option value="ADMIN">ADMIN (प्रशासक / सुपर एडमिन)</option>
                   </select>
                 </div>
+
+                {role === 'STAFF' && (
+                  <div className="col-span-1 sm:col-span-2 p-4 rounded-xl bg-slate-950 border border-amber-500/30 space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                      <ShieldCheck className="w-4 h-4 text-amber-400 animate-pulse" />
+                      <span className="text-xs font-black text-amber-300">
+                        {isHi ? 'स्टाफ कार्य अनुमतियाँ (Staff Role Permissions)' : 'Staff Role Permissions Configuration'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      {isHi 
+                        ? 'इस स्टाफ सदस्य को केवल वही काम करने की अनुमति होगी जिन्हें आप नीचे टिक करेंगे:' 
+                        : 'This staff member will only be allowed to perform tasks you enable below:'}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1.5">
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageUsers}
+                          onChange={(e) => setPermManageUsers(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'यूज़र मैनेजमेंट' : 'Manage Users'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'प्रोफाइल देखना, जोड़ना और संपादित करना' : 'View, add, edit profiles'}</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageWallet}
+                          onChange={(e) => setPermManageWallet(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'वॉलेट समायोजन' : 'Manage Wallet'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'यूज़र बैलेंस जोड़ना, घटाना या सेट करना' : 'Credit/debit/adjust balances'}</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageTransactions}
+                          onChange={(e) => setPermManageTransactions(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'लेनदेन मंज़ूरी (SOP)' : 'Manage Transactions'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'डिपॉज़िट व विड्रॉल अप्रूव/रिजेक्ट करना' : 'Approve/reject deposits & withdrawals'}</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageSchemes}
+                          onChange={(e) => setPermManageSchemes(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'स्कीम / प्लान्स' : 'Manage Schemes'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'निवेश प्लान्स व स्कीम जोड़ना व बदलना' : 'Create & modify investment schemes'}</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageTreasury}
+                          onChange={(e) => setPermManageTreasury(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'ट्रेजरी व बैकअप' : 'Manage Treasury'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'कंपनी खजाना देखना व डेटा बैकअप लेना' : 'Main balance and data backup operations'}</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={permManageBroadcast}
+                          onChange={(e) => setPermManageBroadcast(e.target.checked)}
+                          className="rounded text-cyan-500 focus:ring-cyan-400 w-4 h-4 accent-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-white">{isHi ? 'ब्रॉडकास्ट व संदेश' : 'Manage Broadcast'}</p>
+                          <p className="text-[9px] text-slate-400">{isHi ? 'ग्लोबल ब्रॉडकास्ट व शिकायत समाधान' : 'Broadcast notifications & helpdesk replies'}</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">

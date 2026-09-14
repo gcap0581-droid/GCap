@@ -78,7 +78,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onLanguageChange,
 }) => {
   const isHi = language === 'hi';
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -109,7 +109,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
         {/* Left: Mobile Drawer / Menu Icon + Brand + Back button */}
         <div className="flex items-center gap-2">
           {currentUser && (
-            currentUser.role === 'ADMIN' ? (
+            (currentUser.role === 'ADMIN' || currentUser.role === 'STAFF') ? (
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="w-10 h-10 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm"

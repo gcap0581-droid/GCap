@@ -77,7 +77,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectAdminSubTab,
 }) => {
   const isHi = language === 'hi';
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
   const [searchVal, setSearchVal] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {

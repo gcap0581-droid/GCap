@@ -48,7 +48,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const quickAmounts = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000].filter((v, i, a) => a.indexOf(v) === i);
   const companyUpiId = rules?.companyUpiId || 'gcap.pay@hdfcbank';
   const companyBank = {
-    name: rules?.companyBankAccountHolder || 'GCap Asset Management (India) Pvt. Ltd.',
+    name: rules?.companyBankAccountHolder || 'GCap Assets & Wealth Management Private Limited',
     bank: rules?.companyBankName || 'Axis Bank Ltd.',
     accountNumber: rules?.companyBankAccountNumber || '924010008662307',
     ifsc: rules?.companyBankIfsc || 'UTIB0001219',

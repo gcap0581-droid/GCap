@@ -17,7 +17,7 @@ interface StoredAccount {
   id: string;
   loginId: string;
   name: string;
-  role: "ADMIN" | "USER";
+  role: "ADMIN" | "STAFF" | "USER";
   phone: string;
   email?: string;
   referralCode?: string;
@@ -26,6 +26,14 @@ interface StoredAccount {
   status: "ACTIVE" | "BLOCKED";
   passwordHash: string;
   password?: string;
+  permissions?: {
+    manageUsers?: boolean;
+    manageWallet?: boolean;
+    manageTransactions?: boolean;
+    manageSchemes?: boolean;
+    manageTreasury?: boolean;
+    manageBroadcast?: boolean;
+  };
 }
 
 interface Wallet {
@@ -345,7 +353,7 @@ const DEFAULT_RULES: AppRules = {
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
   companyUpiId: "8603504808@axisbank",
-  companyBankAccountHolder: "GCap Investments",
+  companyBankAccountHolder: "GCap Assets & Wealth Management Private Limited",
   companyBankName: "HDFC Bank Ltd.",
   companyBankAccountNumber: "50200084920194",
   companyBankIfsc: "HDFC0000240",
@@ -635,8 +643,8 @@ function ensureDb(): ServerDB {
       parsed.rules.companyUpiId = "8603504808@axisbank";
       needsSave = true;
     }
-    if (parsed.rules.companyBankAccountHolder === "GCap Capital Ventures Pvt Ltd" || !parsed.rules.companyBankAccountHolder) {
-      parsed.rules.companyBankAccountHolder = "GCap Investments";
+    if (parsed.rules.companyBankAccountHolder === "GCap Capital Ventures Pvt Ltd" || parsed.rules.companyBankAccountHolder === "GCap Investments" || parsed.rules.companyBankAccountHolder === "GCap Asset Management (India) Pvt. Ltd." || !parsed.rules.companyBankAccountHolder) {
+      parsed.rules.companyBankAccountHolder = "GCap Assets & Wealth Management Private Limited";
       needsSave = true;
     }
     if (!parsed.liveConfig || typeof parsed.liveConfig !== "object") parsed.liveConfig = DEFAULT_LIVE_CONFIG;
@@ -2145,7 +2153,7 @@ async function startServer() {
 
   // POST: Admin Add User
   app.post("/api/users/add", (req, res) => {
-    const { name, phone, password, role, status, joinedDate, loginId, email, referralCode, referredBy, bankDetails } = req.body || {};
+    const { name, phone, password, role, status, joinedDate, loginId, email, referralCode, referredBy, bankDetails, permissions } = req.body || {};
 
     const cleanName = String(name || "").trim();
     const rawPhone = String(phone || "").trim();
@@ -2192,7 +2200,7 @@ async function startServer() {
       id: newUserId,
       loginId: cleanLoginId || cleanPhone10,
       name: cleanName,
-      role: role === "ADMIN" ? "ADMIN" : "USER",
+      role: role === "ADMIN" ? "ADMIN" : (role === "STAFF" ? "STAFF" : "USER"),
       phone: formattedPhone,
       email: email ? String(email).trim() : `${cleanPhone10}@gcap.user`,
       referralCode: userReferralCode,
@@ -2200,6 +2208,7 @@ async function startServer() {
       joinedDate: String(joinedDate || "").trim() || new Date().toISOString().split("T")[0],
       status: status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
       passwordHash: cleanPassword,
+      permissions: role === "STAFF" && permissions ? permissions : undefined,
     };
 
     // Remove from deletedUserIds if it was deleted before
@@ -2268,6 +2277,7 @@ async function startServer() {
       current.password = updates.password.trim();
     }
     if (updates.role !== undefined) current.role = updates.role;
+    if (updates.permissions !== undefined) current.permissions = updates.permissions;
     if (updates.status !== undefined) current.status = updates.status;
     if (updates.joinedDate !== undefined) current.joinedDate = updates.joinedDate;
     if (updates.referralCode !== undefined) current.referralCode = updates.referralCode.trim();

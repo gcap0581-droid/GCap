@@ -132,12 +132,10 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
 
             {/* Certificate Brand Header */}
             <div className="space-y-1">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg">
-                  {profile.tradeName ? profile.tradeName.charAt(0) : 'G'}
-                </div>
-                <span className="text-3xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCap Asset Management'}
+              <div className="flex items-center justify-center gap-3">
+                <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-400 print:border-black shrink-0" />
+                <span className="text-2xl sm:text-3xl font-black tracking-tight text-white print:text-black font-sans">
+                  {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-2 text-[11px] text-amber-300 print:text-amber-800 uppercase tracking-widest font-mono">
@@ -271,7 +269,7 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                   {profile.signatoryDesignation || 'Chief Investment Officer (CIO)'}
                 </span>
                 <span className="text-[10px] text-slate-400 print:text-slate-600 block">
-                  {profile.companyName || 'GCap Asset Management Board'}
+                  {profile.companyName || 'GCap Assets & Wealth Management Board'}
                 </span>
               </div>
 

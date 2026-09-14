@@ -24,7 +24,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   supportPhone: '+91 98000 12345',
   lastUpdated: '2026-09-07',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCap Asset Management (India) Pvt. Ltd.',
+  companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
   companyBankName: 'Axis Bank Ltd.',
   companyBankAccountNumber: '924010008662307',
   companyBankIfsc: 'UTIB0001219',

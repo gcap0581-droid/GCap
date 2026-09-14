@@ -160,7 +160,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
               </div>
             ) : (
               <div className="hidden sm:block text-[11px] text-slate-500">
-                {isHi ? 'GCap एसेट मैनेजमेंट • कानूनी प्रमाणित' : 'GCap Asset Management • Verified'}
+                {isHi ? 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट • कानूनी प्रमाणित' : 'GCap Assets & Wealth Management • Verified'}
               </div>
             )}
 
@@ -219,12 +219,10 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
           {/* Official Letterhead Header */}
           <div className="border-b-2 border-amber-500/50 print:border-black pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black flex items-center justify-center text-base print:border print:border-black">
-                  {profile.companyName ? profile.companyName.charAt(0).toUpperCase() : 'G'}
-                </div>
+              <div className="flex items-center gap-3">
+                <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-500/50 print:border-black shrink-0" />
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCAP ASSET MANAGEMENT PVT. LTD.'}
+                  {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
                 </h1>
               </div>
 

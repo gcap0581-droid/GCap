@@ -3,9 +3,9 @@ import { CompanyProfile } from '../types';
 const COMPANY_PROFILE_STORAGE_KEY = 'gcap_corporate_company_profile_v1';
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCAP ASSET MANAGEMENT (INDIA) PVT. LTD.',
-  companyNameHi: 'जीकैप एसेट मैनेजमेंट (इंडिया) प्राइवेट लिमिटेड',
-  tradeName: 'GCap Trust & Asset Management',
+  companyName: 'GCap Assets & Wealth Management Private Limited',
+  companyNameHi: 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट प्राइवेट लिमिटेड',
+  tradeName: 'GCap Assets & Wealth Management',
   cin: 'U65999MH2024PTC398102',
   pan: 'AABCG1234F',
   tan: 'MUMB10293E',

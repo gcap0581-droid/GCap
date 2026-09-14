@@ -96,7 +96,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onOpenSplashIntro,
 }) => {
   const isHi = language === 'hi';
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
 
   // State to expand/collapse each menu section
   const [expandedMenu, setExpandedMenu] = useState<string | null>('investments');

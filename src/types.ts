@@ -159,7 +159,17 @@ export interface AppRules {
   companyBankIfsc?: string;
 }
 
-export type UserRole = 'ADMIN' | 'USER';
+export interface StaffPermissions {
+  manageUsers: boolean;       // Create, edit, and view user profiles
+  manageWallet: boolean;      // Adjust user balances (Add, deduct, set)
+  manageTransactions: boolean;// Approve/Reject Deposits & Withdrawals
+  manageSchemes: boolean;     // Add/edit plans & schemes
+  manageTreasury: boolean;    // Manage company treasury and backups
+  manageBroadcast: boolean;   // Send global broadcast and messages
+  manageDeductions?: boolean; // View and export deductions & charges audit report
+}
+
+export type UserRole = 'ADMIN' | 'STAFF' | 'USER';
 
 export interface UserProfile {
   id: string;
@@ -175,6 +185,7 @@ export interface UserProfile {
   joinedDate: string;
   status: 'ACTIVE' | 'BLOCKED';
   bankDetails?: BankAccountDetails;
+  permissions?: StaffPermissions;
 }
 
 export type TreasuryLogType =

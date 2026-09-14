@@ -10,6 +10,7 @@ import {
   BankAccountDetails,
   UserProfile,
   AdminMessage,
+  UserRole,
 } from '../types';
 import { apiFetch } from './apiConfig';
 import {
@@ -114,7 +115,7 @@ const API_BASE = '/api';
  */
 export async function fetchCentralState(
   userId?: string,
-  role: 'ADMIN' | 'USER' = 'USER'
+  role: UserRole = 'USER'
 ): Promise<CentralStateResponse | null> {
   // 1. Try Express Central API
   try {
@@ -793,7 +794,7 @@ export async function apiUpdateWallet(
  */
 export async function apiFetchMessages(
   userId?: string,
-  role: 'ADMIN' | 'USER' = 'USER'
+  role: UserRole = 'USER'
 ): Promise<{ success: boolean; messages: AdminMessage[] }> {
   try {
     const params = new URLSearchParams();
