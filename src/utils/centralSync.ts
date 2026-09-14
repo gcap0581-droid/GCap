@@ -58,23 +58,7 @@ export async function fetchCentralState(
     if (!res.ok) return null;
     const data: CentralStateResponse = await res.json();
     if (data.users && Array.isArray(data.users)) {
-      const blacklist = new Set([
-        'usr-user-01', 'demo', 'demo user',
-        'usr-1789039307103', '9876500001', 'test new user',
-        'usr-1789122599824', '9876500002', 'live realtime test'
-      ]);
-      data.users = data.users.filter((u: any) => {
-        if (!u) return false;
-        const id = String(u.id || '').toLowerCase();
-        const login = String(u.loginId || '').toLowerCase();
-        const name = String(u.name || '').toLowerCase();
-        const phone = String(u.phone || '').replace(/[^0-9]/g, '');
-        const phone10 = phone.slice(-10);
-        if (blacklist.has(id) || blacklist.has(login) || blacklist.has(name)) return false;
-        if (phone && blacklist.has(phone)) return false;
-        if (phone10 && blacklist.has(phone10)) return false;
-        return true;
-      });
+      data.users = data.users.filter((u: any) => u && u.id);
     }
     return data;
   } catch (err) {

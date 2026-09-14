@@ -603,35 +603,15 @@ function ensureDb(): ServerDB {
     let needsSave = false;
     if (!parsed.users || !Array.isArray(parsed.users)) parsed.users = DEFAULT_ACCOUNTS;
     
-    // Permanent blacklist of unwanted test/demo users to prevent zombie accounts
-    const PERMANENT_BLACKLIST = new Set([
-      "usr-user-01", "demo", "demo user",
-      "usr-1789039307103", "9876500001", "test new user",
-      "usr-1789122599824", "9876500002", "live realtime test"
-    ]);
-
     if (!parsed.deletedUserIds || !Array.isArray(parsed.deletedUserIds)) {
       parsed.deletedUserIds = [];
     }
-    PERMANENT_BLACKLIST.forEach((item) => {
-      if (!parsed.deletedUserIds.includes(item)) {
-        parsed.deletedUserIds.push(item);
-        needsSave = true;
-      }
-    });
 
     const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
     const initialUserCount = parsed.users.length;
     parsed.users = parsed.users.filter((u: StoredAccount) => {
-      if (!u) return false;
-      if (delSet.has(String(u.id || '').toLowerCase())) return false;
-      if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-      if (u.name && delSet.has(String(u.name).toLowerCase())) return false;
-      if (u.phone && delSet.has(String(u.phone).toLowerCase())) return false;
-      const uPhoneDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
-      if (uPhoneDigits && delSet.has(uPhoneDigits)) return false;
-      const uPhone10 = uPhoneDigits.length >= 10 ? uPhoneDigits.slice(-10) : "";
-      if (uPhone10 && delSet.has(uPhone10)) return false;
+      if (!u || !u.id) return false;
+      if (delSet.has(String(u.id).toLowerCase())) return false;
       return true;
     });
 
@@ -2110,55 +2090,83 @@ async function startServer() {
 
   // POST: Admin Add User
   app.post("/api/users/add", (req, res) => {
-    const { name, phone, password, role, status, joinedDate } = req.body || {};
+    const { name, phone, password, role, status, joinedDate, loginId, email, referralCode, referredBy, bankDetails } = req.body || {};
 
     const cleanName = String(name || "").trim();
-    const cleanPhone = String(phone || "").trim().replace(/[^0-9]/g, "");
-    const cleanLoginId = cleanPhone; // Force login ID to be mobile number
+    const rawPhone = String(phone || "").trim();
+    const cleanDigits = rawPhone.replace(/[^0-9]/g, "");
+    const cleanPhone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+    const cleanLoginId = String(loginId || cleanPhone10).trim();
     const cleanPassword = String(password || "demo123").trim();
 
     if (!cleanName || cleanName.length < 2) {
       return res.status(400).json({ success: false, error: "कृपया पूरा नाम दर्ज करें" });
     }
-    if (!cleanPhone || cleanPhone.length < 10) {
+    if (!cleanPhone10 || cleanPhone10.length < 10) {
       return res.status(400).json({ success: false, error: "कृपया 10 अंकों का मान्य फ़ोन नंबर दर्ज करें" });
     }
 
     const db = ensureDb();
     
-    // Always use the primary admin's referral code for users created by admin
+    // Always use the primary admin's referral code for users created by admin if not provided
     const adminUser = db.users.find(u => u.role === 'ADMIN');
-    const referralCode = adminUser ? adminUser.referralCode : `GCAP-${cleanPhone.slice(-6).toUpperCase()}`;
+    const userReferralCode = referralCode ? String(referralCode).trim().toUpperCase() : `GCAP-${cleanPhone10.slice(-5).toUpperCase()}`;
+    const userReferredBy = referredBy ? String(referredBy).trim().toUpperCase() : (adminUser ? adminUser.referralCode : "GCAP-DIRECT");
 
-    const existing = db.users.find(
-      (acc) =>
-        acc.loginId === cleanLoginId ||
-        acc.phone.replace(/[^0-9]/g, "") === cleanPhone
-    );
+    const existing = db.users.find((acc) => {
+      const accDigits = acc.phone ? acc.phone.replace(/[^0-9]/g, "") : "";
+      const accPhone10 = accDigits.length >= 10 ? accDigits.slice(-10) : "";
+      const accLoginId = (acc.loginId || "").toLowerCase();
+
+      if (cleanLoginId && accLoginId === cleanLoginId.toLowerCase()) return true;
+      if (accPhone10 && cleanPhone10 && accPhone10 === cleanPhone10) return true;
+      return false;
+    });
 
     if (existing) {
       return res.status(400).json({
         success: false,
-        error: "यह फ़ोन नंबर पहले से पंजीकृत है।",
+        error: "यह फ़ोन नंबर / लॉगिन आईडी पहले से पंजीकृत है।",
       });
     }
 
+    const newUserId = `usr-${Date.now()}`;
+    const formattedPhone = rawPhone.startsWith("+") ? rawPhone : `+91 ${cleanPhone10}`;
+
     const newAccount: StoredAccount = {
-      id: `usr-${Date.now()}`,
-      loginId: cleanLoginId, // Using phone as loginId
+      id: newUserId,
+      loginId: cleanLoginId || cleanPhone10,
       name: cleanName,
       role: role === "ADMIN" ? "ADMIN" : "USER",
-      phone: cleanPhone,
-      email: `${cleanPhone}@gcap.user`,
-      referralCode: `GCAP-${cleanPhone.slice(-6).toUpperCase()}`, // Unique code for the new user
-      referredBy: referralCode, // Set to admin's code
+      phone: formattedPhone,
+      email: email ? String(email).trim() : `${cleanPhone10}@gcap.user`,
+      referralCode: userReferralCode,
+      referredBy: userReferredBy,
       joinedDate: String(joinedDate || "").trim() || new Date().toISOString().split("T")[0],
       status: status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
       passwordHash: cleanPassword,
     };
 
+    // Remove from deletedUserIds if it was deleted before
+    if (Array.isArray(db.deletedUserIds)) {
+      db.deletedUserIds = db.deletedUserIds.filter(
+        (id) =>
+          id !== newUserId &&
+          id !== cleanPhone10 &&
+          id !== cleanLoginId.toLowerCase()
+      );
+    }
+
     db.users.push(newAccount);
     db.wallets[newAccount.id] = { ...DEFAULT_WALLET };
+    if (cleanPhone10) db.wallets[cleanPhone10] = { ...DEFAULT_WALLET };
+    if (cleanLoginId) db.wallets[cleanLoginId] = { ...DEFAULT_WALLET };
+
+    if (bankDetails && typeof bankDetails === 'object') {
+      db.bankDetails[newAccount.id] = bankDetails;
+      if (cleanPhone10) db.bankDetails[cleanPhone10] = bankDetails;
+    }
+
     saveDb(db);
 
     const { passwordHash: _, ...profile } = newAccount;
@@ -2169,6 +2177,8 @@ async function startServer() {
       timestamp: Date.now(),
     });
     broadcastRealtimeEvent("state_changed", { type: "USER_ADD", timestamp: Date.now() });
+
+    console.log(`[GCap DB] Admin created user successfully: ${newAccount.name} (${newAccount.phone}) [ID: ${newAccount.id}]`);
 
     res.json({ success: true, user: profile, account: newAccount });
   });

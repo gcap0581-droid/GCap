@@ -374,9 +374,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           joinedDate: data.joinedDate,
           referralCode: data.referralCode,
           referredBy: data.referredBy,
+          bankDetails: data.bankDetails,
         });
         if (res.success && res.user?.id) {
           targetUserId = res.user.id;
+          const createdUser = res.user;
+          setUsersList(prev => {
+            const filtered = prev.filter(u => u.id !== createdUser.id && u.phone !== createdUser.phone);
+            return [createdUser, ...filtered];
+          });
         } else if (!res.success) {
           console.warn('User add error:', res.error);
         }

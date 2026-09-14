@@ -226,27 +226,8 @@ export function getAllUsers(): UserProfile[] {
   return cachedUsers;
 }
 
-const PERMANENT_BLACKLIST = new Set([
-  'usr-user-01', 'demo', 'demo user',
-  'usr-1789039307103', '9876500001', 'test new user',
-  'usr-1789122599824', '9876500002', 'live realtime test'
-]);
-
 function filterBlacklisted(users: UserProfile[]): UserProfile[] {
-  return users.filter(u => {
-    if (!u) return false;
-    const id = String(u.id || '').toLowerCase();
-    const login = String(u.loginId || '').toLowerCase();
-    const name = String(u.name || '').toLowerCase();
-    const phone = String(u.phone || '').replace(/[^0-9]/g, '');
-    const phone10 = phone.slice(-10);
-    if (PERMANENT_BLACKLIST.has(id)) return false;
-    if (PERMANENT_BLACKLIST.has(login)) return false;
-    if (PERMANENT_BLACKLIST.has(name)) return false;
-    if (phone && PERMANENT_BLACKLIST.has(phone)) return false;
-    if (phone10 && PERMANENT_BLACKLIST.has(phone10)) return false;
-    return true;
-  });
+  return users.filter(u => u && u.id);
 }
 
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
@@ -281,17 +262,22 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: data.name,
+        loginId: data.loginId,
         phone: data.phone,
+        email: data.email,
         password: data.password || data.passwordHash || 'demo123',
         role: data.role || 'USER',
         status: data.status || 'ACTIVE',
         joinedDate: data.joinedDate,
+        referralCode: data.referralCode,
+        referredBy: data.referredBy,
+        bankDetails: data.bankDetails,
       })
     });
 
     const result = await res.json();
-    if (result.success && result.user) {
-      const created = result.user as UserProfile;
+    if (result.success && (result.user || result.account)) {
+      const created = (result.user || result.account) as UserProfile;
       const existingIdx = cachedUsers.findIndex(u => u.id === created.id || u.phone === created.phone);
       if (existingIdx !== -1) {
         cachedUsers[existingIdx] = created;
