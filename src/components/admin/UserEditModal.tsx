@@ -127,7 +127,17 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         setName(user.name || '');
         setLoginId(user.loginId || '');
         setPhone(user.phone || '');
-        setEmail(user.email || '');
+        
+        // Clean email to remove any spaces or invalid characters from generated phone emails
+        const rawEmail = user.email || '';
+        let cleanEmailStr = rawEmail.trim().replace(/\s+/g, '');
+        if (cleanEmailStr.includes('@gcap.user')) {
+          const parts = cleanEmailStr.split('@gcap.user');
+          const digits = parts[0].replace(/[^0-9]/g, '').slice(-10);
+          cleanEmailStr = `${digits || 'user'}@gcap.user`;
+        }
+        setEmail(cleanEmailStr);
+        
         setPassword(user.password || '');
         setRole(user.role || 'USER');
         setStatus(user.status || 'ACTIVE');
@@ -281,7 +291,14 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         name: name.trim(),
         loginId: loginId.trim() || undefined,
         phone: phone.trim(),
-        email: email.trim(),
+        email: (() => {
+          let clean = (email || '').trim().replace(/\s+/g, '');
+          if (!clean || clean.includes('@gcap.user')) {
+            const digits = phone.replace(/[^0-9]/g, '').slice(-10);
+            clean = `${digits || 'user'}@gcap.user`;
+          }
+          return clean;
+        })(),
         password: password ? password.trim() : undefined,
         role,
         status,
@@ -491,7 +508,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value.replace(/\s+/g, ''))}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-cyan-400 focus:outline-none"
                     placeholder="user@example.com"
                   />

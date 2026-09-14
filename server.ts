@@ -2034,7 +2034,7 @@ async function startServer() {
       name: cleanName,
       role: "USER",
       phone: cleanPhone,
-      email: String(email || "").trim() || `${cleanPhone}@gcap.user`,
+      email: email ? String(email).replace(/\s+/g, '') : `${cleanPhone.replace(/[^0-9]/g, '').slice(-10) || 'user'}@gcap.user`,
       referralCode: `GCAP-${cleanPhone.slice(-6).toUpperCase()}`,
       referredBy: referralCode ? String(referralCode).trim().toUpperCase() : "GCAP-DIRECT",
       joinedDate: new Date().toISOString().split("T")[0],
@@ -2202,7 +2202,14 @@ async function startServer() {
       name: cleanName,
       role: role === "ADMIN" ? "ADMIN" : (role === "STAFF" ? "STAFF" : "USER"),
       phone: formattedPhone,
-      email: email ? String(email).trim() : `${cleanPhone10}@gcap.user`,
+      email: (() => {
+        let clean = email ? String(email).replace(/\s+/g, '') : '';
+        if (!clean || clean.includes('@gcap.user')) {
+          const digits = formattedPhone.replace(/[^0-9]/g, '').slice(-10);
+          clean = `${digits || 'user'}@gcap.user`;
+        }
+        return clean;
+      })(),
       referralCode: userReferralCode,
       referredBy: userReferredBy,
       joinedDate: String(joinedDate || "").trim() || new Date().toISOString().split("T")[0],

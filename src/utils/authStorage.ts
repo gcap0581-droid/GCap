@@ -457,7 +457,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       name: data.name,
       loginId: data.loginId || data.phone,
       phone: data.phone,
-      email: data.email || `${data.phone}@gcap.user`,
+      email: data.email ? String(data.email).replace(/\s+/g, '') : `${String(data.phone || '').replace(/[^0-9]/g, '').slice(-10) || 'user'}@gcap.user`,
       role: data.role || 'USER',
       status: data.status || 'ACTIVE',
       joinedDate: data.joinedDate || new Date().toISOString().split('T')[0],

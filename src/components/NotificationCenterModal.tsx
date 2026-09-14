@@ -37,6 +37,30 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 }) => {
   const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'ANNOUNCEMENT' | 'ALERT'>('ALL');
   const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission;
+    }
+    return 'denied';
+  });
+
+  const requestPushPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const result = await Notification.requestPermission();
+        setPushPermission(result);
+        if (result === 'granted') {
+          new Notification(isHi ? '🔔 मोबाइल सूचनाएं चालू हो गई हैं!' : '🔔 Mobile Push Notifications Active!', {
+            body: isHi ? 'कंपनी की कोई भी नई सूचना या अनाउंसमेंट आपके डिवाइस पर तुरंत मिलेगी।' : 'Official announcements and updates will pop up on your device instantly.',
+            icon: '/icon.svg',
+            badge: '/icon-192.svg',
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to request notification permission:', e);
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -133,6 +157,24 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Push Notification Enable Prompt Banner if not granted */}
+        {pushPermission !== 'granted' && (
+          <div className="px-4 py-2.5 bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/15 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+              <span className="text-slate-200">
+                {isHi ? 'मोबाइल स्क्रीन पर तुरंत पुश नोटिफिकेशन पाएं:' : 'Get instant push notifications on your phone:'}
+              </span>
+            </div>
+            <button
+              onClick={requestPushPermission}
+              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shrink-0 shadow transition-all cursor-pointer"
+            >
+              {isHi ? '🔔 नोटिफिकेशन ऑन करें' : '🔔 Enable Notifications'}
+            </button>
+          </div>
+        )}
 
         {/* Filter Toolbar */}
         <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between gap-2 overflow-x-auto">

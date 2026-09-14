@@ -510,17 +510,65 @@ export default function App() {
     return true;
   }, [currentUser, investments.length, wallet.cashBalance]);
 
+  // Helper to fire mobile/browser native push notification
+  const triggerDevicePushNotification = useCallback((title: string, body: string, msgObj?: AdminMessage) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body: body,
+          icon: '/icon.svg',
+          badge: '/icon-192.svg',
+          tag: msgObj?.id || `msg-push-${Date.now()}`,
+        } as any);
+        notif.onclick = () => {
+          try {
+            window.focus();
+          } catch {}
+          if (msgObj) {
+            setActivePopupMessage(msgObj);
+          } else {
+            setIsNotificationsOpen(true);
+          }
+        };
+      } catch (err) {
+        console.warn('[Push Notification] Error:', err);
+      }
+    }
+  }, []);
+
   // Real-time messages fetch and synchronization
   const refreshMessages = useCallback(async () => {
     try {
       const res = await apiFetchMessages(currentUser?.id, currentUser?.role || 'USER');
       if (res && Array.isArray(res.messages)) {
         setMessages(res.messages);
+
+        // Auto-popup unread message when user opens app if not dismissed
+        if (currentUser && currentUser.role !== 'ADMIN') {
+          const unreadMsgs = res.messages.filter((m) => {
+            if (!isMessageForCurrentUser(m)) return false;
+            let isLocalDismissed = false;
+            try {
+              const raw = localStorage.getItem('gcap_dismissed_popup_msg_ids');
+              const list = raw ? JSON.parse(raw) : [];
+              isLocalDismissed = Array.isArray(list) && list.includes(m.id);
+            } catch {
+              isLocalDismissed = false;
+            }
+            const isDismissed = isLocalDismissed || (Array.isArray(m.dismissedByUserIds) && m.dismissedByUserIds.includes(currentUser.id));
+            const isRead = Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUser.id);
+            return !isDismissed && !isRead;
+          });
+
+          if (unreadMsgs.length > 0 && !activePopupMessage) {
+            setActivePopupMessage(unreadMsgs[0]);
+          }
+        }
       }
     } catch (err) {
       console.warn('[Messages] Fetch error:', err);
     }
-  }, [currentUser?.id, currentUser?.role]);
+  }, [currentUser, isMessageForCurrentUser, activePopupMessage]);
 
   useEffect(() => {
     refreshMessages();
@@ -548,10 +596,32 @@ export default function App() {
               isLocalDismissed = false;
             }
             const isDismissed = isLocalDismissed || (Array.isArray(payloadMsg.dismissedByUserIds) && payloadMsg.dismissedByUserIds.includes(currentUser.id));
-            if (!isDismissed && (payloadMsg.showPopup || payloadMsg.priority === 'POPUP' || payloadMsg.priority === 'URGENT')) {
+            
+            const msgTitle = isHi && payloadMsg.titleHi ? payloadMsg.titleHi : payloadMsg.title;
+            const msgBody = isHi && payloadMsg.contentHi ? payloadMsg.contentHi : payloadMsg.content;
+
+            // Trigger real-time sound chime
+            playRealtimeChime('info');
+
+            // Trigger mobile device push notification
+            triggerDevicePushNotification(
+              `📢 ${msgTitle || (isHi ? 'कंपनी की आधिकारिक सूचना' : 'GCap Official Notice')}`,
+              msgBody || (isHi ? 'कंपनी की तरफ से नया संदेश आया है। पढ़ने के लिए टैप करें।' : 'New official notice received. Tap to read.'),
+              payloadMsg
+            );
+
+            // Open screen popup immediately so user reads it right there
+            if (!isDismissed) {
               setActivePopupMessage(payloadMsg);
-              playRealtimeChime();
             }
+
+            // Show top toast banner
+            setToastMessage({
+              title: `📢 ${msgTitle}`,
+              desc: isHi ? 'कंपनी की तरफ से नया संदेश प्राप्त हुआ है!' : 'New company announcement received!',
+              type: 'info',
+            });
+            setTimeout(() => setToastMessage(null), 4500);
           }
         }
       }
@@ -560,7 +630,7 @@ export default function App() {
     return () => {
       unsub();
     };
-  }, [currentUser, isMessageForCurrentUser]);
+  }, [currentUser, isMessageForCurrentUser, isHi, triggerDevicePushNotification]);
 
   // User-facing visible messages
   const userVisibleMessages = messages.filter((m) => {
