@@ -14,10 +14,26 @@ export const LiveAnnouncementBanner: React.FC<LiveAnnouncementBannerProps> = ({
   onCheckUpdates,
 }) => {
   const isHi = language === 'hi';
-  const [dismissed, setDismissed] = useState(false);
+  const bannerKey = `gcap_dismissed_banner_${config.bannerText || 'default'}`;
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(bannerKey) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [checking, setChecking] = useState(false);
   const [justChecked, setJustChecked] = useState(false);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(bannerKey, 'true');
+    } catch (e) {
+      console.warn('Could not save banner dismiss state', e);
+    }
+  };
 
   const handleManualCheck = () => {
     setChecking(true);
@@ -81,8 +97,8 @@ export const LiveAnnouncementBanner: React.FC<LiveAnnouncementBannerProps> = ({
               {isHi ? 'लाइव स्टेटस' : 'Live Status'}
             </button>
             <button
-              onClick={() => setDismissed(true)}
-              className="opacity-70 hover:opacity-100 p-0.5 rounded transition-opacity"
+              onClick={handleDismiss}
+              className="opacity-70 hover:opacity-100 p-0.5 rounded transition-opacity cursor-pointer"
               title={isHi ? 'हटाएं' : 'Dismiss'}
             >
               <X className="w-3.5 h-3.5" />

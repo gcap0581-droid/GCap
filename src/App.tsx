@@ -454,7 +454,15 @@ export default function App() {
 
           // Show immediate popup modal if message is targeted to current user and not dismissed
           if (currentUser && isMessageForCurrentUser(payloadMsg)) {
-            const isDismissed = Array.isArray(payloadMsg.dismissedByUserIds) && payloadMsg.dismissedByUserIds.includes(currentUser.id);
+            let isLocalDismissed = false;
+            try {
+              const raw = localStorage.getItem('gcap_dismissed_popup_msg_ids');
+              const list = raw ? JSON.parse(raw) : [];
+              isLocalDismissed = Array.isArray(list) && list.includes(payloadMsg.id);
+            } catch {
+              isLocalDismissed = false;
+            }
+            const isDismissed = isLocalDismissed || (Array.isArray(payloadMsg.dismissedByUserIds) && payloadMsg.dismissedByUserIds.includes(currentUser.id));
             if (!isDismissed && (payloadMsg.showPopup || payloadMsg.priority === 'POPUP' || payloadMsg.priority === 'URGENT')) {
               setActivePopupMessage(payloadMsg);
               playRealtimeChime();
@@ -538,23 +546,36 @@ export default function App() {
   };
 
   const handleDismissPopupMessage = async () => {
-    if (activePopupMessage && currentUser) {
+    if (activePopupMessage) {
       const msgId = activePopupMessage.id;
-      await apiDismissMessage(msgId, currentUser.id);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId
-            ? {
-                ...m,
-                dismissedByUserIds: Array.isArray(m.dismissedByUserIds)
-                  ? m.dismissedByUserIds.includes(currentUser.id)
-                    ? m.dismissedByUserIds
-                    : [...m.dismissedByUserIds, currentUser.id]
-                  : [currentUser.id],
-              }
-            : m
-        )
-      );
+      try {
+        const raw = localStorage.getItem('gcap_dismissed_popup_msg_ids');
+        const list: string[] = raw ? JSON.parse(raw) : [];
+        if (!list.includes(msgId)) {
+          list.push(msgId);
+          localStorage.setItem('gcap_dismissed_popup_msg_ids', JSON.stringify(list));
+        }
+      } catch (e) {
+        console.warn('Failed to save popup dismiss state', e);
+      }
+
+      if (currentUser) {
+        await apiDismissMessage(msgId, currentUser.id);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId
+              ? {
+                  ...m,
+                  dismissedByUserIds: Array.isArray(m.dismissedByUserIds)
+                    ? m.dismissedByUserIds.includes(currentUser.id)
+                      ? m.dismissedByUserIds
+                      : [...m.dismissedByUserIds, currentUser.id]
+                    : [currentUser.id],
+                }
+              : m
+          )
+        );
+      }
     }
     setActivePopupMessage(null);
   };

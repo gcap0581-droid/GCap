@@ -1170,6 +1170,24 @@ async function startServer() {
     });
   });
 
+  // GET: Transactions list
+  app.get("/api/transactions", (_req, res) => {
+    const db = ensureDb();
+    res.json({ success: true, transactions: db.transactions || [] });
+  });
+
+  // GET: Investments list
+  app.get("/api/investments", (_req, res) => {
+    const db = ensureDb();
+    res.json({ success: true, investments: db.investments || [] });
+  });
+
+  // GET: Wallets list
+  app.get("/api/wallets", (_req, res) => {
+    const db = ensureDb();
+    res.json({ success: true, wallets: db.wallets || {} });
+  });
+
   // POST: Create transaction (Deposit request, Withdrawal request, etc.)
   app.post("/api/transactions", (req, res) => {
     const { transaction, userId } = req.body || {};
