@@ -76,6 +76,7 @@ import { UserEditModal } from './admin/UserEditModal';
 import { TransactionEditModal } from './admin/TransactionEditModal';
 import { ProjectCertificateModal } from './admin/ProjectCertificateModal';
 import { AdminApprovalPasswordModal } from './admin/AdminApprovalPasswordModal';
+import { AdminRejectReasonModal } from './admin/AdminRejectReasonModal';
 import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
@@ -221,6 +222,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [approvalPasswordModalOpen, setApprovalPasswordModalOpen] = useState(false);
   const [approvalTargetTxn, setApprovalTargetTxn] = useState<Transaction | null>(null);
+
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTargetTxn, setRejectTargetTxn] = useState<Transaction | null>(null);
 
   const [certModalOpen, setCertModalOpen] = useState(false);
 
@@ -524,8 +528,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleRejectTransaction = (txnId: string) => {
     const target = transactions.find((t) => t.id === txnId);
     if (target) {
-      onUpdateTransaction({ ...target, status: 'REJECTED' });
+      setRejectTargetTxn(target);
+      setRejectModalOpen(true);
     }
+  };
+
+  const handleConfirmRejectWithReason = (targetTxn: Transaction, reason: string) => {
+    onUpdateTransaction({
+      ...targetTxn,
+      status: 'REJECTED',
+      rejectReason: reason,
+      rejectReasonHi: reason,
+    });
   };
 
   // Platform Metrics
@@ -660,72 +674,105 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* Navigation Sub-Tabs & Mobile Menu Grid */}
         <div className="space-y-4">
-          <div className="hidden sm:flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1 gap-1">
-            <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1.5 gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 id="tab-admin-overview"
                 onClick={() => setActiveSubTab('OVERVIEW')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeSubTab === 'OVERVIEW'
-                    ? 'bg-slate-800 text-amber-300 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>{isHi ? 'डैशबोर्ड' : 'Overview'}</span>
               </button>
-              <button
-                id="tab-admin-txns"
-                onClick={() => setActiveSubTab('TRANSACTIONS')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeSubTab === 'TRANSACTIONS'
-                    ? 'bg-slate-800 text-purple-400 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Clock className="w-4 h-4" />
-              </button>
+
               <button
                 id="tab-admin-users"
                 onClick={() => setActiveSubTab('USERS')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeSubTab === 'USERS'
-                    ? 'bg-slate-800 text-cyan-400 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5" />
+                <span>{isHi ? 'यूज़र्स' : 'Users'}</span>
               </button>
+
               <button
-                onClick={() => setIsMasterToolsOpen(!isMasterToolsOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
+                id="tab-admin-txns"
+                onClick={() => setActiveSubTab('TRANSACTIONS')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'TRANSACTIONS'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
               >
-                <Sliders className="w-4 h-4" />
+                <Clock className="w-3.5 h-3.5" />
+                <span>{isHi ? 'लेन-देन' : 'Transactions'}</span>
+              </button>
+
+              <button
+                id="tab-admin-plans"
+                onClick={() => setActiveSubTab('PLANS')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'PLANS'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>{isHi ? 'प्लान्स' : 'Plans'}</span>
+              </button>
+
+              <button
+                id="tab-admin-messages"
+                onClick={() => setActiveSubTab('MESSAGES')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'MESSAGES'
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Bell className="w-3.5 h-3.5 text-rose-400" />
+                <span>{isHi ? '📢 मैसेज व ब्रॉडकास्ट' : '📢 Send Messages'}</span>
+                {messages.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-200 text-[10px] font-mono">
+                    {messages.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                id="tab-admin-treasury"
+                onClick={() => setActiveSubTab('TREASURY')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'TREASURY'
+                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{isHi ? 'ट्रेजरी' : 'Treasury'}</span>
+              </button>
+
+              <button
+                id="tab-admin-backup"
+                onClick={() => setActiveSubTab('BACKUP')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'BACKUP'
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span>{isHi ? 'बैकअप' : 'Backup'}</span>
               </button>
             </div>
           </div>
-          {/* Master Tools Menu (Visible when toggled) */}
-          {isMasterToolsOpen && (
-            <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 grid grid-cols-2 sm:grid-cols-6 gap-2">
-              <button onClick={() => setActiveSubTab('MESSAGES')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Bell className="w-4 h-4" /> Messages
-              </button>
-              <button onClick={() => setActiveSubTab('TREASURY')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Building2 className="w-4 h-4" /> Treasury
-              </button>
-              <button onClick={() => setActiveSubTab('INVESTMENTS')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Zap className="w-4 h-4" /> Investments
-              </button>
-              <button onClick={() => setActiveSubTab('PLANS')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Layers className="w-4 h-4" /> Plans
-              </button>
-              <button onClick={() => setActiveSubTab('BACKUP')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Database className="w-4 h-4" /> Backup
-              </button>
-              <button onClick={() => setActiveSubTab('COMPANY_PROFILE')} className="flex items-center gap-2 p-2 rounded bg-slate-900 text-white text-xs">
-                <Building2 className="w-4 h-4" /> Profile
-              </button>
-            </div>
-          )}
         </div>
 
       {/* TAB 1: OVERVIEW */}
@@ -746,6 +793,110 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
             onOpenHistory={() => setActiveSubTab('TREASURY')}
           />
+
+          {/* PROMINENT USER DEPOSIT & WITHDRAWAL REQUESTS QUEUE DIRECTLY ON ADMIN MAIN SCREEN */}
+          {transactions.filter((t) => t.status === 'PENDING').length > 0 && (
+            <div className="bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-900 p-5 rounded-2xl border-2 border-amber-500/60 shadow-2xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shrink-0 shadow-lg">
+                    <Clock className="w-6 h-6 animate-pulse text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-black text-white">
+                        {isHi ? '⚠️ यूज़र डिपॉजिट एवं निकासी अनुरोध (Main Approval Queue)' : '⚠️ User Deposit & Withdrawal Approval Queue'}
+                      </h3>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs animate-pulse shadow">
+                        {transactions.filter((t) => t.status === 'PENDING').length} {isHi ? 'लंबित अनुरोध' : 'Pending'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-200/90 mt-0.5">
+                      {isHi
+                        ? '🔒 सुरक्षा नियम: अप्रूव या रिजेक्ट करने के लिए ट्रांजेक्शन पासवर्ड (gcap@tra1978) अनिवार्य है। अप्रूव करने पर राशि तुरंत वॉलेट में जुड़ेगी, रिजेक्ट करने पर कारण यूज़र को दिखेगा।'
+                        : '🔒 Security Rule: Transaction password (gcap@tra1978) is required to Approve/Reject. Approved deposits credit to user wallet instantly.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/90 px-3.5 py-2 rounded-xl border border-amber-500/30 flex items-center gap-2 text-xs">
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <span className="text-slate-300 font-mono text-[11px]">Pass: <strong className="text-amber-300">gcap@tra1978</strong></span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {transactions
+                  .filter((t) => t.status === 'PENDING')
+                  .map((t) => {
+                    const isDeposit = t.type === 'DEPOSIT';
+                    return (
+                      <div
+                        key={t.id}
+                        className="bg-slate-950 p-4 rounded-xl border border-amber-500/40 hover:border-amber-400 transition-all flex flex-col justify-between gap-3 shadow-lg"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                  isDeposit
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                }`}
+                              >
+                                {isDeposit ? '💰 DEPOSIT REQUEST' : '📤 WITHDRAWAL REQUEST'}
+                              </span>
+                              <span className="font-bold text-white text-xs">
+                                {t.userName || t.userLoginId || 'Investor User'}
+                              </span>
+                            </div>
+                            <span className="text-base font-mono font-black text-amber-300">
+                              {formatINR(t.amount)}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-slate-300 space-y-0.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                              <span className="text-slate-400">UTR / Ref:</span>
+                              <span className="text-white font-bold">{t.referenceId || t.id}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400">{isHi ? 'विधि / माध्यम:' : 'Method:'}</span>
+                              <span className="text-slate-200">{t.method || 'UPI / Bank'}</span>
+                            </div>
+                            {(t.note || t.noteHi) && (
+                              <div className="text-[11px] text-slate-400 pt-0.5 truncate">
+                                {isHi && t.noteHi ? t.noteHi : t.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-900">
+                          <button
+                            id={`btn-overview-reject-${t.id}`}
+                            onClick={() => handleRejectTransaction(t.id)}
+                            className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/80 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>{isHi ? 'अस्वीकार (Reject)' : 'Reject'}</span>
+                          </button>
+                          <button
+                            id={`btn-overview-approve-${t.id}`}
+                            onClick={() => handleQuickApprove(t.id)}
+                            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>{isHi ? 'पासवर्ड डालकर अप्रूव करें' : 'Approve with Password'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           {/* Key Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1247,6 +1398,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
+      {/* TAB 7: MESSAGES & BROADCAST TO USERS */}
+      {activeSubTab === 'MESSAGES' && (
+        <AdminMessagesTab
+          language={language}
+          users={usersList}
+          messages={messages}
+          wallets={walletsMap}
+          investments={investments}
+          onSendMessage={onSendMessage || (async () => false)}
+          onDeleteMessage={onDeleteMessage || (async () => false)}
+          onRefreshMessages={onRefreshMessages || (() => {})}
+        />
+      )}
+
+      {/* TAB 8: TREASURY & LIQUIDITY LOGS */}
+      {activeSubTab === 'TREASURY' && (
+        <AdminTreasuryTab
+          treasury={treasury}
+          treasuryLogs={treasuryLogs}
+          language={language}
+          onOpenAddModal={() => {
+            setBalanceModalMode('ADD');
+            setBalanceModalOpen(true);
+          }}
+          onOpenDeductModal={() => {
+            setBalanceModalMode('DEDUCT');
+            setBalanceModalOpen(true);
+          }}
+          onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
+          onResetTreasury={onResetTreasury}
+        />
+      )}
+
+      {/* TAB 9: LIVE INVESTMENTS AUDIT */}
+      {activeSubTab === 'INVESTMENTS' && (
+        <AdminInvestmentsTab
+          investments={investments}
+          users={usersList}
+          language={language}
+          onSimulateComplete24hLock={onSimulateComplete24hLock}
+          onSimulateComplete6hCycle={onSimulateComplete6hCycle}
+          onSimulateMaturity641Days={onSimulateMaturity641Days}
+        />
+      )}
+
+      {/* TAB 10: COMPANY PROFILE */}
+      {activeSubTab === 'COMPANY_PROFILE' && (
+        <AdminCompanyProfileTab
+          treasury={treasury}
+          language={language}
+        />
+      )}
+
       {/* Modals */}
       <CompanyBalanceModal
         isOpen={balanceModalOpen}
@@ -1311,6 +1515,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onConfirmApprove={handleConfirmApprovalWithPassword}
         language={language}
         rules={rules}
+      />
+
+      <AdminRejectReasonModal
+        isOpen={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        transaction={rejectTargetTxn}
+        onConfirmReject={handleConfirmRejectWithReason}
+        language={language}
       />
     </div>
   );

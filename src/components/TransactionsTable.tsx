@@ -7,6 +7,8 @@ import {
   Receipt,
   CheckCircle2,
   Clock,
+  XCircle,
+  AlertCircle,
   Filter,
 } from 'lucide-react';
 import { Transaction, TransactionType, Language } from '../types';
@@ -28,6 +30,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
   const filteredTransactions = transactions.filter((t) => {
     if (filter === 'ALL') return true;
+    if (filter === 'PENDING') return t.status === 'PENDING';
     return t.type === filter;
   });
 
@@ -84,6 +87,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
             { id: 'ALL', label: isHi ? 'सभी' : 'All' },
+            { id: 'PENDING', label: isHi ? '⏳ लंबित (Pending)' : '⏳ Pending' },
             { id: 'DEPOSIT', label: isHi ? 'जमा' : 'Deposits' },
             { id: 'RETURN_PAYOUT', label: isHi ? 'रिटर्न' : 'Returns' },
             { id: 'INVEST', label: isHi ? 'निवेश' : 'Investments' },
@@ -175,10 +179,32 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{tx.status}</span>
-                      </span>
+                      {tx.status === 'SUCCESS' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>{isHi ? 'सत्यापित (Success)' : 'Success'}</span>
+                        </span>
+                      )}
+                      {tx.status === 'PENDING' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/30 animate-pulse">
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          <span>{isHi ? 'सत्यापन जारी (Pending)' : 'Pending'}</span>
+                        </span>
+                      )}
+                      {tx.status === 'REJECTED' && (
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/15 px-2.5 py-1 rounded-full border border-rose-500/30">
+                            <XCircle className="w-3 h-3 text-rose-400" />
+                            <span>{isHi ? 'अस्वीकृत (Rejected)' : 'Rejected'}</span>
+                          </span>
+                          {(tx.rejectReason || tx.rejectReasonHi) && (
+                            <div className="flex items-start gap-1 text-[10px] text-rose-300/90 max-w-[200px] leading-tight bg-rose-950/40 p-1 rounded border border-rose-900/40">
+                              <AlertCircle className="w-3 h-3 text-rose-400 shrink-0 mt-0.5" />
+                              <span>{isHi && tx.rejectReasonHi ? tx.rejectReasonHi : (tx.rejectReason || tx.rejectReasonHi)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td className="py-3.5 pr-2 text-right">

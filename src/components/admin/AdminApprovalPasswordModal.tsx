@@ -82,10 +82,16 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>{isHi ? '🔒 ट्रांजेक्शन सुरक्षा स्वीकृति' : '🔒 Authorization & Transfer Verification'}</span>
+                <span>
+                  {transaction.type === 'DEPOSIT'
+                    ? (isHi ? '🔒 डिपॉजिट स्वीकृति सत्यापन' : '🔒 Deposit Approval Authorization')
+                    : (isHi ? '🔒 निकासी स्वीकृति सत्यापन' : '🔒 Withdrawal Payout Authorization')}
+                </span>
               </h3>
               <p className="text-[11px] text-amber-300/80">
-                {isHi ? 'कंपनी बैंक खाता → यूज़र खाते में ट्रांसफर स्वीकृति' : 'Company Bank Reserve → User Account Transfer Authorization'}
+                {transaction.type === 'DEPOSIT'
+                  ? (isHi ? 'यूज़र द्वारा बैंक/UPI में जमा राशि की पुष्टि एवं वॉलेट में क्रेडिट' : 'Verify user deposit and credit funds into investor wallet')
+                  : (isHi ? 'कंपनी बैंक खाता → यूज़र खाते में ट्रांसफर स्वीकृति' : 'Company Bank Reserve → User Account Transfer Authorization')}
               </p>
             </div>
           </div>
@@ -100,64 +106,108 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
         {/* Modal Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           
-          {/* Automated Payout API Banner */}
+          {/* Info Banner */}
           <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-xs flex items-center gap-2 font-medium">
             <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>
-              {isHi
-                ? '⚡ 100% स्वचालित डायरेक्ट बैंकिंग ट्रांसफर (Auto IMPS API): पासवर्ड डालते ही कंपनी Axis Bank खाते (924010008662307) से पैसे डिडक्ट होकर यूज़र के बैंक खाते में स्वतः क्रेडिट हो जाएँगे। कंपनी को बैंक में जाकर कुछ भी मैन्युअल नहीं करना पड़ेगा।'
-                : '⚡ 100% Automated Corporate Payout: Funds auto-deduct from Company Axis Bank Reserve (924010008662307) & credit directly to User Account via API. Zero manual work required!'}
+              {transaction.type === 'DEPOSIT'
+                ? (isHi
+                    ? '⚡ तुरंत वॉलेट क्रेडिट: पासवर्ड दर्ज करते ही यह राशि यूज़र के मुख्य वॉलेट कैश में जुड़ जाएगी और वह तुरंत निवेश शुरू कर सकेगा।'
+                    : '⚡ Instant Wallet Credit: Upon password confirmation, funds will immediately credit to user wallet for instant investment.')
+                : (isHi
+                    ? '⚡ 100% स्वचालित डायरेक्ट बैंकिंग ट्रांसफर (Auto IMPS API): पासवर्ड डालते ही कंपनी Axis Bank खाते (924010008662307) से पैसे डिडक्ट होकर यूज़र के खाते में ट्रांसफर हो जाएँगे।'
+                    : '⚡ 100% Automated Corporate Payout: Funds auto-deduct from Company Reserve (924010008662307) & credit directly to User Account via API.')}
             </span>
           </div>
 
           {/* Transfer Flow Box */}
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-            
-            {/* Sender: Company Bank */}
-            <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>{isHi ? 'भेजने वाला कंपनी बैंक खाता (Debited Account):' : 'From Company Bank Account (Source):'}</span>
-              </span>
-              <div className="font-mono text-xs space-y-0.5">
-                <div className="text-white font-bold">{companyBank.name}</div>
-                <div className="text-slate-300 flex items-center gap-3 text-[11px]">
-                  <span>{companyBank.bank}</span>
-                  <span>A/C: <strong className="text-amber-300">{companyBank.accountNumber}</strong></span>
-                  <span>IFSC: <strong className="text-slate-200">{companyBank.ifsc}</strong></span>
+            {transaction.type === 'DEPOSIT' ? (
+              <>
+                {/* Depositor: User */}
+                <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
+                    <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{isHi ? 'जमाकर्ता यूज़र (Depositor User):' : 'Deposited By User:'}</span>
+                  </span>
+                  <div className="font-mono text-xs space-y-0.5">
+                    <div className="text-white font-bold">{recipientName}</div>
+                    <div className="text-slate-300 text-[11px]">{recipientDestination}</div>
+                    <div className="text-[10px] text-emerald-400">Ref/UTR: {transaction.referenceId || transaction.id}</div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-center">
-              <div className="p-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400">
-                <ArrowDown className="w-4 h-4" />
-              </div>
-            </div>
+                <div className="flex items-center justify-center">
+                  <div className="p-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
+                    <ArrowDown className="w-4 h-4" />
+                  </div>
+                </div>
 
-            {/* Recipient: User Bank */}
-            <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{isHi ? 'प्राप्तकर्ता यूज़र खाता (Recipient Account):' : 'To User Registered Account:'}</span>
-              </span>
-              <div className="font-mono text-xs space-y-0.5">
-                <div className="text-white font-bold">{recipientName}</div>
-                <div className="text-emerald-400 text-[11px] font-semibold">{recipientDestination}</div>
-                <div className="text-[10px] text-slate-400">Ref/UTR: {transaction.referenceId || transaction.id}</div>
-              </div>
-            </div>
+                {/* Recipient: Company Bank */}
+                <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? 'प्राप्तकर्ता कंपनी खाता (Company Bank Received):' : 'Received In Company Bank:'}</span>
+                  </span>
+                  <div className="font-mono text-xs space-y-0.5">
+                    <div className="text-white font-bold">{companyBank.name}</div>
+                    <div className="text-slate-300 flex items-center gap-3 text-[11px]">
+                      <span>{companyBank.bank}</span>
+                      <span>A/C: <strong className="text-amber-300">{companyBank.accountNumber}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Sender: Company Bank */}
+                <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? 'भेजने वाला कंपनी बैंक खाता (Debited Account):' : 'From Company Bank Account (Source):'}</span>
+                  </span>
+                  <div className="font-mono text-xs space-y-0.5">
+                    <div className="text-white font-bold">{companyBank.name}</div>
+                    <div className="text-slate-300 flex items-center gap-3 text-[11px]">
+                      <span>{companyBank.bank}</span>
+                      <span>A/C: <strong className="text-amber-300">{companyBank.accountNumber}</strong></span>
+                      <span>IFSC: <strong className="text-slate-200">{companyBank.ifsc}</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <div className="p-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400">
+                    <ArrowDown className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Recipient: User Bank */}
+                <div className="p-3 bg-slate-900/90 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-1 flex items-center gap-1">
+                    <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>{isHi ? 'प्राप्तकर्ता यूज़र खाता (Recipient Account):' : 'To User Registered Account:'}</span>
+                  </span>
+                  <div className="font-mono text-xs space-y-0.5">
+                    <div className="text-white font-bold">{recipientName}</div>
+                    <div className="text-emerald-400 text-[11px] font-semibold">{recipientDestination}</div>
+                    <div className="text-[10px] text-slate-400">Ref/UTR: {transaction.referenceId || transaction.id}</div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Transfer Amount Highlight */}
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
               <span className="text-xs font-semibold text-emerald-200">
-                {isHi ? 'स्वीकृत ट्रांसफर राशि:' : 'Authorized Amount:'}
+                {transaction.type === 'DEPOSIT'
+                  ? (isHi ? 'वॉलेट में क्रेडिट होने वाली राशि:' : 'Amount to Credit in Wallet:')
+                  : (isHi ? 'स्वीकृत ट्रांसफर राशि:' : 'Authorized Payout Amount:')}
               </span>
               <span className="text-lg font-mono font-extrabold text-emerald-400">
                 {formatINR(displayAmount)}
               </span>
             </div>
-
           </div>
 
           {/* Password Prompt */}

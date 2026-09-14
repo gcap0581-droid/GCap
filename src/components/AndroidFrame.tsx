@@ -223,7 +223,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
       )}
 
       {/* Sub-Header Back Navigation Bar for Mobile Sub-Screens */}
-      {activeTab !== 'dashboard' && (
+      {!isAdminHubActive && activeTab !== 'dashboard' && (
         <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border-b border-amber-500/30 px-3.5 py-2 flex items-center justify-between shadow-sm shrink-0">
           <button
             onClick={() => onTabChange('dashboard')}
@@ -233,6 +233,20 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             <span>{isHi ? '← वापस मुख्य होम स्क्रीन (Back to Home)' : '← Back to Home Dashboard'}</span>
           </button>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold border border-slate-700 uppercase tracking-wider">
+            {activeTab}
+          </span>
+        </div>
+      )}
+      {isAdminHubActive && activeTab !== 'OVERVIEW' && (
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900 border-b border-amber-500/30 px-3.5 py-2 flex items-center justify-between shadow-sm shrink-0">
+          <button
+            onClick={() => onTabChange('OVERVIEW')}
+            className="flex items-center gap-1.5 text-xs font-black text-amber-400 hover:text-amber-300 transition-colors cursor-pointer active:scale-95"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>{isHi ? '← वापस मुख्य एडमिन हब (Admin Overview)' : '← Back to Admin Overview'}</span>
+          </button>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30 uppercase tracking-wider">
             {activeTab}
           </span>
         </div>
@@ -279,11 +293,32 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
               </button>
             </div>
 
-            {/* User Info */}
+            {/* User Info & Quick Profile Edit */}
             {currentUser && (
-              <div className="px-4 py-3 bg-slate-950/50 border-b border-slate-800/80 text-xs">
-                <div className="font-bold text-white truncate">{currentUser.name}</div>
-                <div className="text-[10px] text-slate-400 font-mono">ID: {currentUser.loginId}</div>
+              <div 
+                onClick={() => {
+                  if (onOpenProfile) {
+                    setIsMobileMenuOpen(false);
+                    onOpenProfile();
+                  }
+                }}
+                className="px-4 py-3 bg-slate-950/70 hover:bg-slate-900 border-b border-slate-800 flex items-center justify-between transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 font-black flex items-center justify-center border border-cyan-500/30 text-xs">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white truncate max-w-[130px] flex items-center gap-1.5">
+                      <span>{currentUser.name}</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">{isHi ? 'एडिट' : 'Edit'}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">ID: {currentUser.loginId}</div>
+                  </div>
+                </div>
+                <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 transition-all">
+                  <User className="w-4 h-4" />
+                </div>
               </div>
             )}
 
@@ -675,8 +710,23 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                   {/* Category 3: Rules & Referral */}
                   <div className="space-y-1">
                     <div className="text-[10px] uppercase font-bold text-teal-400 px-2">
-                      {isHi ? 'नीतियां व शेयर' : 'Rules & Rewards'}
+                      {isHi ? 'नीतियां, प्रोफाइल व शेयर' : 'Profile, Rules & Rewards'}
                     </div>
+                    {onOpenProfile && (
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          onOpenProfile();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 hover:bg-cyan-900/40 text-cyan-200 flex items-center justify-between"
+                      >
+                        <span className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{isHi ? '• प्रोफ़ाइल व बैंक विवरण (Profile Edit)' : '• Edit Profile & Bank Details'}</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-cyan-400" />
+                      </button>
+                    )}
                     {onOpenRules && (
                       <button
                         onClick={() => {

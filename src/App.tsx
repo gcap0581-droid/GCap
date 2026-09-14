@@ -1091,11 +1091,18 @@ export default function App() {
   const handleLoginSuccess = async (user: UserProfile) => {
     setCurrentUser(user);
     setShowSplashIntro(true);
-    setAdminViewMode('INVESTOR_VIEW');
+    if (user.role === 'ADMIN') {
+      setAdminViewMode('ADMIN_HUB');
+      setAdminMobileTab('OVERVIEW');
+    } else {
+      setAdminViewMode('INVESTOR_VIEW');
+      setMobileTab('dashboard');
+      setDesktopTab('dashboard');
+    }
     showToast(
       isHi ? `स्वागत है, ${user.name}!` : `Welcome, ${user.name}!`,
       user.role === 'ADMIN'
-        ? (isHi ? 'एडमिन अकाउंट सक्रिय है। नीचे "👑 एडमिन हब" टैब से कंट्रोल पैनल खोलें।' : 'Admin Account active. Tap "👑 Admin Hub" tab below.')
+        ? (isHi ? '👑 मुख्य एडमिन हब खुल चुका है। संपूर्ण सिस्टम नियंत्रण सक्रिय।' : '👑 Master Admin Hub is open. Full system controls active.')
         : (isHi ? 'आपका निवेशक डैशबोर्ड सक्रिय है।' : 'Your investor dashboard is ready.')
     );
 
@@ -3436,12 +3443,14 @@ export default function App() {
                         >
                           {isHi ? 'संपूर्ण नियम व नीतियां' : 'Full Policy'}
                         </button>
-                        <button
-                          onClick={() => setIsRulesOpen(true)}
-                          className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg transition-colors cursor-pointer"
-                        >
-                          ⚙️ {isHi ? 'एडिट' : 'Edit'}
-                        </button>
+                        {currentUser?.role === 'ADMIN' && (
+                          <button
+                            onClick={() => setIsRulesOpen(true)}
+                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg transition-colors cursor-pointer"
+                          >
+                            ⚙️ {isHi ? 'एडिट' : 'Edit'}
+                          </button>
+                        )}
                       </div>
                     </div>
 

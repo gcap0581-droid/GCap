@@ -115,6 +115,8 @@ export interface Transaction {
   userName?: string;
   userPhone?: string;
   panNumber?: string;
+  rejectReason?: string;
+  rejectReasonHi?: string;
 }
 
 export interface BankAccountDetails {

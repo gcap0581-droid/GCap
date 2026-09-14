@@ -359,13 +359,22 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {t.status === 'PENDING' && onRejectTransaction && (
+                            <button
+                              onClick={() => onRejectTransaction(t.id)}
+                              className="px-2 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 rounded text-[10px] font-bold transition-all cursor-pointer"
+                              title={isHi ? 'कारण सहित अस्वीकार करें' : 'Reject with reason'}
+                            >
+                              {isHi ? 'रिजेक्ट' : 'Reject'}
+                            </button>
+                          )}
                           {t.status === 'PENDING' && onQuickApprove && (
                             <button
                               onClick={() => onQuickApprove(t.id)}
                               className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition-all cursor-pointer"
-                              title="Approve immediately"
+                              title="Approve with password"
                             >
-                              Approve
+                              {isHi ? 'अप्रूव' : 'Approve'}
                             </button>
                           )}
 
