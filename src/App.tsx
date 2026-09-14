@@ -163,7 +163,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -3173,7 +3173,7 @@ export default function App() {
           </div>
         )}
 
-        {currentUser.role === 'ADMIN' && adminViewMode === 'ADMIN_HUB' && viewMode === 'web' ? (
+        {currentUser.role === 'ADMIN' && viewMode === 'web' ? (
           <div>
             <AdminPanel
               adminUser={currentUser}
@@ -3193,7 +3193,7 @@ export default function App() {
               onUpdateLiveConfig={handleUpdateLiveConfig}
               onResetLiveConfig={handleResetLiveConfig}
               onOpenRules={() => setIsRulesOpen(true)}
-              onSwitchToInvestorView={() => setAdminViewMode('INVESTOR_VIEW')}
+              onSwitchToInvestorView={() => {}}
               onLogout={handleLogout}
               onAddPlan={handleAdminAddPlan}
               onUpdatePlan={handleAdminUpdatePlan}
@@ -3222,24 +3222,6 @@ export default function App() {
           </div>
         ) : viewMode === 'web' ? (
           <>
-            {currentUser.role === 'ADMIN' && (
-              <div className="mb-5 p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between shadow-lg shadow-amber-950/20">
-                <div className="flex items-center gap-2.5">
-                  <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>
-                    {isHi
-                      ? '👑 आप वर्तमान में निवेशक ऐप (User View) का पूर्वावलोकन कर रहे हैं।'
-                      : '👑 Admin Preview Mode — You are previewing the Investor Experience.'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setAdminViewMode('ADMIN_HUB')}
-                  className="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-amber-400 transition-all cursor-pointer shadow"
-                >
-                  {isHi ? 'एडमिन हब पर लौटें' : 'Back to Admin Hub'}
-                </button>
-              </div>
-            )}
             {renderDashboardContent()}
           </>
         ) : (
@@ -3263,13 +3245,13 @@ export default function App() {
             onOpenSwap={() => setIsSwapOpen(true)}
             onOpenRules={() => setIsRulesOpen(true)}
             onOpenReferral={() => setIsReferralOpen(true)}
-            isAdminHubActive={adminViewMode === 'ADMIN_HUB'}
-            onToggleAdminHub={() => setAdminViewMode((prev) => (prev === 'ADMIN_HUB' ? 'INVESTOR_VIEW' : 'ADMIN_HUB'))}
+            isAdminHubActive={currentUser.role === 'ADMIN'}
+            onToggleAdminHub={undefined}
             unreadMessagesCount={unreadMessagesCount}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
             onOpenProfile={() => setIsProfileOpen(true)}
           >
-            {adminViewMode === 'ADMIN_HUB' ? (
+            {currentUser.role === 'ADMIN' ? (
               <AdminPanel
                 adminUser={currentUser}
                 language={language}
@@ -3286,7 +3268,7 @@ export default function App() {
                 onUpdateLiveConfig={handleUpdateLiveConfig}
                 onResetLiveConfig={handleResetLiveConfig}
                 onOpenRules={() => setIsRulesOpen(true)}
-                onSwitchToInvestorView={() => setAdminViewMode('INVESTOR_VIEW')}
+                onSwitchToInvestorView={() => {}}
                 onLogout={handleLogout}
                 onAddPlan={handleAdminAddPlan}
                 onUpdatePlan={handleAdminUpdatePlan}
@@ -3443,7 +3425,7 @@ export default function App() {
                         >
                           {isHi ? 'संपूर्ण नियम व नीतियां' : 'Full Policy'}
                         </button>
-                        {currentUser?.role === 'ADMIN' && (
+                        {(currentUser as any)?.role === 'ADMIN' && (
                           <button
                             onClick={() => setIsRulesOpen(true)}
                             className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg transition-colors cursor-pointer"

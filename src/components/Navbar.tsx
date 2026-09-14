@@ -233,21 +233,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Admin Hub Toggle (if Admin) */}
-            {isAdmin && onToggleAdminHub && (
-              <button
-                id="btn-nav-admin-toggle"
-                onClick={onToggleAdminHub}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer shadow-md active:scale-95 ${
-                  isAdminHubActive
-                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 border-amber-300 shadow-amber-500/20'
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30'
-                }`}
-                title="Admin Control Hub"
+            {/* Static Admin Indicator */}
+            {isAdmin && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-md shadow-emerald-950/20"
               >
-                <Award className="w-3.5 h-3.5 text-amber-400" />
-                <span>{isAdminHubActive ? (isHi ? 'यूज़र व्यू' : 'User') : (isHi ? '👑 एडमिन' : '👑 Admin')}</span>
-              </button>
+                <Award className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isHi ? '👑 मुख्य एडमिन' : '👑 Master Admin'}</span>
+              </div>
             )}
           </div>
 

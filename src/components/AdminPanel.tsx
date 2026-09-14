@@ -28,6 +28,7 @@ import {
   Edit3,
   CheckCircle2,
   Receipt,
+  BookOpen,
 } from 'lucide-react';
 import {
   AppRules,
@@ -69,6 +70,7 @@ import { AdminOtaTab } from './admin/AdminOtaTab';
 import { AdminInvestmentsTab } from './admin/AdminInvestmentsTab';
 import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
+import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
 import { PlanEditModal } from './admin/PlanEditModal';
@@ -123,8 +125,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
-  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA';
-  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA') => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL') => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -173,7 +175,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -558,10 +560,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="space-y-6">
       {/* Sleek Compact Admin Master Control Header Bar */}
-      <div className="bg-gradient-to-r from-amber-950/80 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+      <div className="bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 shadow-xl shadow-emerald-950/5 space-y-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
               <Award className="w-5 h-5" />
             </div>
             <div>
@@ -569,7 +571,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <h2 className="text-base sm:text-lg font-black text-white">
                   {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
                 </h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 font-mono">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 font-mono">
                   SUPER ADMIN
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -588,19 +590,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <button
               onClick={() => setIsMasterToolsOpen((prev) => !prev)}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <Sliders className="w-3.5 h-3.5 text-amber-400" />
+              <Sliders className="w-3.5 h-3.5 text-emerald-400" />
               <span>{isHi ? (isMasterToolsOpen ? 'टूल्स बंद करें ▲' : '🛠️ मास्टर टूल्स मेन्यू ▼') : (isMasterToolsOpen ? 'Close Tools ▲' : '🛠️ Master Tools ▼')}</span>
-            </button>
-
-            <button
-              id="btn-admin-top-back-investor"
-              onClick={onSwitchToInvestorView}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{isHi ? '← यूज़र व्यू' : '← User View'}</span>
             </button>
 
             <button
@@ -681,11 +674,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 onClick={() => setActiveSubTab('OVERVIEW')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   activeSubTab === 'OVERVIEW'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
-                <TrendingUp className="w-3.5 h-3.5" />
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{isHi ? 'डैशबोर्ड' : 'Overview'}</span>
               </button>
 
@@ -771,6 +764,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <Database className="w-3.5 h-3.5" />
                 <span>{isHi ? 'बैकअप' : 'Backup'}</span>
               </button>
+
+              <button
+                id="tab-admin-usermanual"
+                onClick={() => setActiveSubTab('USER_MANUAL')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeSubTab === 'USER_MANUAL'
+                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-teal-400" />
+                <span>{isHi ? '📖 यूज़र मैन्युअल' : '📖 User Manual'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -796,22 +802,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* PROMINENT USER DEPOSIT & WITHDRAWAL REQUESTS QUEUE DIRECTLY ON ADMIN MAIN SCREEN */}
           {transactions.filter((t) => t.status === 'PENDING').length > 0 && (
-            <div className="bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-900 p-5 rounded-2xl border-2 border-amber-500/60 shadow-2xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+            <div className="bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 p-5 rounded-2xl border-2 border-emerald-500/30 shadow-2xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-500/20 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shrink-0 shadow-lg">
-                    <Clock className="w-6 h-6 animate-pulse text-amber-400" />
+                  <div className="w-11 h-11 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0 shadow-lg">
+                    <Clock className="w-6 h-6 animate-pulse text-emerald-400" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-base font-black text-white">
                         {isHi ? '⚠️ यूज़र डिपॉजिट एवं निकासी अनुरोध (Main Approval Queue)' : '⚠️ User Deposit & Withdrawal Approval Queue'}
                       </h3>
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs animate-pulse shadow">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-xs animate-pulse shadow">
                         {transactions.filter((t) => t.status === 'PENDING').length} {isHi ? 'लंबित अनुरोध' : 'Pending'}
                       </span>
                     </div>
-                    <p className="text-xs text-amber-200/90 mt-0.5">
+                    <p className="text-xs text-slate-300 mt-0.5">
                       {isHi
                         ? '🔒 सुरक्षा नियम: अप्रूव या रिजेक्ट करने के लिए ट्रांजेक्शन पासवर्ड (gcap@tra1978) अनिवार्य है। अप्रूव करने पर राशि तुरंत वॉलेट में जुड़ेगी, रिजेक्ट करने पर कारण यूज़र को दिखेगा।'
                         : '🔒 Security Rule: Transaction password (gcap@tra1978) is required to Approve/Reject. Approved deposits credit to user wallet instantly.'}
@@ -819,9 +825,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-slate-950/90 px-3.5 py-2 rounded-xl border border-amber-500/30 flex items-center gap-2 text-xs">
-                  <Lock className="w-4 h-4 text-amber-400" />
-                  <span className="text-slate-300 font-mono text-[11px]">Pass: <strong className="text-amber-300">gcap@tra1978</strong></span>
+                <div className="bg-slate-950/90 px-3.5 py-2 rounded-xl border border-emerald-500/20 flex items-center gap-2 text-xs">
+                  <span className="text-slate-300 font-mono text-[11px]">Pass: <strong className="text-emerald-300">gcap@tra1978</strong></span>
                 </div>
               </div>
 
@@ -833,7 +838,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     return (
                       <div
                         key={t.id}
-                        className="bg-slate-950 p-4 rounded-xl border border-amber-500/40 hover:border-amber-400 transition-all flex flex-col justify-between gap-3 shadow-lg"
+                        className="bg-slate-950 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-3 shadow-lg"
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between">
@@ -851,7 +856,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 {t.userName || t.userLoginId || 'Investor User'}
                               </span>
                             </div>
-                            <span className="text-base font-mono font-black text-amber-300">
+                            <span className="text-base font-mono font-black text-emerald-400">
                               {formatINR(t.amount)}
                             </span>
                           </div>
@@ -879,7 +884,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             onClick={() => handleRejectTransaction(t.id)}
                             className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/80 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                           >
-                            <XCircle className="w-3.5 h-3.5" />
                             <span>{isHi ? 'अस्वीकार (Reject)' : 'Reject'}</span>
                           </button>
                           <button
@@ -1416,7 +1420,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeSubTab === 'TREASURY' && (
         <AdminTreasuryTab
           treasury={treasury}
-          treasuryLogs={treasuryLogs}
+          logs={treasuryLogs}
           language={language}
           onOpenAddModal={() => {
             setBalanceModalMode('ADD');
@@ -1435,7 +1439,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeSubTab === 'INVESTMENTS' && (
         <AdminInvestmentsTab
           investments={investments}
-          users={usersList}
           language={language}
           onSimulateComplete24hLock={onSimulateComplete24hLock}
           onSimulateComplete6hCycle={onSimulateComplete6hCycle}
@@ -1446,8 +1449,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* TAB 10: COMPANY PROFILE */}
       {activeSubTab === 'COMPANY_PROFILE' && (
         <AdminCompanyProfileTab
-          treasury={treasury}
           language={language}
+        />
+      )}
+
+      {/* TAB 11: USER MANUAL PDF/PRINT GUIDE */}
+      {activeSubTab === 'USER_MANUAL' && (
+        <AdminUserManualTab
+          language={language}
+          rules={rules}
+          plans={plans}
         />
       )}
 

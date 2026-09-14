@@ -27,6 +27,7 @@ import {
   Users,
   Activity,
   Globe,
+  User,
 } from 'lucide-react';
 import { Language, UserProfile, Wallet, DesktopCategoryTab } from '../types';
 import { formatINR } from '../utils/storage';

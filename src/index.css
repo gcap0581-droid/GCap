@@ -19,6 +19,16 @@ html, body {
   color: #f8fafc;
 }
 
+html {
+  font-size: 107%;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 109%;
+  }
+}
+
 @media print {
   body, html {
     background-color: #ffffff !important;

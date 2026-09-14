@@ -519,25 +519,14 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
           {/* MENU 5: एडमिन मास्टर कंट्रोल हब (यदि एडमिन हो) */}
           {isAdmin && (
-            <div className="rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-950/40 to-slate-900 overflow-hidden shadow-lg space-y-1">
-              <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10">
+            <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 to-slate-900 overflow-hidden shadow-lg space-y-1">
+              <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-emerald-500/20 bg-emerald-500/10">
                 <div className="flex items-center gap-2.5">
-                  <Award className="w-5 h-5 text-amber-400" />
-                  <span className="font-bold text-sm text-amber-300">
+                  <Award className="w-5 h-5 text-emerald-400" />
+                  <span className="font-bold text-sm text-emerald-300">
                     {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
                   </span>
                 </div>
-                {onToggleAdminHub && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onToggleAdminHub();
-                    }}
-                    className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 transition-colors border border-amber-500/30 cursor-pointer"
-                  >
-                    {isAdminHubActive ? (isHi ? 'यूज़र व्यू' : 'User View') : (isHi ? 'एडमिन हब' : 'Admin Hub')}
-                  </button>
-                )}
               </div>
 
               {/* Submenu Links */}
