@@ -12,6 +12,18 @@ import {
   AdminMessage,
 } from '../types';
 import { apiFetch } from './apiConfig';
+import {
+  fetchFullFirestoreState,
+  saveTransactionsToFirestore,
+  saveInvestmentsToFirestore,
+  saveWalletsToFirestore,
+  savePlansToFirestore,
+  saveRulesToFirestore,
+  saveLiveConfigToFirestore,
+  saveTreasuryToFirestore,
+  saveBankDetailsToFirestore,
+  saveMessagesToFirestore,
+} from '../lib/firestoreBridge';
 
 export interface CentralStateResponse {
   success: boolean;
@@ -25,7 +37,7 @@ export interface CentralStateResponse {
   liveConfig?: LiveInterfaceConfig;
   treasury?: CompanyTreasury;
   treasuryLogs?: TreasuryLog[];
-  bankDetails?: BankAccountDetails | null;
+  bankDetails?: BankAccountDetails | Record<string, BankAccountDetails> | null;
   messages?: AdminMessage[];
   lastUpdated: string;
   serverTime?: number;
@@ -42,6 +54,7 @@ export async function fetchCentralState(
   userId?: string,
   role: 'ADMIN' | 'USER' = 'USER'
 ): Promise<CentralStateResponse | null> {
+  // 1. Try Express Central API
   try {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -55,16 +68,82 @@ export async function fetchCentralState(
       },
     });
 
-    if (!res.ok) return null;
-    const data: CentralStateResponse = await res.json();
-    if (data.users && Array.isArray(data.users)) {
-      data.users = data.users.filter((u: any) => u && u.id);
+    if (res.ok) {
+      const data: CentralStateResponse = await res.json().catch(() => null);
+      if (data && data.success) {
+        if (data.users && Array.isArray(data.users)) {
+          data.users = data.users.filter((u: any) => u && u.id);
+        }
+        return data;
+      }
     }
-    return data;
   } catch (err) {
-    console.warn('[CentralSync] Failed to fetch state:', err);
-    return null;
+    console.warn('[CentralSync] API fetch failed, falling back to direct Firestore:', err);
   }
+
+  // 2. Direct Firestore fallback (for Vercel or when Express server is unavailable)
+  try {
+    const fs = await fetchFullFirestoreState();
+    if (!fs) return null;
+
+    if (role === 'ADMIN') {
+      return {
+        success: true,
+        users: (fs.users || []).filter((u: any) => u && u.id),
+        transactions: fs.transactions || [],
+        investments: fs.investments || [],
+        wallets: fs.wallets || {},
+        plans: fs.plans || [],
+        rules: fs.rules || undefined,
+        liveConfig: fs.liveConfig || undefined,
+        treasury: fs.treasury || undefined,
+        treasuryLogs: fs.treasuryLogs || [],
+        bankDetails: fs.bankDetails || {},
+        messages: fs.messages || [],
+        lastUpdated: fs.lastUpdated,
+        serverTime: Date.now(),
+      };
+    } else {
+      const userTxns = (fs.transactions || []).filter(
+        (t) => t.userId === userId || (t as any).userLoginId === userId
+      );
+      const userInvestments = (fs.investments || []).filter(
+        (i) => i.userId === userId
+      );
+      const userWallet = (userId && fs.wallets && fs.wallets[userId]) || {
+        cashBalance: 0,
+        gpBalance: 0,
+        totalInvested: 0,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+        totalWithdrawn: 0,
+      };
+      const userBank = (userId && fs.bankDetails && fs.bankDetails[userId]) || null;
+      const userMsgs = (fs.messages || []).filter(
+        (m) => m.targetUserId === 'ALL' || m.targetUserId === userId
+      );
+
+      return {
+        success: true,
+        transactions: userTxns,
+        investments: userInvestments,
+        wallet: userWallet,
+        plans: fs.plans || [],
+        rules: fs.rules || undefined,
+        liveConfig: fs.liveConfig || undefined,
+        bankDetails: userBank,
+        messages: userMsgs,
+        lastUpdated: fs.lastUpdated,
+        serverTime: Date.now(),
+      };
+    }
+  } catch (fsErr) {
+    console.error('[CentralSync] Firestore fallback failed:', fsErr);
+  }
+
+  return null;
 }
 
 /**
@@ -80,9 +159,53 @@ export async function apiCreateTransaction(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction, userId }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiCreateTransaction] API fetch failed, using direct Firestore:', err);
+  }
+
+  // Direct Firestore write for Vercel
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentTxns = fs?.transactions || [];
+    const currentWallets = fs?.wallets || {};
+    const userWallet: Wallet = currentWallets[userId] || {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+
+    const newTxn: Transaction = {
+      ...transaction,
+      id: transaction.id || `txn-${Date.now()}`,
+      userId,
+      timestamp: transaction.timestamp || Date.now(),
+      date: transaction.date || new Date().toISOString().split('T')[0],
+    };
+
+    if (newTxn.type === 'DEPOSIT') {
+      userWallet.pendingDeposits = (userWallet.pendingDeposits || 0) + newTxn.amount;
+    } else if (newTxn.type === 'WITHDRAWAL') {
+      userWallet.pendingWithdrawals = (userWallet.pendingWithdrawals || 0) + newTxn.amount;
+    }
+
+    const updatedTxns = [newTxn, ...currentTxns.filter((t) => t.id !== newTxn.id)];
+    currentWallets[userId] = userWallet;
+
+    await saveTransactionsToFirestore(updatedTxns);
+    await saveWalletsToFirestore(currentWallets);
+
+    return { success: true, transaction: newTxn, wallet: userWallet };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message || 'Firestore write failed' };
   }
 }
 
@@ -105,9 +228,75 @@ export async function apiUpdateTransaction(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction, adminId }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiUpdateTransaction] API failed, using direct Firestore:', err);
+  }
+
+  // Direct Firestore fallback for Vercel
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentTxns = fs?.transactions || [];
+    const currentWallets = fs?.wallets || {};
+    const currentTreasury: CompanyTreasury = fs?.treasury || {
+      balance: 1000000,
+      minAlertThreshold: 500000,
+      totalInjected: 1000000,
+      totalDeducted: 0,
+      totalTransferredToUsers: 0,
+      lastUpdated: new Date().toISOString(),
+    };
+
+    const targetUserId = transaction.userId || '';
+    const userWallet: Wallet = currentWallets[targetUserId] || {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+
+    const isApproved = (transaction.status as string) === 'SUCCESS' || (transaction.status as string) === 'APPROVED';
+    const isRejected = (transaction.status as string) === 'REJECTED' || (transaction.status as string) === 'FAILED';
+
+    if (transaction.type === 'DEPOSIT' && isApproved) {
+      userWallet.cashBalance += transaction.amount;
+      userWallet.pendingDeposits = Math.max(0, (userWallet.pendingDeposits || 0) - transaction.amount);
+      currentTreasury.balance += transaction.amount;
+      currentTreasury.totalInjected = (currentTreasury.totalInjected || 0) + transaction.amount;
+    } else if (transaction.type === 'DEPOSIT' && isRejected) {
+      userWallet.pendingDeposits = Math.max(0, (userWallet.pendingDeposits || 0) - transaction.amount);
+    } else if (transaction.type === 'WITHDRAWAL' && isApproved) {
+      userWallet.pendingWithdrawals = Math.max(0, (userWallet.pendingWithdrawals || 0) - transaction.amount);
+      userWallet.totalWithdrawn = (userWallet.totalWithdrawn || 0) + transaction.amount;
+      currentTreasury.balance = Math.max(0, currentTreasury.balance - transaction.amount);
+      currentTreasury.totalTransferredToUsers = (currentTreasury.totalTransferredToUsers || 0) + transaction.amount;
+    } else if (transaction.type === 'WITHDRAWAL' && isRejected) {
+      userWallet.pendingWithdrawals = Math.max(0, (userWallet.pendingWithdrawals || 0) - transaction.amount);
+      if (transaction.withdrawalSource === 'ROYALTY') {
+        userWallet.royaltyEarned += transaction.amount;
+      } else {
+        userWallet.totalEarned += transaction.amount;
+      }
+    }
+
+    const updatedTxns = currentTxns.map((t) => (t.id === transaction.id ? { ...t, ...transaction } : t));
+    if (targetUserId) {
+      currentWallets[targetUserId] = userWallet;
+      await saveWalletsToFirestore(currentWallets);
+    }
+    await saveTransactionsToFirestore(updatedTxns);
+    await saveTreasuryToFirestore(currentTreasury);
+
+    return { success: true, transaction, wallet: userWallet, treasury: currentTreasury };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message || 'Firestore write failed' };
   }
 }
 
@@ -123,9 +312,22 @@ export async function apiAddTransaction(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiAddTransaction] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentTxns = fs?.transactions || [];
+    const updated = [transaction, ...currentTxns.filter((t) => t.id !== transaction.id)];
+    await saveTransactionsToFirestore(updated);
+    return { success: true, transaction };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -139,9 +341,22 @@ export async function apiDeleteTransaction(
     const res = await apiFetch(`${API_BASE}/transactions/${transactionId}`, {
       method: 'DELETE',
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiDeleteTransaction] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentTxns = fs?.transactions || [];
+    const updated = currentTxns.filter((t) => t.id !== transactionId);
+    await saveTransactionsToFirestore(updated);
+    return { success: true };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -158,9 +373,41 @@ export async function apiCreateInvestment(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ investment, userId }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiCreateInvestment] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentInvestments = fs?.investments || [];
+    const currentWallets = fs?.wallets || {};
+    const userWallet = currentWallets[userId] || {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+
+    userWallet.gpBalance = Math.max(0, (userWallet.gpBalance || 0) - investment.investedAmount);
+    userWallet.totalInvested = (userWallet.totalInvested || 0) + investment.investedAmount;
+
+    currentWallets[userId] = userWallet;
+    const updatedInvestments = [investment, ...currentInvestments.filter((i) => i.id !== investment.id)];
+
+    await saveInvestmentsToFirestore(updatedInvestments);
+    await saveWalletsToFirestore(currentWallets);
+
+    return { success: true, investment, wallet: userWallet };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -187,9 +434,41 @@ export async function apiUpdateInvestment(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ investment, walletUpdates: resolvedWalletUpdates, userId: resolvedUserId }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiUpdateInvestment] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentInvestments = fs?.investments || [];
+    const updatedInvestments = currentInvestments.map((i) => (i.id === investment.id ? { ...i, ...investment } : i));
+    await saveInvestmentsToFirestore(updatedInvestments);
+
+    let updatedWallet: Wallet | undefined;
+    if (resolvedUserId && resolvedWalletUpdates && fs?.wallets) {
+      const currentWallets = fs.wallets;
+      const cur = currentWallets[resolvedUserId] || {
+        cashBalance: 0,
+        gpBalance: 0,
+        totalInvested: 0,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+        totalWithdrawn: 0,
+      };
+      updatedWallet = { ...cur, ...resolvedWalletUpdates };
+      currentWallets[resolvedUserId] = updatedWallet;
+      await saveWalletsToFirestore(currentWallets);
+    }
+
+    return { success: true, investment, wallet: updatedWallet };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -205,9 +484,19 @@ export async function apiSavePlans(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plans }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiSavePlans] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    await savePlansToFirestore(plans);
+    return { success: true, plans };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -223,9 +512,19 @@ export async function apiSaveRules(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rules }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiSaveRules] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    await saveRulesToFirestore(rules);
+    return { success: true, rules };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -241,9 +540,19 @@ export async function apiSaveLiveConfig(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ liveConfig }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiSaveLiveConfig] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    await saveLiveConfigToFirestore(liveConfig);
+    return { success: true, liveConfig };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -260,9 +569,20 @@ export async function apiUpdateTreasury(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ treasury, log }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiUpdateTreasury] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const logsArray = log ? (Array.isArray(log) ? log : [log]) : undefined;
+    await saveTreasuryToFirestore(treasury, logsArray);
+    return { success: true, treasury, logs: logsArray };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -279,9 +599,22 @@ export async function apiSaveBankDetails(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, details }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiSaveBankDetails] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentBank = fs?.bankDetails || {};
+    currentBank[userId] = details;
+    await saveBankDetailsToFirestore(currentBank);
+    return { success: true, details };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -309,9 +642,35 @@ export async function apiAdminAdjustUserWallet(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, wallet, adjustment, adminName }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiAdminAdjustUserWallet] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentWallets = fs?.wallets || {};
+    const existing = currentWallets[userId] || {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+
+    const finalWallet: Wallet = { ...existing, ...wallet };
+    currentWallets[userId] = finalWallet;
+    await saveWalletsToFirestore(currentWallets);
+
+    return { success: true, wallet: finalWallet };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -335,9 +694,22 @@ export async function apiUpdateWallet(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, wallet }),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiUpdateWallet] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentWallets = fs?.wallets || {};
+    currentWallets[userId] = wallet;
+    await saveWalletsToFirestore(currentWallets);
+    return { success: true, wallet };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -355,11 +727,24 @@ export async function apiFetchMessages(
     params.append('t', Date.now().toString());
 
     const res = await apiFetch(`${API_BASE}/messages?${params.toString()}`);
-    if (!res.ok) return { success: false, messages: [] };
-    const data = await res.json();
-    return { success: true, messages: data.messages || [] };
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data && data.messages) return { success: true, messages: data.messages };
+    }
   } catch (err) {
-    console.warn('[CentralSync] Failed to fetch messages:', err);
+    console.warn('[apiFetchMessages] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const allMsgs = fs?.messages || [];
+    if (role === 'ADMIN') {
+      return { success: true, messages: allMsgs };
+    } else {
+      const filtered = allMsgs.filter((m) => m.targetUserId === 'ALL' || m.targetUserId === userId);
+      return { success: true, messages: filtered };
+    }
+  } catch {
     return { success: false, messages: [] };
   }
 }
@@ -376,9 +761,44 @@ export async function apiSendAdminMessage(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(message),
     });
-    return await res.json();
+    if (res.ok) {
+      const result = await res.json().catch(() => null);
+      if (result && result.success) return result;
+    }
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    console.warn('[apiSendAdminMessage] API failed, using direct Firestore:', err);
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentMsgs = fs?.messages || [];
+    const newMsg: AdminMessage = {
+      id: message.id || `msg-${Date.now()}`,
+      title: message.title || '',
+      titleHi: message.titleHi || '',
+      content: message.content || '',
+      contentHi: message.contentHi || '',
+      type: message.type || 'INFO',
+      senderName: message.senderName || 'GCap Security & Risk Management',
+      targetType: message.targetType || 'ALL',
+      targetUserId: message.targetUserId || 'ALL',
+      priority: message.priority || 'NORMAL',
+      category: message.category || 'ANNOUNCEMENT',
+      showPopup: !!(message.showPopup || message.showAsPopup),
+      showAsPopup: !!(message.showPopup || message.showAsPopup),
+      createdAt: message.createdAt || new Date().toISOString(),
+      timestamp: message.timestamp || Date.now(),
+      expiresAt: message.expiresAt,
+      readByUserIds: message.readByUserIds || [],
+      dismissedByUserIds: message.dismissedByUserIds || [],
+      actionLabel: message.actionLabel,
+      actionUrl: message.actionUrl,
+    };
+    const updated = [newMsg, ...currentMsgs];
+    await saveMessagesToFirestore(updated);
+    return { success: true, message: newMsg };
+  } catch (fsErr: any) {
+    return { success: false, error: fsErr.message };
   }
 }
 
@@ -395,8 +815,23 @@ export async function apiMarkMessageRead(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
     });
-    return await res.json();
-  } catch (err) {
+    if (res.ok) return await res.json();
+  } catch {
+    // ignore
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentMsgs = fs?.messages || [];
+    const updated = currentMsgs.map((m) => {
+      if (m.id === messageId && !m.readByUserIds.includes(userId)) {
+        return { ...m, readByUserIds: [...m.readByUserIds, userId] };
+      }
+      return m;
+    });
+    await saveMessagesToFirestore(updated);
+    return { success: true };
+  } catch {
     return { success: false };
   }
 }
@@ -414,8 +849,23 @@ export async function apiDismissMessagePopup(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
     });
-    return await res.json();
-  } catch (err) {
+    if (res.ok) return await res.json();
+  } catch {
+    // ignore
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentMsgs = fs?.messages || [];
+    const updated = currentMsgs.map((m) => {
+      if (m.id === messageId && !m.dismissedByUserIds.includes(userId)) {
+        return { ...m, dismissedByUserIds: [...m.dismissedByUserIds, userId] };
+      }
+      return m;
+    });
+    await saveMessagesToFirestore(updated);
+    return { success: true };
+  } catch {
     return { success: false };
   }
 }
@@ -432,8 +882,18 @@ export async function apiDeleteAdminMessage(
     const res = await apiFetch(`${API_BASE}/admin/messages/${messageId}`, {
       method: 'DELETE',
     });
-    return await res.json();
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    if (res.ok) return await res.json();
+  } catch {
+    // ignore
+  }
+
+  try {
+    const fs = await fetchFullFirestoreState();
+    const currentMsgs = fs?.messages || [];
+    const updated = currentMsgs.filter((m) => m.id !== messageId);
+    await saveMessagesToFirestore(updated);
+    return { success: true };
+  } catch {
+    return { success: false };
   }
 }

@@ -22,9 +22,15 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
 
   useEffect(() => {
     const unsubscribe = subscribeToAiStudioUpdates((info) => {
-      // Check if build was already installed
+      // Check if build was already installed or dismissed
       const installedId = localStorage.getItem('gcap_installed_build_id');
-      if (info.buildId && info.buildId === installedId) {
+      const dismissedId = localStorage.getItem('gcap_dismissed_update_build_id');
+      const sessionBuild = sessionStorage.getItem('gcap_session_build_id');
+
+      if (
+        info.buildId &&
+        (info.buildId === installedId || info.buildId === dismissedId || info.buildId === sessionBuild)
+      ) {
         return;
       }
       setUpdateInfo(info);
@@ -34,25 +40,16 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
     return () => unsubscribe();
   }, []);
 
-  // Auto-apply update after 4 seconds if user has not clicked
-  useEffect(() => {
-    if (!updateInfo || isDismissed || isUpdating) return;
-    const timer = setTimeout(async () => {
-      setIsUpdating(true);
-      await applyAiStudioUpdateNow();
-    }, 4000);
-
-    return () => clearTimeout(timer);
-  }, [updateInfo, isDismissed, isUpdating]);
-
   const handleApplyUpdate = async () => {
     setIsUpdating(true);
     if (updateInfo?.buildId) {
       localStorage.setItem('gcap_installed_build_id', updateInfo.buildId);
+      localStorage.setItem('gcap_dismissed_update_build_id', updateInfo.buildId);
+      sessionStorage.setItem('gcap_session_build_id', updateInfo.buildId);
     }
     setIsUpdated(true);
     setTimeout(async () => {
-      await applyAiStudioUpdateNow();
+      await applyAiStudioUpdateNow(updateInfo?.buildId);
       setIsDismissed(true);
       setUpdateInfo(null);
     }, 800);
@@ -60,6 +57,11 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
 
   const handleDismiss = () => {
     setIsDismissed(true);
+    if (updateInfo?.buildId) {
+      localStorage.setItem('gcap_installed_build_id', updateInfo.buildId);
+      localStorage.setItem('gcap_dismissed_update_build_id', updateInfo.buildId);
+      sessionStorage.setItem('gcap_session_build_id', updateInfo.buildId);
+    }
     setUpdateInfo(null);
   };
 

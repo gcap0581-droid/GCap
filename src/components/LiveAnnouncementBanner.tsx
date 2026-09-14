@@ -17,11 +17,26 @@ export const LiveAnnouncementBanner: React.FC<LiveAnnouncementBannerProps> = ({
   const bannerKey = `gcap_dismissed_banner_${config.bannerText || 'default'}`;
   const [dismissed, setDismissed] = useState(() => {
     try {
-      return localStorage.getItem(bannerKey) === 'true';
+      return (
+        localStorage.getItem(bannerKey) === 'true' ||
+        sessionStorage.getItem('gcap_dismissed_all_banners') === 'true'
+      );
     } catch {
       return false;
     }
   });
+
+  React.useEffect(() => {
+    try {
+      if (
+        localStorage.getItem(bannerKey) === 'true' ||
+        sessionStorage.getItem('gcap_dismissed_all_banners') === 'true'
+      ) {
+        setDismissed(true);
+      }
+    } catch {}
+  }, [bannerKey]);
+
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [checking, setChecking] = useState(false);
   const [justChecked, setJustChecked] = useState(false);
@@ -30,6 +45,7 @@ export const LiveAnnouncementBanner: React.FC<LiveAnnouncementBannerProps> = ({
     setDismissed(true);
     try {
       localStorage.setItem(bannerKey, 'true');
+      sessionStorage.setItem('gcap_dismissed_all_banners', 'true');
     } catch (e) {
       console.warn('Could not save banner dismiss state', e);
     }

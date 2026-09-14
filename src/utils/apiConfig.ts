@@ -17,7 +17,7 @@ export const CENTRAL_SERVER_ORIGIN = getCentralServerOrigin();
 export function isDirectServerHost(): boolean {
   if (typeof window === 'undefined') return true;
   const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host.includes('run.app');
+  return host === 'localhost' || host === '127.0.0.1';
 }
 
 /**
@@ -48,12 +48,17 @@ function createSyntheticErrorResponse(errorMessage: string, status = 503): Respo
 }
 
 /**
- * Fast Resilient API Fetcher: Calls relative endpoints first (works in preview, dev, and Vercel proxy), falls back to central Cloud Run
+ * Fast Resilient API Fetcher: In local/preview dev server, calls Express backend.
+ * On static hosts (like Vercel, Android app), immediately falls back to direct Firestore.
  */
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const isDirectHost = isDirectServerHost();
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
+  // If running on external / static host like Vercel, immediately yield to direct Firestore bridge
+  if (!isDirectHost) {
+    return createSyntheticErrorResponse('External host: using direct Firestore bridge', 503);
+  }
 
   try {
     const res = await fetch(cleanEndpoint, options);
@@ -64,28 +69,10 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
       return res;
     }
 
-    // If host returned HTML SPA fallback or 404 (e.g., static hosting without rewrite), retry with Central Cloud Run Origin
-    if ((contentType.includes('text/html') || res.status === 404) && !isDirectHost && currentOrigin !== CLOUD_RUN_CENTRAL_URL) {
-      const fallbackUrl = `${CLOUD_RUN_CENTRAL_URL}${cleanEndpoint}`;
-      return await fetch(fallbackUrl, options);
-    }
-
-    return res;
+    return createSyntheticErrorResponse('Local server returned HTML or error', 502);
   } catch (err: any) {
-    // If relative fetch failed, try central Cloud Run only if we are not already on that origin
-    if (!isDirectHost && currentOrigin !== CLOUD_RUN_CENTRAL_URL) {
-      try {
-        const fallbackUrl = `${CLOUD_RUN_CENTRAL_URL}${cleanEndpoint}`;
-        return await fetch(fallbackUrl, options);
-      } catch (fallbackErr) {
-        console.warn('[apiFetch] Remote fallback fetch unavailable:', fallbackErr);
-        return createSyntheticErrorResponse('Network connection unavailable');
-      }
-    }
-
-    // If direct server fetch temporarily failed (e.g. server restarting or offline)
-    console.warn('[apiFetch] Network request temporary blip:', err?.message || err);
-    return createSyntheticErrorResponse('Server is reconnecting or network is offline');
+    console.warn('[apiFetch] Dev server request error:', err?.message || err);
+    return createSyntheticErrorResponse('Server is reconnecting or offline', 503);
   }
 }
 

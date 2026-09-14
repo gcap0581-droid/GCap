@@ -58,6 +58,7 @@ import {
   subscribeToUsersUpdates,
 } from '../utils/authStorage';
 import { subscribeToRealtimeEvents } from '../utils/realtimeSync';
+import { subscribeToFirestoreState } from '../lib/firestoreBridge';
 import { exportAllDataToExcel } from '../utils/excelExport';
 import { AdminPlansTab } from './admin/AdminPlansTab';
 import { AdminUsersTab } from './admin/AdminUsersTab';
@@ -271,16 +272,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
     });
 
-    // 4. Heartbeat polling every 1.5 seconds as robust fallback
+    // 4. Direct Firestore real-time listener for 100% sync across Vercel, AI Studio, and Mobile
+    const unsubscribeFirestore = subscribeToFirestoreState((fs) => {
+      if (!fs) return;
+      if (fs.users && Array.isArray(fs.users)) {
+        setUsersList(fs.users);
+      }
+      if (fs.wallets) {
+        setWalletsMap(fs.wallets);
+      }
+    });
+
+    // 5. Heartbeat polling every 3 seconds as robust fallback
     const interval = setInterval(() => {
       syncUsersWithServer().then((updated) => {
         setUsersList(updated);
       }).catch(() => {});
-    }, 1500);
+    }, 3000);
 
     return () => {
       unsubscribeStorage();
       unsubscribeRealtime();
+      unsubscribeFirestore();
       clearInterval(interval);
     };
   }, []);

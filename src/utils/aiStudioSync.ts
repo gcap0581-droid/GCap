@@ -25,14 +25,14 @@ declare const __APP_BUILD_TIME__: string | undefined;
 export const CURRENT_BUILD_ID: string =
   typeof __APP_BUILD_ID__ !== 'undefined' && __APP_BUILD_ID__
     ? __APP_BUILD_ID__
-    : '1773059500000';
+    : '1773424900000';
 
 export const CURRENT_BUILD_TIME: string =
   typeof __APP_BUILD_TIME__ !== 'undefined' && __APP_BUILD_TIME__
     ? __APP_BUILD_TIME__
     : new Date().toISOString();
 
-export const APP_VERSION = '2.5.3';
+export const APP_VERSION = '2.7.7';
 
 type UpdateCallback = (info: BuildVersionInfo) => void;
 const updateListeners: Set<UpdateCallback> = new Set();
@@ -135,6 +135,14 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
       return { hasUpdate: false, remoteInfo };
     }
 
+    // Check if this build was dismissed or already installed
+    const dismissedId = localStorage.getItem('gcap_dismissed_update_build_id');
+    const installedId = localStorage.getItem('gcap_installed_build_id');
+    if (remoteInfo.buildId && (remoteInfo.buildId === dismissedId || remoteInfo.buildId === installedId)) {
+      updateAvailable = null;
+      return { hasUpdate: false, remoteInfo };
+    }
+
     // Compare server build ID against active session build ID
     const isDifferent = remoteInfo.buildId && remoteInfo.buildId !== activeSessionBuild;
 
@@ -173,13 +181,13 @@ export async function checkAndAutoApplyOnLaunch(): Promise<void> {
  * Initializes continuous background polling and real-time triggers for AI Studio updates
  */
 export function initAiStudioLiveSync(): () => void {
-  // 1. Check immediately on app boot with auto-apply
+  // 1. Check immediately on app boot
   checkAndAutoApplyOnLaunch();
 
-  // 2. Heartbeat check every 10 seconds
+  // 2. Heartbeat check every 60 seconds (non-intrusive)
   const interval = setInterval(() => {
     checkForAiStudioUpdate(false);
-  }, 10000);
+  }, 60000);
 
   // 3. Whenever user opens/resumes the app on their mobile (visibilitychange)
   const onVisibilityChange = () => {

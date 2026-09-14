@@ -85,6 +85,11 @@ import {
   apiDismissMessage,
   apiDeleteAdminMessage,
 } from './utils/centralSync';
+import {
+  subscribeToFirestoreState,
+  saveInvestmentsToFirestore,
+  saveTransactionsToFirestore,
+} from './lib/firestoreBridge';
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
 import { INVESTMENT_PLANS } from './data/plans';
@@ -286,6 +291,85 @@ export default function App() {
       unsubscribeRealtime();
     };
   }, []);
+
+  // Direct Firebase Firestore Real-Time Global Listener (Bi-directional Live Sync)
+  // Ensures Vercel, AI Studio, GitHub, and mobile app are 100% synchronized instantly without any server barrier
+  useEffect(() => {
+    const unsubscribeFirestore = subscribeToFirestoreState((fs) => {
+      if (!fs) return;
+
+      // 1. Synchronize Global Plans, Rules, LiveConfig
+      if (fs.plans && fs.plans.length > 0) {
+        setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.plans) ? fs.plans : prev));
+        saveStoredPlans(fs.plans);
+      }
+      if (fs.rules) {
+        setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.rules) ? fs.rules : prev));
+        saveStoredRules(fs.rules);
+      }
+      if (fs.liveConfig) {
+        setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.liveConfig) ? fs.liveConfig : prev));
+        saveStoredLiveConfig(fs.liveConfig);
+      }
+
+      // 2. Synchronize Role Data
+      if (currentUser?.role === 'ADMIN') {
+        if (fs.users && Array.isArray(fs.users)) {
+          syncServerUsersToLocal(fs.users);
+        }
+        if (fs.transactions) {
+          setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.transactions) ? fs.transactions : prev));
+          setStoredTransactions(fs.transactions);
+        }
+        if (fs.investments) {
+          setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.investments) ? fs.investments : prev));
+          setStoredInvestments(fs.investments);
+        }
+        if (fs.treasury) {
+          setTreasury((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasury) ? fs.treasury : prev));
+          setStoredTreasury(fs.treasury);
+        }
+        if (fs.treasuryLogs) {
+          setTreasuryLogs((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasuryLogs) ? fs.treasuryLogs : prev));
+        }
+        if (fs.messages) {
+          setMessages((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.messages) ? fs.messages : prev));
+        }
+      } else if (currentUser) {
+        // Regular User
+        const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
+        const myWallet = (fs.wallets && (fs.wallets[currentUser.id] || (userPhoneDigits && fs.wallets[userPhoneDigits]))) || null;
+        if (myWallet) {
+          setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
+          setStoredWallet(myWallet);
+        }
+        if (fs.transactions) {
+          const myTxns = fs.transactions.filter(
+            (t) => t.userId === currentUser.id || (userPhoneDigits && t.userPhone && t.userPhone.includes(userPhoneDigits))
+          );
+          setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(myTxns) ? myTxns : prev));
+          setStoredTransactions(myTxns);
+        }
+        if (fs.investments) {
+          const myInvs = fs.investments.filter(
+            (i) => i.userId === currentUser.id || (userPhoneDigits && (i as any).userPhone && (i as any).userPhone.includes(userPhoneDigits))
+          );
+          setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
+          setStoredInvestments(myInvs);
+        }
+        if (fs.messages) {
+          const myMsgs = fs.messages.filter(
+            (m) => m.targetUserId === 'ALL' || m.targetUserId === currentUser.id
+          );
+          setMessages((prev) => (JSON.stringify(prev) !== JSON.stringify(myMsgs) ? myMsgs : prev));
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeFirestore();
+    };
+  }, [currentUser]);
 
   // Global Real-Time Central Database Synchronizer for Logged-In User & Admin
   // Ensures: "Duniya me kahi bhi kuch koi user ya admin kare wo sab kuch turant main database me update ho aur panel per change show ho"
@@ -1887,6 +1971,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Only run earning cycle calculations for regular logged-in users on their own investments
+    if (!currentUser || currentUser.role === 'ADMIN') return;
+
     const cycleInterval = setInterval(() => {
       const now = Date.now();
       let hasChanges = false;
@@ -1894,7 +1981,7 @@ export default function App() {
       const newTransactions: Transaction[] = [];
 
       const updated = investments.map((inv) => {
-        if (inv.status !== 'ACTIVE') return inv;
+        if (inv.status !== 'ACTIVE' || inv.userId !== currentUser.id) return inv;
 
         // Phase 1: 24h Lock Expiry Check -> snap to nearest upcoming fixed time slab
         if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
@@ -1914,7 +2001,7 @@ export default function App() {
           }
 
           // Trigger Congratulations Modal only once and only if currentUser owns it
-          if (!isAlreadyShown && !inv.lockCongratulationsShown && currentUser && inv.userId === currentUser.id) {
+          if (!isAlreadyShown && !inv.lockCongratulationsShown) {
             try {
               const raw = localStorage.getItem('gcap_shown_lock_congrats_ids');
               const list: string[] = raw ? JSON.parse(raw) : [];
@@ -1955,6 +2042,10 @@ export default function App() {
 
           newTransactions.push({
             id: `txn-cyc-${Date.now()}-${inv.id}`,
+            userId: currentUser.id,
+            userLoginId: currentUser.loginId,
+            userName: currentUser.name,
+            userPhone: currentUser.phone,
             type: 'RETURN_PAYOUT',
             amount: cyclePayout,
             date: new Date().toISOString(),
@@ -1979,11 +2070,21 @@ export default function App() {
 
       if (hasChanges) {
         setInvestments(updated);
+        setStoredInvestments(updated);
+        saveInvestmentsToFirestore(updated).catch(console.error);
+
         if (totalCycleEarningsToAdd > 0) {
-          setWallet((prev) => ({
-            ...prev,
-            totalEarned: (prev.totalEarned || 0) + totalCycleEarningsToAdd,
-          }));
+          setWallet((prev) => {
+            const updatedWallet = {
+              ...prev,
+              totalEarned: (prev.totalEarned || 0) + totalCycleEarningsToAdd,
+            };
+            setStoredWallet(updatedWallet);
+            if (currentUser) {
+              apiUpdateWallet(currentUser.id, updatedWallet).catch(console.error);
+            }
+            return updatedWallet;
+          });
 
           // Credit Team Earning Referral Bonus (Level 1 & Level 2 based on earning, not invest amount)
           if (rules.isReferralEnabled !== false && currentUser) {
@@ -2039,7 +2140,13 @@ export default function App() {
             }
           }
 
-          setTransactions((prev) => [...newTransactions, ...prev]);
+          setTransactions((prev) => {
+            const updatedTxns = [...newTransactions, ...prev];
+            setStoredTransactions(updatedTxns);
+            saveTransactionsToFirestore(updatedTxns).catch(console.error);
+            return updatedTxns;
+          });
+
           showToast(
             isHi ? '💰 6 घंटे की अर्निंग जमा हुई!' : '💰 6-Hour Earning Auto-Credited!',
             isHi
@@ -2048,10 +2155,10 @@ export default function App() {
           );
         }
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(cycleInterval);
-  }, [investments, isHi]);
+  }, [investments, isHi, currentUser, rules]);
 
   // Fast-Forward / Simulation Handlers for 24h Lock and 6h Cycle
   const handleSimulateComplete24hLock = (investmentId: string) => {

@@ -170,6 +170,7 @@ export interface UserProfile {
   referredBy?: string;
   joinedDate: string;
   status: 'ACTIVE' | 'BLOCKED';
+  bankDetails?: BankAccountDetails;
 }
 
 export type TreasuryLogType =
@@ -330,8 +331,13 @@ export interface AdminMessage {
   priority: MessagePriority;
   category: MessageCategory;
   showPopup: boolean; // Triggers instant modal on user screen
+  showAsPopup?: boolean;
+  type?: string;
   createdAt: string; // ISO / display string
   timestamp: number;
+  expiresAt?: string;
+  actionLabel?: string;
+  actionUrl?: string;
   readByUserIds?: string[]; // user IDs who have read the message
   dismissedByUserIds?: string[]; // user IDs who dismissed the popup
 }
