@@ -1859,6 +1859,33 @@ export default function App() {
   // 3. When 6 hours complete: add earning amount to Total Earning & restart 6h timer.
   // 4. Complete records available to both user and admin panels.
   // =========================================================================
+  const handleDismissCongratulations = (invId?: string) => {
+    const id = invId || congratulationsInvestment?.id;
+    if (id) {
+      try {
+        const raw = localStorage.getItem('gcap_shown_lock_congrats_ids');
+        const list: string[] = raw ? JSON.parse(raw) : [];
+        if (!list.includes(id)) {
+          list.push(id);
+          localStorage.setItem('gcap_shown_lock_congrats_ids', JSON.stringify(list));
+        }
+      } catch (e) {
+        console.warn('Failed to save congrats dismiss state', e);
+      }
+
+      setInvestments((prev) => {
+        const updated = prev.map((inv) =>
+          inv.id === id
+            ? { ...inv, lockCongratulationsShown: true, isInitialLockCompleted: true }
+            : inv
+        );
+        setStoredInvestments(updated);
+        return updated;
+      });
+    }
+    setCongratulationsInvestment(null);
+  };
+
   useEffect(() => {
     const cycleInterval = setInterval(() => {
       const now = Date.now();
@@ -1875,11 +1902,32 @@ export default function App() {
           const currentEnd = getNextFixedCycleTimestamp(now);
           const currentStart = currentEnd - 6 * 3600 * 1000;
 
-          // Trigger Congratulations Modal if not already shown
-          if (!inv.lockCongratulationsShown) {
+          let isAlreadyShown = !!inv.lockCongratulationsShown;
+          try {
+            const raw = localStorage.getItem('gcap_shown_lock_congrats_ids');
+            const list = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(list) && list.includes(inv.id)) {
+              isAlreadyShown = true;
+            }
+          } catch {
+            isAlreadyShown = false;
+          }
+
+          // Trigger Congratulations Modal only once and only if currentUser owns it
+          if (!isAlreadyShown && !inv.lockCongratulationsShown && currentUser && inv.userId === currentUser.id) {
+            try {
+              const raw = localStorage.getItem('gcap_shown_lock_congrats_ids');
+              const list: string[] = raw ? JSON.parse(raw) : [];
+              if (!list.includes(inv.id)) {
+                list.push(inv.id);
+                localStorage.setItem('gcap_shown_lock_congrats_ids', JSON.stringify(list));
+              }
+            } catch {}
+
             setCongratulationsInvestment({
               ...inv,
               isInitialLockCompleted: true,
+              lockCongratulationsShown: true,
               currentCycleStartTimestamp: currentStart,
               currentCycleEndTimestamp: currentEnd,
             });
@@ -3424,9 +3472,9 @@ export default function App() {
       {/* 24-Hour Lock Completed Congratulations Modal */}
       {congratulationsInvestment && (
         <LockCongratulationsModal
-          onClose={() => setCongratulationsInvestment(null)}
+          onClose={() => handleDismissCongratulations(congratulationsInvestment.id)}
           onViewInvestments={() => {
-            setCongratulationsInvestment(null);
+            handleDismissCongratulations(congratulationsInvestment.id);
             setDesktopTab('investments');
             setMobileTab('investments');
           }}
