@@ -126,7 +126,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-lg tracking-tight text-white">GCap</span>
+                <span className="font-black text-lg tracking-tight text-white">Gcap-Nan</span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                   MENU
                 </span>
