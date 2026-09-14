@@ -246,7 +246,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     email: "admin@gcap.in",
     joinedDate: "2026-01-01",
     status: "ACTIVE",
-    passwordHash: "gcap@admin1978",
+    passwordHash: "ad123",
   },
 ];
 
@@ -681,15 +681,15 @@ function ensureDb(): ServerDB {
       (u: StoredAccount) => u.loginId.toLowerCase() === "admin" || u.role === "ADMIN"
     );
     if (admin) {
-      if (admin.passwordHash === "12345" || admin.passwordHash === "admin123" || !admin.passwordHash) {
-        admin.passwordHash = "gcap@admin1978";
+      if (admin.passwordHash === "12345" || admin.passwordHash === "admin123" || admin.passwordHash === "gcap@admin1978" || !admin.passwordHash) {
+        admin.passwordHash = "ad123";
         needsSave = true;
       }
       admin.loginId = "Admin";
     } else {
       parsed.users.unshift({
         ...DEFAULT_ACCOUNTS[0],
-        passwordHash: "gcap@admin1978"
+        passwordHash: "ad123"
       });
       needsSave = true;
     }
@@ -737,7 +737,7 @@ function ensureDb(): ServerDB {
 let firestoreSaveTimeout: NodeJS.Timeout | null = null;
 let pendingDbToSave: ServerDB | null = null;
 
-function saveDb(db: ServerDB): void {
+function saveDb(db: ServerDB, immediate: boolean = false): void {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -750,22 +750,33 @@ function saveDb(db: ServerDB): void {
     // Set local tracking timestamp to avoid redundant self-loading triggers
     lastSyncedTimestamp = db.lastUpdated;
     
-    // Schedule debounced write to Firestore to stay safely within free tier daily write limits (20,000 writes/day)
+    // Write quickly to Firebase Firestore for instant multi-device & install app sync
     if (firestore) {
       pendingDbToSave = db;
-      if (!firestoreSaveTimeout) {
-        firestoreSaveTimeout = setTimeout(async () => {
-          if (pendingDbToSave) {
-            const dbToSave = pendingDbToSave;
-            pendingDbToSave = null;
-            firestoreSaveTimeout = null;
-            try {
-              await saveToFirestore(dbToSave);
-            } catch (err) {
-              console.error("[Firebase] Debounced save to Firestore failed:", err);
+      if (immediate) {
+        if (firestoreSaveTimeout) {
+          clearTimeout(firestoreSaveTimeout);
+          firestoreSaveTimeout = null;
+        }
+        pendingDbToSave = null;
+        saveToFirestore(db).catch(err => {
+          console.error("[Firebase] Immediate save to Firestore failed:", err);
+        });
+      } else {
+        if (!firestoreSaveTimeout) {
+          firestoreSaveTimeout = setTimeout(async () => {
+            if (pendingDbToSave) {
+              const dbToSave = pendingDbToSave;
+              pendingDbToSave = null;
+              firestoreSaveTimeout = null;
+              try {
+                await saveToFirestore(dbToSave);
+              } catch (err) {
+                console.error("[Firebase] Live save to Firestore failed:", err);
+              }
             }
-          }
-        }, 12000); // Debounce for 12 seconds to group multiple successive edits into 1 batch!
+          }, 800); // Super fast 800ms live synchronization
+        }
       }
     }
   } catch (err) {
@@ -817,7 +828,33 @@ async function startServer() {
       status: "ok",
       app: "GCap Main Real-Time Database Server",
       timestamp: new Date().toISOString(),
+      firestoreConnected: !!firestore,
     });
+  });
+
+  // Dedicated Firebase Live Sync Route
+  app.all("/api/firebase/sync", async (_req, res) => {
+    try {
+      const currentDb = ensureDb();
+      if (firestore) {
+        await saveToFirestore(currentDb);
+        return res.json({
+          success: true,
+          message: "Firebase Firestore live sync completed successfully!",
+          lastSyncedTimestamp: currentDb.lastUpdated,
+          usersCount: currentDb.users.length,
+          transactionsCount: currentDb.transactions.length,
+        });
+      } else {
+        return res.json({
+          success: true,
+          message: "Database active locally (Firestore offline/not initialized)",
+          lastSyncedTimestamp: currentDb.lastUpdated,
+        });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err?.message || String(err) });
+    }
   });
 
   // Real-time Event Stream (Server-Sent Events) for instant automatic updates worldwide
@@ -1863,7 +1900,7 @@ async function startServer() {
     const isPassCorrect =
       account.passwordHash === trimmedPass ||
       (account as any).password === trimmedPass ||
-      (isAdmin && trimmedPass === "gcap@admin1978");
+      (isAdmin && trimmedPass === "ad123");
 
     if (!isPassCorrect) {
       console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone || account.loginId}`);
@@ -1873,8 +1910,8 @@ async function startServer() {
       });
     }
 
-    if (isAdmin && account.passwordHash !== "gcap@admin1978" && trimmedPass === "gcap@admin1978") {
-      account.passwordHash = "gcap@admin1978";
+    if (isAdmin && account.passwordHash !== "ad123" && trimmedPass === "ad123") {
+      account.passwordHash = "ad123";
       saveDb(db);
     }
 
@@ -2028,7 +2065,7 @@ async function startServer() {
           referredBy: rawAcc.referredBy ? String(rawAcc.referredBy).trim() : undefined,
           joinedDate: String(rawAcc.joinedDate || new Date().toISOString().split("T")[0]).trim(),
           status: rawAcc.status === "BLOCKED" ? "BLOCKED" : "ACTIVE",
-          passwordHash: String(rawAcc.passwordHash || (rawAcc.role === "ADMIN" ? "gcap@admin1978" : "demo123")).trim(),
+          passwordHash: String(rawAcc.passwordHash || (rawAcc.role === "ADMIN" ? "ad123" : "demo123")).trim(),
         };
 
         // Never restore explicitly deleted users

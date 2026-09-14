@@ -14,7 +14,7 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     email: 'admin@gcap.in',
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
-    passwordHash: 'gcap@admin1978'
+    passwordHash: 'ad123'
   }
 ];
 
