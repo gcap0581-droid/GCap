@@ -125,7 +125,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="flex items-center gap-1">
                 <span className="font-black text-lg sm:text-xl tracking-tight text-white">
-                  Gcap-Nan
+                  GCap
                 </span>
                 <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   {isHi ? 'प्लस ⚡' : 'PLUS'}
