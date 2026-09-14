@@ -47,13 +47,45 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
   const manualPrintRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    window.print();
+    const content = manualPrintRef.current ? manualPrintRef.current.innerHTML : document.body.innerHTML;
+    const printWindow = window.open('', '_blank', 'width=950,height=800');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>GCap Official Operations SOP & User Manual</title>
+            <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+            <style>
+              body { background: #ffffff !important; color: #000000 !important; font-family: sans-serif; padding: 32px; }
+              @media print {
+                body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                .print\\:hidden { display: none !important; }
+              }
+            </style>
+          </head>
+          <body onload="setTimeout(() => { window.focus(); window.print(); window.close(); }, 500);">
+            <div class="max-w-4xl mx-auto space-y-6 bg-white text-slate-900 p-8 shadow-2xl rounded-2xl border border-slate-200">
+              <div class="text-center pb-6 border-b-2 border-emerald-600 mb-6">
+                <h1 class="text-2xl font-black text-slate-900">GCAP ASSET MANAGEMENT PRIVATE LIMITED</h1>
+                <p class="text-sm font-bold text-emerald-700 mt-1">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
+                <p class="text-xs text-slate-500 mt-0.5">Generated on: ${new Date().toLocaleString()} | Official Compliance Document</p>
+              </div>
+              ${content}
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      window.print();
+    }
   };
 
   const gpRate = rules?.gpRatePerRupee ?? 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={manualPrintRef}>
       {/* Sleek Top Navigation & Toolbar (Screen Only) */}
       <div className="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 p-4 rounded-2xl border border-emerald-500/30 shadow-xl flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">

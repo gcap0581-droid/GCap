@@ -112,11 +112,10 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             currentUser.role === 'ADMIN' ? (
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-teal-500/20 border border-amber-500/40 text-amber-300 text-xs font-black transition-all cursor-pointer active:scale-95 shadow-sm"
-                title={isHi ? 'एडमिन मेन्यू खोलें' : 'Open Admin Main Menu'}
+                className="w-10 h-10 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm"
+                title={isHi ? 'एडमिन मेन्यू खोलें (3-लाइन मेन्यू)' : 'Open Admin Menu (Hamburger)'}
               >
-                <Award className="w-4 h-4 text-amber-400 animate-pulse" />
-                <span className="text-[11px] font-black">{isHi ? '👑 एडमिन मेन्यू' : '👑 Admin Menu'}</span>
+                <Menu className="w-5 h-5 text-amber-400" />
               </button>
             ) : activeTab !== 'dashboard' ? (
               <button

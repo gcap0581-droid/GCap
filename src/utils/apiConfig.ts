@@ -53,15 +53,16 @@ function createSyntheticErrorResponse(errorMessage: string, status = 503): Respo
  */
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const isDirectHost = isDirectServerHost();
 
-  // If running on external / static host like Vercel, immediately yield to direct Firestore bridge
-  if (!isDirectHost) {
-    return createSyntheticErrorResponse('External host: using direct Firestore bridge', 503);
-  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
 
   try {
-    const res = await fetch(cleanEndpoint, options);
+    const res = await fetch(cleanEndpoint, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
     const contentType = res.headers.get('content-type') || '';
 
     // If local server gave valid JSON or successful API response, return it immediately
@@ -71,7 +72,8 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
 
     return createSyntheticErrorResponse('Local server returned HTML or error', 502);
   } catch (err: any) {
-    console.warn('[apiFetch] Dev server request error:', err?.message || err);
+    clearTimeout(timeoutId);
+    console.warn('[apiFetch] Dev server request error or timeout:', err?.message || err);
     return createSyntheticErrorResponse('Server is reconnecting or offline', 503);
   }
 }
