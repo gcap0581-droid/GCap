@@ -82,7 +82,7 @@ import { AdminRejectReasonModal } from './admin/AdminRejectReasonModal';
 import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
-import { fetchCentralState, apiAdminAdjustUserWallet } from '../utils/centralSync';
+import { fetchCentralState, apiAdminAdjustUserWallet, getWalletForUser } from '../utils/centralSync';
 
 interface AdminPanelProps {
   adminUser: UserProfile;
@@ -559,227 +559,330 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Sleek Compact Admin Master Control Header Bar */}
-      <div className="bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 shadow-xl shadow-emerald-950/5 space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
-              <Award className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white">
-                  {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
-                </h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 font-mono">
-                  SUPER ADMIN
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Live Sync
-                </span>
+      {/* Show Header & Sub-Tabs Grid ONLY when not viewing User Manual */}
+      {activeSubTab !== 'USER_MANUAL' && (
+        <>
+          {/* Sleek Compact Admin Master Control Header Bar */}
+          <div className="bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 shadow-xl shadow-emerald-950/5 space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black text-white">
+                      {isHi ? '👑 एडमिन मास्टर कंट्रोल हब' : '👑 Admin Master Hub'}
+                    </h2>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 font-mono">
+                      SUPER ADMIN
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      Live Sync
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {isHi
+                      ? `लॉगिन: ${adminUser.loginId} (${adminUser.name}) • कुल यूज़र्स: ${usersList.length}`
+                      : `ID: ${adminUser.loginId} (${adminUser.name}) • Total Users: ${usersList.length}`}
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-400">
-                {isHi
-                  ? `लॉगिन: ${adminUser.loginId} (${adminUser.name}) • कुल यूज़र्स: ${usersList.length}`
-                  : `ID: ${adminUser.loginId} (${adminUser.name}) • Total Users: ${usersList.length}`}
-              </p>
+
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                <button
+                  onClick={() => setIsMasterToolsOpen((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{isHi ? (isMasterToolsOpen ? 'टूल्स बंद करें ▲' : '🛠️ मास्टर टूल्स मेन्यू ▼') : (isMasterToolsOpen ? 'Close Tools ▲' : '🛠️ Master Tools ▼')}</span>
+                </button>
+
+                <button
+                  id="btn-admin-logout"
+                  onClick={onLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'लॉगआउट' : 'Logout'}</span>
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <button
-              onClick={() => setIsMasterToolsOpen((prev) => !prev)}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isHi ? (isMasterToolsOpen ? 'टूल्स बंद करें ▲' : '🛠️ मास्टर टूल्स मेन्यू ▼') : (isMasterToolsOpen ? 'Close Tools ▲' : '🛠️ Master Tools ▼')}</span>
-            </button>
+            {/* Collapsible Master Tools Menu Panel */}
+            {isMasterToolsOpen && (
+              <div className="pt-3 border-t border-amber-500/20 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn">
+                <button
+                  id="btn-admin-header-export-excel"
+                  onClick={() => exportAllDataToExcel(currentPayload, 'GCap_All_Data_Export')}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                  <span>{isHi ? 'Excel एक्सपोर्ट (.xlsx)' : 'Export Excel'}</span>
+                </button>
 
-            <button
-              id="btn-admin-logout"
-              onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{isHi ? 'लॉगआउट' : 'Logout'}</span>
-            </button>
-          </div>
-        </div>
+                <button
+                  id="btn-admin-certificate-sample"
+                  onClick={() => setCertModalOpen(true)}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Award className="w-4 h-4 text-amber-400" />
+                  <span>{isHi ? '📜 प्रमाण पत्र सैंपल' : '📜 Certificate'}</span>
+                </button>
 
-        {/* Collapsible Master Tools Menu Panel */}
-        {isMasterToolsOpen && (
-          <div className="pt-3 border-t border-amber-500/20 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn">
-            <button
-              id="btn-admin-header-export-excel"
-              onClick={() => exportAllDataToExcel(currentPayload, 'GCap_All_Data_Export')}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-              <span>{isHi ? 'Excel एक्सपोर्ट (.xlsx)' : 'Export Excel'}</span>
-            </button>
+                <button
+                  id="btn-admin-agreement-view"
+                  onClick={() => {
+                    const firstInvestor = usersList.find((u) => u.role === 'USER') || usersList[0] || null;
+                    setAgreementUser(firstInvestor);
+                    setAgreementModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <FileCheck className="w-4 h-4 text-cyan-400" />
+                  <span>{isHi ? '📄 कानूनी अनुबंध' : '📄 Legal Agreement'}</span>
+                </button>
 
-            <button
-              id="btn-admin-certificate-sample"
-              onClick={() => setCertModalOpen(true)}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer"
-            >
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>{isHi ? '📜 प्रमाण पत्र सैंपल' : '📜 Certificate'}</span>
-            </button>
+                <button
+                  id="btn-admin-manage-rules"
+                  onClick={onOpenRules}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  <span>{isHi ? '⚙️ नियम व सीमाएं' : '⚙️ Rules & Limits'}</span>
+                </button>
 
-            <button
-              id="btn-admin-agreement-view"
-              onClick={() => {
-                const firstInvestor = usersList.find((u) => u.role === 'USER') || usersList[0] || null;
-                setAgreementUser(firstInvestor);
-                setAgreementModalOpen(true);
-              }}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer"
-            >
-              <FileCheck className="w-4 h-4 text-cyan-400" />
-              <span>{isHi ? '📄 कानूनी अनुबंध' : '📄 Legal Agreement'}</span>
-            </button>
-
-            <button
-              id="btn-admin-manage-rules"
-              onClick={onOpenRules}
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer"
-            >
-              <Sliders className="w-4 h-4 text-emerald-400" />
-              <span>{isHi ? '⚙️ नियम व सीमाएं' : '⚙️ Rules & Limits'}</span>
-            </button>
-
-            {onResetSystemFresh && (
-              <button
-                id="btn-admin-fresh-reset-system"
-                onClick={onResetSystemFresh}
-                className="col-span-2 sm:col-span-4 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-black transition-all cursor-pointer shadow-md"
-                title={isHi ? 'कंपनी बैलेंस ₹6,00,000 छोड़कर सभी लेन-देन व निवेश जीरो (फ्रेश) करें' : 'Keep Admin balance ₹600,000 & reset all transaction records to zero'}
-              >
-                <RotateCcw className="w-4 h-4 text-rose-400" />
-                <span>{isHi ? '✨ डेटा फ्रेश रीसेट (कंपनी बैलेंस ₹6,00,000 रखें व सभी लेन-देन ज़ीरो करें)' : '✨ Reset All Transactions (Keep ₹600k Admin Balance)'}</span>
-              </button>
+                {onResetSystemFresh && (
+                  <button
+                    id="btn-admin-fresh-reset-system"
+                    onClick={onResetSystemFresh}
+                    className="col-span-2 sm:col-span-4 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-black transition-all cursor-pointer shadow-md"
+                    title={isHi ? 'कंपनी बैलेंस ₹6,00,000 छोड़कर सभी लेन-देन व निवेश जीरो (फ्रेश) करें' : 'Keep Admin balance ₹600,000 & reset all transaction records to zero'}
+                  >
+                    <RotateCcw className="w-4 h-4 text-rose-400" />
+                    <span>{isHi ? '✨ डेटा फ्रेश रीसेट (कंपनी बैलेंस ₹6,00,000 रखें व सभी लेन-देन ज़ीरो करें)' : '✨ Reset All Transactions (Keep ₹600k Admin Balance)'}</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
 
           {/* Navigation Sub-Tabs & Mobile Menu Grid */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 bg-slate-900/60 rounded-xl p-1.5 gap-1.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                id="tab-admin-overview"
-                onClick={() => setActiveSubTab('OVERVIEW')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'OVERVIEW'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{isHi ? 'डैशबोर्ड' : 'Overview'}</span>
-              </button>
+          <div className="space-y-4">
+            {/* Navigation Sub-Tabs Cards Grid: Making it look identical to the premium User Panel Category Nav */}
+            <div className="w-full bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2 shadow-xl backdrop-blur-md">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                
+                {/* OVERVIEW */}
+                <button
+                  id="tab-admin-overview"
+                  onClick={() => setActiveSubTab('OVERVIEW')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'OVERVIEW'
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'OVERVIEW' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'OVERVIEW' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                      STATS
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'डैशबोर्ड' : 'Overview'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मुख्य सांख्यिकी' : 'System Stats'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-users"
-                onClick={() => setActiveSubTab('USERS')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'USERS'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>{isHi ? 'यूज़र्स' : 'Users'}</span>
-              </button>
+                {/* USERS */}
+                <button
+                  id="tab-admin-users"
+                  onClick={() => setActiveSubTab('USERS')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'USERS'
+                      ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'USERS' ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-300' : 'bg-slate-800 border-slate-700 text-cyan-400'}`}>
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'USERS' ? 'bg-cyan-500/30 text-cyan-200' : 'bg-slate-800 text-slate-400'}`}>
+                      ACCOUNTS
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'यूज़र्स' : 'Users'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'पासवर्ड व बैलेंस' : 'User Database'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-txns"
-                onClick={() => setActiveSubTab('TRANSACTIONS')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'TRANSACTIONS'
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>{isHi ? 'लेन-देन' : 'Transactions'}</span>
-              </button>
+                {/* TRANSACTIONS */}
+                <button
+                  id="tab-admin-txns"
+                  onClick={() => setActiveSubTab('TRANSACTIONS')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'TRANSACTIONS'
+                      ? 'bg-purple-500/10 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/20 border-purple-500/30 text-purple-300' : 'bg-slate-800 border-slate-700 text-purple-400'}`}>
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    {transactions.filter(t => t.status === 'PENDING').length > 0 ? (
+                      <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-purple-500 text-slate-950 font-bold animate-pulse">
+                        {transactions.filter(t => t.status === 'PENDING').length} REQ
+                      </span>
+                    ) : (
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TRANSACTIONS' ? 'bg-purple-500/30 text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
+                        LEDGER
+                      </span>
+                    )}
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'लेन-देन' : 'Transactions'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'अप्रूवल व एडिट' : 'Approve & Audit'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-plans"
-                onClick={() => setActiveSubTab('PLANS')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'PLANS'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>{isHi ? 'प्लान्स' : 'Plans'}</span>
-              </button>
+                {/* PLANS */}
+                <button
+                  id="tab-admin-plans"
+                  onClick={() => setActiveSubTab('PLANS')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'PLANS'
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'PLANS' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'PLANS' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                      SCHEMES
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'प्लान्स' : 'Plans'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'CRUD मैनेजमेंट' : 'ROI Schemes'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-messages"
-                onClick={() => setActiveSubTab('MESSAGES')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'MESSAGES'
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Bell className="w-3.5 h-3.5 text-rose-400" />
-                <span>{isHi ? '📢 मैसेज व ब्रॉडकास्ट' : '📢 Send Messages'}</span>
-                {messages.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-200 text-[10px] font-mono">
-                    {messages.length}
-                  </span>
-                )}
-              </button>
+                {/* MESSAGES */}
+                <button
+                  id="tab-admin-messages"
+                  onClick={() => setActiveSubTab('MESSAGES')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'MESSAGES'
+                      ? 'bg-rose-500/10 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' : 'bg-slate-800 border-slate-700 text-rose-400'}`}>
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    {messages.length > 0 ? (
+                      <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-rose-500 text-slate-950 font-bold">
+                        {messages.length} SMS
+                      </span>
+                    ) : (
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-400'}`}>
+                        OTA BROAD
+                      </span>
+                    )}
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'ब्रॉडकास्ट' : 'Messages'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैसेज भेजें' : 'Send Messages'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-treasury"
-                onClick={() => setActiveSubTab('TREASURY')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'TREASURY'
-                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>{isHi ? 'ट्रेजरी' : 'Treasury'}</span>
-              </button>
+                {/* TREASURY */}
+                <button
+                  id="tab-admin-treasury"
+                  onClick={() => setActiveSubTab('TREASURY')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'TREASURY'
+                      ? 'bg-teal-500/10 border-teal-500/50 text-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TREASURY' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-slate-800 border-slate-700 text-teal-400'}`}>
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TREASURY' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
+                      RESERVES
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'ट्रेजरी' : 'Treasury'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी का खजाना' : 'Company Reserve'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-backup"
-                onClick={() => setActiveSubTab('BACKUP')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'BACKUP'
-                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>{isHi ? 'बैकअप' : 'Backup'}</span>
-              </button>
+                {/* BACKUP */}
+                <button
+                  id="tab-admin-backup"
+                  onClick={() => setActiveSubTab('BACKUP')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'BACKUP'
+                      ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-slate-700 text-indigo-400'}`}>
+                      <Database className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'BACKUP' ? 'bg-indigo-500/30 text-indigo-200' : 'bg-slate-800 text-slate-400'}`}>
+                      CLONES
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'बैकअप' : 'Backup'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मैन्युअल स्नैपशॉट' : 'Snapshots'}</p>
+                  </div>
+                </button>
 
-              <button
-                id="tab-admin-usermanual"
-                onClick={() => setActiveSubTab('USER_MANUAL')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeSubTab === 'USER_MANUAL'
-                    ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-teal-400" />
-                <span>{isHi ? '📖 यूज़र मैन्युअल' : '📖 User Manual'}</span>
-              </button>
+                {/* USER_MANUAL */}
+                <button
+                  id="tab-admin-usermanual"
+                  onClick={() => setActiveSubTab('USER_MANUAL')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    (activeSubTab as string) === 'USER_MANUAL'
+                      ? 'bg-teal-500/10 border-teal-500/50 text-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${(activeSubTab as string) === 'USER_MANUAL' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-slate-800 border-slate-700 text-teal-400'}`}>
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${(activeSubTab as string) === 'USER_MANUAL' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
+                      DOCS
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'यूज़र गाइड' : 'Manual'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'प्रशिक्षण गाइड' : 'Admin Guide'}</p>
+                  </div>
+                </button>
+
+              </div>
             </div>
           </div>
-        </div>
+        </>
+      )}
 
       {/* TAB 1: OVERVIEW */}
       {activeSubTab === 'OVERVIEW' && (
@@ -1459,6 +1562,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           language={language}
           rules={rules}
           plans={plans}
+          onBackToHub={() => setActiveSubTab('OVERVIEW')}
         />
       )}
 
@@ -1489,7 +1593,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         isOpen={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         user={selectedUser}
-        wallet={selectedUser ? (walletsMap[selectedUser.id] || walletsMap[selectedUser.loginId]) : undefined}
+        wallet={selectedUser ? getWalletForUser(selectedUser.id, walletsMap, usersList) : undefined}
         initialTab={userModalInitialTab}
         onSave={handleSaveUser}
         language={language}

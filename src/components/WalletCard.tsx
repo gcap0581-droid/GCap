@@ -22,6 +22,7 @@ interface WalletCardProps {
   onOpenDeposit: () => void;
   onOpenWithdraw: () => void;
   onOpenSwap: () => void;
+  onOpenGpTransfer?: () => void;
   onClaimAllReturns: () => void;
 }
 
@@ -35,6 +36,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   onOpenDeposit,
   onOpenWithdraw,
   onOpenSwap,
+  onOpenGpTransfer,
   onClaimAllReturns,
 }) => {
   const isHi = language === 'hi';
@@ -178,9 +180,17 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">{isHi ? 'प्लान खरीद माध्यम:' : 'Plan Purchasing:'}</span>
-            <span className="text-emerald-400 font-bold font-mono">{isHi ? 'केवल GP द्वारा' : 'GP Enabled'}</span>
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] gap-2">
+            <span className="text-slate-400">{isHi ? 'P2P ट्रांसफर:' : 'P2P Transfer:'}</span>
+            {onOpenGpTransfer && (
+              <button
+                id="btn-card-gp-transfer"
+                onClick={onOpenGpTransfer}
+                className="py-1 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>⇄ GP QR / Send</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import { GpTransferModal } from './components/GpTransferModal';
 import {
   Wallet,
   ActiveInvestment,
@@ -1034,6 +1035,105 @@ export default function App() {
   // Voucher Modal state
   const [selectedVoucherTxn, setSelectedVoucherTxn] = useState<Transaction | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState<boolean>(false);
+  const [isGpTransferOpen, setIsGpTransferOpen] = useState<boolean>(false);
+
+  const handleExecuteGpTransfer = (recipientLoginIdOrPhone: string, amount: number): boolean => {
+    if (!currentUser) return false;
+    const cleanId = recipientLoginIdOrPhone.trim().toLowerCase();
+    
+    if (cleanId === currentUser.loginId.toLowerCase() || cleanId === currentUser.phone?.toLowerCase()) {
+      alert(isHi ? 'आप स्वयं को GP ट्रांसफर नहीं कर सकते।' : 'You cannot transfer GP to yourself.');
+      return false;
+    }
+
+    const fee = amount * 0.02; // 2% admin fee
+    const totalDeducted = amount + fee;
+
+    if ((wallet.gpBalance || 0) < totalDeducted) {
+      alert(isHi ? `अपर्याप्त GP बैलेंस। (कुल आवश्यक: ${totalDeducted.toFixed(2)} GP, जिसमें 2% चार्ज शामिल है)` : `Insufficient GP balance (Total required: ${totalDeducted.toFixed(2)} GP including 2% fee).`);
+      return false;
+    }
+
+    const allUsersList = getAllUsers();
+    const recipient = allUsersList.find(
+      u => u.loginId.toLowerCase() === cleanId || u.phone?.toLowerCase() === cleanId
+    );
+
+    if (!recipient) {
+      alert(isHi ? `प्राप्तकर्ता यूज़र (${recipientLoginIdOrPhone}) नहीं मिला। कृपया सही ID दर्ज करें।` : `Recipient user (${recipientLoginIdOrPhone}) not found. Please check ID.`);
+      return false;
+    }
+
+    const updatedSenderWallet: Wallet = {
+      ...wallet,
+      gpBalance: (wallet.gpBalance || 0) - totalDeducted,
+    };
+    setWallet(updatedSenderWallet);
+    setStoredWallet(updatedSenderWallet);
+    apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.error);
+
+    const recipientStoredWallet = getStoredWallet();
+    const updatedRecipientWallet: Wallet = {
+      ...recipientStoredWallet,
+      gpBalance: (recipientStoredWallet.gpBalance || 0) + amount,
+    };
+    apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.error);
+
+    adminAddCompanyBalance(
+      fee,
+      `P2P GP Transfer Fee (2%) from ${currentUser.loginId} to ${recipient.loginId}`,
+      `P2P GP ट्रांसफर शुल्क (2%)`,
+      currentUser.name || 'Admin'
+    );
+    setTreasury(getStoredTreasury());
+    setTreasuryLogs(getStoredTreasuryLogs());
+
+    const senderTxn: Transaction = {
+      id: `txn-p2p-send-${Date.now()}`,
+      userId: currentUser.id,
+      userLoginId: currentUser.loginId,
+      userName: currentUser.name,
+      type: 'TRANSFER',
+      amount: amount,
+      date: new Date().toISOString(),
+      timestamp: Date.now(),
+      status: 'SUCCESS',
+      referenceId: 'GPTRX' + Math.floor(10000000 + Math.random() * 90000000),
+      note: `Transferred ${amount} GP to ${recipient.name} (${recipient.loginId}). Fee: ${fee.toFixed(2)} GP (2%)`,
+      noteHi: `${amount} GP ${recipient.name} (${recipient.loginId}) को ट्रांसफर किया गया। शुल्क: ${fee.toFixed(2)} GP`,
+    };
+
+    const recipientTxn: Transaction = {
+      id: `txn-p2p-recv-${Date.now()}`,
+      userId: recipient.id,
+      userLoginId: recipient.loginId,
+      userName: recipient.name,
+      type: 'TRANSFER',
+      amount: amount,
+      date: new Date().toISOString(),
+      timestamp: Date.now(),
+      status: 'SUCCESS',
+      referenceId: 'GPRCV' + Math.floor(10000000 + Math.random() * 90000000),
+      note: `Received ${amount} GP from ${currentUser.name} (${currentUser.loginId})`,
+      noteHi: `${currentUser.name} (${currentUser.loginId}) से ${amount} GP प्राप्त हुआ`,
+    };
+
+    const newTxns = [senderTxn, ...transactions];
+    setTransactions(newTxns);
+    setStoredTransactions(newTxns);
+    apiCreateTransaction(senderTxn, currentUser.id).catch(console.error);
+    apiCreateTransaction(recipientTxn, recipient.id).catch(console.error);
+
+    confetti({ particleCount: 70, spread: 70 });
+    showToast(
+      isHi ? '🚀 GP सफलतापूर्वक ट्रांसफर हुआ!' : '🚀 GP Transferred Successfully!',
+      isHi
+        ? `${recipient.name} को ${amount} GP सफलतापूर्वक भेज दिया गया है। (2% शुल्क: ${fee.toFixed(2)} GP)`
+        : `Successfully transferred ${amount} GP to ${recipient.name}. (2% fee: ${fee.toFixed(2)} GP)`
+    );
+
+    return true;
+  };
 
   // Simulation & Splash Intro state
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
@@ -2708,6 +2808,7 @@ export default function App() {
             onOpenDeposit={() => setIsDepositOpen(true)}
             onOpenWithdraw={() => setIsWithdrawOpen(true)}
             onOpenSwap={() => setIsSwapOpen(true)}
+            onOpenGpTransfer={() => setIsGpTransferOpen(true)}
             onClaimAllReturns={handleClaimAllReturns}
           />
 
@@ -2746,6 +2847,7 @@ export default function App() {
             <TransactionsTable
               transactions={transactions}
               language={language}
+              user={currentUser}
               onViewVoucher={(tx) => {
                 setSelectedVoucherTxn(tx);
                 setIsVoucherModalOpen(true);
@@ -2815,6 +2917,7 @@ export default function App() {
           <TransactionsTable
             transactions={transactions}
             language={language}
+            user={currentUser}
             onViewVoucher={(tx) => {
               setSelectedVoucherTxn(tx);
               setIsVoucherModalOpen(true);
@@ -3376,6 +3479,7 @@ export default function App() {
                     <TransactionsTable
                       transactions={transactions}
                       language={language}
+                      user={currentUser}
                       onViewVoucher={(tx) => {
                         setSelectedVoucherTxn(tx);
                         setIsVoucherModalOpen(true);
@@ -3455,6 +3559,7 @@ export default function App() {
                   <TransactionsTable
                     transactions={transactions}
                     language={language}
+                    user={currentUser}
                   />
                 )}
               </>
@@ -3612,6 +3717,19 @@ export default function App() {
         onMarkAsRead={handleMarkMessageAsRead}
         onMarkAllAsRead={handleMarkAllMessagesAsRead}
       />
+
+      {/* P2P GP Transfer & QR Modal */}
+      {currentUser && (
+        <GpTransferModal
+          isOpen={isGpTransferOpen}
+          onClose={() => setIsGpTransferOpen(false)}
+          currentUser={currentUser}
+          wallet={wallet}
+          language={language}
+          usersList={getAllUsers()}
+          onExecuteGpTransfer={handleExecuteGpTransfer}
+        />
+      )}
 
     </div>
   );

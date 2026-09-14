@@ -20,12 +20,12 @@ html, body {
 }
 
 html {
-  font-size: 107%;
+  font-size: 114%;
 }
 
 @media (min-width: 640px) {
   html {
-    font-size: 109%;
+    font-size: 118%;
   }
 }
 

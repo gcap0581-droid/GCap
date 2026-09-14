@@ -86,7 +86,8 @@ export type TransactionType =
   | 'RETURN_PAYOUT'
   | 'WITHDRAWAL'
   | 'CAPITAL_RETURN'
-  | 'REFERRAL_BONUS';
+  | 'REFERRAL_BONUS'
+  | 'TRANSFER';
 
 export type WithdrawalSource = 'EARNING' | 'ROYALTY';
 
@@ -144,6 +145,7 @@ export interface AppRules {
   capitalReturnPolicyLabelHi: string;
   referralL1Percent: number;
   referralL2Percent: number;
+  referralL3Percent?: number;
   isReferralEnabled?: boolean; // Toggle referral program on/off
   tdsPercent: number; // Government TDS percent (Default 5.0%)
   adminFeePercent?: number; // Admin charge percent on earnings withdrawal (Default 0.02%)

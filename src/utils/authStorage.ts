@@ -277,10 +277,14 @@ export async function registerUserAsync(data: {
     // Save directly to Firestore
     await saveUsersToFirestore(cachedUsers);
 
-    // Initialize wallet in Firestore
+    // Initialize wallet in Firestore under all alias keys
     const currentWallets = firestoreState?.wallets || {};
-    if (!currentWallets[newUser.id]) {
-      currentWallets[newUser.id] = {
+    const hasWallet = currentWallets[newUser.id] || 
+                      (newUser.loginId && currentWallets[newUser.loginId]) ||
+                      (newUser.phone && currentWallets[newUser.phone.replace(/[^0-9]/g, "")]);
+    
+    if (!hasWallet) {
+      const initialWallet = {
         cashBalance: 0,
         gpBalance: 0,
         totalInvested: 0,
@@ -290,6 +294,20 @@ export async function registerUserAsync(data: {
         pendingDeposits: 0,
         totalWithdrawn: 0,
       };
+      
+      const aliases = new Set<string>();
+      if (newUser.id) aliases.add(newUser.id);
+      if (newUser.loginId) aliases.add(newUser.loginId);
+      if (newUser.phone) {
+        const cleanP = newUser.phone.replace(/[^0-9]/g, "");
+        if (cleanP) aliases.add(cleanP);
+        if (cleanP.length >= 10) aliases.add(cleanP.slice(-10));
+      }
+      
+      aliases.forEach((alias) => {
+        currentWallets[alias] = initialWallet;
+      });
+      
       await saveWalletsToFirestore(currentWallets);
     }
 
@@ -454,10 +472,14 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
 
     await saveUsersToFirestore(cachedUsers);
 
-    // Initialize wallet
+    // Initialize wallet under all alias keys
     const currentWallets = firestoreState?.wallets || {};
-    if (!currentWallets[newUser.id]) {
-      currentWallets[newUser.id] = {
+    const hasWallet = currentWallets[newUser.id] || 
+                      (newUser.loginId && currentWallets[newUser.loginId]) ||
+                      (newUser.phone && currentWallets[newUser.phone.replace(/[^0-9]/g, "")]);
+    
+    if (!hasWallet) {
+      const initialWallet = {
         cashBalance: 0,
         gpBalance: 0,
         totalInvested: 0,
@@ -467,6 +489,20 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
         pendingDeposits: 0,
         totalWithdrawn: 0,
       };
+      
+      const aliases = new Set<string>();
+      if (newUser.id) aliases.add(newUser.id);
+      if (newUser.loginId) aliases.add(newUser.loginId);
+      if (newUser.phone) {
+        const cleanP = newUser.phone.replace(/[^0-9]/g, "");
+        if (cleanP) aliases.add(cleanP);
+        if (cleanP.length >= 10) aliases.add(cleanP.slice(-10));
+      }
+      
+      aliases.forEach((alias) => {
+        currentWallets[alias] = initialWallet;
+      });
+      
       await saveWalletsToFirestore(currentWallets);
     }
 

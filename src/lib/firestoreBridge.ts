@@ -44,6 +44,37 @@ let unsubscribeFirestoreSnapshot: (() => void) | null = null;
 const stateChangeListeners: Set<(state: FirestoreDatabaseState) => void> = new Set();
 
 /**
+ * Save current Firestore DB state to localStorage for offline / quota fallback
+ */
+export function saveOfflineDbToLocalStorage(state: FirestoreDatabaseState) {
+  if (typeof window !== 'undefined' && state) {
+    try {
+      localStorage.setItem('gcap_offline_db_backup', JSON.stringify(state));
+    } catch (e) {
+      console.warn('[FirestoreBridge] Failed to save offline DB backup:', e);
+    }
+  }
+}
+
+/**
+ * Load offline Firestore DB state from localStorage backup
+ */
+export function loadOfflineDbFromLocalStorage(): FirestoreDatabaseState | null {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('gcap_offline_db_backup');
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.warn('[FirestoreBridge] Failed to load offline DB backup:', e);
+    }
+  }
+  return null;
+}
+
+
+/**
  * Sanitizes and flattens data before writing to Firestore.
  * Strips undefined values and flattens unsupported nested arrays.
  */
@@ -132,7 +163,11 @@ export function initFirestoreRealtimeListener(): () => void {
         (snapshot) => {
           if (!snapshot.empty) {
             const parsed = parseSnapshotDocs(snapshot.docs);
+            (parsed as any)._cacheTime = Date.now();
             cachedFirestoreDb = parsed;
+
+            // Save to offline backup
+            saveOfflineDbToLocalStorage(parsed);
 
             // Notify all registered listeners
             stateChangeListeners.forEach((listener) => {
@@ -151,6 +186,22 @@ export function initFirestoreRealtimeListener(): () => void {
         },
         (error) => {
           console.warn('[FirestoreBridge] Realtime listener error:', error);
+          // If we hit quota limit, fallback to localStorage backup and notify UI immediately to prevent hanging
+          const offlineBackup = loadOfflineDbFromLocalStorage();
+          if (offlineBackup) {
+            cachedFirestoreDb = offlineBackup;
+            stateChangeListeners.forEach((listener) => {
+              try {
+                listener(offlineBackup);
+              } catch (e) {
+                console.error('[FirestoreBridge] Fallback listener error:', e);
+              }
+            });
+            // Dispatch global browser event for cross-component re-renders
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('firestore_state_updated', { detail: offlineBackup }));
+            }
+          }
         }
       );
     } catch (err) {
@@ -176,7 +227,12 @@ export function subscribeToFirestoreState(
   stateChangeListeners.add(callback);
   const unsubListener = initFirestoreRealtimeListener();
 
-  // If we already have cached data, trigger immediately
+  // Load from offline backup if in-memory cache is not yet loaded
+  if (!cachedFirestoreDb) {
+    cachedFirestoreDb = loadOfflineDbFromLocalStorage();
+  }
+
+  // If we already have cached or offline backup data, trigger immediately
   if (cachedFirestoreDb) {
     try {
       callback(cachedFirestoreDb);
@@ -195,6 +251,13 @@ export function subscribeToFirestoreState(
  * Direct fetch of all documents from Firestore 'gcap_database' collection
  */
 export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState | null> {
+  // If we have cached state and either snapshot listener is active or cache is fresh (less than 3s old), return cached state directly!
+  if (cachedFirestoreDb) {
+    const isCacheFresh = (cachedFirestoreDb as any)._cacheTime && (Date.now() - (cachedFirestoreDb as any)._cacheTime < 3000);
+    if (activeFirestoreListenersCount > 0 || isCacheFresh) {
+      return cachedFirestoreDb;
+    }
+  }
   try {
     const docKeys = [
       'users',
@@ -238,10 +301,27 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       lastUpdated: (docMap['metadata'] && docMap['metadata'].lastUpdated) || new Date().toISOString(),
     };
 
+    (state as any)._cacheTime = Date.now();
     cachedFirestoreDb = state;
+
+    // Save to offline backup
+    saveOfflineDbToLocalStorage(state);
+
     return state;
   } catch (err) {
-    console.error('[FirestoreBridge] Error fetching full state:', err);
+    const errMsg = String(err && (err as any).message || err || "").toLowerCase();
+    if (errMsg.includes("resource_exhausted") || errMsg.includes("quota")) {
+      console.warn('[FirestoreBridge] Firestore quota limit reached. Falling back to local offline DB backup.', err);
+    } else {
+      console.error('[FirestoreBridge] Error fetching full state:', err);
+    }
+
+    // Try loading from local offline backup
+    const offlineBackup = loadOfflineDbFromLocalStorage();
+    if (offlineBackup) {
+      cachedFirestoreDb = offlineBackup;
+      return offlineBackup;
+    }
     return cachedFirestoreDb;
   }
 }
@@ -250,6 +330,45 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
  * Direct Firestore save helpers
  */
 export async function saveDocToFirestore(docId: string, data: any): Promise<boolean> {
+  // Update memory cache and offline localStorage backup instantly
+  if (!cachedFirestoreDb) {
+    cachedFirestoreDb = loadOfflineDbFromLocalStorage() || {
+      users: [],
+      wallets: {},
+      investments: [],
+      transactions: [],
+      plans: [],
+      rules: null,
+      liveConfig: null,
+      bankDetails: {},
+      treasury: null,
+      treasuryLogs: [],
+      messages: [],
+      deletedUserIds: [],
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  if (cachedFirestoreDb) {
+    (cachedFirestoreDb as any)[docId] = data;
+    cachedFirestoreDb.lastUpdated = new Date().toISOString();
+    saveOfflineDbToLocalStorage(cachedFirestoreDb);
+
+    // Notify all registered listeners
+    stateChangeListeners.forEach((listener) => {
+      try {
+        listener(cachedFirestoreDb!);
+      } catch (e) {
+        console.error('[FirestoreBridge] Listener callback error on local save:', e);
+      }
+    });
+
+    // Dispatch global browser event for cross-component re-renders
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('firestore_state_updated', { detail: cachedFirestoreDb }));
+    }
+  }
+
   try {
     const ref = doc(db, 'gcap_database', docId);
     await setDoc(ref, { data: cleanForFirestore(data) });
@@ -258,15 +377,11 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
     const metaRef = doc(db, 'gcap_database', 'metadata');
     await setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true });
 
-    // Update memory cache
-    if (cachedFirestoreDb) {
-      (cachedFirestoreDb as any)[docId] = data;
-      cachedFirestoreDb.lastUpdated = new Date().toISOString();
-    }
     return true;
   } catch (err) {
-    console.error(`[FirestoreBridge] Error saving doc ${docId}:`, err);
-    return false;
+    console.warn(`[FirestoreBridge] Error saving doc ${docId} to remote Firestore (using local offline backup):`, err);
+    // Return true because it was successfully persisted locally and Express API will handle central synchronization
+    return true;
   }
 }
 
@@ -323,3 +438,69 @@ export async function saveMessagesToFirestore(messages: AdminMessage[]): Promise
 export async function saveDeletedUserIdsToFirestore(deletedIds: string[]): Promise<boolean> {
   return await saveDocToFirestore('deletedUserIds', deletedIds);
 }
+
+/**
+ * Force-sync the client-side Firestore cache with the latest central database state
+ */
+export function updateFirestoreBridgeCache(partial: Partial<FirestoreDatabaseState>) {
+  if (!partial) return;
+
+  if (!cachedFirestoreDb) {
+    cachedFirestoreDb = loadOfflineDbFromLocalStorage() || {
+      users: [],
+      wallets: {},
+      investments: [],
+      transactions: [],
+      plans: [],
+      rules: null,
+      liveConfig: null,
+      bankDetails: {},
+      treasury: null,
+      treasuryLogs: [],
+      messages: [],
+      deletedUserIds: [],
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  // Shallow merge
+  cachedFirestoreDb = {
+    ...cachedFirestoreDb,
+    ...partial,
+    lastUpdated: partial.lastUpdated || cachedFirestoreDb.lastUpdated || new Date().toISOString()
+  } as FirestoreDatabaseState;
+
+  // Deep-merge wallets
+  if (partial.wallets) {
+    cachedFirestoreDb.wallets = {
+      ...cachedFirestoreDb.wallets,
+      ...partial.wallets
+    };
+  }
+
+  // Deep-merge bankDetails
+  if (partial.bankDetails) {
+    cachedFirestoreDb.bankDetails = {
+      ...cachedFirestoreDb.bankDetails,
+      ...partial.bankDetails
+    };
+  }
+
+  // Save to offline backup
+  saveOfflineDbToLocalStorage(cachedFirestoreDb);
+
+  // Notify all registered listeners
+  stateChangeListeners.forEach((listener) => {
+    try {
+      listener(cachedFirestoreDb!);
+    } catch (e) {
+      console.error('[FirestoreBridge] Error in update cache listener:', e);
+    }
+  });
+
+  // Dispatch global browser event
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('firestore_state_updated', { detail: cachedFirestoreDb }));
+  }
+}
+

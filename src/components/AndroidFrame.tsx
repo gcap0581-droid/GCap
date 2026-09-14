@@ -505,7 +505,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                   </button>
 
                   {/* Switch to Investor Mode button inside Drawer for Admins */}
-                  {onToggleAdminHub && (
+                  {onToggleAdminHub && !isAdmin && (
                     <div className="pt-4 mt-4 border-t border-slate-800">
                       <button
                         onClick={() => {

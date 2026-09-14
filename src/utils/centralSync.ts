@@ -23,7 +23,69 @@ import {
   saveTreasuryToFirestore,
   saveBankDetailsToFirestore,
   saveMessagesToFirestore,
+  updateFirestoreBridgeCache,
+  FirestoreDatabaseState,
 } from '../lib/firestoreBridge';
+
+// Helper to resolve user from multiple identifiers and generate all alias keys
+export function findUserAndAllAliases(userId: string, users: UserProfile[]): { user: UserProfile | null, aliases: string[] } {
+  const cleanId = String(userId).trim();
+  const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+
+  const user = (users || []).find(
+    (u) =>
+      u.id === cleanId ||
+      (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
+      (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+  );
+
+  const aliases = new Set<string>();
+  if (cleanId) aliases.add(cleanId);
+  if (user) {
+    if (user.id) aliases.add(user.id);
+    if (user.loginId) aliases.add(user.loginId);
+    if (user.phone) {
+      const cleanP = user.phone.replace(/[^0-9]/g, "");
+      if (cleanP) aliases.add(cleanP);
+      if (cleanP.length >= 10) aliases.add(cleanP.slice(-10));
+    }
+  }
+  return { user: user || null, aliases: Array.from(aliases) };
+}
+
+// Helper to get a user's wallet with robust alias lookup
+export function getWalletForUser(userId: string, wallets: Record<string, Wallet>, users: UserProfile[]): Wallet {
+  const { aliases } = findUserAndAllAliases(userId, users);
+  
+  for (const alias of aliases) {
+    if (wallets && wallets[alias]) {
+      return { ...wallets[alias] };
+    }
+  }
+
+  return {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+    totalWithdrawn: 0,
+  };
+}
+
+// Helper to update a user's wallet across all aliases in the map
+export function updateWalletForUserInMap(userId: string, wallets: Record<string, Wallet>, users: UserProfile[], updatedWallet: Wallet): Record<string, Wallet> {
+  const { aliases } = findUserAndAllAliases(userId, users);
+  const updated = { ...wallets };
+  for (const alias of aliases) {
+    if (alias) {
+      updated[alias] = { ...updatedWallet };
+    }
+  }
+  return updated;
+}
 
 export interface CentralStateResponse {
   success: boolean;
@@ -74,6 +136,37 @@ export async function fetchCentralState(
         if (data.users && Array.isArray(data.users)) {
           data.users = data.users.filter((u: any) => u && u.id);
         }
+
+        // Sync to client-side FirestoreBridge cache
+        if (role === 'ADMIN') {
+          updateFirestoreBridgeCache({
+            users: data.users || [],
+            wallets: data.wallets || {},
+            investments: data.investments || [],
+            transactions: data.transactions || [],
+            plans: data.plans || [],
+            rules: data.rules || null,
+            liveConfig: data.liveConfig || null,
+            bankDetails: (data.bankDetails as Record<string, BankAccountDetails>) || {},
+            treasury: data.treasury || null,
+            treasuryLogs: data.treasuryLogs || [],
+            messages: data.messages || [],
+            lastUpdated: data.lastUpdated || new Date().toISOString(),
+          });
+        } else if (userId) {
+          updateFirestoreBridgeCache({
+            transactions: data.transactions || [],
+            investments: data.investments || [],
+            wallets: data.wallet ? { [userId]: data.wallet } : {},
+            bankDetails: data.bankDetails ? { [userId]: data.bankDetails as BankAccountDetails } : {},
+            plans: data.plans || [],
+            rules: data.rules || null,
+            liveConfig: data.liveConfig || null,
+            messages: data.messages || [],
+            lastUpdated: data.lastUpdated || new Date().toISOString(),
+          });
+        }
+
         return data;
       }
     }
@@ -110,7 +203,7 @@ export async function fetchCentralState(
       const userInvestments = (fs.investments || []).filter(
         (i) => i.userId === userId
       );
-      const userWallet = (userId && fs.wallets && fs.wallets[userId]) || {
+      const userWallet = userId ? getWalletForUser(userId, fs.wallets || {}, fs.users || []) : {
         cashBalance: 0,
         gpBalance: 0,
         totalInvested: 0,
@@ -172,16 +265,7 @@ export async function apiCreateTransaction(
     const fs = await fetchFullFirestoreState();
     const currentTxns = fs?.transactions || [];
     const currentWallets = fs?.wallets || {};
-    const userWallet: Wallet = currentWallets[userId] || {
-      cashBalance: 0,
-      gpBalance: 0,
-      totalInvested: 0,
-      totalEarned: 0,
-      royaltyEarned: 0,
-      pendingWithdrawals: 0,
-      pendingDeposits: 0,
-      totalWithdrawn: 0,
-    };
+    const userWallet: Wallet = getWalletForUser(userId, currentWallets, fs?.users || []);
 
     const newTxn: Transaction = {
       ...transaction,
@@ -198,10 +282,10 @@ export async function apiCreateTransaction(
     }
 
     const updatedTxns = [newTxn, ...currentTxns.filter((t) => t.id !== newTxn.id)];
-    currentWallets[userId] = userWallet;
+    const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], userWallet);
 
     await saveTransactionsToFirestore(updatedTxns);
-    await saveWalletsToFirestore(currentWallets);
+    await saveWalletsToFirestore(updatedWallets);
 
     return { success: true, transaction: newTxn, wallet: userWallet };
   } catch (fsErr: any) {
@@ -251,7 +335,7 @@ export async function apiUpdateTransaction(
     };
 
     const targetUserId = transaction.userId || '';
-    const userWallet: Wallet = currentWallets[targetUserId] || {
+    const userWallet: Wallet = targetUserId ? getWalletForUser(targetUserId, currentWallets, fs?.users || []) : {
       cashBalance: 0,
       gpBalance: 0,
       totalInvested: 0,
@@ -288,8 +372,8 @@ export async function apiUpdateTransaction(
 
     const updatedTxns = currentTxns.map((t) => (t.id === transaction.id ? { ...t, ...transaction } : t));
     if (targetUserId) {
-      currentWallets[targetUserId] = userWallet;
-      await saveWalletsToFirestore(currentWallets);
+      const updatedWallets = updateWalletForUserInMap(targetUserId, currentWallets, fs?.users || [], userWallet);
+      await saveWalletsToFirestore(updatedWallets);
     }
     await saveTransactionsToFirestore(updatedTxns);
     await saveTreasuryToFirestore(currentTreasury);
@@ -385,25 +469,16 @@ export async function apiCreateInvestment(
     const fs = await fetchFullFirestoreState();
     const currentInvestments = fs?.investments || [];
     const currentWallets = fs?.wallets || {};
-    const userWallet = currentWallets[userId] || {
-      cashBalance: 0,
-      gpBalance: 0,
-      totalInvested: 0,
-      totalEarned: 0,
-      royaltyEarned: 0,
-      pendingWithdrawals: 0,
-      pendingDeposits: 0,
-      totalWithdrawn: 0,
-    };
+    const userWallet = getWalletForUser(userId, currentWallets, fs?.users || []);
 
     userWallet.gpBalance = Math.max(0, (userWallet.gpBalance || 0) - investment.investedAmount);
     userWallet.totalInvested = (userWallet.totalInvested || 0) + investment.investedAmount;
 
-    currentWallets[userId] = userWallet;
+    const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], userWallet);
     const updatedInvestments = [investment, ...currentInvestments.filter((i) => i.id !== investment.id)];
 
     await saveInvestmentsToFirestore(updatedInvestments);
-    await saveWalletsToFirestore(currentWallets);
+    await saveWalletsToFirestore(updatedWallets);
 
     return { success: true, investment, wallet: userWallet };
   } catch (fsErr: any) {
@@ -451,19 +526,10 @@ export async function apiUpdateInvestment(
     let updatedWallet: Wallet | undefined;
     if (resolvedUserId && resolvedWalletUpdates && fs?.wallets) {
       const currentWallets = fs.wallets;
-      const cur = currentWallets[resolvedUserId] || {
-        cashBalance: 0,
-        gpBalance: 0,
-        totalInvested: 0,
-        totalEarned: 0,
-        royaltyEarned: 0,
-        pendingWithdrawals: 0,
-        pendingDeposits: 0,
-        totalWithdrawn: 0,
-      };
+      const cur = getWalletForUser(resolvedUserId, currentWallets, fs?.users || []);
       updatedWallet = { ...cur, ...resolvedWalletUpdates };
-      currentWallets[resolvedUserId] = updatedWallet;
-      await saveWalletsToFirestore(currentWallets);
+      const updatedWallets = updateWalletForUserInMap(resolvedUserId, currentWallets, fs?.users || [], updatedWallet);
+      await saveWalletsToFirestore(updatedWallets);
     }
 
     return { success: true, investment, wallet: updatedWallet };
@@ -644,7 +710,16 @@ export async function apiAdminAdjustUserWallet(
     });
     if (res.ok) {
       const result = await res.json().catch(() => null);
-      if (result && result.success) return result;
+      if (result && result.success) {
+        if (result.wallet) {
+          updateFirestoreBridgeCache({
+            wallets: {
+              [userId]: result.wallet
+            }
+          });
+        }
+        return result;
+      }
     }
   } catch (err: any) {
     console.warn('[apiAdminAdjustUserWallet] API failed, using direct Firestore:', err);
@@ -653,20 +728,11 @@ export async function apiAdminAdjustUserWallet(
   try {
     const fs = await fetchFullFirestoreState();
     const currentWallets = fs?.wallets || {};
-    const existing = currentWallets[userId] || {
-      cashBalance: 0,
-      gpBalance: 0,
-      totalInvested: 0,
-      totalEarned: 0,
-      royaltyEarned: 0,
-      pendingWithdrawals: 0,
-      pendingDeposits: 0,
-      totalWithdrawn: 0,
-    };
+    const existing = getWalletForUser(userId, currentWallets, fs?.users || []);
 
     const finalWallet: Wallet = { ...existing, ...wallet };
-    currentWallets[userId] = finalWallet;
-    await saveWalletsToFirestore(currentWallets);
+    const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], finalWallet);
+    await saveWalletsToFirestore(updatedWallets);
 
     return { success: true, wallet: finalWallet };
   } catch (fsErr: any) {
@@ -696,7 +762,16 @@ export async function apiUpdateWallet(
     });
     if (res.ok) {
       const result = await res.json().catch(() => null);
-      if (result && result.success) return result;
+      if (result && result.success) {
+        if (result.wallet) {
+          updateFirestoreBridgeCache({
+            wallets: {
+              [userId]: result.wallet
+            }
+          });
+        }
+        return result;
+      }
     }
   } catch (err: any) {
     console.warn('[apiUpdateWallet] API failed, using direct Firestore:', err);
@@ -705,8 +780,8 @@ export async function apiUpdateWallet(
   try {
     const fs = await fetchFullFirestoreState();
     const currentWallets = fs?.wallets || {};
-    currentWallets[userId] = wallet;
-    await saveWalletsToFirestore(currentWallets);
+    const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], wallet);
+    await saveWalletsToFirestore(updatedWallets);
     return { success: true, wallet };
   } catch (fsErr: any) {
     return { success: false, error: fsErr.message };
