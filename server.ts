@@ -1151,7 +1151,22 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
   candidates.sort((a, b) => {
     const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
     const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-    return valB - valA;
+    if (valB !== valA) {
+      return valB - valA;
+    }
+    // Tie-breaker 1: Prefer wallet with higher GP balance (result of Cash -> GP swap)
+    const gpA = a.gpBalance || 0;
+    const gpB = b.gpBalance || 0;
+    if (gpB !== gpA) {
+      return gpB - gpA;
+    }
+    // Tie-breaker 2: Prefer wallet with more total invested or total earned
+    const earnedA = (a.totalInvested || 0) + (a.totalEarned || 0) + (a.royaltyEarned || 0);
+    const earnedB = (b.totalInvested || 0) + (b.totalEarned || 0) + (b.royaltyEarned || 0);
+    if (earnedB !== earnedA) {
+      return earnedB - earnedA;
+    }
+    return 0;
   });
 
   const best = candidates[0];
