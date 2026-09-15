@@ -90,6 +90,7 @@ import {
   subscribeToFirestoreState,
   saveInvestmentsToFirestore,
   saveTransactionsToFirestore,
+  getCachedFirestoreState,
 } from './lib/firestoreBridge';
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
@@ -1142,7 +1143,8 @@ export default function App() {
     setStoredWallet(updatedSenderWallet);
     apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.error);
 
-    const recipientStoredWallet = getStoredWallet();
+    const state = getCachedFirestoreState();
+    const recipientStoredWallet = state?.wallets[recipient.id] || { cashBalance: 0, gpBalance: 0, totalInvested: 0, totalEarned: 0, royaltyEarned: 0, pendingWithdrawals: 0, pendingDeposits: 0 };
     const updatedRecipientWallet: Wallet = {
       ...recipientStoredWallet,
       gpBalance: (recipientStoredWallet.gpBalance || 0) + amount,

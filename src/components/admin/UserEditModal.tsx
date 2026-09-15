@@ -222,20 +222,20 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     }
 
     if (adjTarget === 'cashBalance') {
-      if (adjType === 'ADD') setCashBalance((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setCashBalance((prev) => prev - num);
+      if (adjType === 'ADD') setCashBalance((prev) => Number(prev) + num);
+      else if (adjType === 'DEDUCT') setCashBalance((prev) => Number(prev) - num);
       else if (adjType === 'SET') setCashBalance(num);
     } else if (adjTarget === 'gpBalance') {
-      if (adjType === 'ADD') setGpBalance((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setGpBalance((prev) => prev - num);
+      if (adjType === 'ADD') setGpBalance((prev) => Number(prev) + num);
+      else if (adjType === 'DEDUCT') setGpBalance((prev) => Number(prev) - num);
       else if (adjType === 'SET') setGpBalance(num);
     } else if (adjTarget === 'totalEarned') {
-      if (adjType === 'ADD') setTotalEarned((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setTotalEarned((prev) => prev - num);
+      if (adjType === 'ADD') setTotalEarned((prev) => Number(prev) + num);
+      else if (adjType === 'DEDUCT') setTotalEarned((prev) => Number(prev) - num);
       else if (adjType === 'SET') setTotalEarned(num);
     } else if (adjTarget === 'royaltyEarned') {
-      if (adjType === 'ADD') setRoyaltyEarned((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => prev - num);
+      if (adjType === 'ADD') setRoyaltyEarned((prev) => Number(prev) + num);
+      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => Number(prev) - num);
       else if (adjType === 'SET') setRoyaltyEarned(num);
     }
 
@@ -311,8 +311,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           reason: adjReason.trim() || (isHi ? 'एडमिन द्वारा मैनुअल समायोजन' : 'Admin manual balance adjustment'),
         } : undefined,
         backdatedPlanId: backdatedPlanId || undefined,
-        backdatedAmount: backdatedAmount || 0,
-        backdatedWithdrawal: backdatedWithdrawal || 0,
+        backdatedAmount: Number(backdatedAmount) || 0,
+        backdatedWithdrawal: Number(backdatedWithdrawal) || 0,
         permissions: role === 'STAFF' ? {
           manageUsers: permManageUsers,
           manageWallet: permManageWallet,
@@ -401,7 +401,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isHi ? '💰 वॉलेट राशि प्रबंधन' : '💰 Wallet & Balances'}</span>
             <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-[10px] text-emerald-200">
-              ₹{(cashBalance + totalEarned).toLocaleString('en-IN')}
+              ₹{(Number(cashBalance) + Number(totalEarned)).toLocaleString('en-IN')}
             </span>
           </button>
 
