@@ -236,6 +236,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       else if (adjType === 'SET') setRoyaltyEarned(num);
     }
 
+    setAdjAmount('');
     setError('');
   };
 
@@ -266,25 +267,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       let finalTotalEarned = Math.max(0, totalEarned);
       let finalRoyalty = Math.max(0, royaltyEarned);
 
-      if (hasAdjustment) {
-        if (adjTarget === 'cashBalance') {
-          if (adjType === 'ADD') finalCash = finalCash + parsedAdjAmount;
-          else if (adjType === 'DEDUCT') finalCash = Math.max(0, finalCash - parsedAdjAmount);
-          else if (adjType === 'SET') finalCash = parsedAdjAmount;
-        } else if (adjTarget === 'gpBalance') {
-          if (adjType === 'ADD') finalGp = finalGp + parsedAdjAmount;
-          else if (adjType === 'DEDUCT') finalGp = Math.max(0, finalGp - parsedAdjAmount);
-          else if (adjType === 'SET') finalGp = parsedAdjAmount;
-        } else if (adjTarget === 'totalEarned') {
-          if (adjType === 'ADD') finalTotalEarned = finalTotalEarned + parsedAdjAmount;
-          else if (adjType === 'DEDUCT') finalTotalEarned = Math.max(0, finalTotalEarned - parsedAdjAmount);
-          else if (adjType === 'SET') finalTotalEarned = parsedAdjAmount;
-        } else if (adjTarget === 'royaltyEarned') {
-          if (adjType === 'ADD') finalRoyalty = finalRoyalty + parsedAdjAmount;
-          else if (adjType === 'DEDUCT') finalRoyalty = Math.max(0, finalRoyalty - parsedAdjAmount);
-          else if (adjType === 'SET') finalRoyalty = parsedAdjAmount;
-        }
-      }
+      const walletUpdates: any = {};
+      if (finalCash !== (wallet?.cashBalance || 0)) walletUpdates.cashBalance = finalCash;
+      if (finalGp !== (wallet?.gpBalance || 0)) walletUpdates.gpBalance = finalGp;
+      if (finalTotalEarned !== (wallet?.totalEarned || 0)) walletUpdates.totalEarned = finalTotalEarned;
+      if (finalRoyalty !== (wallet?.royaltyEarned || 0)) walletUpdates.royaltyEarned = finalRoyalty;
 
       await onSave({
         userId: user?.id,
@@ -312,12 +299,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           bankName: bankName.trim(),
           upiId: upiId.trim(),
         } : undefined,
-        walletUpdates: {
-          cashBalance: finalCash,
-          gpBalance: finalGp,
-          totalEarned: finalTotalEarned,
-          royaltyEarned: finalRoyalty,
-        },
+        walletUpdates: Object.keys(walletUpdates).length > 0 ? walletUpdates : undefined,
         walletAdjustment: hasAdjustment ? {
           type: adjType,
           targetWallet: adjTarget,

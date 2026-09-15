@@ -203,7 +203,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
     <AnimatePresence>
       {!isDone && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.08, filter: 'blur(10px)' }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
