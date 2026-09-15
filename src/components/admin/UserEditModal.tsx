@@ -506,7 +506,16 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                   </label>
                   <div className="relative">
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type="text"
+                      inputMode="text"
+                      style={!showPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
+                      autoComplete="one-time-code"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-amber-300 focus:border-cyan-400 focus:outline-none"

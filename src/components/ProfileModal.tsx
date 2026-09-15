@@ -492,7 +492,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? 'text' : 'password'}
+                          type="text"
+                          inputMode="text"
+                          style={!showPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
+                          autoComplete="one-time-code"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          data-form-type="other"
+                          autoCorrect="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 pr-9 text-white text-xs focus:border-amber-400 focus:outline-none font-mono"
@@ -514,7 +523,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         {isHi ? 'पासवर्ड की पुष्टि (Confirm Password):' : 'Confirm Password:'}
                       </label>
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type="text"
+                        inputMode="text"
+                        style={!showPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
+                        autoComplete="one-time-code"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-amber-400 focus:outline-none font-mono"

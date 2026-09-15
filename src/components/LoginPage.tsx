@@ -365,6 +365,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onSubmit={handleLoginSubmit}
                   className="space-y-4"
                   autoComplete="off"
+                  noValidate
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck={false}
@@ -380,9 +381,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </div>
                       <input
                         type="text"
-                        name="gcap_auth_uid"
-                        autoComplete="off"
+                        inputMode="text"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
+                        data-1p-ignore="true"
                         data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"
@@ -409,10 +411,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </div>
                       <input
                         type="text"
+                        inputMode="text"
                         style={!showPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
-                        name="gcap_auth_key"
-                        autoComplete="off"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
+                        data-1p-ignore="true"
                         data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"
@@ -465,7 +468,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 </form>
               ) : (
                 /* REGISTER FORM */
-                <form onSubmit={handleRegisterSubmit} className="space-y-3.5" autoComplete="off">
+                <form onSubmit={handleRegisterSubmit} className="space-y-3.5" autoComplete="off" noValidate>
                   {/* Full Name */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -473,8 +476,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </label>
                     <input
                       type="text"
+                      inputMode="text"
                       required
-                      autoComplete="off"
+                      autoComplete="one-time-code"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       placeholder={isHi ? 'अपना पूरा नाम दर्ज करें (उदा. अमित कुमार)' : 'Enter your full name (e.g. Amit Kumar)'}
@@ -490,8 +497,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </label>
                       <input
                         type="tel"
+                        inputMode="text"
                         required
-                        autoComplete="off"
+                        autoComplete="one-time-code"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
                         value={regPhone}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -513,7 +524,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </label>
                     <input
                       type="email"
-                      autoComplete="off"
+                      inputMode="email"
+                      autoComplete="one-time-code"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder={isHi ? 'ईमेल पता (यदि हो तो दर्ज करें)' : 'Email address (optional)'}
@@ -529,10 +544,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     <div className="relative">
                       <input
                         type="text"
+                        inputMode="text"
                         style={!showRegPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
-                        name="gcap_reg_key"
-                        autoComplete="off"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
+                        data-1p-ignore="true"
                         data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"

@@ -186,7 +186,16 @@ export const AdminRejectReasonModal: React.FC<AdminRejectReasonModalProps> = ({
               <span>{isHi ? 'एडमिन ट्रांजेक्शन पासवर्ड दर्ज करें:' : 'Enter Admin Transaction Password:'}</span>
             </label>
             <input
-              type="password"
+              type="text"
+              inputMode="text"
+              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+              autoComplete="one-time-code"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-form-type="other"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="gcap@tra1978"
