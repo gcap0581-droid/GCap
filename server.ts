@@ -573,6 +573,32 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
   }
 }
 
+function syncAdminWalletWithTreasury(db: ServerDB) {
+  const currentTreasuryBalance = typeof db.treasury?.balance === 'number' ? db.treasury.balance : 600000;
+  const adminKeys = new Set<string>(['usr-admin-01', 'Admin', 'admin', '9800012345', '919800012345']);
+
+  db.users.forEach((u) => {
+    if (u.role === 'ADMIN') {
+      if (u.id) adminKeys.add(u.id);
+      if (u.loginId) adminKeys.add(u.loginId);
+      if (u.phone) {
+        const p = u.phone.replace(/[^0-9]/g, '');
+        if (p) adminKeys.add(p);
+        if (p.length >= 10) adminKeys.add(p.slice(-10));
+      }
+    }
+  });
+
+  adminKeys.forEach((key) => {
+    if (key) {
+      if (!db.wallets[key]) {
+        db.wallets[key] = { ...DEFAULT_WALLET };
+      }
+      db.wallets[key].cashBalance = currentTreasuryBalance;
+    }
+  });
+}
+
 function ensureDb(): ServerDB {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -722,6 +748,8 @@ function ensureDb(): ServerDB {
       if (cleanPhone) parsed.wallets[cleanPhone] = existingWallet;
       if (last10) parsed.wallets[last10] = existingWallet;
     }
+
+    syncAdminWalletWithTreasury(parsed);
 
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
       saveDb(parsed, true);
@@ -1288,8 +1316,28 @@ async function startServer() {
         // Admin approves deposit! Credit to user cashBalance and deduct from pending
         wallet.pendingDeposits = Math.max(0, (wallet.pendingDeposits || 0) - amount);
         wallet.cashBalance = (wallet.cashBalance || 0) + amount;
-        db.treasury.balance = (db.treasury.balance || 0) + amount;
-        console.log(`[GCap DB] Deposit Approved: ₹${amount} credited to user ${effectiveUserId}`);
+        
+        // Deduct from Company Main Balance & update admin wallet as mandated
+        const prevBal = db.treasury.balance || 0;
+        db.treasury.balance = Math.max(0, prevBal - amount);
+        db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
+        db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+        const treasuryLog = {
+          id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          timestamp: Date.now(),
+          date: new Date().toISOString(),
+          type: 'USER_FUND_ADD_DEDUCT',
+          amount: amount,
+          balanceBefore: prevBal,
+          balanceAfter: db.treasury.balance,
+          reason: `Deposit approved: ₹${amount} deducted from Company Main Balance -> Credited to user ${effectiveUserId} (Ref: ${transaction.referenceId || transaction.id})`,
+          reasonHi: `डिपॉजिट स्वीकृत: कंपनी मुख्य बैलेंस से ₹${amount} डिडक्ट होकर यूज़र ${effectiveUserId} वॉलेट में क्रेडिट (Ref: ${transaction.referenceId || transaction.id})`,
+          actor: 'Super Admin (admin)',
+          referenceId: transaction.referenceId || transaction.id,
+        };
+        db.treasuryLogs.unshift(treasuryLog);
+        syncAdminWalletWithTreasury(db);
+        console.log(`[GCap DB] Deposit Approved: ₹${amount} allocated to user ${effectiveUserId}. Treasury Main Balance updated to ₹${db.treasury.balance}`);
       } else if (transaction.status === "REJECTED" && prevTxn?.status === "PENDING") {
         wallet.pendingDeposits = Math.max(0, (wallet.pendingDeposits || 0) - amount);
       }
@@ -1299,6 +1347,7 @@ async function startServer() {
         wallet.pendingWithdrawals = Math.max(0, (wallet.pendingWithdrawals || 0) - amount);
         wallet.totalWithdrawn = (wallet.totalWithdrawn || 0) + amount;
         db.treasury.balance = Math.max(0, (db.treasury.balance || 0) - amount);
+        syncAdminWalletWithTreasury(db);
         console.log(`[GCap DB] Withdrawal Approved: ₹${amount} paid to user ${effectiveUserId}`);
       } else if (transaction.status === "REJECTED" && prevTxn?.status === "PENDING") {
         // Admin rejects withdrawal! Refund back to cash balance
@@ -1519,6 +1568,7 @@ async function startServer() {
         db.treasuryLogs.unshift(log);
       }
     }
+    syncAdminWalletWithTreasury(db);
     saveDb(db);
 
     broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
@@ -1631,6 +1681,50 @@ async function startServer() {
 
       db.transactions.unshift(newTxn);
       broadcastRealtimeEvent("transaction_created", { transaction: newTxn, userId: effectiveUserId, timestamp: Date.now() });
+
+      // Deduct from Company Main Balance when admin credits user directly; reclaim when admin debits user
+      if (adjType === 'ADD' && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
+        const prevBal = db.treasury.balance || 0;
+        db.treasury.balance = Math.max(0, prevBal - amount);
+        db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
+        db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+        const treasuryLog = {
+          id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          timestamp: Date.now(),
+          date: new Date().toISOString(),
+          type: 'ADMIN_DEDUCT',
+          amount: amount,
+          balanceBefore: prevBal,
+          balanceAfter: db.treasury.balance,
+          reason: `Direct funds transfer to user ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}): ₹${amount}`,
+          reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) को डायरेक्ट फंड ट्रांसफर: ₹${amount}`,
+          actor: adminName || 'Super Admin (admin)',
+          referenceId: 'TRF' + Math.floor(10000000 + Math.random() * 90000000),
+        };
+        db.treasuryLogs.unshift(treasuryLog);
+        syncAdminWalletWithTreasury(db);
+        broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+      } else if (adjType === 'DEDUCT' && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
+        const prevBal = db.treasury.balance || 0;
+        db.treasury.balance = prevBal + amount;
+        db.treasury.totalTransferredToUsers = Math.max(0, (db.treasury.totalTransferredToUsers || 0) - amount);
+        const treasuryLog = {
+          id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          timestamp: Date.now(),
+          date: new Date().toISOString(),
+          type: 'ADMIN_ADD',
+          amount: amount,
+          balanceBefore: prevBal,
+          balanceAfter: db.treasury.balance,
+          reason: `Funds reclaimed from user ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) to Company Main Balance: ₹${amount}`,
+          reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) से फंड कंपनी मुख्य बैलेंस में वापस रिकवर: ₹${amount}`,
+          actor: adminName || 'Super Admin (admin)',
+          referenceId: 'REC' + Math.floor(10000000 + Math.random() * 90000000),
+        };
+        db.treasuryLogs.unshift(treasuryLog);
+        syncAdminWalletWithTreasury(db);
+        broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+      }
     }
 
     // Synchronize and persist updated wallet under ALL alias keys for this user

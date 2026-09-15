@@ -3285,6 +3285,7 @@ export default function App() {
       {viewMode === 'web' && (
         <Navbar
           wallet={wallet}
+          treasury={treasury || undefined}
           language={language}
           onLanguageChange={setLanguage}
           viewMode={viewMode}
@@ -3323,6 +3324,7 @@ export default function App() {
         language={language}
         onLanguageChange={setLanguage}
         wallet={wallet}
+        treasury={treasury || undefined}
         currentUser={currentUser}
         onLogout={handleLogout}
         activeTab={desktopTab}
@@ -3469,6 +3471,7 @@ export default function App() {
               }
             }}
             wallet={wallet}
+            treasury={treasury || undefined}
             onOpenDeposit={() => setIsDepositOpen(true)}
             onOpenWithdraw={() => setIsWithdrawOpen(true)}
             onOpenSwap={() => setIsSwapOpen(true)}

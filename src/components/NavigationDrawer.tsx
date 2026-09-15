@@ -37,6 +37,7 @@ import {
   Wallet,
   DesktopCategoryTab,
   ViewMode,
+  CompanyTreasury,
 } from '../types';
 import { formatINR } from '../utils/storage';
 
@@ -46,6 +47,7 @@ interface NavigationDrawerProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   wallet?: Wallet | null;
+  treasury?: CompanyTreasury;
   currentUser?: UserProfile | null;
   onLogout?: () => void;
   activeTab: DesktopCategoryTab;
@@ -74,6 +76,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   language,
   onLanguageChange,
   wallet,
+  treasury,
   currentUser,
   onLogout,
   activeTab,
@@ -185,10 +188,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         <div className="px-4 py-3 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border-b border-slate-800 flex items-center justify-between">
           <div>
             <div className="text-[11px] text-slate-400 font-medium">
-              {isHi ? 'कुल उपलब्ध बैलेंस:' : 'Cash Balance:'}
+              {isAdmin ? (isHi ? 'कंपनी मुख्य बैलेंस:' : 'Main Balance:') : (isHi ? 'वॉलेट कैश बैलेंस:' : 'Cash Balance:')}
             </div>
             <div className="text-lg font-black text-emerald-400 font-mono">
-              {formatINR(wallet?.cashBalance || 0)}
+              {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0)) : (wallet?.cashBalance || 0))}
             </div>
           </div>
           <button
@@ -199,7 +202,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-1 shadow cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>{isHi ? 'जोड़ें' : 'Add'}</span>
+            <span>{isAdmin ? (isHi ? 'फंड जोड़ें' : 'Add Reserve') : (isHi ? 'जोड़ें' : 'Add')}</span>
           </button>
         </div>
 

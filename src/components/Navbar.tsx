@@ -21,11 +21,13 @@ import {
   Wallet,
   LiveInterfaceConfig,
   DesktopCategoryTab,
+  CompanyTreasury,
 } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface NavbarProps {
   wallet?: Wallet | null;
+  treasury?: CompanyTreasury;
   language: Language;
   onLanguageChange: (lang: Language) => void;
   viewMode: ViewMode;
@@ -53,6 +55,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   wallet,
+  treasury,
   language,
   onLanguageChange,
   viewMode,
@@ -172,16 +175,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Compact Wallet Pill */}
             {currentUser && (
               <div
-                onClick={() => onDesktopTabChange && onDesktopTabChange('wallet')}
+                onClick={() => {
+                  if (isAdmin && onSelectAdminSubTab) {
+                    onSelectAdminSubTab('TREASURY');
+                  } else if (onDesktopTabChange) {
+                    onDesktopTabChange('wallet');
+                  }
+                }}
                 className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors"
+                title={isAdmin ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance') : (isHi ? 'वॉलेट बैलेंस' : 'Wallet Balance')}
               >
                 <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <div className="leading-none">
                   <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
-                    {isHi ? 'बैलेंस' : 'Balance'}
+                    {isAdmin ? (isHi ? 'मुख्य बैलेंस' : 'Main Balance') : (isHi ? 'वॉलेट बैलेंस' : 'Wallet Balance')}
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
-                    {formatINR(wallet?.cashBalance || 0)}
+                    {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0)) : (wallet?.cashBalance || 0))}
                   </span>
                 </div>
               </div>

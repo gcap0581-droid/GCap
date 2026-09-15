@@ -285,6 +285,100 @@ export function deductForUserDepositApproval(
 }
 
 /**
+ * Deduct from Company Main Balance when admin gives money directly to a user:
+ * "admin user ko direct paisa de ya user request aprove kerke de utna Paisa usme se kam hona chahiye"
+ */
+export function deductForAdminDirectUserTransfer(
+  amount: number,
+  userName: string = 'User',
+  adminName: string = 'Super Admin',
+  referenceId: string = 'ADM-TRF'
+): { success: boolean; treasury: CompanyTreasury; log: TreasuryLog } {
+  const current = getStoredTreasury();
+  const balanceBefore = current.balance;
+  const balanceAfter = Math.max(0, balanceBefore - amount);
+
+  const updatedTreasury: CompanyTreasury = {
+    ...current,
+    balance: balanceAfter,
+    totalTransferredToUsers: current.totalTransferredToUsers + amount,
+    totalDeducted: current.totalDeducted + amount,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const newLog: TreasuryLog = {
+    id: `tr-adm-direct-${Date.now()}`,
+    type: 'ADMIN_DEDUCT',
+    amount,
+    balanceBefore,
+    balanceAfter,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: `Direct money transfer to ${userName}: ₹${amount.toLocaleString('en-IN')} deducted from Company Main Balance`,
+    reasonHi: `यूज़र ${userName} को डायरेक्ट फंड ट्रांसफर: कंपनी मुख्य बैलेंस से ₹${amount.toLocaleString('en-IN')} डिडक्ट`,
+    actor: adminName,
+    referenceId,
+  };
+
+  const logs = [newLog, ...getStoredTreasuryLogs()];
+
+  setStoredTreasury(updatedTreasury);
+  setStoredTreasuryLogs(logs);
+
+  return {
+    success: true,
+    treasury: updatedTreasury,
+    log: newLog,
+  };
+}
+
+/**
+ * Reclaim funds from user back into Company Main Balance:
+ */
+export function reclaimFromUserToCompany(
+  amount: number,
+  userName: string = 'User',
+  adminName: string = 'Super Admin',
+  referenceId: string = 'ADM-REC'
+): { success: boolean; treasury: CompanyTreasury; log: TreasuryLog } {
+  const current = getStoredTreasury();
+  const balanceBefore = current.balance;
+  const balanceAfter = balanceBefore + amount;
+
+  const updatedTreasury: CompanyTreasury = {
+    ...current,
+    balance: balanceAfter,
+    totalTransferredToUsers: Math.max(0, current.totalTransferredToUsers - amount),
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const newLog: TreasuryLog = {
+    id: `tr-adm-rec-${Date.now()}`,
+    type: 'ADMIN_ADD',
+    amount,
+    balanceBefore,
+    balanceAfter,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: `Funds reclaimed from ${userName}: ₹${amount.toLocaleString('en-IN')} added back to Company Main Balance`,
+    reasonHi: `यूज़र ${userName} से फंड रिकवर: ₹${amount.toLocaleString('en-IN')} कंपनी मुख्य बैलेंस में वापस जुड़ा`,
+    actor: adminName,
+    referenceId,
+  };
+
+  const logs = [newLog, ...getStoredTreasuryLogs()];
+
+  setStoredTreasury(updatedTreasury);
+  setStoredTreasuryLogs(logs);
+
+  return {
+    success: true,
+    treasury: updatedTreasury,
+    log: newLog,
+  };
+}
+
+/**
  * Deduct from Company Main Balance when return payout is claimed
  */
 export function deductForUserPayout(
