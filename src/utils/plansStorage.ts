@@ -24,7 +24,8 @@ export function getStoredPlans(): InvestmentPlan[] {
       shortTermPlan.minAmount !== 10000 ||
       shortTermPlan.maxAmount !== 100000 ||
       !longTermPlan ||
-      longTermPlan.dailyRoiPercent !== 0.124
+      longTermPlan.dailyRoiPercent !== 0.124 ||
+      longTermPlan.minAmount !== 10000
     ) {
       return DEFAULT_PLANS;
     }

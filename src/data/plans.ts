@@ -44,7 +44,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     nameHi: 'लॉन्ग टर्म प्लान (Long Term Plan)',
     dailyRoiPercent: 0.124, // 0.031% every 6 hours (0.031% * 4 = 0.124% per day)
     durationDays: 365,
-    minAmount: 50000, // Min ₹50,000
+    minAmount: 10000, // Min ₹10,000
     maxAmount: 100000, // Max ₹100,000
     payoutFrequency: 'Daily',
     payoutFrequencyHi: 'हर 6 घंटे में 0.031% GP',
@@ -52,10 +52,10 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     tag: '365 Days Lock + 0.031%/6h GP + Royalty Pathway',
     tagHi: '365 दिन लॉक + 0.031%/6h GP + रॉयल्टी प्लान',
     badge: '👑 365-Day Long Term & Royalty Plan',
-    description: 'Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹50,000 to ₹100,000. Locked for 365 days. Earn 0.031% of your invested amount every 6 hours as GP (1 GP = ₹1) credited automatically to Total Earning. Withdraw earnings as per company withdrawal rules. At 365 days maturity, choose to exit with full principal + remaining earnings with Certificate, OR lock for 1461 days to qualify for 1825 days of lifetime Royalty earnings even after principal withdrawal!',
-    descriptionHi: 'प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश सीमा ₹50,000 से ₹1,00,000 तक। मूलधन 365 दिनों तक सुरक्षित लॉक रहेगा। लॉक अवधि में हर 6 घंटे में निवेश राशि का 0.031% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा। कंपनी के निकासी नियमों (महीने की 1 से 5 तारीख) के तहत अर्निंग निकासी। 365 दिन पूरे होने पर पूरा मूलधन व अर्निंग निकालकर सर्टिफिकेट प्राप्त करें अथवा 1461 दिनों के लिए रॉयल्टी प्लान में जाएं जहां 1461 दिन पूरे होने पर मूलधन वापस मिलने के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार अर्निंग मिलती रहेगी!',
+    description: 'Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. Locked for 365 days. Earn 0.031% of your invested amount every 6 hours as GP (1 GP = ₹1) credited automatically to Total Earning. Withdraw earnings as per company withdrawal rules. At 365 days maturity, choose to exit with full principal + remaining earnings with Certificate, OR lock for 1461 days to qualify for 1825 days of lifetime Royalty earnings even after principal withdrawal!',
+    descriptionHi: 'प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश सीमा ₹10,000 से ₹1,00,000 तक। मूलधन 365 दिनों तक सुरक्षित लॉक रहेगा। लॉक अवधि में हर 6 घंटे में निवेश राशि का 0.031% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा। कंपनी के निकासी नियमों (महीने की 1 से 5 तारीख) के तहत अर्निंग निकासी। 365 दिन पूरे होने पर पूरा मूलधन व अर्निंग निकालकर सर्टिफिकेट प्राप्त करें अथवा 1461 दिनों के लिए रॉयल्टी प्लान में जाएं जहां 1461 दिन पूरे होने पर मूलधन वापस मिलने के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार अर्निंग मिलती रहेगी!',
     features: [
-      'न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000',
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
       'अवधि 365 दिन (पूंजी 365 दिनों तक सुरक्षित लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.031% GP (1 GP = ₹1) स्वतः जमा',
       'कंपनी के निकासी नियमों (1 से 5 तारीख) के अनुसार लाभ निकासी',
@@ -65,7 +65,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
       'मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार रॉयल्टी अर्निंग + रॉयल मास्टर सर्टिफिकेट'
     ],
     featuresHi: [
-      'न्यूनतम निवेश ₹50,000 एवं अधिकतम ₹1,00,000',
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
       'अवधि 365 दिन (पूंजी 365 दिनों तक सुरक्षित लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.031% GP (1 GP = ₹1) स्वतः जमा',
       'कंपनी के निकासी नियमों (1 से 5 तारीख) के अनुसार लाभ निकासी',
