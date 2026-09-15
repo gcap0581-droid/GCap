@@ -150,15 +150,15 @@ export default function App() {
   });
   const [adminViewMode, setAdminViewMode] = useState<'ADMIN_HUB' | 'INVESTOR_VIEW'>('ADMIN_HUB');
 
-  const [wallet, setWallet] = useState<Wallet>(getStoredWallet);
-  const [investments, setInvestments] = useState<ActiveInvestment[]>(getStoredInvestments);
-  const [transactions, setTransactions] = useState<Transaction[]>(getStoredTransactions);
-  const [plans, setPlans] = useState<InvestmentPlan[]>(getStoredPlans);
-  const [rules, setRules] = useState<AppRules>(getStoredRules);
-  const [treasury, setTreasury] = useState<CompanyTreasury>(getStoredTreasury);
-  const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>(getStoredTreasuryLogs);
-  const [backups, setBackups] = useState<BackupRecord[]>(getStoredBackups);
-  const [liveConfig, setLiveConfig] = useState<LiveInterfaceConfig>(getStoredLiveConfig);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [investments, setInvestments] = useState<ActiveInvestment[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [plans, setPlans] = useState<InvestmentPlan[]>([]);
+  const [rules, setRules] = useState<AppRules | null>(null);
+  const [treasury, setTreasury] = useState<CompanyTreasury | null>(null);
+  const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>([]);
+  const [backups, setBackups] = useState<BackupRecord[]>([]);
+  const [liveConfig, setLiveConfig] = useState<LiveInterfaceConfig | null>(null);
   const [congratulationsInvestment, setCongratulationsInvestment] = useState<ActiveInvestment | null>(null);
   const [selectedCertificateInvestment, setSelectedCertificateInvestment] = useState<ActiveInvestment | null>(null);
   const [language, setLanguage] = useState<Language>('hi'); // Default Hindi for user's prompt
@@ -506,10 +506,10 @@ export default function App() {
       return investments.length > 0;
     }
     if (msg.targetType === 'POSITIVE_BALANCE') {
-      return wallet.cashBalance > 0;
+      return (wallet?.cashBalance || 0) > 0;
     }
     return true;
-  }, [currentUser, investments.length, wallet.cashBalance]);
+  }, [currentUser, investments.length, wallet?.cashBalance]);
 
   // Helper to fire mobile/browser native push notification
   const triggerDevicePushNotification = useCallback((title: string, body: string, msgObj?: AdminMessage) => {
@@ -2256,6 +2256,7 @@ export default function App() {
 
         if (totalCycleEarningsToAdd > 0) {
           setWallet((prev) => {
+            if (!prev) return prev;
             const updatedWallet = {
               ...prev,
               totalEarned: (prev.totalEarned || 0) + totalCycleEarningsToAdd,
@@ -2415,10 +2416,13 @@ export default function App() {
     });
 
     setInvestments(updated);
-    setWallet((prev) => ({
-      ...prev,
-      totalEarned: (prev.totalEarned || 0) + cyclePayout,
-    }));
+    setWallet((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        totalEarned: (prev.totalEarned || 0) + cyclePayout,
+      };
+    });
     setTransactions((prev) => [cycleTx, ...prev]);
 
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 } });
