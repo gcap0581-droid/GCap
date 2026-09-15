@@ -69,6 +69,7 @@ import {
 } from './utils/liveConfigStorage';
 import {
   fetchCentralState,
+  getWalletForUser,
   apiCreateTransaction,
   apiUpdateTransaction,
   apiAddTransaction,
@@ -340,21 +341,26 @@ export default function App() {
       } else if (currentUser) {
         // Regular User
         const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
-        const myWallet = (fs.wallets && (fs.wallets[currentUser.id] || (userPhoneDigits && fs.wallets[userPhoneDigits]))) || null;
+        const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, fs.users || []);
         if (myWallet) {
           setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
           setStoredWallet(myWallet);
         }
         if (fs.transactions) {
           const myTxns = fs.transactions.filter(
-            (t) => t.userId === currentUser.id || (userPhoneDigits && t.userPhone && t.userPhone.includes(userPhoneDigits))
+            (t) =>
+              t.userId === currentUser.id ||
+              (currentUser.loginId && (t.userLoginId || '').toLowerCase() === currentUser.loginId.toLowerCase()) ||
+              (userPhoneDigits && t.userPhone && t.userPhone.includes(userPhoneDigits))
           );
           setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(myTxns) ? myTxns : prev));
           setStoredTransactions(myTxns);
         }
         if (fs.investments) {
           const myInvs = fs.investments.filter(
-            (i) => i.userId === currentUser.id || (userPhoneDigits && (i as any).userPhone && (i as any).userPhone.includes(userPhoneDigits))
+            (i) =>
+              i.userId === currentUser.id ||
+              (userPhoneDigits && (i as any).userPhone && (i as any).userPhone.includes(userPhoneDigits))
           );
           setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
           setStoredInvestments(myInvs);
@@ -940,8 +946,8 @@ export default function App() {
     setTransactions(updated);
     setStoredTransactions(updated);
 
-    // Update central database immediately
-    apiUpdateTransaction(updatedTxn, currentUser?.id)
+    // Update central database immediately with target user ID
+    apiUpdateTransaction(updatedTxn, updatedTxn.userId)
       .then((res) => {
         if (res && res.treasury) {
           setTreasury(res.treasury);
@@ -956,20 +962,22 @@ export default function App() {
       // 1. Deduct from Company Main Balance and create audit record in treasury logs
       const deductRes = deductForUserDepositApproval(
         updatedTxn.amount,
-        currentUser?.name || 'Investor User',
+        updatedTxn.userName || currentUser?.name || 'Investor User',
         updatedTxn.referenceId || updatedTxn.id
       );
       setTreasury(deductRes.treasury);
       setTreasuryLogs(getStoredTreasuryLogs());
 
-      // 2. Credit to user's wallet cash balance and remove from pending
-      const updatedWallet: Wallet = {
-        ...wallet,
-        cashBalance: wallet.cashBalance + updatedTxn.amount,
-        pendingDeposits: Math.max(0, (wallet.pendingDeposits || 0) - updatedTxn.amount),
-      };
-      setWallet(updatedWallet);
-      setStoredWallet(updatedWallet);
+      // 2. If the current active session is this user, update local wallet state
+      if (currentUser && (currentUser.id === updatedTxn.userId || (currentUser.phone && updatedTxn.userPhone && currentUser.phone.includes(updatedTxn.userPhone.slice(-10))))) {
+        const updatedWallet: Wallet = {
+          ...wallet,
+          cashBalance: (wallet?.cashBalance || 0) + updatedTxn.amount,
+          pendingDeposits: Math.max(0, (wallet?.pendingDeposits || 0) - updatedTxn.amount),
+        };
+        setWallet(updatedWallet);
+        setStoredWallet(updatedWallet);
+      }
 
       showToast(
         isHi ? '✅ डिपॉजिट अप्रूव हुआ (कंपनी बैलेंस से डिडक्ट)!' : '✅ Deposit Approved (Deducted from Company Balance)!',
