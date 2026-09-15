@@ -15,10 +15,17 @@ export function getStoredPlans(): InvestmentPlan[] {
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return DEFAULT_PLANS;
     }
-    // Auto-migrate: ensure the 641-day short-term plan (0.164%) and 365-day long-term plan (0.124%) are active
+    // Auto-migrate: ensure the 641-day short-term plan (0.164%, min 10k, max 100k) and 365-day long-term plan (0.124%) are active
     const shortTermPlan = parsed.find((p) => p.id === 'short-term');
     const longTermPlan = parsed.find((p) => p.id === 'long-term');
-    if (!shortTermPlan || shortTermPlan.dailyRoiPercent !== 0.164 || !longTermPlan || longTermPlan.dailyRoiPercent !== 0.124) {
+    if (
+      !shortTermPlan ||
+      shortTermPlan.dailyRoiPercent !== 0.164 ||
+      shortTermPlan.minAmount !== 10000 ||
+      shortTermPlan.maxAmount !== 100000 ||
+      !longTermPlan ||
+      longTermPlan.dailyRoiPercent !== 0.124
+    ) {
       return DEFAULT_PLANS;
     }
     return parsed;

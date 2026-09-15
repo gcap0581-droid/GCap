@@ -74,7 +74,7 @@ export function getStoredInvestments(): ActiveInvestment[] {
       
       const isShortTerm = inv.planId === 'short-term';
       const duration = isShortTerm ? 641 : (inv.durationDays || 641);
-      const investedAmount = isShortTerm && inv.investedAmount < 100000 ? 100000 : inv.investedAmount;
+      const investedAmount = isShortTerm && inv.investedAmount < 10000 ? 10000 : inv.investedAmount;
       // 0.041% of invested amount per 6 hours
       const cycleReturn = isShortTerm
         ? Math.round((investedAmount * 0.041) / 100 * 100) / 100

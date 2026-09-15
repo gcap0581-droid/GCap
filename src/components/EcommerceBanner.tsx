@@ -43,8 +43,8 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       tagColor: 'bg-amber-400 text-slate-950 font-black',
       title: isHi ? 'शॉर्ट टर्म प्लान — 641 दिन लॉक • हर 6 घंटे में 0.041% GP' : 'Short Term Plan — 641-Day Lock • 0.041% GP Every 6 Hours',
       desc: isHi
-        ? 'न्यूनतम ₹1,00,000 निवेश (नो मैक्स लिमिट) • हर 6h में 0.041% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
-        : 'Min ₹1,00,000 Deposit (No Max Limit) • 0.041% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
+        ? 'निवेश सीमा ₹10,000 - ₹1,00,000 • हर 6h में 0.041% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
+        : 'Deposit ₹10,000 - ₹1,00,000 • 0.041% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
       badgeText: '0.164%/DAY',
       badgeSub: isHi ? '641 दिन लॉक' : '641-Day Maturity',
       ctaText: isHi ? 'शॉर्ट टर्म प्लान चुनें' : 'View Short Term Plan',

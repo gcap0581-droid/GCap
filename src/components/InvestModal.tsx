@@ -219,7 +219,7 @@ export const InvestModal: React.FC<InvestModalProps> = ({
 
             {/* Quick Presets */}
             <div className="flex flex-wrap gap-2 mt-3">
-              {Array.from(new Set([plan.minAmount, 50000, 75000, 100000, 200000, 500000, 1000000])).map((preset) => {
+              {Array.from(new Set([plan.minAmount, 10000, 25000, 50000, 75000, 100000, 200000, 500000, 1000000])).map((preset) => {
                 if (preset < plan.minAmount || preset > plan.maxAmount) return null;
                 return (
                   <button

@@ -7,18 +7,18 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     nameHi: 'शॉर्ट टर्म प्लान (Short Term Plan)',
     dailyRoiPercent: 0.164, // 0.041% every 6 hours (0.041% * 4 = 0.164% per day)
     durationDays: 641,
-    minAmount: 100000, // Min ₹1,00,000
-    maxAmount: 1000000000, // Unlimited max
+    minAmount: 10000, // Min ₹10,000
+    maxAmount: 100000, // Max ₹1,00,000
     payoutFrequency: 'Daily',
     payoutFrequencyHi: 'हर 6 घंटे में 0.041% GP',
     risk: 'Low',
     tag: '641 Days Lock + 0.041%/6h GP',
     tagHi: '641 दिन लॉक + हर 6h में 0.041% GP',
     badge: '⚡ 641-Day Short Term Plan',
-    description: 'Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000 (No maximum limit). Locked for 641 days. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning. Withdraw earnings as per company withdrawal dates. At 641 days maturity, choose to renew with same Plan ID or withdraw full principal + remaining earnings with an official Certificate.',
-    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000 (अधिकतम की कोई सीमा नहीं)। मूलधन 641 दिनों तक सुरक्षित लॉक रहेगा। लॉक पीरियड में हर 6 घंटे में निवेश राशि का 0.041% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा। कंपनी के निकासी नियमों (1 से 5 तारीख) के तहत अर्निंग निकाली जा सकती है। 641 दिन पूरे होने पर उसी Plan ID से पुनः रिन्यू करें अथवा पूरा मूलधन व शेष लाभ निकालें और आधिकारिक परिपक्वता प्रमाण पत्र प्राप्त करें।',
+    description: 'Special 641-day Short Term investment plan. Deposit ₹10,000 to ₹1,00,000. Locked for 641 days. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning. Withdraw earnings as per company withdrawal dates. At 641 days maturity, choose to renew with same Plan ID or withdraw full principal + remaining earnings with an official Certificate.',
+    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से ₹1,00,000 तक। मूलधन 641 दिनों तक सुरक्षित लॉक रहेगा। लॉक पीरियड में हर 6 घंटे में निवेश राशि का 0.041% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा। कंपनी के निकासी नियमों (1 से 5 तारीख) के तहत अर्निंग निकाली जा सकती है। 641 दिन पूरे होने पर उसी Plan ID से पुनः रिन्यू करें अथवा पूरा मूलधन व शेष लाभ निकालें और आधिकारिक परिपक्वता प्रमाण पत्र प्राप्त करें।',
     features: [
-      'न्यूनतम निवेश ₹1,00,000 (अधिकतम निवेश की कोई सीमा नहीं / Unlimited)',
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
       'परिपक्वता अवधि 641 दिन (पूंजी 641 दिनों तक सुरक्षित लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)',
       'प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा',
@@ -28,7 +28,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
       'प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र'
     ],
     featuresHi: [
-      'न्यूनतम निवेश ₹1,00,000 (अधिकतम निवेश की कोई सीमा नहीं / Unlimited)',
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
       'परिपक्वता अवधि 641 दिन (पूंजी 641 दिनों तक सुरक्षित लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)',
       'प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा',

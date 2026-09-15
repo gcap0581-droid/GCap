@@ -121,7 +121,7 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
 
             {/* Quick Presets */}
             <div className="flex flex-wrap gap-2 mt-3">
-              {Array.from(new Set([currentPlan.minAmount, 50000, 75000, 100000, 200000, 500000, 1000000])).map((preset) => {
+              {Array.from(new Set([currentPlan.minAmount, 10000, 25000, 50000, 75000, 100000, 200000, 500000, 1000000])).map((preset) => {
                 if (preset < currentPlan.minAmount || preset > currentPlan.maxAmount) return null;
                 return (
                   <button
