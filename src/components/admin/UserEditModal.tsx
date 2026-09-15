@@ -94,10 +94,10 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [permManageBroadcast, setPermManageBroadcast] = useState<boolean>(false);
 
   // Wallet Management Fields
-  const [cashBalance, setCashBalance] = useState<number>(0);
-  const [gpBalance, setGpBalance] = useState<number>(0);
-  const [totalEarned, setTotalEarned] = useState<number>(0);
-  const [royaltyEarned, setRoyaltyEarned] = useState<number>(0);
+  const [cashBalance, setCashBalance] = useState<number | string>(0);
+  const [gpBalance, setGpBalance] = useState<number | string>(0);
+  const [totalEarned, setTotalEarned] = useState<number | string>(0);
+  const [royaltyEarned, setRoyaltyEarned] = useState<number | string>(0);
 
   // Quick Adjustment Fields
   const [adjType, setAdjType] = useState<'ADD' | 'DEDUCT' | 'SET'>('ADD');
@@ -114,8 +114,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
   // Backdated Investment Fields
   const [backdatedPlanId, setBackdatedPlanId] = useState('');
-  const [backdatedAmount, setBackdatedAmount] = useState<number>(0);
-  const [backdatedWithdrawal, setBackdatedWithdrawal] = useState<number>(0);
+  const [backdatedAmount, setBackdatedAmount] = useState<number | string>(0);
+  const [backdatedWithdrawal, setBackdatedWithdrawal] = useState<number | string>(0);
 
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -207,36 +207,39 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       setError('');
       setIsSubmitting(false);
     }
-  }, [user, wallet, bankDetails, isOpen, initialTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user?.id]);
 
   if (!isOpen) return null;
 
   const handleApplyQuickAdjustment = () => {
-    const num = parseFloat(adjAmount);
-    if (isNaN(num) || num <= 0) {
+    // Replace various dash characters with standard minus sign just in case and remove spaces
+    const safeAdjAmount = adjAmount.replace(/\s+/g, '').replace(/[−–—]/g, '-');
+    const num = parseFloat(safeAdjAmount);
+    if (isNaN(num)) {
       setError(isHi ? 'कृपया मान्य राशि दर्ज करें।' : 'Please enter a valid adjustment amount.');
       return;
     }
 
     if (adjTarget === 'cashBalance') {
       if (adjType === 'ADD') setCashBalance((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setCashBalance((prev) => Math.max(0, prev - num));
+      else if (adjType === 'DEDUCT') setCashBalance((prev) => prev - num);
       else if (adjType === 'SET') setCashBalance(num);
     } else if (adjTarget === 'gpBalance') {
       if (adjType === 'ADD') setGpBalance((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setGpBalance((prev) => Math.max(0, prev - num));
+      else if (adjType === 'DEDUCT') setGpBalance((prev) => prev - num);
       else if (adjType === 'SET') setGpBalance(num);
     } else if (adjTarget === 'totalEarned') {
       if (adjType === 'ADD') setTotalEarned((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setTotalEarned((prev) => Math.max(0, prev - num));
+      else if (adjType === 'DEDUCT') setTotalEarned((prev) => prev - num);
       else if (adjType === 'SET') setTotalEarned(num);
     } else if (adjTarget === 'royaltyEarned') {
       if (adjType === 'ADD') setRoyaltyEarned((prev) => prev + num);
-      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => Math.max(0, prev - num));
+      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => prev - num);
       else if (adjType === 'SET') setRoyaltyEarned(num);
     }
 
-    setAdjAmount('');
+    // setAdjAmount('');
     setError('');
   };
 
@@ -259,13 +262,14 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     setError('');
 
     try {
-      const parsedAdjAmount = parseFloat(adjAmount);
-      const hasAdjustment = !isNaN(parsedAdjAmount) && parsedAdjAmount > 0;
+      const safeAdjAmount = adjAmount.replace(/\s+/g, '').replace(/[−–—]/g, '-');
+      const parsedAdjAmount = parseFloat(safeAdjAmount);
+      const hasAdjustment = !isNaN(parsedAdjAmount) && parsedAdjAmount !== 0;
 
-      let finalCash = Math.max(0, cashBalance);
-      let finalGp = Math.max(0, gpBalance);
-      let finalTotalEarned = Math.max(0, totalEarned);
-      let finalRoyalty = Math.max(0, royaltyEarned);
+      let finalCash = cashBalance;
+      let finalGp = gpBalance;
+      let finalTotalEarned = totalEarned;
+      let finalRoyalty = royaltyEarned;
 
       const walletUpdates: any = {};
       if (finalCash !== (wallet?.cashBalance || 0)) walletUpdates.cashBalance = finalCash;
@@ -723,11 +727,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-emerald-400 font-bold">₹</span>
                       <input
-                        type="number"
-                        min="0"
+                        type="text" inputMode="decimal"
+                        
                         step="any"
                         value={cashBalance}
-                        onChange={(e) => setCashBalance(Math.max(0, parseFloat(e.target.value) || 0))}
+                        onChange={(e) => setCashBalance(parseFloat(e.target.value) || 0)}
                         className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-emerald-400 font-mono focus:border-emerald-400 focus:outline-none"
                       />
                     </div>
@@ -746,11 +750,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                   </div>
                   <div className="mt-2">
                     <input
-                      type="number"
-                      min="0"
+                      type="text" inputMode="decimal"
+                      
                       step="any"
                       value={gpBalance}
-                      onChange={(e) => setGpBalance(Math.max(0, parseFloat(e.target.value) || 0))}
+                      onChange={(e) => setGpBalance(parseFloat(e.target.value) || 0)}
                       className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-cyan-300 font-mono focus:border-cyan-400 focus:outline-none"
                     />
                   </div>
@@ -767,11 +771,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-amber-400 font-bold">₹</span>
                       <input
-                        type="number"
-                        min="0"
+                        type="text" inputMode="decimal"
+                        
                         step="any"
                         value={totalEarned}
-                        onChange={(e) => setTotalEarned(Math.max(0, parseFloat(e.target.value) || 0))}
+                        onChange={(e) => setTotalEarned(parseFloat(e.target.value) || 0)}
                         className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-amber-400 font-mono focus:border-amber-400 focus:outline-none"
                       />
                     </div>
@@ -789,11 +793,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-purple-300 font-bold">₹</span>
                       <input
-                        type="number"
-                        min="0"
+                        type="text" inputMode="decimal"
+                        
                         step="any"
                         value={royaltyEarned}
-                        onChange={(e) => setRoyaltyEarned(Math.max(0, parseFloat(e.target.value) || 0))}
+                        onChange={(e) => setRoyaltyEarned(parseFloat(e.target.value) || 0)}
                         className="w-full pl-6 pr-2 py-1.5 bg-slate-950 border border-slate-700/80 rounded-xl text-xs font-bold text-purple-300 font-mono focus:border-purple-400 focus:outline-none"
                       />
                     </div>
@@ -868,8 +872,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     </label>
                     <div className="flex gap-2">
                       <input
-                        type="number"
-                        min="0"
+                        type="text" inputMode="decimal"
+                        
                         step="any"
                         value={adjAmount}
                         onChange={(e) => setAdjAmount(e.target.value)}
@@ -1023,8 +1027,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     {isHi ? 'निवेश राशि (Invested Amount ₹):' : 'Invested Amount (₹):'}
                   </label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text" inputMode="decimal"
+                    
                     value={backdatedAmount || ''}
                     onChange={(e) => setBackdatedAmount(Math.max(0, parseFloat(e.target.value) || 0))}
                     placeholder="e.g. 50000"
@@ -1037,8 +1041,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     {isHi ? 'पूर्व निकासी राशि (Prior Withdrawals Processed ₹):' : 'Prior Withdrawals (₹):'}
                   </label>
                   <input
-                    type="number"
-                    min="0"
+                    type="text" inputMode="decimal"
+                    
                     value={backdatedWithdrawal || ''}
                     onChange={(e) => setBackdatedWithdrawal(Math.max(0, parseFloat(e.target.value) || 0))}
                     placeholder="e.g. 5000"

@@ -1570,18 +1570,18 @@ async function startServer() {
     let updatedWallet = { ...existingWallet };
     if (wallet && typeof wallet === 'object') {
       updatedWallet = {
-        cashBalance: typeof wallet.cashBalance === 'number' ? Math.max(0, wallet.cashBalance) : existingWallet.cashBalance,
-        gpBalance: typeof wallet.gpBalance === 'number' ? Math.max(0, wallet.gpBalance) : existingWallet.gpBalance,
-        totalInvested: typeof wallet.totalInvested === 'number' ? Math.max(0, wallet.totalInvested) : existingWallet.totalInvested,
-        totalEarned: typeof wallet.totalEarned === 'number' ? Math.max(0, wallet.totalEarned) : existingWallet.totalEarned,
-        royaltyEarned: typeof wallet.royaltyEarned === 'number' ? Math.max(0, wallet.royaltyEarned) : existingWallet.royaltyEarned,
-        pendingWithdrawals: typeof wallet.pendingWithdrawals === 'number' ? Math.max(0, wallet.pendingWithdrawals) : existingWallet.pendingWithdrawals,
-        pendingDeposits: typeof wallet.pendingDeposits === 'number' ? Math.max(0, wallet.pendingDeposits) : existingWallet.pendingDeposits,
+        cashBalance: typeof wallet.cashBalance === 'number' ? wallet.cashBalance : existingWallet.cashBalance,
+        gpBalance: typeof wallet.gpBalance === 'number' ? wallet.gpBalance : existingWallet.gpBalance,
+        totalInvested: typeof wallet.totalInvested === 'number' ? wallet.totalInvested : existingWallet.totalInvested,
+        totalEarned: typeof wallet.totalEarned === 'number' ? wallet.totalEarned : existingWallet.totalEarned,
+        royaltyEarned: typeof wallet.royaltyEarned === 'number' ? wallet.royaltyEarned : existingWallet.royaltyEarned,
+        pendingWithdrawals: typeof wallet.pendingWithdrawals === 'number' ? wallet.pendingWithdrawals : existingWallet.pendingWithdrawals,
+        pendingDeposits: typeof wallet.pendingDeposits === 'number' ? wallet.pendingDeposits : existingWallet.pendingDeposits,
       };
     }
 
     // Apply specific adjustment if provided
-    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount > 0) {
+    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
       const amount = Number(adjustment.amount);
       const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
       const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
@@ -1592,7 +1592,7 @@ async function startServer() {
       if (adjType === 'ADD') {
         calculatedVal = currentVal + amount;
       } else if (adjType === 'DEDUCT') {
-        calculatedVal = Math.max(0, currentVal - amount);
+        calculatedVal = currentVal - amount;
       } else if (adjType === 'SET') {
         calculatedVal = amount;
       }

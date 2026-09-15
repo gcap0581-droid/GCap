@@ -4,9 +4,9 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCap',
   gpRatePerRupee: 1.0, // 1 INR = 1.0 GP (Adjustable by Admin anytime)
   minDeposit: 100,
-  maxDeposit: 100000000, // Unlimited upper deposit limit
+  maxDeposit: Number.MAX_SAFE_INTEGER, // Unlimited upper deposit limit
   minWithdrawal: 200,
-  maxWithdrawalPerDay: 100000,
+  maxWithdrawalPerDay: Number.MAX_SAFE_INTEGER,
   withdrawalFeePercent: 0, // 0% fee (100% payout)
   withdrawalTiming: 'Earning: 1st - 5th of Month | Royalty: 6th - 10th of Month',
   withdrawalTimingHi: 'अर्निंग निकासी: हर महीने 1 से 5 तारीख | रॉयल्टी निकासी: 6 से 10 तारीख',

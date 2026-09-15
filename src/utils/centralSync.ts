@@ -732,6 +732,25 @@ export async function apiAdminAdjustUserWallet(
     const existing = getWalletForUser(userId, currentWallets, fs?.users || []);
 
     const finalWallet: Wallet = { ...existing, ...wallet };
+    
+    // Apply adjustment directly to finalWallet if present
+    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
+      const amount = Number(adjustment.amount);
+      const adjType = adjustment.type || 'ADD';
+      const targetWallet = adjustment.targetWallet || 'cashBalance';
+      const currentVal = finalWallet[targetWallet] || 0;
+      
+      let calculatedVal = currentVal;
+      if (adjType === 'ADD') {
+        calculatedVal = currentVal + amount;
+      } else if (adjType === 'DEDUCT') {
+        calculatedVal = currentVal - amount;
+      } else if (adjType === 'SET') {
+        calculatedVal = amount;
+      }
+      finalWallet[targetWallet] = calculatedVal;
+    }
+
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], finalWallet);
     await saveWalletsToFirestore(updatedWallets);
 
