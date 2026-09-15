@@ -482,8 +482,6 @@ export async function apiUpdateTransaction(
     if (transaction.type === 'DEPOSIT' && isApproved) {
       userWallet.cashBalance += transaction.amount;
       userWallet.pendingDeposits = Math.max(0, (userWallet.pendingDeposits || 0) - transaction.amount);
-      currentTreasury.balance += transaction.amount;
-      currentTreasury.totalInjected = (currentTreasury.totalInjected || 0) + transaction.amount;
     } else if (transaction.type === 'DEPOSIT' && isRejected) {
       userWallet.pendingDeposits = Math.max(0, (userWallet.pendingDeposits || 0) - transaction.amount);
     } else if (transaction.type === 'WITHDRAWAL' && isApproved) {
