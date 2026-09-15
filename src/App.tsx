@@ -383,12 +383,37 @@ export default function App() {
           setStoredWallet(myWallet);
         }
         if (fs.transactions) {
-          const myTxns = fs.transactions.filter(
-            (t) =>
-              t.userId === currentUser.id ||
-              (currentUser.loginId && (t.userLoginId || '').toLowerCase() === currentUser.loginId.toLowerCase()) ||
-              (userPhoneDigits && t.userPhone && t.userPhone.includes(userPhoneDigits))
-          );
+          const { aliases } = findUserAndAllAliases(currentUser.id, fs.users || []);
+          const cleanLogin = (currentUser.loginId || '').toLowerCase().trim();
+          const cleanPhone = (currentUser.phone || '').replace(/[^0-9]/g, "");
+          const phone10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+          const myTxns = fs.transactions.filter((t) => {
+            if (!t) return false;
+            const tUserId = (t.userId || '').toLowerCase().trim();
+            const tUserLoginId = (t.userLoginId || '').toLowerCase().trim();
+            const tUserPhone = (t.userPhone || '').replace(/[^0-9]/g, "");
+            const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+            const tNote = ((t.note || '') + ' ' + (t.noteHi || '')).toLowerCase();
+
+            const isAliasMatch = aliases.some((a) => {
+              if (!a) return false;
+              const cleanA = a.toLowerCase().trim();
+              return tUserId === cleanA || tUserLoginId === cleanA;
+            });
+
+            const isDirectMatch =
+              isAliasMatch ||
+              tUserId === currentUser.id.toLowerCase() ||
+              (cleanLogin && tUserLoginId === cleanLogin) ||
+              (phone10 && tPhone10 === phone10);
+
+            const isNoteMatch =
+              Boolean(cleanLogin && cleanLogin.length >= 4 && tNote.includes(cleanLogin)) ||
+              Boolean(phone10 && phone10.length >= 6 && tNote.includes(phone10));
+
+            return isDirectMatch || isNoteMatch;
+          });
           setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(myTxns) ? myTxns : prev));
           setStoredTransactions(myTxns);
         }
@@ -1284,8 +1309,10 @@ export default function App() {
         userId: currentUser.id,
         userLoginId: currentUser.loginId,
         userName: currentUser.name,
+        userPhone: currentUser.phone || '',
         type: 'TRANSFER',
         amount: amount,
+        gpEarned: amount,
         date: new Date().toISOString(),
         timestamp: Date.now(),
         status: 'SUCCESS',
@@ -1301,8 +1328,10 @@ export default function App() {
         userId: recipient.id,
         userLoginId: recipient.loginId,
         userName: recipient.name,
+        userPhone: recipient.phone || '',
         type: 'TRANSFER',
         amount: amount,
+        gpEarned: amount,
         date: new Date().toISOString(),
         timestamp: Date.now(),
         status: 'SUCCESS',

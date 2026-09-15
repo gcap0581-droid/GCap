@@ -13,6 +13,9 @@ import {
   Printer,
   Download,
   FileText,
+  RefreshCw,
+  ArrowRightLeft,
+  Send,
 } from 'lucide-react';
 import { Transaction, TransactionType, Language, UserProfile } from '../types';
 import { formatINR } from '../utils/storage';
@@ -68,8 +71,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     return t.type === filter;
   });
 
-  const getTypeIcon = (type: TransactionType) => {
-    switch (type) {
+  const getTypeIcon = (tx: Transaction) => {
+    switch (tx.type) {
       case 'DEPOSIT':
         return <ArrowDownLeft className="w-4 h-4 text-emerald-400" />;
       case 'INVEST':
@@ -80,11 +83,22 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         return <ArrowUpRight className="w-4 h-4 text-purple-400" />;
       case 'CAPITAL_RETURN':
         return <CheckCircle2 className="w-4 h-4 text-cyan-400" />;
+      case 'SWAP_GP':
+        return <RefreshCw className="w-4 h-4 text-teal-400" />;
+      case 'TRANSFER':
+        if (tx.id.includes('-recv-') || (tx.note || '').toLowerCase().includes('received') || (tx.noteHi || '').includes('प्राप्त')) {
+          return <ArrowDownLeft className="w-4 h-4 text-emerald-400" />;
+        }
+        return <ArrowUpRight className="w-4 h-4 text-indigo-400" />;
+      case 'REFERRAL_BONUS':
+        return <Sparkles className="w-4 h-4 text-pink-400" />;
+      default:
+        return <Receipt className="w-4 h-4 text-slate-400" />;
     }
   };
 
-  const getTypeLabel = (type: TransactionType) => {
-    switch (type) {
+  const getTypeLabel = (tx: Transaction) => {
+    switch (tx.type) {
       case 'DEPOSIT':
         return isHi ? 'फंड जमा (Deposit)' : 'Funds Added';
       case 'INVEST':
@@ -95,6 +109,17 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         return isHi ? 'बैंक/UPI निकासी (Withdrawal)' : 'Withdrawal';
       case 'CAPITAL_RETURN':
         return isHi ? 'मूलधन वापसी (Capital Return)' : 'Capital Returned';
+      case 'SWAP_GP':
+        return isHi ? 'GP कनवर्ट/स्वैप (GP Swap)' : 'GP Swap';
+      case 'TRANSFER':
+        if (tx.id.includes('-recv-') || (tx.note || '').toLowerCase().includes('received') || (tx.noteHi || '').includes('प्राप्त')) {
+          return isHi ? 'GP प्राप्त हुआ (Received GP)' : 'GP Received';
+        }
+        return isHi ? 'GP ट्रांसफर (Sent GP)' : 'P2P GP Sent';
+      case 'REFERRAL_BONUS':
+        return isHi ? 'रेफरल बोनस (Referral Bonus)' : 'Referral Bonus';
+      default:
+        return isHi ? 'लेनदेन (Transaction)' : 'Transaction';
     }
   };
 
@@ -133,11 +158,13 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {[
             { id: 'ALL', label: isHi ? 'सभी' : 'All' },
-            { id: 'PENDING', label: isHi ? '⏳ लंबित (Pending)' : '⏳ Pending' },
+            { id: 'PENDING', label: isHi ? '⏳ लंबित' : '⏳ Pending' },
             { id: 'DEPOSIT', label: isHi ? 'जमा' : 'Deposits' },
             { id: 'RETURN_PAYOUT', label: isHi ? 'रिटर्न' : 'Returns' },
             { id: 'INVEST', label: isHi ? 'निवेश' : 'Investments' },
             { id: 'WITHDRAWAL', label: isHi ? 'निकासी' : 'Withdrawals' },
+            { id: 'TRANSFER', label: isHi ? 'GP ट्रांसफर' : 'GP Transfers' },
+            { id: 'SWAP_GP', label: isHi ? 'GP स्वैप' : 'GP Swaps' },
           ].map((item) => (
             <button
               key={item.id}
@@ -173,7 +200,8 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-sans">
               {filteredTransactions.map((tx) => {
-                const isPositive = tx.type === 'DEPOSIT' || tx.type === 'RETURN_PAYOUT' || tx.type === 'CAPITAL_RETURN';
+                const isReceivedTransfer = tx.type === 'TRANSFER' && (tx.id.includes('-recv-') || (tx.note || '').toLowerCase().includes('received') || (tx.noteHi || '').includes('प्राप्त'));
+                const isPositive = tx.type === 'DEPOSIT' || tx.type === 'RETURN_PAYOUT' || tx.type === 'CAPITAL_RETURN' || tx.type === 'REFERRAL_BONUS' || isReceivedTransfer;
                 const formattedDate = new Date(tx.timestamp || tx.date).toLocaleString('en-IN', {
                   day: 'numeric',
                   month: 'short',
@@ -187,11 +215,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     <td className="py-3.5 pl-2">
                       <div className="flex items-center gap-2.5">
                         <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
-                          {getTypeIcon(tx.type)}
+                          {getTypeIcon(tx)}
                         </div>
                         <div>
                           <div className="font-semibold text-white flex items-center gap-1.5">
-                            <span>{getTypeLabel(tx.type)}</span>
+                            <span>{getTypeLabel(tx)}</span>
                             {tx.type === 'WITHDRAWAL' && tx.withdrawalSource && (
                               <span
                                 className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
@@ -205,9 +233,19 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                                   : (isHi ? 'अर्निंग (1-5 तारीख)' : 'Earning (1st-5th)')}
                               </span>
                             )}
+                            {tx.type === 'TRANSFER' && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                GP
+                              </span>
+                            )}
+                            {tx.type === 'SWAP_GP' && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                                CASH ➔ GP
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-slate-400 line-clamp-1">
-                            {isHi ? tx.noteHi : tx.note}
+                            {isHi ? (tx.noteHi || tx.note) : (tx.note || tx.noteHi)}
                           </div>
                         </div>
                       </div>
@@ -255,14 +293,19 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
                     <td className="py-3.5 pr-2 text-right">
                       <div className="flex flex-col items-end gap-1">
-                        <span
-                          className={`font-mono font-bold text-sm ${
-                            isPositive ? 'text-emerald-400' : 'text-slate-200'
-                          }`}
-                        >
-                          {isPositive ? '+' : '-'}
-                          {formatINR(tx.amount)}
-                        </span>
+                        {tx.type === 'TRANSFER' ? (
+                          <span className={`font-mono font-bold text-sm ${isReceivedTransfer ? 'text-emerald-400' : 'text-indigo-300'}`}>
+                            {isReceivedTransfer ? '+' : '-'}{tx.gpEarned || tx.amount} GP
+                          </span>
+                        ) : tx.type === 'SWAP_GP' ? (
+                          <span className="font-mono font-bold text-sm text-teal-300">
+                            +{tx.gpEarned || tx.amount} GP
+                          </span>
+                        ) : (
+                          <span className={`font-mono font-bold text-sm ${isPositive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            {isPositive ? '+' : '-'}{formatINR(tx.amount)}
+                          </span>
+                        )}
 
                         {tx.type === 'WITHDRAWAL' && onViewVoucher && (
                           <button
@@ -395,7 +438,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     <tr key={tx.id} className="text-slate-800">
                       <td className="py-2 px-2 whitespace-nowrap">{formattedDate}</td>
                       <td className="py-2 px-2">
-                        <div className="font-bold">{getTypeLabel(tx.type)}</div>
+                        <div className="font-bold">{getTypeLabel(tx)}</div>
                         <div className="text-[9px] text-slate-500 font-sans">{isHi ? tx.noteHi : tx.note}</div>
                       </td>
                       <td className="py-2 px-2 text-[11px] font-mono">{tx.referenceId}</td>

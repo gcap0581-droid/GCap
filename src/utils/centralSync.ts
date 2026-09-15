@@ -75,10 +75,12 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
   }
 
   const { aliases } = findUserAndAllAliases(userId, users);
-  
+
+  const candidates: Wallet[] = [];
+
   for (const alias of aliases) {
-    if (wallets && wallets[alias]) {
-      return { ...wallets[alias] };
+    if (alias && wallets[alias]) {
+      candidates.push(wallets[alias]);
     }
   }
 
@@ -88,21 +90,41 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
     for (const [key, w] of Object.entries(wallets)) {
       const cleanKey = key.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
       if (cleanKey && (cleanKey === cleanId || cleanKey.endsWith(cleanId) || cleanId.endsWith(cleanKey))) {
-        return { ...w };
+        candidates.push(w);
       }
     }
   }
 
-  return {
-    cashBalance: 0,
-    gpBalance: 0,
-    totalInvested: 0,
-    totalEarned: 0,
-    royaltyEarned: 0,
-    pendingWithdrawals: 0,
-    pendingDeposits: 0,
-    totalWithdrawn: 0,
-  };
+  if (candidates.length === 0) {
+    return {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+  }
+
+  // Pick the candidate wallet with the highest total assets/value to prevent picking uninitialized alias keys
+  candidates.sort((a, b) => {
+    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+    return valB - valA;
+  });
+
+  const bestWallet = candidates[0];
+
+  // Self-heal: propagate bestWallet to all alias keys in the wallets object
+  for (const alias of aliases) {
+    if (alias) {
+      wallets[alias] = { ...bestWallet };
+    }
+  }
+
+  return { ...bestWallet };
 }
 
 // Helper to update a user's wallet across all aliases in the map
@@ -227,9 +249,40 @@ export async function fetchCentralState(
         serverTime: Date.now(),
       };
     } else {
-      const userTxns = (fs.transactions || []).filter(
-        (t) => t.userId === userId || (t as any).userLoginId === userId
-      );
+      const { user: foundUser, aliases } = userId
+        ? findUserAndAllAliases(userId, fs.users || [])
+        : { user: null, aliases: [] };
+
+      const userTxns = (fs.transactions || []).filter((t) => {
+        if (!t) return false;
+        const cleanReq = String(userId || '').toLowerCase().trim();
+        const reqDigitsStr = cleanReq.replace(/[^0-9]/g, "");
+        const req10 = reqDigitsStr.length >= 10 ? reqDigitsStr.slice(-10) : reqDigitsStr;
+
+        const tUserId = (t.userId || "").toLowerCase().trim();
+        const tUserLoginId = (t.userLoginId || "").toLowerCase().trim();
+        const tUserPhone = (t.userPhone || "").replace(/[^0-9]/g, "");
+        const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+        const tNote = ((t.note || "") + " " + (t.noteHi || "")).toLowerCase();
+
+        const aliasMatch = aliases.some((a) => {
+          if (!a) return false;
+          const cleanA = a.toLowerCase().trim();
+          return tUserId === cleanA || tUserLoginId === cleanA;
+        });
+
+        const isDirectMatch =
+          aliasMatch ||
+          tUserId === cleanReq ||
+          tUserLoginId === cleanReq ||
+          (req10 && tPhone10 === req10);
+
+        const isNoteMatch =
+          Boolean(cleanReq && cleanReq.length >= 4 && tNote.includes(cleanReq)) ||
+          Boolean(req10 && req10.length >= 6 && tNote.includes(req10));
+
+        return isDirectMatch || isNoteMatch;
+      });
       const userInvestments = (fs.investments || []).filter(
         (i) => i.userId === userId
       );

@@ -1107,6 +1107,64 @@ async function startServer() {
     });
   });
 
+function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet {
+  if (!reqUserId) return DEFAULT_WALLET;
+
+  const candidates: Wallet[] = [];
+  const keysToTest = new Set<string>();
+
+  const cleanReq = String(reqUserId).trim();
+  const reqDigits = cleanReq.replace(/[^0-9]/g, "");
+  const reqPhone10 = reqDigits.length >= 10 ? reqDigits.slice(-10) : reqDigits;
+
+  if (cleanReq) keysToTest.add(cleanReq);
+  if (reqDigits) keysToTest.add(reqDigits);
+  if (reqPhone10) keysToTest.add(reqPhone10);
+
+  const user = foundUser || (db.users || []).find((u: any) => {
+    const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
+    return (
+      (reqPhone10 && uPhone10 && uPhone10 === reqPhone10) ||
+      u.id === cleanReq ||
+      (u.loginId && u.loginId.toLowerCase() === cleanReq.toLowerCase())
+    );
+  });
+
+  if (user) {
+    if (user.id) keysToTest.add(user.id);
+    if (user.loginId) keysToTest.add(user.loginId);
+    if (user.phone) {
+      const pClean = user.phone.replace(/[^0-9]/g, "");
+      if (pClean) keysToTest.add(pClean);
+      if (pClean.length >= 10) keysToTest.add(pClean.slice(-10));
+    }
+  }
+
+  keysToTest.forEach((k) => {
+    if (k && db.wallets && db.wallets[k]) {
+      candidates.push(db.wallets[k]);
+    }
+  });
+
+  if (candidates.length === 0) return DEFAULT_WALLET;
+
+  candidates.sort((a, b) => {
+    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+    return valB - valA;
+  });
+
+  const best = candidates[0];
+
+  keysToTest.forEach((k) => {
+    if (k && db.wallets) {
+      db.wallets[k] = { ...best };
+    }
+  });
+
+  return { ...best };
+}
+
   // GET: Central real-time state for any user or admin across the world
   app.get("/api/central/state", (req, res) => {
     const db = ensureDb();
@@ -1123,7 +1181,7 @@ async function startServer() {
         transactions: db.transactions,
         investments: db.investments,
         wallets: db.wallets,
-        wallet: userId && typeof userId === "string" ? db.wallets[userId] || DEFAULT_WALLET : undefined,
+        wallet: userId && typeof userId === "string" ? getBestUserWallet(db, userId) : undefined,
         plans: db.plans,
         rules: db.rules,
         liveConfig: db.liveConfig,
@@ -1152,31 +1210,40 @@ async function startServer() {
       : null;
 
     const uPhone10 = foundUser ? (foundUser.phone || "").replace(/[^0-9]/g, "").slice(-10) : reqPhone10;
-    const uPhoneClean = foundUser ? (foundUser.phone || "").replace(/[^0-9]/g, "") : reqDigits;
 
     const userWallet = reqUserId
-      ? (
-          (uPhone10 ? db.wallets[uPhone10] : null) ||
-          (uPhoneClean ? db.wallets[uPhoneClean] : null) ||
-          db.wallets[reqUserId] ||
-          (foundUser?.id ? db.wallets[foundUser.id] : null) ||
-          (foundUser?.loginId ? db.wallets[foundUser.loginId] : null) ||
-          (foundUser?.phone ? db.wallets[foundUser.phone] : null) ||
-          DEFAULT_WALLET
-        )
+      ? getBestUserWallet(db, reqUserId, foundUser)
       : DEFAULT_WALLET;
 
     const effectiveId = foundUser ? foundUser.id : reqUserId;
     const userTxns = reqUserId
       ? db.transactions.filter((t) => {
-          const tPhone10 = (t.userPhone || t.userId || "").replace(/[^0-9]/g, "").slice(-10);
-          return (
-            (uPhone10 && tPhone10 === uPhone10) ||
-            t.userId === effectiveId ||
-            t.userId === reqUserId ||
-            (foundUser && (t.userLoginId === foundUser.loginId || t.userPhone === foundUser.phone)) ||
-            !t.userId
-          );
+          if (!t) return false;
+          const cleanReq = reqUserId.toLowerCase().trim();
+          const reqDigitsStr = cleanReq.replace(/[^0-9]/g, "");
+          const req10 = reqDigitsStr.length >= 10 ? reqDigitsStr.slice(-10) : reqDigitsStr;
+
+          const tUserId = (t.userId || "").toLowerCase().trim();
+          const tUserLoginId = (t.userLoginId || "").toLowerCase().trim();
+          const tUserPhone = (t.userPhone || "").replace(/[^0-9]/g, "");
+          const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+          const tNote = ((t.note || "") + " " + (t.noteHi || "")).toLowerCase();
+
+          const isDirectMatch =
+            tUserId === cleanReq ||
+            tUserLoginId === cleanReq ||
+            (req10 && tPhone10 === req10) ||
+            (foundUser && (
+              tUserId === foundUser.id.toLowerCase() ||
+              tUserLoginId === (foundUser.loginId || "").toLowerCase() ||
+              (foundUser.phone && tUserPhone === foundUser.phone.replace(/[^0-9]/g, ""))
+            ));
+
+          const isNoteMatch =
+            Boolean(cleanReq && cleanReq.length >= 4 && tNote.includes(cleanReq)) ||
+            Boolean(req10 && req10.length >= 6 && tNote.includes(req10));
+
+          return isDirectMatch || isNoteMatch;
         })
       : db.transactions;
 
@@ -1264,12 +1331,7 @@ async function startServer() {
     }
 
     // Update wallet pending amounts or swap
-    const existingWallet =
-      db.wallets[cleanId] ||
-      (user?.id ? db.wallets[user.id] : null) ||
-      (user?.loginId ? db.wallets[user.loginId] : null) ||
-      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
-      { ...DEFAULT_WALLET };
+    const existingWallet = getBestUserWallet(db, cleanId, user);
 
     let wallet = { ...DEFAULT_WALLET, ...existingWallet };
 
@@ -1470,12 +1532,7 @@ async function startServer() {
         (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
     );
 
-    const existingWallet =
-      db.wallets[cleanId] ||
-      (user?.id ? db.wallets[user.id] : null) ||
-      (user?.loginId ? db.wallets[user.loginId] : null) ||
-      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
-      { ...DEFAULT_WALLET };
+    const existingWallet = getBestUserWallet(db, cleanId, user);
 
     let wallet = { ...DEFAULT_WALLET, ...existingWallet };
     const amount = Number(investment.investedAmount || 0);
@@ -1694,12 +1751,7 @@ async function startServer() {
     const effectiveUserId = user ? user.id : cleanId;
 
     // Retrieve existing wallet checking effectiveUserId, loginId, phone, and cleanId
-    const existingWallet =
-      db.wallets[effectiveUserId] ||
-      (user?.loginId ? db.wallets[user.loginId] : null) ||
-      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
-      db.wallets[cleanId] ||
-      { ...DEFAULT_WALLET };
+    const existingWallet = getBestUserWallet(db, cleanId, user);
 
     let updatedWallet = { ...existingWallet };
     if (wallet && typeof wallet === 'object') {
