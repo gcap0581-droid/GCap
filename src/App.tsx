@@ -3615,6 +3615,7 @@ export default function App() {
                       onOpenDeposit={() => setIsDepositOpen(true)}
                       onOpenWithdraw={() => setIsWithdrawOpen(true)}
                       onOpenSwap={() => setIsSwapOpen(true)}
+                      onOpenGpTransfer={() => setIsGpTransferOpen(true)}
                       onClaimAllReturns={handleClaimAllReturns}
                     />
                     <TransactionsTable
