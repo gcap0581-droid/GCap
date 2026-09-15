@@ -974,8 +974,8 @@ export default function App() {
       showToast(
         isHi ? '✅ डिपॉजिट अप्रूव हुआ (कंपनी बैलेंस से डिडक्ट)!' : '✅ Deposit Approved (Deducted from Company Balance)!',
         isHi
-          ? `कंपनी मुख्य बैलेंस से ₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र वॉलेट में ₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ (कंपनी शेष: ₹${deductRes.treasury.balance.toLocaleString('en-IN')})। अब यूज़र इसका GP बनाकर प्लान ले सकते हैं।`
-          : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet (Company Balance: ₹${deductRes.treasury.balance.toLocaleString('en-IN')}).`
+          ? `कंपनी मुख्य बैलेंस से ₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र वॉलेट में ₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ (कंपनी शेष: ₹${(deductRes.treasury?.balance || 0).toLocaleString('en-IN')})। अब यूज़र इसका GP बनाकर प्लान ले सकते हैं।`
+          : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet (Company Balance: ₹${(deductRes.treasury?.balance || 0).toLocaleString('en-IN')}).`
       );
       return;
     } else if (prevTxn && prevTxn.type === 'DEPOSIT' && prevTxn.status === 'PENDING' && updatedTxn.status === 'REJECTED') {
@@ -1065,8 +1065,8 @@ export default function App() {
       showToast(
         isHi ? 'प्रोजेक्ट डेटा सफलतापूर्वक रिस्टोर हुआ!' : 'System Restored Successfully!',
         isHi
-          ? `दिनांक ${backupToRestore.backupDate} की स्थिति बहाल कर दी गई है (कंपनी मुख्य बैलेंस: ${formatINR(p.treasury.balance)})`
-          : `System restored to snapshot of ${backupToRestore.backupDate} (Company Treasury: ${formatINR(p.treasury.balance)})`
+          ? `दिनांक ${backupToRestore.backupDate} की स्थिति बहाल कर दी गई है (कंपनी मुख्य बैलेंस: ${formatINR(p.treasury?.balance || 0)})`
+          : `System restored to snapshot of ${backupToRestore.backupDate} (Company Treasury: ${formatINR(p.treasury?.balance || 0)})`
       );
     } else {
       showToast(
@@ -3309,7 +3309,7 @@ export default function App() {
       {/* Main Viewport */}
       <main className={viewMode === 'web' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" : "w-full max-w-full p-0 overflow-x-hidden"}>
         {/* Global Admin Treasury Low Alert Banner (if balance <= 500,000) */}
-        {currentUser.role === 'ADMIN' && treasury.balance <= DEFAULT_ALERT_THRESHOLD && (
+        {currentUser.role === 'ADMIN' && treasury && treasury.balance <= DEFAULT_ALERT_THRESHOLD && (
           <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/80 shadow-2xl shadow-rose-950/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-pulse">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-lg shadow-rose-500/40">
@@ -3326,8 +3326,8 @@ export default function App() {
                 </div>
                 <p className="text-xs text-slate-200 mt-0.5">
                   {isHi
-                    ? `कंपनी का मुख्य बैलेंस घटकर केवल ₹${treasury.balance.toLocaleString('en-IN')} रह गया है। यूज़र्स के निवेश के लिए तुरंत मुख्य बैलेंस बढ़ाएं!`
-                    : `Company treasury reserve is down to ₹${treasury.balance.toLocaleString('en-IN')}. Replenish immediately to ensure smooth user investments!`}
+                    ? `कंपनी का मुख्य बैलेंस घटकर केवल ₹${(treasury?.balance || 0).toLocaleString('en-IN')} रह गया है। यूज़र्स के निवेश के लिए तुरंत मुख्य बैलेंस बढ़ाएं!`
+                    : `Company treasury reserve is down to ₹${(treasury?.balance || 0).toLocaleString('en-IN')}. Replenish immediately to ensure smooth user investments!`}
                 </p>
               </div>
             </div>
@@ -3693,7 +3693,7 @@ export default function App() {
         onClose={() => setIsInvestOpen(false)}
         plan={selectedPlan}
         wallet={wallet}
-        companyBalance={treasury.balance}
+        companyBalance={treasury?.balance || 0}
         language={language}
         initialAmount={initialInvestAmount}
         onInvestSuccess={handleInvestSuccess}
