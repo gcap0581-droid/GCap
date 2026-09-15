@@ -162,8 +162,8 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [plans, setPlans] = useState<InvestmentPlan[]>(getStoredPlans());
   const [rules, setRules] = useState<AppRules | null>(null);
-  const [treasury, setTreasury] = useState<CompanyTreasury | null>(null);
-  const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>([]);
+  const [treasury, setTreasury] = useState<CompanyTreasury | null>(() => getStoredTreasury());
+  const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>(() => getStoredTreasuryLogs());
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [liveConfig, setLiveConfig] = useState<LiveInterfaceConfig | null>(null);
   const [congratulationsInvestment, setCongratulationsInvestment] = useState<ActiveInvestment | null>(null);
@@ -270,12 +270,13 @@ export default function App() {
           saveStoredLiveConfig(state.liveConfig);
         }
 
+        if (state.treasury) {
+          setTreasury(state.treasury);
+          setStoredTreasury(state.treasury);
+        }
+
         if (currentUser) {
           if (currentUser.role === 'ADMIN') {
-            if (state.treasury) {
-              setTreasury(state.treasury);
-              setStoredTreasury(state.treasury);
-            }
             if (state.transactions) {
               setTransactions(state.transactions);
               setStoredTransactions(state.transactions);
@@ -473,6 +474,11 @@ export default function App() {
           saveStoredLiveConfig(state.liveConfig);
         }
 
+        if (state.treasury) {
+          setTreasury((prev) => (JSON.stringify(prev) !== JSON.stringify(state.treasury) ? state.treasury : prev));
+          setStoredTreasury(state.treasury);
+        }
+
         // Sync Role-Specific State
         if (currentUser.role === 'ADMIN') {
           if (state.users && Array.isArray(state.users)) {
@@ -485,10 +491,6 @@ export default function App() {
           if (state.investments) {
             setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(state.investments) ? state.investments : prev));
             setStoredInvestments(state.investments);
-          }
-          if (state.treasury) {
-            setTreasury((prev) => (JSON.stringify(prev) !== JSON.stringify(state.treasury) ? state.treasury : prev));
-            setStoredTreasury(state.treasury);
           }
           if (state.treasuryLogs) {
             setTreasuryLogs((prev) => (JSON.stringify(prev) !== JSON.stringify(state.treasuryLogs) ? state.treasuryLogs : prev));
@@ -3910,7 +3912,7 @@ export default function App() {
         onClose={() => setIsInvestOpen(false)}
         plan={selectedPlan}
         wallet={wallet}
-        companyBalance={treasury?.balance || 0}
+        companyBalance={treasury ? treasury.balance : undefined}
         language={language}
         initialAmount={initialInvestAmount}
         onInvestSuccess={handleInvestSuccess}

@@ -1286,6 +1286,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       plans: db.plans,
       rules: db.rules,
       liveConfig: db.liveConfig,
+      treasury: db.treasury,
       bankDetails: userBank,
       lastUpdated: db.lastUpdated,
       serverTime: Date.now(),
