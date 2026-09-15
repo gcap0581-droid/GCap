@@ -1479,24 +1479,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <AdminCompanyProfileTab language={language} />
       )}
 
-      {/* TAB: TREASURY LEDGER & AUDIT */}
-      {activeSubTab === 'TREASURY' && (
-        <AdminTreasuryTab
-          treasury={treasury}
-          logs={treasuryLogs}
-          language={language}
-          onOpenAddModal={() => {
-            setBalanceModalMode('ADD');
-            setBalanceModalOpen(true);
-          }}
-          onOpenDeductModal={() => {
-            setBalanceModalMode('DEDUCT');
-            setBalanceModalOpen(true);
-          }}
-          onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
-          onResetTreasury={onResetTreasury}
-        />
-      )}
+
 
       {/* TAB 2: PLANS CRUD */}
       {activeSubTab === 'PLANS' && (
