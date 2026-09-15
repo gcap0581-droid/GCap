@@ -239,14 +239,14 @@ export default function App() {
     };
   }, []);
 
-  // Immediate Public State Sync on App Launch & Foreground Resume:
+  // Immediate State Sync on App Launch & Foreground Resume:
   // Ensures: "Kuch bhi update ya change karne per admin ya GitHub me kuch bhi new ho wo sub kuch kisi dusre ke mobile me jo pahle se app install ho open hote hi sara change leker hi khule"
   useEffect(() => {
     let isCancelled = false;
 
-    const syncPublicState = async () => {
+    const syncAppState = async () => {
       try {
-        const state = await fetchCentralState(undefined, 'USER');
+        const state = await fetchCentralState(currentUser?.id, currentUser?.role || 'USER');
         if (isCancelled || !state || !state.success) return;
 
         if (state.plans && state.plans.length > 0) {
@@ -261,18 +261,48 @@ export default function App() {
           setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(state.liveConfig) ? state.liveConfig : prev));
           saveStoredLiveConfig(state.liveConfig);
         }
+
+        if (currentUser) {
+          if (currentUser.role === 'ADMIN') {
+            if (state.treasury) {
+              setTreasury(state.treasury);
+              setStoredTreasury(state.treasury);
+            }
+            if (state.transactions) {
+              setTransactions(state.transactions);
+              setStoredTransactions(state.transactions);
+            }
+            if (state.investments) {
+              setInvestments(state.investments);
+              setStoredInvestments(state.investments);
+            }
+          } else {
+            if (state.wallet) {
+              setWallet(state.wallet);
+              setStoredWallet(state.wallet);
+            }
+            if (state.transactions) {
+              setTransactions(state.transactions);
+              setStoredTransactions(state.transactions);
+            }
+            if (state.investments) {
+              setInvestments(state.investments);
+              setStoredInvestments(state.investments);
+            }
+          }
+        }
       } catch (err) {
-        console.warn('[PublicSync] Launch sync error:', err);
+        console.warn('[StateSync] Launch sync error:', err);
       }
     };
 
-    // Run at 0ms on launch
-    syncPublicState();
+    // Run at 0ms on launch / user change
+    syncAppState();
 
     // Re-check whenever the user brings the mobile app to foreground
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        syncPublicState();
+        syncAppState();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -282,9 +312,11 @@ export default function App() {
         event.type === 'PLANS_UPDATED' ||
         event.type === 'RULES_UPDATED' ||
         event.type === 'LIVE_CONFIG_UPDATED' ||
+        event.type === 'WALLET_UPDATED' ||
+        event.type === 'TRANSACTION_UPDATED' ||
         event.type === 'STATE_CHANGED'
       ) {
-        syncPublicState();
+        syncAppState();
       }
     });
 
@@ -293,7 +325,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibility);
       unsubscribeRealtime();
     };
-  }, []);
+  }, [currentUser]);
 
   // Direct Firebase Firestore Real-Time Global Listener (Bi-directional Live Sync)
   // Ensures Vercel, AI Studio, GitHub, and mobile app are 100% synchronized instantly without any server barrier

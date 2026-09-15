@@ -54,10 +54,11 @@ function createSyntheticErrorResponse(errorMessage: string, status = 503): Respo
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
-
+  // 1. Try local or current origin
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
     const res = await fetch(cleanEndpoint, {
       ...options,
       signal: controller.signal,
@@ -69,13 +70,29 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
     if (res.ok && !contentType.includes('text/html')) {
       return res;
     }
+  } catch (_) {}
 
-    return createSyntheticErrorResponse('Local server returned HTML or error', 502);
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    console.warn('[apiFetch] Dev server request error or timeout:', err?.message || err);
-    return createSyntheticErrorResponse('Server is reconnecting or offline', 503);
+  // 2. If running on external domain (like Vercel), try direct Cloud Run central backend
+  if (typeof window !== 'undefined' && !isDirectServerHost()) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const cloudRunUrl = `${CLOUD_RUN_CENTRAL_URL}${cleanEndpoint}`;
+      const res = await fetch(cloudRunUrl, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const contentType = res.headers.get('content-type') || '';
+
+      if (res.ok && !contentType.includes('text/html')) {
+        return res;
+      }
+    } catch (_) {}
   }
+
+  return createSyntheticErrorResponse('Server is reconnecting or falling back to Firestore', 503);
 }
 
 

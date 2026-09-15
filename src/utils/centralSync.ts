@@ -30,18 +30,23 @@ import {
 
 // Helper to resolve user from multiple identifiers and generate all alias keys
 export function findUserAndAllAliases(userId: string, users: UserProfile[]): { user: UserProfile | null, aliases: string[] } {
-  const cleanId = String(userId).trim();
+  const cleanId = String(userId || '').trim();
   const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+  const last10 = cleanDigits.slice(-10);
 
   const user = (users || []).find(
     (u) =>
-      u.id === cleanId ||
+      (u.id && u.id === cleanId) ||
       (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
-      (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+      (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits) ||
+      (last10 && u.phone && u.phone.replace(/[^0-9]/g, "").slice(-10) === last10)
   );
 
   const aliases = new Set<string>();
   if (cleanId) aliases.add(cleanId);
+  if (cleanDigits) aliases.add(cleanDigits);
+  if (last10) aliases.add(last10);
+
   if (user) {
     if (user.id) aliases.add(user.id);
     if (user.loginId) aliases.add(user.loginId);
@@ -56,11 +61,35 @@ export function findUserAndAllAliases(userId: string, users: UserProfile[]): { u
 
 // Helper to get a user's wallet with robust alias lookup
 export function getWalletForUser(userId: string, wallets: Record<string, Wallet>, users: UserProfile[]): Wallet {
+  if (!wallets || typeof wallets !== 'object') {
+    return {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+  }
+
   const { aliases } = findUserAndAllAliases(userId, users);
   
   for (const alias of aliases) {
     if (wallets && wallets[alias]) {
       return { ...wallets[alias] };
+    }
+  }
+
+  // Secondary fuzzy search across all keys in wallets
+  const cleanId = String(userId || '').trim().replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+  if (cleanId) {
+    for (const [key, w] of Object.entries(wallets)) {
+      const cleanKey = key.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+      if (cleanKey && (cleanKey === cleanId || cleanKey.endsWith(cleanId) || cleanId.endsWith(cleanKey))) {
+        return { ...w };
+      }
     }
   }
 

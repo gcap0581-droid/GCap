@@ -702,25 +702,29 @@ function ensureDb(): ServerDB {
       needsSave = true;
     }
 
-    // Ensure each user has a wallet record
-    parsed.users.forEach((u: StoredAccount) => {
-      if (!parsed.wallets[u.id]) {
-        parsed.wallets[u.id] = { ...DEFAULT_WALLET };
-        needsSave = true;
-      }
-    });
+    // Ensure each user has a wallet record and mirror across all user aliases
+    for (const u of parsed.users) {
+      if (!u || !u.id) continue;
+      const cleanPhone = (u.phone || '').replace(/[^0-9]/g, '');
+      const last10 = cleanPhone.slice(-10);
+      const cleanLogin = (u.loginId || '').trim();
 
-    // Clean up orphaned wallets of removed users
-    const validUserIds = new Set(parsed.users.map((u: StoredAccount) => u.id));
-    for (const wid of Object.keys(parsed.wallets)) {
-      if (!validUserIds.has(wid)) {
-        delete parsed.wallets[wid];
-        needsSave = true;
-      }
+      // Find the best existing wallet for this user
+      const existingWallet =
+        parsed.wallets[u.id] ||
+        (cleanLogin && parsed.wallets[cleanLogin]) ||
+        (cleanPhone && parsed.wallets[cleanPhone]) ||
+        (last10 && parsed.wallets[last10]) ||
+        { ...DEFAULT_WALLET };
+
+      parsed.wallets[u.id] = existingWallet;
+      if (cleanLogin) parsed.wallets[cleanLogin] = existingWallet;
+      if (cleanPhone) parsed.wallets[cleanPhone] = existingWallet;
+      if (last10) parsed.wallets[last10] = existingWallet;
     }
 
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
-      saveDb(parsed);
+      saveDb(parsed, true);
     }
 
     return parsed as ServerDB;
