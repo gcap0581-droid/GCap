@@ -72,6 +72,7 @@ import {
 import {
   fetchCentralState,
   getWalletForUser,
+  findUserAndAllAliases,
   apiCreateTransaction,
   apiUpdateTransaction,
   apiAddTransaction,
@@ -94,6 +95,7 @@ import {
   saveInvestmentsToFirestore,
   saveTransactionsToFirestore,
   getCachedFirestoreState,
+  updateFirestoreBridgeCache,
 } from './lib/firestoreBridge';
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
@@ -919,9 +921,11 @@ export default function App() {
     apiUpdateTreasury(res.treasury).catch(console.error);
 
     if (destination === 'ADMIN_WALLET' && currentUser) {
+      const currentAdminGp = wallet?.gpBalance || 0;
       const updatedAdminWallet: Wallet = {
         ...wallet,
         cashBalance: (wallet?.cashBalance || 0) + res.rupeesAmount,
+        gpBalance: currentAdminGp >= gpAmount ? currentAdminGp - gpAmount : currentAdminGp,
       };
       setWallet(updatedAdminWallet);
       setStoredWallet(updatedAdminWallet);
@@ -1189,9 +1193,21 @@ export default function App() {
 
   const handleExecuteGpTransfer = (recipientLoginIdOrPhone: string, amount: number): boolean => {
     if (!currentUser) return false;
-    const cleanId = recipientLoginIdOrPhone.trim().toLowerCase();
-    
-    if (cleanId === currentUser.loginId.toLowerCase() || cleanId === currentUser.phone?.toLowerCase()) {
+    const cleanInput = recipientLoginIdOrPhone.trim();
+    if (!cleanInput) {
+      alert(isHi ? 'कृपया प्राप्तकर्ता की आईडी या फोन नंबर दर्ज करें।' : 'Please enter recipient ID or phone.');
+      return false;
+    }
+
+    const allUsersList = getAllUsers();
+    const { user: recipient } = findUserAndAllAliases(cleanInput, allUsersList);
+
+    if (!recipient) {
+      alert(isHi ? `प्राप्तकर्ता यूज़र (${recipientLoginIdOrPhone}) नहीं मिला। कृपया सही ID या मोबाइल नंबर दर्ज करें।` : `Recipient user (${recipientLoginIdOrPhone}) not found. Please check ID or mobile number.`);
+      return false;
+    }
+
+    if (recipient.id === currentUser.id || recipient.loginId.toLowerCase() === currentUser.loginId.toLowerCase()) {
       alert(isHi ? 'आप स्वयं को GP ट्रांसफर नहीं कर सकते।' : 'You cannot transfer GP to yourself.');
       return false;
     }
@@ -1200,92 +1216,151 @@ export default function App() {
     const totalDeducted = amount + fee;
 
     if ((wallet.gpBalance || 0) < totalDeducted) {
-      alert(isHi ? `अपर्याप्त GP बैलेंस। (कुल आवश्यक: ${totalDeducted.toFixed(2)} GP, जिसमें 2% चार्ज शामिल है)` : `Insufficient GP balance (Total required: ${totalDeducted.toFixed(2)} GP including 2% fee).`);
-      return false;
+      alert(isHi ? `अपर्याप्त GP बैलेंस। (कुल आवश्यक: ${totalDeducted.toFixed(2)} GP, जिसमें 2% एडमिन चार्ज शामिल है)` : `Insufficient GP balance (Total required: ${totalDeducted.toFixed(2)} GP including 2% admin fee).`);
+      return false; // Transfer failed -> 0 GP deducted from sender
     }
 
-    const allUsersList = getAllUsers();
-    const recipient = allUsersList.find(
-      u => u.loginId.toLowerCase() === cleanId || u.phone?.toLowerCase() === cleanId
-    );
+    try {
+      const state = getCachedFirestoreState();
 
-    if (!recipient) {
-      alert(isHi ? `प्राप्तकर्ता यूज़र (${recipientLoginIdOrPhone}) नहीं मिला। कृपया सही ID दर्ज करें।` : `Recipient user (${recipientLoginIdOrPhone}) not found. Please check ID.`);
-      return false;
+      // Find Admin User for 2% Admin Fee Credit directly into Admin Personal Wallet
+      const adminUser = allUsersList.find(u => u.role === 'ADMIN' || u.loginId === 'admin') || (currentUser.role === 'ADMIN' ? currentUser : null);
+
+      // 1. Updated Sender Wallet
+      let senderGpBalance = (wallet.gpBalance || 0) - totalDeducted;
+      if (adminUser && adminUser.id === currentUser.id) {
+        // If Admin is sender, fee returns to Admin personal wallet
+        senderGpBalance += fee;
+      }
+      const updatedSenderWallet: Wallet = {
+        ...wallet,
+        gpBalance: Math.max(0, senderGpBalance),
+      };
+
+      // 2. Updated Recipient Wallet
+      const recipientStoredWallet = getWalletForUser(recipient.id, state?.wallets || {}, allUsersList);
+      const updatedRecipientWallet: Wallet = {
+        ...recipientStoredWallet,
+        gpBalance: (recipientStoredWallet.gpBalance || 0) + amount,
+      };
+
+      // 3. Updated Admin Personal Wallet (if sender is not Admin)
+      let updatedAdminWallet: Wallet | null = null;
+      if (adminUser && adminUser.id !== currentUser.id) {
+        const adminStoredWallet = getWalletForUser(adminUser.id, state?.wallets || {}, allUsersList);
+        updatedAdminWallet = {
+          ...adminStoredWallet,
+          gpBalance: (adminStoredWallet.gpBalance || 0) + fee,
+        };
+      }
+
+      // Apply Local State & Persist to Database API
+      setWallet(updatedSenderWallet);
+      setStoredWallet(updatedSenderWallet);
+
+      apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.error);
+      apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.error);
+      if (adminUser && updatedAdminWallet) {
+        apiUpdateWallet(updatedAdminWallet, adminUser.id).catch(console.error);
+      }
+
+      // Update Firestore Cache
+      const cacheWallets: Record<string, Wallet> = {
+        ...(state?.wallets || {}),
+        [currentUser.id]: updatedSenderWallet,
+        [currentUser.loginId]: updatedSenderWallet,
+        [recipient.id]: updatedRecipientWallet,
+        [recipient.loginId]: updatedRecipientWallet,
+      };
+      if (adminUser && updatedAdminWallet) {
+        cacheWallets[adminUser.id] = updatedAdminWallet;
+        cacheWallets[adminUser.loginId] = updatedAdminWallet;
+      }
+      updateFirestoreBridgeCache({ wallets: cacheWallets });
+
+      // Transactions Recording
+      const senderTxn: Transaction = {
+        id: `txn-p2p-send-${Date.now()}`,
+        userId: currentUser.id,
+        userLoginId: currentUser.loginId,
+        userName: currentUser.name,
+        type: 'TRANSFER',
+        amount: amount,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        status: 'SUCCESS',
+        referenceId: 'GPTRX' + Math.floor(10000000 + Math.random() * 90000000),
+        note: `Transferred ${amount} GP to ${recipient.name} (${recipient.loginId}). Admin Fee: ${fee.toFixed(2)} GP (2%)`,
+        noteHi: `${amount} GP ${recipient.name} (${recipient.loginId}) को ट्रांसफर किया गया। एडमिन चार्ज: ${fee.toFixed(2)} GP`,
+        adminFeeAmount: fee,
+        adminFeePercent: 2,
+      };
+
+      const recipientTxn: Transaction = {
+        id: `txn-p2p-recv-${Date.now()}`,
+        userId: recipient.id,
+        userLoginId: recipient.loginId,
+        userName: recipient.name,
+        type: 'TRANSFER',
+        amount: amount,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        status: 'SUCCESS',
+        referenceId: senderTxn.referenceId,
+        note: `Received ${amount} GP from ${currentUser.name} (${currentUser.loginId})`,
+        noteHi: `${currentUser.name} (${currentUser.loginId}) से ${amount} GP प्राप्त हुए`,
+      };
+
+      const updatedTxns = [senderTxn, recipientTxn, ...transactions];
+      setTransactions(updatedTxns);
+      setStoredTransactions(updatedTxns);
+
+      apiCreateTransaction(senderTxn, currentUser.id, updatedSenderWallet).catch(console.error);
+      apiCreateTransaction(recipientTxn, recipient.id, updatedRecipientWallet).catch(console.error);
+
+      // Create Admin Fee Transaction Record if Admin is separate
+      if (adminUser && updatedAdminWallet) {
+        const adminFeeTxn: Transaction = {
+          id: `txn-admin-fee-${Date.now()}`,
+          userId: adminUser.id,
+          userLoginId: adminUser.loginId,
+          userName: adminUser.name || 'Admin',
+          type: 'TRANSFER',
+          amount: fee,
+          date: new Date().toISOString(),
+          timestamp: Date.now(),
+          status: 'SUCCESS',
+          referenceId: senderTxn.referenceId,
+          note: `Received 2% Admin Fee (${fee.toFixed(2)} GP) from P2P Transfer (${currentUser.loginId} ➔ ${recipient.loginId})`,
+          noteHi: `P2P ट्रांसफर (${currentUser.loginId} ➔ ${recipient.loginId}) से 2% एडमिन चार्ज (${fee.toFixed(2)} GP) पर्सनल वॉलेट में प्राप्त हुआ`,
+        };
+        apiCreateTransaction(adminFeeTxn, adminUser.id, updatedAdminWallet).catch(console.error);
+      }
+
+      // Also log Fee GP collection in Treasury Ledger
+      addAdminFeeGp(
+        fee,
+        `P2P GP Transfer Fee (2%) from ${currentUser.loginId} to ${recipient.loginId}`,
+        `P2P GP ट्रांसफर शुल्क (2%) - ${currentUser.loginId} ➔ ${recipient.loginId}`,
+        currentUser.name || 'System'
+      );
+      setTreasury(getStoredTreasury());
+      setTreasuryLogs(getStoredTreasuryLogs());
+
+      confetti({ particleCount: 70, spread: 70 });
+      showToast(
+        isHi ? '✅ GP सफलतापूर्वक ट्रांसफर हुआ!' : '✅ GP Transferred Successfully!',
+        isHi
+          ? `${amount} GP ${recipient.name} को भेजे गए। 2% एडमिन चार्ज (${fee.toFixed(2)} GP) एडमिन पर्सनल वॉलेट में जमा हुआ।`
+          : `${amount} GP sent to ${recipient.name}. 2% fee (${fee.toFixed(2)} GP) credited to Admin Personal Wallet.`
+      );
+
+      return true;
+    } catch (err) {
+      console.error('GP Transfer Error:', err);
+      alert(isHi ? 'GP ट्रांसफर के दौरान त्रुटि हुई। कोई GP नहीं काटा गया।' : 'An error occurred during GP transfer. No GP was deducted.');
+      return false; // Error -> 0 GP deducted
     }
-
-    const updatedSenderWallet: Wallet = {
-      ...wallet,
-      gpBalance: (wallet.gpBalance || 0) - totalDeducted,
-    };
-    setWallet(updatedSenderWallet);
-    setStoredWallet(updatedSenderWallet);
-    apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.error);
-
-    const state = getCachedFirestoreState();
-    const recipientStoredWallet = state?.wallets[recipient.id] || { cashBalance: 0, gpBalance: 0, totalInvested: 0, totalEarned: 0, royaltyEarned: 0, pendingWithdrawals: 0, pendingDeposits: 0 };
-    const updatedRecipientWallet: Wallet = {
-      ...recipientStoredWallet,
-      gpBalance: (recipientStoredWallet.gpBalance || 0) + amount,
-    };
-    apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.error);
-
-    addAdminFeeGp(
-      fee,
-      `P2P GP Transfer Fee (2%) from ${currentUser.loginId} to ${recipient.loginId}`,
-      `P2P GP ट्रांसफर शुल्क (2%) - ${currentUser.loginId} ➔ ${recipient.loginId}`,
-      currentUser.name || 'System'
-    );
-    setTreasury(getStoredTreasury());
-    setTreasuryLogs(getStoredTreasuryLogs());
-
-    const senderTxn: Transaction = {
-      id: `txn-p2p-send-${Date.now()}`,
-      userId: currentUser.id,
-      userLoginId: currentUser.loginId,
-      userName: currentUser.name,
-      type: 'TRANSFER',
-      amount: amount,
-      date: new Date().toISOString(),
-      timestamp: Date.now(),
-      status: 'SUCCESS',
-      referenceId: 'GPTRX' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `Transferred ${amount} GP to ${recipient.name} (${recipient.loginId}). Fee: ${fee.toFixed(2)} GP (2%)`,
-      noteHi: `${amount} GP ${recipient.name} (${recipient.loginId}) को ट्रांसफर किया गया। शुल्क: ${fee.toFixed(2)} GP`,
-      adminFeeAmount: fee,
-      adminFeePercent: 2,
-    };
-
-    const recipientTxn: Transaction = {
-      id: `txn-p2p-recv-${Date.now()}`,
-      userId: recipient.id,
-      userLoginId: recipient.loginId,
-      userName: recipient.name,
-      type: 'TRANSFER',
-      amount: amount,
-      date: new Date().toISOString(),
-      timestamp: Date.now(),
-      status: 'SUCCESS',
-      referenceId: 'GPRCV' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `Received ${amount} GP from ${currentUser.name} (${currentUser.loginId})`,
-      noteHi: `${currentUser.name} (${currentUser.loginId}) से ${amount} GP प्राप्त हुआ`,
-    };
-
-    const newTxns = [senderTxn, ...transactions];
-    setTransactions(newTxns);
-    setStoredTransactions(newTxns);
-    apiCreateTransaction(senderTxn, currentUser.id).catch(console.error);
-    apiCreateTransaction(recipientTxn, recipient.id).catch(console.error);
-
-    confetti({ particleCount: 70, spread: 70 });
-    showToast(
-      isHi ? '🚀 GP सफलतापूर्वक ट्रांसफर हुआ!' : '🚀 GP Transferred Successfully!',
-      isHi
-        ? `${recipient.name} को ${amount} GP सफलतापूर्वक भेज दिया गया है। (2% शुल्क: ${fee.toFixed(2)} GP)`
-        : `Successfully transferred ${amount} GP to ${recipient.name}. (2% fee: ${fee.toFixed(2)} GP)`
-    );
-
-    return true;
   };
 
   // Simulation & Splash Intro state
