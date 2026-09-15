@@ -80,8 +80,8 @@ class AudioAnnouncerEngine {
         window.speechSynthesis.cancel(); // Cleanly reset any lingering utterance
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.98; // Clear, natural pacing
-        utterance.pitch = 1.05; // Polite and clear
+        utterance.rate = 0.95; // Slightly slower for natural pacing
+        utterance.pitch = 1.0; // Slightly lower, more mature tone
         utterance.volume = 1.0;
 
         // Find best matching voice
