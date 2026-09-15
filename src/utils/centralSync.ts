@@ -270,21 +270,39 @@ export async function fetchCentralState(
 }
 
 /**
- * Post a new transaction (Deposit / Withdrawal / Investment) to central database
+ * Post a new transaction (Deposit / Withdrawal / Investment / GP Swap) to central database
  */
 export async function apiCreateTransaction(
   transaction: Transaction,
-  userId: string
+  userId: string,
+  wallet?: Wallet
 ): Promise<{ success: boolean; transaction?: Transaction; wallet?: Wallet; error?: string }> {
+  if (wallet) {
+    updateFirestoreBridgeCache({
+      wallets: {
+        [userId]: wallet,
+      },
+    });
+  }
+
   try {
     const res = await apiFetch(`${API_BASE}/transactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transaction, userId }),
+      body: JSON.stringify({ transaction, userId, wallet }),
     });
     if (res.ok) {
       const result = await res.json().catch(() => null);
-      if (result && result.success) return result;
+      if (result && result.success) {
+        if (result.wallet) {
+          updateFirestoreBridgeCache({
+            wallets: {
+              [userId]: result.wallet,
+            },
+          });
+        }
+        return result;
+      }
     }
   } catch (err: any) {
     console.warn('[apiCreateTransaction] API fetch failed, using direct Firestore:', err);
@@ -295,7 +313,8 @@ export async function apiCreateTransaction(
     const fs = await fetchFullFirestoreState();
     const currentTxns = fs?.transactions || [];
     const currentWallets = fs?.wallets || {};
-    const userWallet: Wallet = getWalletForUser(userId, currentWallets, fs?.users || []);
+    const existingWallet: Wallet = getWalletForUser(userId, currentWallets, fs?.users || []);
+    let userWallet: Wallet = wallet ? { ...existingWallet, ...wallet } : { ...existingWallet };
 
     const newTxn: Transaction = {
       ...transaction,
@@ -305,10 +324,17 @@ export async function apiCreateTransaction(
       date: transaction.date || new Date().toISOString().split('T')[0],
     };
 
-    if (newTxn.type === 'DEPOSIT') {
-      userWallet.pendingDeposits = (userWallet.pendingDeposits || 0) + newTxn.amount;
-    } else if (newTxn.type === 'WITHDRAWAL') {
-      userWallet.pendingWithdrawals = (userWallet.pendingWithdrawals || 0) + newTxn.amount;
+    if (!wallet) {
+      if (newTxn.type === 'SWAP_GP') {
+        const swapAmt = Number(newTxn.amount || 0);
+        const gpEarned = Number(newTxn.gpEarned || swapAmt);
+        userWallet.cashBalance = Math.max(0, (userWallet.cashBalance || 0) - swapAmt);
+        userWallet.gpBalance = (userWallet.gpBalance || 0) + gpEarned;
+      } else if (newTxn.type === 'DEPOSIT') {
+        userWallet.pendingDeposits = (userWallet.pendingDeposits || 0) + newTxn.amount;
+      } else if (newTxn.type === 'WITHDRAWAL') {
+        userWallet.pendingWithdrawals = (userWallet.pendingWithdrawals || 0) + newTxn.amount;
+      }
     }
 
     const updatedTxns = [newTxn, ...currentTxns.filter((t) => t.id !== newTxn.id)];
@@ -316,6 +342,12 @@ export async function apiCreateTransaction(
 
     await saveTransactionsToFirestore(updatedTxns);
     await saveWalletsToFirestore(updatedWallets);
+
+    updateFirestoreBridgeCache({
+      wallets: {
+        [userId]: userWallet,
+      },
+    });
 
     return { success: true, transaction: newTxn, wallet: userWallet };
   } catch (fsErr: any) {
@@ -479,17 +511,35 @@ export async function apiDeleteTransaction(
  */
 export async function apiCreateInvestment(
   investment: ActiveInvestment,
-  userId: string
+  userId: string,
+  wallet?: Wallet
 ): Promise<{ success: boolean; investment?: ActiveInvestment; wallet?: Wallet; error?: string }> {
+  if (wallet) {
+    updateFirestoreBridgeCache({
+      wallets: {
+        [userId]: wallet,
+      },
+    });
+  }
+
   try {
     const res = await apiFetch(`${API_BASE}/investments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ investment, userId }),
+      body: JSON.stringify({ investment, userId, wallet }),
     });
     if (res.ok) {
       const result = await res.json().catch(() => null);
-      if (result && result.success) return result;
+      if (result && result.success) {
+        if (result.wallet) {
+          updateFirestoreBridgeCache({
+            wallets: {
+              [userId]: result.wallet,
+            },
+          });
+        }
+        return result;
+      }
     }
   } catch (err: any) {
     console.warn('[apiCreateInvestment] API failed, using direct Firestore:', err);
@@ -499,16 +549,25 @@ export async function apiCreateInvestment(
     const fs = await fetchFullFirestoreState();
     const currentInvestments = fs?.investments || [];
     const currentWallets = fs?.wallets || {};
-    const userWallet = getWalletForUser(userId, currentWallets, fs?.users || []);
+    const existingWallet = getWalletForUser(userId, currentWallets, fs?.users || []);
+    let userWallet: Wallet = wallet ? { ...existingWallet, ...wallet } : { ...existingWallet };
 
-    userWallet.gpBalance = Math.max(0, (userWallet.gpBalance || 0) - investment.investedAmount);
-    userWallet.totalInvested = (userWallet.totalInvested || 0) + investment.investedAmount;
+    if (!wallet) {
+      userWallet.gpBalance = Math.max(0, (userWallet.gpBalance || 0) - investment.investedAmount);
+      userWallet.totalInvested = (userWallet.totalInvested || 0) + investment.investedAmount;
+    }
 
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], userWallet);
     const updatedInvestments = [investment, ...currentInvestments.filter((i) => i.id !== investment.id)];
 
     await saveInvestmentsToFirestore(updatedInvestments);
     await saveWalletsToFirestore(updatedWallets);
+
+    updateFirestoreBridgeCache({
+      wallets: {
+        [userId]: userWallet,
+      },
+    });
 
     return { success: true, investment, wallet: userWallet };
   } catch (fsErr: any) {

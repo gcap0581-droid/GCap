@@ -1497,10 +1497,13 @@ export default function App() {
     };
 
     setWallet(updatedWallet);
-    setTransactions([newTx, ...transactions]);
+    setStoredWallet(updatedWallet);
+    const updatedTxns = [newTx, ...transactions];
+    setTransactions(updatedTxns);
+    setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
 
@@ -1540,6 +1543,7 @@ export default function App() {
       userPhone: currentUser?.phone || '',
       type: 'SWAP_GP',
       amount: swapAmount,
+      gpEarned: finalGpAmount,
       date: new Date().toISOString(),
       timestamp: Date.now(),
       status: 'SUCCESS',
@@ -1550,10 +1554,13 @@ export default function App() {
     };
 
     setWallet(updatedWallet);
-    setTransactions([newTx, ...transactions]);
+    setStoredWallet(updatedWallet);
+    const updatedTxns = [newTx, ...transactions];
+    setTransactions(updatedTxns);
+    setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
 
@@ -1787,13 +1794,18 @@ export default function App() {
 
      newTxns.push(newTx);
 
-     setWallet(updatedWallet);
-    setInvestments([newInvestment, ...investments]);
-    setTransactions([...newTxns, ...transactions]);
+    setWallet(updatedWallet);
+    setStoredWallet(updatedWallet);
+    const updatedInvs = [newInvestment, ...investments];
+    setInvestments(updatedInvs);
+    setStoredInvestments(updatedInvs);
+    const updatedTxns = [...newTxns, ...transactions];
+    setTransactions(updatedTxns);
+    setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateInvestment(newInvestment, currentUser.id).catch(console.error);
-      newTxns.forEach((tx) => apiCreateTransaction(tx, currentUser.id).catch(console.error));
+      apiCreateInvestment(newInvestment, currentUser.id, updatedWallet).catch(console.error);
+      newTxns.forEach((tx) => apiCreateTransaction(tx, currentUser.id, updatedWallet).catch(console.error));
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
     }
 

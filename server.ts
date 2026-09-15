@@ -1230,7 +1230,7 @@ async function startServer() {
 
   // POST: Create transaction (Deposit request, Withdrawal request, etc.)
   app.post("/api/transactions", (req, res) => {
-    const { transaction, userId } = req.body || {};
+    const { transaction, userId, wallet: incomingWallet } = req.body || {};
     if (!transaction || !transaction.id) {
       return res.status(400).json({ success: false, error: "Invalid transaction payload" });
     }
@@ -1240,7 +1240,15 @@ async function startServer() {
     transaction.userId = effectiveUserId;
 
     // Attach user information if available
-    const user = db.users.find((u) => u.id === effectiveUserId);
+    const cleanId = String(effectiveUserId).trim();
+    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+    const user = db.users.find(
+      (u) =>
+        u.id === cleanId ||
+        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
+        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+    );
+
     if (user) {
       transaction.userLoginId = user.loginId;
       if (!transaction.userName) transaction.userName = user.name;
@@ -1255,17 +1263,47 @@ async function startServer() {
       db.transactions.unshift(transaction);
     }
 
-    // Update wallet pending amounts
-    if (!db.wallets[effectiveUserId]) {
-      db.wallets[effectiveUserId] = { ...DEFAULT_WALLET };
-    }
-    const wallet = db.wallets[effectiveUserId];
+    // Update wallet pending amounts or swap
+    const existingWallet =
+      db.wallets[cleanId] ||
+      (user?.id ? db.wallets[user.id] : null) ||
+      (user?.loginId ? db.wallets[user.loginId] : null) ||
+      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
+      { ...DEFAULT_WALLET };
 
-    if (transaction.type === "DEPOSIT" && transaction.status === "PENDING") {
+    let wallet = { ...DEFAULT_WALLET, ...existingWallet };
+
+    if (incomingWallet && typeof incomingWallet === 'object') {
+      wallet = {
+        ...wallet,
+        ...incomingWallet,
+      };
+    } else if (transaction.type === "SWAP_GP") {
+      const swapAmt = Number(transaction.amount || 0);
+      const gpEarned = Number(transaction.gpEarned || swapAmt);
+      wallet.cashBalance = Math.max(0, (wallet.cashBalance || 0) - swapAmt);
+      wallet.gpBalance = (wallet.gpBalance || 0) + gpEarned;
+    } else if (transaction.type === "DEPOSIT" && transaction.status === "PENDING") {
       wallet.pendingDeposits = (wallet.pendingDeposits || 0) + Number(transaction.amount || 0);
     } else if (transaction.type === "WITHDRAWAL" && transaction.status === "PENDING") {
       wallet.pendingWithdrawals = (wallet.pendingWithdrawals || 0) + Number(transaction.amount || 0);
     }
+
+    // Persist wallet under all alias keys
+    const keysToSave = new Set<string>();
+    keysToSave.add(cleanId);
+    keysToSave.add(effectiveUserId);
+    if (user?.id) keysToSave.add(user.id);
+    if (user?.loginId) keysToSave.add(user.loginId);
+    if (user?.phone) {
+      const cleanP = user.phone.replace(/[^0-9]/g, "");
+      if (cleanP) keysToSave.add(cleanP);
+      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
+    }
+
+    keysToSave.forEach((k) => {
+      if (k) db.wallets[k] = wallet;
+    });
 
     saveDb(db);
     console.log(`[GCap DB] Transaction created: ${transaction.type} ₹${transaction.amount} by ${effectiveUserId}`);
@@ -1278,7 +1316,11 @@ async function startServer() {
       timestamp: Date.now(),
       message: `New transaction: ${transaction.type} ₹${transaction.amount} by ${transaction.userName || effectiveUserId}`,
     });
-    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    keysToSave.forEach((k) => {
+      if (k) {
+        broadcastRealtimeEvent("wallet_updated", { userId: k, wallet, timestamp: Date.now() });
+      }
+    });
     broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_CREATE", timestamp: Date.now() });
 
     res.json({
@@ -1410,7 +1452,7 @@ async function startServer() {
 
   // POST: Create Investment (Plan subscription)
   app.post("/api/investments", (req, res) => {
-    const { investment, userId } = req.body || {};
+    const { investment, userId, wallet: incomingWallet } = req.body || {};
     if (!investment || !investment.id) {
       return res.status(400).json({ success: false, error: "Invalid investment payload" });
     }
@@ -1419,29 +1461,67 @@ async function startServer() {
     const effectiveUserId = userId || investment.userId || "usr-user-01";
     investment.userId = effectiveUserId;
 
-    // Deduct investedAmount from wallet cashBalance and add to totalInvested
-    if (!db.wallets[effectiveUserId]) {
-      db.wallets[effectiveUserId] = { ...DEFAULT_WALLET };
-    }
-    const wallet = db.wallets[effectiveUserId];
+    const cleanId = String(effectiveUserId).trim();
+    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+    const user = db.users.find(
+      (u) =>
+        u.id === cleanId ||
+        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
+        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
+    );
+
+    const existingWallet =
+      db.wallets[cleanId] ||
+      (user?.id ? db.wallets[user.id] : null) ||
+      (user?.loginId ? db.wallets[user.loginId] : null) ||
+      (user?.phone ? db.wallets[user.phone.replace(/[^0-9]/g, "")] : null) ||
+      { ...DEFAULT_WALLET };
+
+    let wallet = { ...DEFAULT_WALLET, ...existingWallet };
     const amount = Number(investment.investedAmount || 0);
 
-    wallet.cashBalance = Math.max(0, (wallet.cashBalance || 0) - amount);
-    wallet.totalInvested = (wallet.totalInvested || 0) + amount;
+    if (incomingWallet && typeof incomingWallet === 'object') {
+      wallet = {
+        ...wallet,
+        ...incomingWallet,
+      };
+    } else {
+      wallet.gpBalance = Math.max(0, (wallet.gpBalance || 0) - amount);
+      wallet.totalInvested = (wallet.totalInvested || 0) + amount;
+    }
+
+    const keysToSave = new Set<string>();
+    keysToSave.add(cleanId);
+    keysToSave.add(effectiveUserId);
+    if (user?.id) keysToSave.add(user.id);
+    if (user?.loginId) keysToSave.add(user.loginId);
+    if (user?.phone) {
+      const cleanP = user.phone.replace(/[^0-9]/g, "");
+      if (cleanP) keysToSave.add(cleanP);
+      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
+    }
+
+    keysToSave.forEach((k) => {
+      if (k) db.wallets[k] = wallet;
+    });
 
     db.investments.unshift(investment);
     saveDb(db);
 
-    console.log(`[GCap DB] Investment created: ${investment.planName} (₹${amount}) by ${effectiveUserId}`);
+    console.log(`[GCap DB] Investment created: ${investment.planName} (${amount} GP) by ${effectiveUserId}`);
 
     broadcastRealtimeEvent("investment_created", {
       investment,
       userId: effectiveUserId,
       wallet,
       timestamp: Date.now(),
-      message: `New investment: ${investment.planName} (₹${amount}) by ${effectiveUserId}`,
+      message: `New investment: ${investment.planName} (${amount} GP) by ${effectiveUserId}`,
     });
-    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    keysToSave.forEach((k) => {
+      if (k) {
+        broadcastRealtimeEvent("wallet_updated", { userId: k, wallet, timestamp: Date.now() });
+      }
+    });
     broadcastRealtimeEvent("state_changed", { type: "INVESTMENT_CREATE", timestamp: Date.now() });
 
     res.json({

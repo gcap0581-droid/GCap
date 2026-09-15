@@ -105,6 +105,7 @@ export interface Transaction {
   note: string;
   noteHi: string;
   withdrawalSource?: WithdrawalSource;
+  gpEarned?: number;
   // Payment voucher breakdown fields
   grossAmount?: number;
   tdsPercent?: number;
