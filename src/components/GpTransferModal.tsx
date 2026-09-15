@@ -20,7 +20,7 @@ interface GpTransferModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   language: Language;
   usersList: UserProfile[];
   onExecuteGpTransfer: (recipientLoginId: string, amount: number) => boolean;
@@ -30,11 +30,20 @@ export const GpTransferModal: React.FC<GpTransferModalProps> = ({
   isOpen,
   onClose,
   currentUser,
-  wallet,
+  wallet: rawWallet,
   language,
   usersList,
   onExecuteGpTransfer,
 }) => {
+  const wallet: Wallet = rawWallet || {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+  };
   const isHi = language === 'hi';
   const [activeTab, setActiveTab] = useState<'RECEIVE' | 'SEND'>('RECEIVE');
   const [recipientId, setRecipientId] = useState('');

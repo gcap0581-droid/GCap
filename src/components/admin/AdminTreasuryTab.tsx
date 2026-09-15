@@ -18,7 +18,7 @@ import { formatINR } from '../../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../../utils/treasuryStorage';
 
 interface AdminTreasuryTabProps {
-  treasury: CompanyTreasury;
+  treasury?: CompanyTreasury | null;
   logs: TreasuryLog[];
   language: Language;
   onOpenAddModal: () => void;
@@ -28,7 +28,7 @@ interface AdminTreasuryTabProps {
 }
 
 export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
-  treasury,
+  treasury: rawTreasury,
   logs,
   language,
   onOpenAddModal,
@@ -37,6 +37,14 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
   onResetTreasury,
 }) => {
   const isHi = language === 'hi';
+  const treasury: CompanyTreasury = rawTreasury || {
+    balance: 0,
+    totalInjected: 0,
+    totalDeducted: 0,
+    lastUpdated: new Date().toISOString(),
+    minAlertThreshold: 500000,
+    totalTransferredToUsers: 0,
+  };
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');

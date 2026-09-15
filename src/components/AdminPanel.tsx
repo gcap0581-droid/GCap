@@ -90,16 +90,16 @@ import { fetchCentralState, apiAdminAdjustUserWallet, getWalletForUser } from '.
 interface AdminPanelProps {
   adminUser: UserProfile;
   language: Language;
-  rules: AppRules;
-  wallet: Wallet;
+  rules?: AppRules | null;
+  wallet?: Wallet | null;
   transactions: Transaction[];
   plans: InvestmentPlan[];
   investments: ActiveInvestment[];
-  treasury: CompanyTreasury;
+  treasury?: CompanyTreasury | null;
   treasuryLogs: TreasuryLog[];
   backups: BackupRecord[];
   currentPayload: BackupDataPayload;
-  liveConfig: LiveInterfaceConfig;
+  liveConfig?: LiveInterfaceConfig | null;
   onUpdateLiveConfig: (config: LiveInterfaceConfig) => void;
   onResetLiveConfig: () => void;
   onOpenRules: () => void;
@@ -207,7 +207,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return true;
   });
 
-  const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+  const isLowBalance = treasury && treasury.balance <= DEFAULT_ALERT_THRESHOLD;
 
   // Staff Permissions Enforcement
   const isStaff = adminUser?.role === 'STAFF';
@@ -1423,23 +1423,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
               <div className="bg-slate-950 p-3 rounded-xl border border-amber-500/30">
                 <span className="text-amber-400 block text-[11px] font-semibold">{isHi ? '🪙 GP एक्सचेंज रेट' : '🪙 GP Rate'}</span>
-                <span className="font-mono font-bold text-amber-300">₹1 = {rules.gpRatePerRupee ?? 1} GP</span>
+                <span className="font-mono font-bold text-amber-300">₹1 = {rules?.gpRatePerRupee ?? 1} GP</span>
               </div>
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <span className="text-slate-400 block text-[11px]">{isHi ? 'न्यूनतम डिपॉजिट' : 'Min Deposit'}</span>
-                <span className="font-mono font-bold text-white">{formatINR(rules.minDeposit)}</span>
+                <span className="font-mono font-bold text-white">{formatINR(rules?.minDeposit || 0)}</span>
               </div>
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <span className="text-slate-400 block text-[11px]">{isHi ? 'न्यूनतम निकासी' : 'Min Withdrawal'}</span>
-                <span className="font-mono font-bold text-white">{formatINR(rules.minWithdrawal)}</span>
+                <span className="font-mono font-bold text-white">{formatINR(rules?.minWithdrawal || 0)}</span>
               </div>
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <span className="text-slate-400 block text-[11px]">{isHi ? 'निकासी शुल्क' : 'Withdrawal Fee'}</span>
-                <span className="font-mono font-bold text-emerald-400">{rules.withdrawalFeePercent}%</span>
+                <span className="font-mono font-bold text-emerald-400">{rules?.withdrawalFeePercent || 0}%</span>
               </div>
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <span className="text-slate-400 block text-[11px]">{isHi ? 'रेफरल कमीशन' : 'Referral Tier'}</span>
-                <span className="font-mono font-bold text-amber-300">L1: {rules.referralL1Percent}% | L2: {rules.referralL2Percent}%</span>
+                <span className="font-mono font-bold text-amber-300">L1: {rules?.referralL1Percent || 0}% | L2: {rules?.referralL2Percent || 0}%</span>
               </div>
             </div>
           </div>

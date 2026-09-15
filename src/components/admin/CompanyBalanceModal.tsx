@@ -7,7 +7,7 @@ import { DEFAULT_ALERT_THRESHOLD } from '../../utils/treasuryStorage';
 interface CompanyBalanceModalProps {
   isOpen: boolean;
   mode: 'ADD' | 'DEDUCT';
-  treasury: CompanyTreasury;
+  treasury?: CompanyTreasury | null;
   language: Language;
   onClose: () => void;
   onAdd: (amount: number, reason: string, reasonHi: string, referenceId?: string) => void;
@@ -19,7 +19,7 @@ const PRESET_AMOUNTS = [50000, 100000, 200000, 500000, 1000000, 2500000];
 export const CompanyBalanceModal: React.FC<CompanyBalanceModalProps> = ({
   isOpen,
   mode,
-  treasury,
+  treasury: rawTreasury,
   language,
   onClose,
   onAdd,
@@ -27,6 +27,14 @@ export const CompanyBalanceModal: React.FC<CompanyBalanceModalProps> = ({
 }) => {
   const isHi = language === 'hi';
   const isAdd = mode === 'ADD';
+  const treasury: CompanyTreasury = rawTreasury || {
+    balance: 0,
+    totalInjected: 0,
+    totalDeducted: 0,
+    lastUpdated: new Date().toISOString(),
+    minAlertThreshold: 500000,
+    totalTransferredToUsers: 0,
+  };
 
   const [amount, setAmount] = useState<number>(isAdd ? 500000 : 100000);
   const [customAmount, setCustomAmount] = useState<string>(isAdd ? '500000' : '100000');

@@ -18,7 +18,7 @@ interface InvestModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: InvestmentPlan | null;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   companyBalance?: number;
   language: Language;
   onInvestSuccess: (plan: InvestmentPlan, amount: number, autoSwappedCash?: number) => void;
@@ -31,7 +31,7 @@ export const InvestModal: React.FC<InvestModalProps> = ({
   isOpen,
   onClose,
   plan,
-  wallet,
+  wallet: rawWallet,
   companyBalance,
   language,
   onInvestSuccess,
@@ -39,6 +39,15 @@ export const InvestModal: React.FC<InvestModalProps> = ({
   onOpenSwap,
   initialAmount,
 }) => {
+  const wallet: Wallet = rawWallet || {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+  };
   const isHi = language === 'hi';
   const [amount, setAmount] = useState<number>(5000);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);

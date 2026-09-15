@@ -13,7 +13,7 @@ import { Language, Wallet, AppRules } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface WalletCardProps {
-  wallet: Wallet;
+  wallet?: Wallet | null;
   language: Language;
   rules?: AppRules;
   activeInvestmentsCount: number;
@@ -27,7 +27,7 @@ interface WalletCardProps {
 }
 
 export const WalletCard: React.FC<WalletCardProps> = ({
-  wallet,
+  wallet: rawWallet,
   language,
   rules,
   activeInvestmentsCount,
@@ -40,6 +40,15 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   onClaimAllReturns,
 }) => {
   const isHi = language === 'hi';
+  const wallet: Wallet = rawWallet || {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+  };
   const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 1.0;
   const hasPendingApproval = (wallet.pendingDeposits || 0) > 0;
 

@@ -19,7 +19,7 @@ import { formatINR, getStoredBankDetails } from '../utils/storage';
 interface WithdrawModalProps {
   isOpen: boolean;
   onClose: () => void;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   language: Language;
   rules?: AppRules;
   currentUser?: UserProfile | null;
@@ -36,13 +36,22 @@ interface WithdrawModalProps {
 export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   isOpen,
   onClose,
-  wallet,
+  wallet: rawWallet,
   language,
   rules,
   currentUser,
   onWithdrawSuccess,
   onOpenSwap,
 }) => {
+  const wallet: Wallet = rawWallet || {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+  };
   const isHi = language === 'hi';
   const minWithdrawal = rules ? rules.minWithdrawal : 200;
   const feePercent = rules ? rules.withdrawalFeePercent : 0;

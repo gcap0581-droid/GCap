@@ -17,7 +17,7 @@ import { formatINR } from '../../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../../utils/treasuryStorage';
 
 interface CompanyBalanceCardProps {
-  treasury: CompanyTreasury;
+  treasury?: CompanyTreasury | null;
   language: Language;
   onOpenAddModal: () => void;
   onOpenDeductModal: () => void;
@@ -26,7 +26,7 @@ interface CompanyBalanceCardProps {
 }
 
 export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
-  treasury,
+  treasury: rawTreasury,
   language,
   onOpenAddModal,
   onOpenDeductModal,
@@ -34,6 +34,14 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
   onOpenHistory,
 }) => {
   const isHi = language === 'hi';
+  const treasury: CompanyTreasury = rawTreasury || {
+    balance: 0,
+    totalInjected: 0,
+    totalDeducted: 0,
+    lastUpdated: new Date().toISOString(),
+    minAlertThreshold: 500000,
+    totalTransferredToUsers: 0,
+  };
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
 
   return (

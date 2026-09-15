@@ -41,7 +41,7 @@ interface AndroidFrameProps {
   currentUser?: UserProfile | null;
   onLogout?: () => void;
   onSearchQuery?: (query: string) => void;
-  wallet?: Wallet;
+  wallet?: Wallet | null;
   onOpenDeposit?: () => void;
   onOpenWithdraw?: () => void;
   onOpenSwap?: () => void;
@@ -163,7 +163,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             >
               <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-xs font-mono font-bold text-emerald-400">
-                {formatINR(wallet.cashBalance)}
+                {formatINR(wallet?.cashBalance || 0)}
               </span>
             </div>
           )}

@@ -25,7 +25,7 @@ import {
 import { formatINR } from '../utils/storage';
 
 interface NavbarProps {
-  wallet: Wallet;
+  wallet?: Wallet | null;
   language: Language;
   onLanguageChange: (lang: Language) => void;
   viewMode: ViewMode;
@@ -181,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {isHi ? 'बैलेंस' : 'Balance'}
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
-                    {formatINR(wallet.cashBalance)}
+                    {formatINR(wallet?.cashBalance || 0)}
                   </span>
                 </div>
               </div>

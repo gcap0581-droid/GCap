@@ -19,7 +19,7 @@ import { formatINR } from '../utils/storage';
 
 interface EcommerceBannerProps {
   language: Language;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   onNavigateTab: (tab: 'dashboard' | 'plans' | 'investments' | 'wallet' | 'calculator' | 'rules') => void;
   onOpenDeposit: () => void;
   onOpenWithdraw: () => void;
@@ -227,7 +227,7 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
           {
             id: 'wallet',
             title: isHi ? 'वॉलेट लेजर' : 'Passbook',
-            sub: formatINR(wallet.cashBalance),
+            sub: formatINR(wallet?.cashBalance || 0),
             icon: Tag,
             badge: 'LEDGER',
             color: 'from-indigo-500/20 to-indigo-600/10 border-indigo-500/30 text-indigo-400',

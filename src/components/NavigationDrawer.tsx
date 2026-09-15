@@ -45,7 +45,7 @@ interface NavigationDrawerProps {
   onClose: () => void;
   language: Language;
   onLanguageChange: (lang: Language) => void;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   currentUser?: UserProfile | null;
   onLogout?: () => void;
   activeTab: DesktopCategoryTab;
@@ -188,7 +188,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               {isHi ? 'कुल उपलब्ध बैलेंस:' : 'Cash Balance:'}
             </div>
             <div className="text-lg font-black text-emerald-400 font-mono">
-              {formatINR(wallet.cashBalance)}
+              {formatINR(wallet?.cashBalance || 0)}
             </div>
           </div>
           <button

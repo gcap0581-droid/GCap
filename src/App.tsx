@@ -1432,6 +1432,7 @@ export default function App() {
 
   // Handlers
   const handleDepositSuccess = (amount: number, method: string, referenceId: string) => {
+    if (!wallet) return;
     // Deposit Rule 1 & 2:
     // Amount is submitted to company account and held in pending state until admin approves
     const updatedWallet: Wallet = {
@@ -1481,8 +1482,9 @@ export default function App() {
   // Deposit Rule 3 & 4:
   // User can swap any portion of approved cash to GP to buy plans; rest stays intact
   const handleSwapSuccess = (swapAmount: number, gpEarned?: number) => {
+    if (!wallet) return;
     if (swapAmount <= 0 || swapAmount > wallet.cashBalance) return;
-    const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 1.0;
+    const gpRate = rules?.gpRatePerRupee && rules?.gpRatePerRupee > 0 ? rules?.gpRatePerRupee : 1.0;
     const finalGpAmount = typeof gpEarned === 'number' && gpEarned > 0 ? gpEarned : Math.round(swapAmount * gpRate * 100) / 100;
     
     const updatedWallet: Wallet = {
@@ -1538,6 +1540,7 @@ export default function App() {
     withdrawalSource: WithdrawalSource = 'EARNING',
     voucherDetails?: Partial<Transaction>
   ) => {
+    if (!wallet) return;
     // Rule 1, 2, 3: Deduct only from the selected source (totalEarned or royaltyEarned)
     const isRoyalty = withdrawalSource === 'ROYALTY';
     const updatedWallet: Wallet = {
@@ -1630,6 +1633,8 @@ export default function App() {
   };
 
   const handleInvestSuccess = (plan: InvestmentPlan, amount: number, autoSwappedCash: number = 0) => {
+    if (!wallet) return;
+    if (!wallet) return;
     // 1. Deduct amount from Company's Main Balance and transfer to user's allocated plan
     const result = deductForUserInvestment(
       amount,
@@ -1855,6 +1860,7 @@ export default function App() {
   };
 
   const handleClaimAllReturns = () => {
+    if (!wallet) return;
     if (unclaimedReturnsTotal <= 0) return;
 
     const claimTotal = unclaimedReturnsTotal;
@@ -2269,13 +2275,13 @@ export default function App() {
           });
 
           // Credit Team Earning Referral Bonus (Level 1 & Level 2 based on earning, not invest amount)
-          if (rules.isReferralEnabled !== false && currentUser) {
+          if (rules?.isReferralEnabled !== false && currentUser) {
             const allUsers = getAllUsers();
             const l1SponsorCode = currentUser.referredBy?.trim().toUpperCase();
             if (l1SponsorCode) {
               const l1User = allUsers.find(u => u.referralCode?.toUpperCase() === l1SponsorCode || u.loginId.toUpperCase() === l1SponsorCode);
-              if (l1User && l1User.id !== currentUser.id && rules.referralL1Percent > 0) {
-                const l1Bonus = Math.round(((totalCycleEarningsToAdd * rules.referralL1Percent) / 100) * 100) / 100;
+              if (l1User && l1User.id !== currentUser.id && (rules?.referralL1Percent || 0) > 0) {
+                const l1Bonus = Math.round(((totalCycleEarningsToAdd * (rules?.referralL1Percent || 0)) / 100) * 100) / 100;
                 if (l1Bonus > 0) {
                   newTransactions.push({
                     id: `txn-ref-l1-${Date.now()}`,
@@ -2289,16 +2295,16 @@ export default function App() {
                     timestamp: now,
                     status: 'SUCCESS',
                     referenceId: 'REF' + Math.floor(10000000 + Math.random() * 90000000),
-                    note: `Level 1 Team Earning Bonus (${rules.referralL1Percent}%) from ${currentUser.name}`,
-                    noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 1 रेफरल बोनस (${rules.referralL1Percent}%) मिला`,
+                    note: `Level 1 Team Earning Bonus (${rules?.referralL1Percent || 0}%) from ${currentUser.name}`,
+                    noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 1 रेफरल बोनस (${rules?.referralL1Percent || 0}%) मिला`,
                   });
                 }
 
                 const l2SponsorCode = l1User.referredBy?.trim().toUpperCase();
                 if (l2SponsorCode) {
                   const l2User = allUsers.find(u => u.referralCode?.toUpperCase() === l2SponsorCode || u.loginId.toUpperCase() === l2SponsorCode);
-                  if (l2User && l2User.id !== currentUser.id && l2User.id !== l1User.id && rules.referralL2Percent > 0) {
-                    const l2Bonus = Math.round(((totalCycleEarningsToAdd * rules.referralL2Percent) / 100) * 100) / 100;
+                  if (l2User && l2User.id !== currentUser.id && l2User.id !== l1User.id && (rules?.referralL2Percent || 0) > 0) {
+                    const l2Bonus = Math.round(((totalCycleEarningsToAdd * (rules?.referralL2Percent || 0)) / 100) * 100) / 100;
                     if (l2Bonus > 0) {
                       newTransactions.push({
                         id: `txn-ref-l2-${Date.now()}`,
@@ -2312,8 +2318,8 @@ export default function App() {
                         timestamp: now,
                         status: 'SUCCESS',
                         referenceId: 'REF' + Math.floor(10000000 + Math.random() * 90000000),
-                        note: `Level 2 Team Earning Bonus (${rules.referralL2Percent}%) from ${currentUser.name}`,
-                        noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 2 रेफरल बोनस (${rules.referralL2Percent}%) मिला`,
+                        note: `Level 2 Team Earning Bonus (${rules?.referralL2Percent || 0}%) from ${currentUser.name}`,
+                        noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 2 रेफरल बोनस (${rules?.referralL2Percent || 0}%) मिला`,
                       });
                     }
                   }
@@ -2344,6 +2350,7 @@ export default function App() {
 
   // Fast-Forward / Simulation Handlers for 24h Lock and 6h Cycle
   const handleSimulateComplete24hLock = (investmentId: string) => {
+    if (!wallet) return;
     const inv = investments.find((i) => i.id === investmentId);
     if (!inv) return;
     const now = Date.now();
@@ -2381,6 +2388,7 @@ export default function App() {
   };
 
   const handleSimulateComplete6hCycle = (investmentId: string) => {
+    if (!wallet) return;
     const inv = investments.find((i) => i.id === investmentId);
     if (!inv) return;
     const now = Date.now();
@@ -2811,19 +2819,19 @@ export default function App() {
                 {isHi ? 'लाइव इन-ऐप सिंक एक्टिव' : 'Live In-App OTA Active'}
               </span>
               <span className="text-[11px] text-slate-400 font-mono">
-                Ver {liveConfig.appVersion}
+                Ver {liveConfig?.appVersion || 'v2.0'}
               </span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
                 {isHi ? 'बिना री-इन्स्टॉल ऑटो-अपडेट' : 'Zero Reinstall Updates'}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight pt-1">
-              {isHi ? (liveConfig.heroHeadlineHi || 'स्मार्ट निवेश, दैनिक रिटर्न') : (liveConfig.heroHeadline || 'Smart Investment & Daily Returns')}
+              {isHi ? (liveConfig?.heroHeadlineHi || 'स्मार्ट निवेश, दैनिक रिटर्न') : (liveConfig?.heroHeadline || 'Smart Investment & Daily Returns')}
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
               {isHi
-                ? (liveConfig.heroSubtextHi || 'शॉर्ट टर्म (641D) एवं लॉन्ग टर्म (365D) में सुरक्षित निवेश करें। 100% मूलधन सुरक्षा एवं स्वचालित 6-घंटे रिटर्न।')
-                : (liveConfig.heroSubtext || 'Invest safely in Short Term (641D) and Long Term (365D) plans with 100% capital guarantee and 6-hour automated payouts.')}
+                ? (liveConfig?.heroSubtextHi || 'शॉर्ट टर्म (641D) एवं लॉन्ग टर्म (365D) में सुरक्षित निवेश करें। 100% मूलधन सुरक्षा एवं स्वचालित 6-घंटे रिटर्न।')
+                : (liveConfig?.heroSubtext || 'Invest safely in Short Term (641D) and Long Term (365D) plans with 100% capital guarantee and 6-hour automated payouts.')}
             </p>
           </div>
 
@@ -3076,7 +3084,7 @@ export default function App() {
                   1. {isHi ? 'डिपॉजिट सीमा' : 'Deposit Limit'}
                 </span>
                 <p className="text-sm font-bold font-mono text-emerald-400 mt-1">
-                  Min: {formatINR(rules.minDeposit)}
+                  Min: {formatINR(rules?.minDeposit || 0)}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   {isHi ? '0% शुल्क • तत्काल UPI / QR' : 'Zero fee • Instant UPI / QR'}
@@ -3112,10 +3120,10 @@ export default function App() {
                   4. {isHi ? 'निकासी व ट्रांसफर' : 'Withdrawal Policy'}
                 </span>
                 <p className="text-sm font-bold font-mono text-purple-300 mt-1">
-                  Min: {formatINR(rules.minWithdrawal)}
+                  Min: {formatINR(rules?.minWithdrawal || 0)}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {rules.withdrawalFeePercent === 0 ? (isHi ? '0% मुफ़्त' : '0% Fee') : `${rules.withdrawalFeePercent}% Fee`} • {rules.withdrawalTiming}
+                  {rules?.withdrawalFeePercent || 0 === 0 ? (isHi ? '0% मुफ़्त' : '0% Fee') : `${rules?.withdrawalFeePercent || 0}% Fee`} • {rules?.withdrawalTiming || "24 Hrs"}
                 </p>
               </div>
             </div>
@@ -3218,7 +3226,7 @@ export default function App() {
       )}
 
       {/* Emergency Maintenance Mode Banner Only (Regular live updates run quietly in background without screen clutter) */}
-      {viewMode === 'web' && liveConfig.maintenanceMode && (
+      {viewMode === 'web' && liveConfig?.maintenanceMode && (
         <LiveAnnouncementBanner
           config={liveConfig}
           language={language}
@@ -3226,8 +3234,8 @@ export default function App() {
             showToast(
               isHi ? '✅ ऐप पूर्णतः अप-टू-डेट है!' : '✅ System is on latest live version!',
               isHi
-                ? `वर्ज़न ${liveConfig.appVersion} के सभी नियम व प्लान्स तुरंत सिंक हैं। रीइन्स्टॉल की आवश्यकता नहीं है।`
-                : `Version ${liveConfig.appVersion} is synchronized across all clients with zero reinstall.`
+                ? `वर्ज़न ${liveConfig?.appVersion} के सभी नियम व प्लान्स तुरंत सिंक हैं। रीइन्स्टॉल की आवश्यकता नहीं है।`
+                : `Version ${liveConfig?.appVersion} is synchronized across all clients with zero reinstall.`
             )
           }
         />
@@ -3253,7 +3261,7 @@ export default function App() {
           onToggleAdminHub={() =>
             setAdminViewMode((prev) => (prev === 'ADMIN_HUB' ? 'INVESTOR_VIEW' : 'ADMIN_HUB'))
           }
-          liveConfig={liveConfig}
+          liveConfig={liveConfig || undefined}
           desktopTab={desktopTab}
           onDesktopTabChange={setDesktopTab}
           onSearchQuery={(q) => {
@@ -3370,7 +3378,7 @@ export default function App() {
               treasuryLogs={treasuryLogs}
               backups={backups}
               currentPayload={getCurrentSystemPayload()}
-              liveConfig={liveConfig}
+              liveConfig={liveConfig || undefined}
               onUpdateLiveConfig={handleUpdateLiveConfig}
               onResetLiveConfig={handleResetLiveConfig}
               onOpenRules={() => setIsRulesOpen(true)}
@@ -3445,7 +3453,7 @@ export default function App() {
                 treasuryLogs={treasuryLogs}
                 backups={backups}
                 currentPayload={getCurrentSystemPayload()}
-                liveConfig={liveConfig}
+                liveConfig={liveConfig || undefined}
                 onUpdateLiveConfig={handleUpdateLiveConfig}
                 onResetLiveConfig={handleResetLiveConfig}
                 onOpenRules={() => setIsRulesOpen(true)}
@@ -3584,15 +3592,15 @@ export default function App() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
                           <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम डिपॉजिट' : 'Min Deposit'}</span>
-                          <span className="font-mono font-bold text-emerald-400">{formatINR(rules.minDeposit)}</span>
+                          <span className="font-mono font-bold text-emerald-400">{formatINR(rules?.minDeposit || 0)}</span>
                         </div>
                         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
                           <span className="text-[10px] text-slate-400 block">{isHi ? 'कम से कम निकासी' : 'Min Withdraw'}</span>
-                          <span className="font-mono font-bold text-purple-300">{formatINR(rules.minWithdrawal)}</span>
+                          <span className="font-mono font-bold text-purple-300">{formatINR(rules?.minWithdrawal || 0)}</span>
                         </div>
                         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
                           <span className="text-[10px] text-slate-400 block">{isHi ? 'निकासी शुल्क' : 'Withdrawal Fee'}</span>
-                          <span className="font-mono font-bold text-white">{rules.withdrawalFeePercent}%</span>
+                          <span className="font-mono font-bold text-white">{rules?.withdrawalFeePercent || 0}%</span>
                         </div>
                         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
                           <span className="text-[10px] text-slate-400 block">{isHi ? 'मूलधन वापसी' : 'Capital Return'}</span>
@@ -3621,7 +3629,7 @@ export default function App() {
                     <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-center justify-between">
                       <div>
                         <span className="font-bold block text-amber-300">{isHi ? 'रेफरल कमीशन प्रोग्राम' : 'Referral Bonus'}</span>
-                        <span className="text-[11px] text-amber-200/80">L1: {rules.referralL1Percent}% | L2: {rules.referralL2Percent}%</span>
+                        <span className="text-[11px] text-amber-200/80">L1: {rules?.referralL1Percent || 0}% | L2: {rules?.referralL2Percent || 0}%</span>
                       </div>
                       <button
                         onClick={() => setIsReferralOpen(true)}

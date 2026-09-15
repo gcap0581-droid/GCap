@@ -17,7 +17,7 @@ import { formatINR } from '../utils/storage';
 interface SwapModalProps {
   isOpen: boolean;
   onClose: () => void;
-  wallet: Wallet;
+  wallet?: Wallet | null;
   language: Language;
   rules?: AppRules;
   onSwapSuccess: (cashAmount: number, gpEarned: number) => void;
@@ -26,11 +26,20 @@ interface SwapModalProps {
 export const SwapModal: React.FC<SwapModalProps> = ({
   isOpen,
   onClose,
-  wallet,
+  wallet: rawWallet,
   language,
   rules,
   onSwapSuccess,
 }) => {
+  const wallet: Wallet = rawWallet || {
+    cashBalance: 0,
+    gpBalance: 0,
+    totalInvested: 0,
+    totalEarned: 0,
+    royaltyEarned: 0,
+    pendingWithdrawals: 0,
+    pendingDeposits: 0,
+  };
   const isHi = language === 'hi';
   const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 1.0;
   const [amount, setAmount] = useState<number>(Math.min(wallet.cashBalance, 1000));

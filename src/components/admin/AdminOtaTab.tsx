@@ -30,6 +30,7 @@ import {
   broadcastOtaUpdate,
   getOtaHistory,
 } from '../../utils/liveConfigStorage';
+import { DEFAULT_LIVE_CONFIG } from '../../utils/liveConfigStorage';
 import {
   broadcastAiStudioForceUpdate,
   CURRENT_BUILD_ID,
@@ -38,7 +39,7 @@ import {
 import { AiStudioCheckButton } from '../AiStudioUpdateBanner';
 
 interface AdminOtaTabProps {
-  config: LiveInterfaceConfig;
+  config?: LiveInterfaceConfig | null;
   language: Language;
   onUpdateConfig: (newConfig: LiveInterfaceConfig) => void;
   onResetConfig: () => void;
@@ -51,8 +52,9 @@ export const AdminOtaTab: React.FC<AdminOtaTabProps> = ({
   onResetConfig,
 }) => {
   const isHi = language === 'hi';
+  const safeConfig = config || DEFAULT_LIVE_CONFIG;
 
-  const [formData, setFormData] = useState<LiveInterfaceConfig>(config);
+  const [formData, setFormData] = useState<LiveInterfaceConfig>(safeConfig);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
   const [forceRefreshSuccess, setForceRefreshSuccess] = useState(false);
