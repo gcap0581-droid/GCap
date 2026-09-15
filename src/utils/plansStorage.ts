@@ -5,6 +5,42 @@ import { apiSavePlans } from './centralSync';
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
 
+export function sanitizePlans(plans: InvestmentPlan[]): { sanitized: InvestmentPlan[]; changed: boolean } {
+  let changed = false;
+  const sanitized = plans.map((plan) => {
+    if (plan.id === 'long-term' && plan.minAmount !== 10000) {
+      changed = true;
+      const defaultLongTerm = DEFAULT_PLANS.find((p) => p.id === 'long-term') || plan;
+      return { ...defaultLongTerm };
+    }
+    if (plan.id === 'short-term' && (plan.minAmount !== 10000 || plan.maxAmount !== 100000)) {
+      changed = true;
+      const defaultShortTerm = DEFAULT_PLANS.find((p) => p.id === 'short-term') || plan;
+      return { ...defaultShortTerm };
+    }
+    return plan;
+  });
+
+  const hasShort = sanitized.some((p) => p.id === 'short-term');
+  const hasLong = sanitized.some((p) => p.id === 'long-term');
+  if (!hasShort) {
+    const defaultShort = DEFAULT_PLANS.find((p) => p.id === 'short-term');
+    if (defaultShort) {
+      sanitized.push({ ...defaultShort });
+      changed = true;
+    }
+  }
+  if (!hasLong) {
+    const defaultLong = DEFAULT_PLANS.find((p) => p.id === 'long-term');
+    if (defaultLong) {
+      sanitized.push({ ...defaultLong });
+      changed = true;
+    }
+  }
+
+  return { sanitized, changed };
+}
+
 export function getStoredPlans(): InvestmentPlan[] {
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(PLANS_STORAGE_KEY) : null;
@@ -15,19 +51,10 @@ export function getStoredPlans(): InvestmentPlan[] {
     if (!Array.isArray(parsed) || parsed.length === 0) {
       return DEFAULT_PLANS;
     }
-    // Auto-migrate: ensure the 641-day short-term plan (0.164%, min 10k, max 100k) and 365-day long-term plan (0.124%) are active
-    const shortTermPlan = parsed.find((p) => p.id === 'short-term');
-    const longTermPlan = parsed.find((p) => p.id === 'long-term');
-    if (
-      !shortTermPlan ||
-      shortTermPlan.dailyRoiPercent !== 0.164 ||
-      shortTermPlan.minAmount !== 10000 ||
-      shortTermPlan.maxAmount !== 100000 ||
-      !longTermPlan ||
-      longTermPlan.dailyRoiPercent !== 0.124 ||
-      longTermPlan.minAmount !== 10000
-    ) {
-      return DEFAULT_PLANS;
+    const { sanitized, changed } = sanitizePlans(parsed);
+    if (changed) {
+      saveStoredPlans(sanitized, true, true);
+      return sanitized;
     }
     return parsed;
   } catch (err) {
@@ -38,19 +65,23 @@ export function getStoredPlans(): InvestmentPlan[] {
 
 export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, syncToServer = false): void {
   try {
+    const { sanitized, changed } = sanitizePlans(plans);
+    const finalPlans = sanitized;
+    const finalSync = syncToServer || changed;
+
     if (typeof window !== 'undefined') {
-      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(plans));
+      localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(finalPlans));
     }
-    if (syncToServer) {
-      apiSavePlans(plans).catch((err) => console.warn('Background apiSavePlans error:', err));
+    if (finalSync) {
+      apiSavePlans(finalPlans).catch((err) => console.warn('Background apiSavePlans error:', err));
     }
-    if (broadcast) {
+    if (broadcast || changed) {
       broadcastOtaUpdate(
         'PLANS',
         'Investment Plans Updated Live',
         'निवेश प्लान लाइव अपडेट हुए',
-        `Active plans list updated (${plans.length} plans available). Instant sync complete.`,
-        `सक्रिय प्लान्स सूची अपडेट हुई (${plans.length} प्लान्स उपलब्ध)। तत्काल सिंक पूर्ण।`
+        `Active plans list updated (${finalPlans.length} plans available). Instant sync complete.`,
+        `सक्रिय प्लान्स सूची अपडेट हुई (${finalPlans.length} प्लान्स उपलब्ध)। तत्काल सिंक पूर्ण।`
       );
     }
   } catch (err) {

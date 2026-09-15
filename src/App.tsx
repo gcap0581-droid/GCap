@@ -39,6 +39,7 @@ import {
   updatePlan,
   deletePlan,
   resetPlansToDefault,
+  sanitizePlans,
 } from './utils/plansStorage';
 import {
   getStoredTreasury,
@@ -159,7 +160,7 @@ export default function App() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [investments, setInvestments] = useState<ActiveInvestment[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [plans, setPlans] = useState<InvestmentPlan[]>([]);
+  const [plans, setPlans] = useState<InvestmentPlan[]>(getStoredPlans());
   const [rules, setRules] = useState<AppRules | null>(null);
   const [treasury, setTreasury] = useState<CompanyTreasury | null>(null);
   const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>([]);
@@ -256,8 +257,9 @@ export default function App() {
         if (isCancelled || !state || !state.success) return;
 
         if (state.plans && state.plans.length > 0) {
-          setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(state.plans) ? state.plans : prev));
-          saveStoredPlans(state.plans);
+          const { sanitized, changed } = sanitizePlans(state.plans);
+          setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(sanitized) ? sanitized : prev));
+          saveStoredPlans(sanitized, changed, changed);
         }
         if (state.rules) {
           setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(state.rules) ? state.rules : prev));
@@ -341,8 +343,9 @@ export default function App() {
 
       // 1. Synchronize Global Plans, Rules, LiveConfig
       if (fs.plans && fs.plans.length > 0) {
-        setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.plans) ? fs.plans : prev));
-        saveStoredPlans(fs.plans);
+        const { sanitized, changed } = sanitizePlans(fs.plans);
+        setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(sanitized) ? sanitized : prev));
+        saveStoredPlans(sanitized, changed, changed);
       }
       if (fs.rules) {
         setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.rules) ? fs.rules : prev));
@@ -457,8 +460,9 @@ export default function App() {
 
         // Sync Global Plans, Rules, LiveConfig
         if (state.plans && state.plans.length > 0) {
-          setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(state.plans) ? state.plans : prev));
-          saveStoredPlans(state.plans);
+          const { sanitized, changed } = sanitizePlans(state.plans);
+          setPlans((prev) => (JSON.stringify(prev) !== JSON.stringify(sanitized) ? sanitized : prev));
+          saveStoredPlans(sanitized, changed, changed);
         }
         if (state.rules) {
           setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(state.rules) ? state.rules : prev));
@@ -1470,8 +1474,9 @@ export default function App() {
       const state = await fetchCentralState(user.id, user.role);
       if (state && state.success) {
         if (state.plans && state.plans.length > 0) {
-          setPlans(state.plans);
-          saveStoredPlans(state.plans);
+          const { sanitized, changed } = sanitizePlans(state.plans);
+          setPlans(sanitized);
+          saveStoredPlans(sanitized, changed, changed);
         }
         if (state.rules) {
           setRules(state.rules);
