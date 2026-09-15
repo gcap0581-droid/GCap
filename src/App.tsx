@@ -128,6 +128,7 @@ import { NavigationDrawer } from './components/NavigationDrawer';
 import { ProfileModal } from './components/ProfileModal';
 import { GuidesModal } from './components/GuidesModal';
 import { UserAgreementModal } from './components/UserAgreementModal';
+import { UserManualModal } from './components/UserManualModal';
 import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
@@ -177,6 +178,7 @@ export default function App() {
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isAgreementOpen, setIsAgreementOpen] = useState<boolean>(false);
+  const [isUserManualOpen, setIsUserManualOpen] = useState<boolean>(false);
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [activePopupMessage, setActivePopupMessage] = useState<AdminMessage | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
@@ -3493,6 +3495,7 @@ export default function App() {
         onOpenRules={() => setIsRulesOpen(true)}
         onOpenReferral={() => setIsReferralOpen(true)}
         onOpenAgreement={() => setIsAgreementOpen(true)}
+        onOpenManual={() => setIsUserManualOpen(true)}
         onOpenGuides={handleOpenGuides}
         onSimulateDay={handleSimulateDay}
         isSimulating={isSimulating}
@@ -3957,6 +3960,15 @@ export default function App() {
         rules={rules}
         plans={plans}
         language={language}
+      />
+
+      {/* Official GCap User Manual & Operations SOP Modal */}
+      <UserManualModal
+        isOpen={isUserManualOpen}
+        onClose={() => setIsUserManualOpen(false)}
+        language={language}
+        rules={rules}
+        plans={plans}
       />
 
       {/* 24-Hour Lock Completed Congratulations Modal */}

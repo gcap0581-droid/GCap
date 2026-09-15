@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Zap,
   Building2,
+  BookOpen,
   Globe,
   Monitor,
   Smartphone,
@@ -59,6 +60,7 @@ interface NavigationDrawerProps {
   onOpenReferral: () => void;
   onOpenGuides?: (guide?: 'SHORT_TERM' | 'LONG_TERM' | 'TDS_REFUND') => void;
   onOpenAgreement?: () => void;
+  onOpenManual?: () => void;
   onSimulateDay: () => void;
   isSimulating: boolean;
   isAdminHubActive?: boolean;
@@ -88,6 +90,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onOpenReferral,
   onOpenGuides,
   onOpenAgreement,
+  onOpenManual,
   onSimulateDay,
   isSimulating,
   isAdminHubActive,
@@ -446,6 +449,22 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   </div>
                   <span className="text-[11px] bg-cyan-500/20 text-cyan-300 font-mono px-1.5 py-0.5 rounded border border-cyan-500/30">
                     ITR
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onOpenManual) onOpenManual();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between text-emerald-300 hover:bg-slate-800/60 transition-colors font-semibold"
+                >
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-emerald-400" />
+                    <span>{isHi ? '📖 GCap संचालन SOP एवं यूज़र मैन्युअल' : '📖 GCap Operations SOP & User Manual'}</span>
+                  </div>
+                  <span className="text-[11px] bg-emerald-500/20 text-emerald-300 font-mono px-1.5 py-0.5 rounded border border-emerald-500/30">
+                    SOP
                   </span>
                 </button>
 

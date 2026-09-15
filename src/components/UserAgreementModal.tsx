@@ -20,8 +20,10 @@ import {
 } from 'lucide-react';
 import { Language, UserProfile, AppRules, InvestmentPlan, CompanyProfile } from '../types';
 import { formatINR } from '../utils/storage';
+import { getStoredRules } from '../utils/rulesStorage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
+import { getStoredPlans } from '../utils/plansStorage';
 
 interface UserAgreementModalProps {
   isOpen: boolean;
@@ -68,27 +70,29 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
   const agreementId = `GCAP-AGR-${new Date().getFullYear()}-${user.id.slice(-6).toUpperCase()}`;
   const agreementDate = user.joinedDate || new Date().toISOString().split('T')[0];
 
+  const activePlans = plans && plans.length > 0 ? plans : getStoredPlans();
+
   // Dynamic Short Term & Long Term plan references from live plans
-  const shortTermPlan = plans.find(
+  const shortTermPlan = activePlans.find(
     (p) => p.durationDays > 500 || p.name.toLowerCase().includes('short') || p.id.includes('stp')
   ) || {
     name: 'GCap 641-Day Prime Short Term Growth',
     nameHi: 'जीकैप 641-दिन शॉर्ट टर्म ग्रोथ प्लान',
     durationDays: 641,
     dailyRoiPercent: 0.164,
-    minAmount: 1000,
-    maxAmount: 500000,
+    minAmount: 10000,
+    maxAmount: 100000,
   };
 
-  const longTermPlan = plans.find(
+  const longTermPlan = activePlans.find(
     (p) => p.durationDays === 365 || p.name.toLowerCase().includes('long') || p.id.includes('ltp')
   ) || {
     name: 'GCap 365-Day Long Term Royalty Asset Plan',
     nameHi: 'जीकैप 365-दिन लॉन्ग टर्म रॉयल्टी प्लान',
     durationDays: 365,
     dailyRoiPercent: 0.124,
-    minAmount: 5000,
-    maxAmount: 1000000,
+    minAmount: 10000,
+    maxAmount: 100000,
   };
 
   const handlePrint = () => {

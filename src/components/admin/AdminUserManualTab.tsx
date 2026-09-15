@@ -29,11 +29,13 @@ import {
 } from 'lucide-react';
 import { AppRules, InvestmentPlan, Language } from '../../types';
 import { formatINR } from '../../utils/storage';
+import { getStoredRules } from '../../utils/rulesStorage';
+import { getStoredPlans } from '../../utils/plansStorage';
 
 interface AdminUserManualTabProps {
   language: Language;
-  rules: AppRules;
-  plans: InvestmentPlan[];
+  rules?: AppRules;
+  plans?: InvestmentPlan[];
   onBackToHub?: () => void;
 }
 
@@ -45,6 +47,9 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
 }) => {
   const isHi = language === 'hi';
   const manualPrintRef = useRef<HTMLDivElement>(null);
+
+  const activeRules = rules || getStoredRules();
+  const activePlans = plans && plans.length > 0 ? plans : getStoredPlans();
 
   const handlePrint = () => {
     const content = manualPrintRef.current ? manualPrintRef.current.innerHTML : document.body.innerHTML;
@@ -124,7 +129,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
     }
   };
 
-  const gpRate = rules?.gpRatePerRupee ?? 1;
+  const gpRate = activeRules?.gpRatePerRupee ?? 1;
 
   return (
     <div className="space-y-6" ref={manualPrintRef}>
@@ -366,7 +371,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
               <p className="text-xs text-slate-300 print:text-slate-700 leading-relaxed">
                 6.1 हर महीने की <strong>1 तारीख से 5 तारीख</strong> तक विथड्रॉल विंडो खुली रहती है।<br />
                 6.2 प्रोफ़ाइल में अपना <strong>बैंक खाता संख्या, IFSC कोड या UPI ID</strong> दर्ज करके रखें।<br />
-                6.3 <strong>"Withdraw (निकासी)"</strong> पर क्लिक करें और राशि दर्ज करें (न्यूनतम ₹{rules?.minWithdrawal ?? 100})। एडमिन अप्रूवल के बाद राशि सीधे 24 घंटों में आपके बैंक खाते में स्थानांतरित हो जाती है।
+                6.3 <strong>"Withdraw (निकासी)"</strong> पर क्लिक करें और राशि दर्ज करें (न्यूनतम ₹{activeRules?.minWithdrawal ?? 100})। एडमिन अप्रूवल के बाद राशि सीधे 24 घंटों में आपके बैंक खाते में स्थानांतरित हो जाती है।
               </p>
             </div>
 
@@ -381,14 +386,14 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
                     रेफरल व दैनिक रॉयल्टी बोनस (Referral & Royalty Bonus)
                   </h3>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-emerald-500/20">
                   Step 7
                 </span>
               </div>
               <p className="text-xs text-slate-300 print:text-slate-700 leading-relaxed">
                 7.1 अपना रेफरल लिंक या कोड मित्रों के साथ साझा करें।<br />
-                7.2 <strong>Level 1 (डायरेक्ट मित्र):</strong> उनके निवेश पर {rules?.referralL1Percent ?? 5}% तुरंत बोनस एवं दैनिक रिटर्न पर रॉयल्टी commission प्राप्त होता है।<br />
-                7.3 <strong>Level 2:</strong> {rules?.referralL2Percent ?? 3}% बोनस | <strong>Level 3:</strong> {rules?.referralL3Percent ?? 1}% बोनस टीम वर्क पर दिया जाता है।
+                7.2 <strong>Level 1 (डायरेक्ट मित्र):</strong> उनके निवेश पर {activeRules?.referralL1Percent ?? 5}% तुरंत बोनस एवं दैनिक रिटर्न पर रॉयल्टी commission प्राप्त होता है।<br />
+                7.3 <strong>Level 2:</strong> {activeRules?.referralL2Percent ?? 3}% बोनस | <strong>Level 3:</strong> {activeRules?.referralL3Percent ?? 1}% बोनस टीम वर्क पर दिया जाता है।
               </p>
             </div>
 
@@ -480,7 +485,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
                     <Wallet className="w-4 h-4 text-rose-400" />
                     <span>न्यूनतम निकासी राशि (Min Withdraw)</span>
                   </td>
-                  <td className="p-3.5 font-mono text-white print:text-black font-black">{formatINR(rules?.minWithdrawal ?? 100)}</td>
+                  <td className="p-3.5 font-mono text-white print:text-black font-black">{formatINR(activeRules?.minWithdrawal ?? 100)}</td>
                   <td className="p-3.5">वॉलेट में न्यूनतम निर्धारित राशि उपलब्ध होने पर विथड्रॉल बटन सक्रिय होगा।</td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
@@ -513,7 +518,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {plans.map((p) => {
+            {activePlans.map((p) => {
               const dailyAmt = p.minAmount * (p.dailyRoiPercent / 100);
               const totalReturnAmt = dailyAmt * (p.durationDays || 641);
               const cyclePayout = dailyAmt / 4;

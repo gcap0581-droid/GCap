@@ -380,8 +380,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <User className="w-4 h-4" />
                       </div>
                       <input
-                        type="text"
-                        inputMode="text"
+                        type="tel"
+                        inputMode="tel"
                         autoComplete="one-time-code"
                         data-lpignore="true"
                         data-1p-ignore="true"
@@ -391,7 +391,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         spellCheck={false}
                         required
                         value={loginId}
-                        onChange={(e) => setLoginId(e.target.value)}
+                        onChange={(e) => setLoginId(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
@@ -410,13 +410,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
-                        type="text"
-                        inputMode="text"
-                        style={!showPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
+                        type={showPassword ? 'text' : 'password'}
                         autoComplete="one-time-code"
                         data-lpignore="true"
                         data-1p-ignore="true"
-                        data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}
@@ -478,7 +475,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       type="text"
                       inputMode="text"
                       required
-                      autoComplete="one-time-code"
+                      autoComplete="name"
                       data-lpignore="true"
                       data-1p-ignore="true"
                       data-form-type="other"
@@ -497,15 +494,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </label>
                       <input
                         type="tel"
-                        inputMode="text"
+                        inputMode="tel"
                         required
-                        autoComplete="one-time-code"
+                        autoComplete="tel"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
                         value={regPhone}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          const val = e.target.value.replace(/[^0-9]/g, '');
                           setRegPhone(val);
                         }}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
@@ -525,7 +522,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     <input
                       type="email"
                       inputMode="email"
-                      autoComplete="one-time-code"
+                      autoComplete="email"
                       data-lpignore="true"
                       data-1p-ignore="true"
                       data-form-type="other"
@@ -543,13 +540,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </label>
                     <div className="relative">
                       <input
-                        type="text"
-                        inputMode="text"
-                        style={!showRegPassword ? { WebkitTextSecurity: 'disc' } as React.CSSProperties : undefined}
-                        autoComplete="one-time-code"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        data-form-type="other"
+                        type={showRegPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        data-lpignore="false"
+                        data-1p-ignore="false"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}

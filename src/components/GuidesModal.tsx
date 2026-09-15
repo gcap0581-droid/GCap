@@ -21,7 +21,9 @@ import {
 } from 'lucide-react';
 import { Language, AppRules, InvestmentPlan } from '../types';
 import { formatINR } from '../utils/storage';
+import { getStoredRules } from '../utils/rulesStorage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
+import { getStoredPlans } from '../utils/plansStorage';
 
 interface GuidesModalProps {
   isOpen: boolean;
@@ -54,31 +56,34 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
     downloadDocumentAsHtml('guide-print-content', `GCap-${activeGuide}-Guide.html`);
   };
 
-  const adminCharge = rules?.adminFeePercent ?? 2.0;
-  const currentTdsRate = rules?.tdsPercent !== undefined && rules.tdsPercent > 0 ? rules.tdsPercent : 5.0;
+  const activeRules = rules || getStoredRules();
+  const activePlans = plans && plans.length > 0 ? plans : getStoredPlans();
+
+  const adminCharge = activeRules?.adminFeePercent ?? 2.0;
+  const currentTdsRate = activeRules?.tdsPercent !== undefined && activeRules.tdsPercent > 0 ? activeRules.tdsPercent : 5.0;
 
   // Dynamic Short Term Plan (e.g. 641D)
-  const shortPlan = plans.find(
+  const shortPlan = activePlans.find(
     (p) => p.durationDays > 500 || p.name.toLowerCase().includes('short') || p.id.includes('stp')
   ) || {
     name: 'GCap 641-Day Prime Short Term',
     nameHi: 'GCap 641-दिन शॉर्ट टर्म योजना',
     durationDays: 641,
     dailyRoiPercent: 0.164,
-    minAmount: 1000,
-    maxAmount: 500000,
+    minAmount: 10000,
+    maxAmount: 100000,
   };
 
   // Dynamic Long Term Plan (e.g. 365D)
-  const longPlan = plans.find(
+  const longPlan = activePlans.find(
     (p) => p.durationDays === 365 || p.name.toLowerCase().includes('long') || p.id.includes('ltp')
   ) || {
     name: 'GCap 365-Day Long Term Asset Plan',
     nameHi: 'GCap 365-दिन लॉन्ग टर्म एसेट प्लान',
     durationDays: 365,
-    dailyRoiPercent: 0.35,
-    minAmount: 5000,
-    maxAmount: 1000000,
+    dailyRoiPercent: 0.124,
+    minAmount: 10000,
+    maxAmount: 100000,
   };
 
   // Calculation for ₹1,00,000 example
