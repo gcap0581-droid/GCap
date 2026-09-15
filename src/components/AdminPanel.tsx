@@ -76,6 +76,7 @@ import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
+import { ConvertFeeGpModal } from './admin/ConvertFeeGpModal';
 import { PlanEditModal } from './admin/PlanEditModal';
 import { UserEditModal } from './admin/UserEditModal';
 import { TransactionEditModal } from './admin/TransactionEditModal';
@@ -130,6 +131,7 @@ interface AdminPanelProps {
   onRefreshMessages?: () => void;
   externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS';
   onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS') => void;
+  onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -175,6 +177,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onRefreshMessages = () => {},
   externalActiveSubTab,
   onExternalActiveSubTabChange,
+  onConvertAdminFeeGpToRupees,
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
@@ -196,6 +199,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Company Balance Modal state
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [balanceModalMode, setBalanceModalMode] = useState<'ADD' | 'DEDUCT'>('ADD');
+  const [convertFeeGpModalOpen, setConvertFeeGpModalOpen] = useState(false);
 
   // Overview recent activity filter
   const [overviewTxnFilter, setOverviewTxnFilter] = useState<'ALL' | 'PENDING' | 'DEPOSIT' | 'WITHDRAWAL'>('ALL');
@@ -957,6 +961,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }}
             onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
             onOpenHistory={() => setActiveSubTab('TREASURY')}
+            onOpenConvertFeeGpModal={() => setConvertFeeGpModalOpen(true)}
           />
 
           {/* PROMINENT USER DEPOSIT & WITHDRAWAL REQUESTS QUEUE DIRECTLY ON ADMIN MAIN SCREEN */}
@@ -1591,6 +1596,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           }}
           onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
           onResetTreasury={onResetTreasury}
+          onOpenConvertFeeGpModal={() => setConvertFeeGpModalOpen(true)}
         />
       )}
 
@@ -1703,6 +1709,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         transaction={rejectTargetTxn}
         onConfirmReject={handleConfirmRejectWithReason}
         language={language}
+      />
+
+      <ConvertFeeGpModal
+        isOpen={convertFeeGpModalOpen}
+        onClose={() => setConvertFeeGpModalOpen(false)}
+        treasury={treasury}
+        language={language}
+        onConvert={(gpAmount, destination) => {
+          if (onConvertAdminFeeGpToRupees) {
+            onConvertAdminFeeGpToRupees(gpAmount, destination);
+          }
+        }}
       />
     </div>
   );

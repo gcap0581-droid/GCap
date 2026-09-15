@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   Zap,
   History,
+  Coins,
+  Sparkles,
 } from 'lucide-react';
 import { CompanyTreasury, Language } from '../../types';
 import { formatINR } from '../../utils/storage';
@@ -23,6 +25,7 @@ interface CompanyBalanceCardProps {
   onOpenDeductModal: () => void;
   onQuickAdd: (amount: number) => void;
   onOpenHistory?: () => void;
+  onOpenConvertFeeGpModal?: () => void;
 }
 
 export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
@@ -32,6 +35,7 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
   onOpenDeductModal,
   onQuickAdd,
   onOpenHistory,
+  onOpenConvertFeeGpModal,
 }) => {
   const isHi = language === 'hi';
   const treasury: CompanyTreasury = rawTreasury || {
@@ -41,8 +45,12 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
     lastUpdated: new Date().toISOString(),
     minAlertThreshold: 500000,
     totalTransferredToUsers: 0,
+    collectedFeeGpBalance: 0,
+    totalFeeGpConverted: 0,
   };
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+  const collectedFeeGp = treasury.collectedFeeGpBalance || 0;
+  const totalConvertedFeeGp = treasury.totalFeeGpConverted || 0;
 
   return (
     <div
@@ -176,6 +184,57 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
                 </span>
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Separated Admin Transaction Charge Fee GP Reserve Card */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/40 border border-amber-500/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-bold shrink-0 shadow-md">
+              <Coins className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-extrabold text-amber-300">
+                  {isHi ? 'एडमिन ट्रांजेक्शन चार्ज GP रिज़र्व' : 'Admin Collected Transaction Fee GP Balance'}
+                </h4>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold font-mono">
+                  {isHi ? 'पृथक GP बैलेंस' : 'Separated Fee GP'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                {isHi
+                  ? 'यूज़र ट्रांजेक्शन शुल्क (जैसे GP P2P ट्रांसफर 2%) से प्राप्त GP यहाँ अलग जमा होता है। इसे कभी भी रुपये बनाकर मुख्य रिज़र्व/वॉलेट में जोड़ सकते हैं।'
+                  : 'Transaction charges (e.g. 2% P2P transfer fee) accumulate separately here. Admin can convert GP to Rupees anytime.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="text-left sm:text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                {isHi ? 'उपलब्ध शुल्क GP' : 'Available Fee GP'}
+              </span>
+              <span className="text-xl font-black font-mono text-amber-400">
+                {collectedFeeGp.toFixed(2)} <span className="text-xs font-semibold text-slate-300">GP</span>
+              </span>
+              {totalConvertedFeeGp > 0 && (
+                <span className="text-[10px] text-emerald-400 font-mono block">
+                  ({isHi ? `कुल कनवर्टेड: ${totalConvertedFeeGp.toFixed(2)} GP` : `Total Converted: ${totalConvertedFeeGp.toFixed(2)} GP`})
+                </span>
+              )}
+            </div>
+
+            {onOpenConvertFeeGpModal && (
+              <button
+                id="btn-admin-convert-fee-gp"
+                onClick={onOpenConvertFeeGpModal}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102"
+              >
+                <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
+                <span>{isHi ? '💸 GP को ₹ रुपये बनाकर वॉलेट में जोड़ें' : '💸 Convert GP to Rupees'}</span>
+              </button>
+            )}
           </div>
         </div>
 

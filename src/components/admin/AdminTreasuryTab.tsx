@@ -12,6 +12,8 @@ import {
   TrendingDown,
   ShieldAlert,
   Zap,
+  Coins,
+  Sparkles,
 } from 'lucide-react';
 import { CompanyTreasury, Language, TreasuryLog } from '../../types';
 import { formatINR } from '../../utils/storage';
@@ -25,6 +27,7 @@ interface AdminTreasuryTabProps {
   onOpenDeductModal: () => void;
   onQuickAdd: (amount: number) => void;
   onResetTreasury: () => void;
+  onOpenConvertFeeGpModal?: () => void;
 }
 
 export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
@@ -35,6 +38,7 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
   onOpenDeductModal,
   onQuickAdd,
   onResetTreasury,
+  onOpenConvertFeeGpModal,
 }) => {
   const isHi = language === 'hi';
   const treasury: CompanyTreasury = rawTreasury || {
@@ -44,8 +48,12 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
     lastUpdated: new Date().toISOString(),
     minAlertThreshold: 500000,
     totalTransferredToUsers: 0,
+    collectedFeeGpBalance: 0,
+    totalFeeGpConverted: 0,
   };
   const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+  const collectedFeeGp = treasury.collectedFeeGpBalance || 0;
+  const totalConvertedFeeGp = treasury.totalFeeGpConverted || 0;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
 
@@ -53,7 +61,8 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
     const matchesFilter =
       filterType === 'ALL' ||
       (filterType === 'ADMIN' && (log.type === 'ADMIN_ADD' || log.type === 'ADMIN_DEDUCT')) ||
-      (filterType === 'USER' && (log.type === 'USER_INVESTMENT_DEDUCT' || log.type === 'USER_PAYOUT_DEDUCT' || log.type === 'USER_FUND_ADD_DEDUCT'));
+      (filterType === 'USER' && (log.type === 'USER_INVESTMENT_DEDUCT' || log.type === 'USER_PAYOUT_DEDUCT' || log.type === 'USER_FUND_ADD_DEDUCT')) ||
+      (filterType === 'FEE_GP' && (log.type === 'ADMIN_FEE_GP_COLLECT' || log.type === 'ADMIN_FEE_GP_CONVERT'));
 
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
@@ -202,19 +211,72 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
         </div>
 
         {/* Quick Top-up Chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs text-slate-400 font-medium">
-            {isHi ? '⚡ त्वरित टॉप-अप जोड़ें:' : '⚡ Instant Add Balance:'}
-          </span>
-          {[100000, 200000, 500000, 1000000, 2500000].map((amt) => (
-            <button
-              key={amt}
-              onClick={() => onQuickAdd(amt)}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-500/40 text-xs font-mono font-semibold transition-all cursor-pointer"
-            >
-              +{formatINR(amt)}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-800/80 pt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-slate-400 font-medium">
+              {isHi ? '⚡ त्वरित टॉप-अप जोड़ें:' : '⚡ Instant Add Balance:'}
+            </span>
+            {[100000, 200000, 500000, 1000000, 2500000].map((amt) => (
+              <button
+                key={amt}
+                onClick={() => onQuickAdd(amt)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950/60 text-slate-300 hover:text-emerald-300 border border-slate-700 hover:border-emerald-500/40 text-xs font-mono font-semibold transition-all cursor-pointer"
+              >
+                +{formatINR(amt)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Separated Admin Fee GP Reserve Card */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-950 to-amber-950/40 border border-amber-500/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center font-bold shrink-0 shadow-md">
+              <Coins className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-extrabold text-amber-300">
+                  {isHi ? 'एडमिन ट्रांजेक्शन चार्ज GP रिज़र्व' : 'Admin Collected Transaction Fee GP Balance'}
+                </h4>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold font-mono">
+                  {isHi ? 'अलग GP खजाना' : 'Separated Fee GP'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                {isHi
+                  ? 'यूज़र P2P GP ट्रांसफर (2% फीस) से प्राप्त चार्ज GP यहाँ अलग जमा होता है। इसे कभी भी अपनी मर्जी से ₹ रुपया बनाकर वॉलेट/ट्रेजरी में जोड़ सकते हैं।'
+                  : 'Transaction charges (2% P2P transfer fee) accumulate separately here. Convert GP to Rupees anytime.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="text-left sm:text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                {isHi ? 'उपलब्ध शुल्क GP' : 'Available Fee GP'}
+              </span>
+              <span className="text-xl font-black font-mono text-amber-400">
+                {collectedFeeGp.toFixed(2)} <span className="text-xs font-semibold text-slate-300">GP</span>
+              </span>
+              {totalConvertedFeeGp > 0 && (
+                <span className="text-[10px] text-emerald-400 font-mono block">
+                  ({isHi ? `कनवर्टेड: ${totalConvertedFeeGp.toFixed(2)} GP` : `Converted: ${totalConvertedFeeGp.toFixed(2)} GP`})
+                </span>
+              )}
+            </div>
+
+            {onOpenConvertFeeGpModal && (
+              <button
+                id="btn-treasury-convert-fee-gp"
+                onClick={onOpenConvertFeeGpModal}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102"
+              >
+                <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" />
+                <span>{isHi ? '💸 GP को ₹ रुपये बनाकर वॉलेट में जोड़ें' : '💸 Convert GP to Rupees'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -258,6 +320,14 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
                 }`}
               >
                 {isHi ? 'यूज़र निवेश' : 'User Transfer'}
+              </button>
+              <button
+                onClick={() => setFilterType('FEE_GP')}
+                className={`px-3 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  filterType === 'FEE_GP' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:text-white'
+                }`}
+              >
+                {isHi ? 'शुल्क GP' : 'Fee GP'}
               </button>
             </div>
 
@@ -334,6 +404,16 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
                         {log.type === 'USER_FUND_ADD_DEDUCT' && (
                           <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/30">
                             🏦 {isHi ? 'यूज़र डिपॉजिट डिडक्शन' : 'USER DEPOSIT DEDUCT'}
+                          </span>
+                        )}
+                        {log.type === 'ADMIN_FEE_GP_COLLECT' && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 font-bold text-[10px] border border-amber-500/50 shadow-sm">
+                            🪙 {isHi ? '+ ट्रांजेक्शन शुल्क GP जमा' : 'FEE GP COLLECT'}
+                          </span>
+                        )}
+                        {log.type === 'ADMIN_FEE_GP_CONVERT' && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 font-bold text-[10px] border border-emerald-500/50 shadow-sm">
+                            💸 {isHi ? 'GP ➔ ₹ रुपये कनवर्टेड' : 'FEE GP CONVERT'}
                           </span>
                         )}
                       </td>

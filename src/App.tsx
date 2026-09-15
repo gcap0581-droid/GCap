@@ -51,6 +51,8 @@ import {
   deductForUserDepositApproval,
   deductForUserPayout,
   resetTreasuryToDefault,
+  addAdminFeeGp,
+  convertAdminFeeGpToRupees,
   DEFAULT_ALERT_THRESHOLD,
 } from './utils/treasuryStorage';
 import {
@@ -902,6 +904,43 @@ export default function App() {
     );
   };
 
+  const handleConvertAdminFeeGpToRupees = (
+    gpAmount: number,
+    destination: 'TREASURY' | 'ADMIN_WALLET'
+  ) => {
+    const actor = currentUser?.name || 'Super Admin';
+    const res = convertAdminFeeGpToRupees(gpAmount, 1.0, destination, actor);
+    if (!res.success) {
+      alert(res.error || (isHi ? 'रूपांतरण विफल।' : 'Conversion failed.'));
+      return;
+    }
+    setTreasury(res.treasury);
+    setTreasuryLogs(getStoredTreasuryLogs());
+    apiUpdateTreasury(res.treasury).catch(console.error);
+
+    if (destination === 'ADMIN_WALLET' && currentUser) {
+      const updatedAdminWallet: Wallet = {
+        ...wallet,
+        cashBalance: (wallet?.cashBalance || 0) + res.rupeesAmount,
+      };
+      setWallet(updatedAdminWallet);
+      setStoredWallet(updatedAdminWallet);
+      apiUpdateWallet(updatedAdminWallet, currentUser.id).catch(console.error);
+    }
+
+    confetti({ particleCount: 80, spread: 80 });
+    showToast(
+      isHi ? '💸 शुल्क GP सफलतापूर्वक रुपया में कनवर्ट हुआ!' : '💸 Fee GP Converted to Rupees Successfully!',
+      isHi
+        ? `${gpAmount.toFixed(2)} GP से ₹${res.rupeesAmount.toLocaleString('en-IN')} रुपया बनाकर ${
+            destination === 'ADMIN_WALLET' ? 'एडमिन पर्सनल वॉलेट' : 'कंपनी मुख्य ट्रेजरी'
+          } में जोड़ दिया गया है!`
+        : `${gpAmount.toFixed(2)} GP converted to ₹${res.rupeesAmount.toLocaleString('en-IN')} and added to ${
+            destination === 'ADMIN_WALLET' ? 'Admin Wallet' : 'Company Treasury'
+          }!`
+    );
+  };
+
   // Admin Plan Actions
   const handleAdminAddPlan = (newPlan: InvestmentPlan) => {
     const updated = addPlan(newPlan);
@@ -1191,11 +1230,11 @@ export default function App() {
     };
     apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.error);
 
-    adminAddCompanyBalance(
+    addAdminFeeGp(
       fee,
       `P2P GP Transfer Fee (2%) from ${currentUser.loginId} to ${recipient.loginId}`,
-      `P2P GP ट्रांसफर शुल्क (2%)`,
-      currentUser.name || 'Admin'
+      `P2P GP ट्रांसफर शुल्क (2%) - ${currentUser.loginId} ➔ ${recipient.loginId}`,
+      currentUser.name || 'System'
     );
     setTreasury(getStoredTreasury());
     setTreasuryLogs(getStoredTreasuryLogs());
@@ -3461,6 +3500,7 @@ export default function App() {
               onSendMessage={handleSendAdminMessage}
               onDeleteMessage={handleDeleteAdminMessage}
               onRefreshMessages={refreshMessages}
+              onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
             />
           </div>
         ) : viewMode === 'web' ? (
@@ -3539,6 +3579,7 @@ export default function App() {
                 onRefreshMessages={refreshMessages}
                 externalActiveSubTab={adminMobileTab}
                 onExternalActiveSubTabChange={(tab) => setAdminMobileTab(tab)}
+                onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
               />
             ) : (
               <>

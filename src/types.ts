@@ -194,7 +194,9 @@ export type TreasuryLogType =
   | 'ADMIN_DEDUCT'
   | 'USER_INVESTMENT_DEDUCT'
   | 'USER_PAYOUT_DEDUCT'
-  | 'USER_FUND_ADD_DEDUCT';
+  | 'USER_FUND_ADD_DEDUCT'
+  | 'ADMIN_FEE_GP_COLLECT'
+  | 'ADMIN_FEE_GP_CONVERT';
 
 export interface TreasuryLog {
   id: string;
@@ -216,6 +218,8 @@ export interface CompanyTreasury {
   totalInjected: number;
   totalDeducted: number;
   totalTransferredToUsers: number;
+  collectedFeeGpBalance?: number; // Accumulated GP collected from transaction charges / admin fees
+  totalFeeGpConverted?: number;   // Total Fee GP converted into Cash/Rupees
   lastUpdated: string;
 }
 

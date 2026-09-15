@@ -12,6 +12,8 @@ const INITIAL_TREASURY: CompanyTreasury = {
   totalInjected: 600000,
   totalDeducted: 0,
   totalTransferredToUsers: 0,
+  collectedFeeGpBalance: 0,
+  totalFeeGpConverted: 0,
   lastUpdated: new Date().toISOString(),
 };
 
@@ -439,5 +441,118 @@ export function resetTreasuryToDefault(): { treasury: CompanyTreasury; logs: Tre
   return {
     treasury: INITIAL_TREASURY,
     logs: INITIAL_LOGS,
+  };
+}
+
+/**
+ * Accumulate GP collected as transaction charge / admin fee into separate admin Fee GP balance
+ */
+export function addAdminFeeGp(
+  gpAmount: number,
+  reason: string,
+  reasonHi: string,
+  actor: string = 'System Fee Engine',
+  referenceId?: string
+): { treasury: CompanyTreasury; log: TreasuryLog } {
+  const current = getStoredTreasury();
+  const currentFeeGp = current.collectedFeeGpBalance || 0;
+  const updatedFeeGp = currentFeeGp + gpAmount;
+
+  const updatedTreasury: CompanyTreasury = {
+    ...current,
+    collectedFeeGpBalance: updatedFeeGp,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const newLog: TreasuryLog = {
+    id: `tr-fee-gp-${Date.now()}`,
+    type: 'ADMIN_FEE_GP_COLLECT',
+    amount: gpAmount,
+    balanceBefore: currentFeeGp,
+    balanceAfter: updatedFeeGp,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: reason || `Transaction fee collected: +${gpAmount.toFixed(2)} GP`,
+    reasonHi: reasonHi || `ट्रांजेक्शन चार्ज GP रिज़र्व में जमा: +${gpAmount.toFixed(2)} GP`,
+    actor,
+    referenceId: referenceId || `FEE-${Math.floor(100000 + Math.random() * 900000)}`,
+  };
+
+  const logs = [newLog, ...getStoredTreasuryLogs()];
+  setStoredTreasury(updatedTreasury);
+  setStoredTreasuryLogs(logs);
+
+  return { treasury: updatedTreasury, log: newLog };
+}
+
+/**
+ * Convert Admin Collected Fee GP into Rupees and credit to Treasury main balance or Admin wallet
+ */
+export function convertAdminFeeGpToRupees(
+  gpAmount: number,
+  ratePerGp: number = 1.0,
+  destination: 'TREASURY' | 'ADMIN_WALLET' = 'TREASURY',
+  actor: string = 'Super Admin'
+): { success: boolean; treasury: CompanyTreasury; log?: TreasuryLog; rupeesAmount: number; error?: string } {
+  const current = getStoredTreasury();
+  const currentFeeGp = current.collectedFeeGpBalance || 0;
+
+  if (gpAmount <= 0) {
+    return { success: false, treasury: current, rupeesAmount: 0, error: 'Amount must be greater than zero' };
+  }
+
+  if (gpAmount > currentFeeGp) {
+    return {
+      success: false,
+      treasury: current,
+      rupeesAmount: 0,
+      error: `Specified GP (${gpAmount} GP) exceeds available collected fee GP (${currentFeeGp.toFixed(2)} GP)`,
+    };
+  }
+
+  const rupeesAmount = gpAmount * ratePerGp;
+  const newFeeGp = Math.max(0, currentFeeGp - gpAmount);
+  const totalConverted = (current.totalFeeGpConverted || 0) + gpAmount;
+
+  let newMainBalance = current.balance;
+  let newTotalInjected = current.totalInjected;
+
+  if (destination === 'TREASURY') {
+    newMainBalance += rupeesAmount;
+    newTotalInjected += rupeesAmount;
+  }
+
+  const updatedTreasury: CompanyTreasury = {
+    ...current,
+    balance: newMainBalance,
+    totalInjected: newTotalInjected,
+    collectedFeeGpBalance: newFeeGp,
+    totalFeeGpConverted: totalConverted,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const newLog: TreasuryLog = {
+    id: `tr-fee-conv-${Date.now()}`,
+    type: 'ADMIN_FEE_GP_CONVERT',
+    amount: rupeesAmount,
+    balanceBefore: current.balance,
+    balanceAfter: newMainBalance,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: `Converted ${gpAmount} Fee GP into ₹${rupeesAmount.toLocaleString('en-IN')} Rupees and credited to ${destination === 'TREASURY' ? 'Company Main Treasury' : 'Admin Wallet'}`,
+    reasonHi: `${gpAmount} ट्रांजेक्शन चार्ज GP को ₹${rupeesAmount.toLocaleString('en-IN')} रुपये में बदलकर ${destination === 'TREASURY' ? 'कंपनी मुख्य बैलेंस' : 'एडमिन वॉलेट'} में जोड़ा गया`,
+    actor,
+    referenceId: `CNV-${Math.floor(100000 + Math.random() * 900000)}`,
+  };
+
+  const logs = [newLog, ...getStoredTreasuryLogs()];
+  setStoredTreasury(updatedTreasury);
+  setStoredTreasuryLogs(logs);
+
+  return {
+    success: true,
+    treasury: updatedTreasury,
+    log: newLog,
+    rupeesAmount,
   };
 }
