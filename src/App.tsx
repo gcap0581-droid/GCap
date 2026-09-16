@@ -173,7 +173,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -1028,22 +1028,42 @@ export default function App() {
     const updated = [newTxn, ...transactions];
     setTransactions(updated);
     setStoredTransactions(updated);
-    apiAddTransaction(newTxn).catch(console.error);
+    apiAddTransaction(newTxn)
+      .then((res) => {
+        if (res && res.treasury) {
+          setTreasury(res.treasury);
+          setStoredTreasury(res.treasury);
+        }
+      })
+      .catch(console.error);
+
     if (newTxn.status === 'SUCCESS') {
-      if (newTxn.type === 'DEPOSIT') {
-        const updatedWallet = {
-          ...wallet,
-          cashBalance: wallet.cashBalance + newTxn.amount,
-        };
-        setWallet(updatedWallet);
-        setStoredWallet(updatedWallet);
-      } else if (newTxn.type === 'WITHDRAWAL') {
-        const updatedWallet = {
-          ...wallet,
-          cashBalance: Math.max(0, wallet.cashBalance - newTxn.amount),
-        };
-        setWallet(updatedWallet);
-        setStoredWallet(updatedWallet);
+      if (newTxn.type === 'DEPOSIT' || newTxn.type === 'ADMIN_ADD') {
+        const deductRes = deductForUserDepositApproval(
+          newTxn.amount,
+          newTxn.userName || 'Investor User',
+          newTxn.referenceId || newTxn.id
+        );
+        setTreasury(deductRes.treasury);
+        setTreasuryLogs(getStoredTreasuryLogs());
+
+        if (currentUser && (currentUser.id === newTxn.userId || (currentUser.phone && newTxn.userPhone && currentUser.phone.includes(newTxn.userPhone.slice(-10))))) {
+          const updatedWallet = {
+            ...wallet,
+            cashBalance: (wallet.cashBalance || 0) + newTxn.amount,
+          };
+          setWallet(updatedWallet);
+          setStoredWallet(updatedWallet);
+        }
+      } else if (newTxn.type === 'WITHDRAW' || newTxn.type === 'ADMIN_DEDUCT') {
+        if (currentUser && (currentUser.id === newTxn.userId || (currentUser.phone && newTxn.userPhone && currentUser.phone.includes(newTxn.userPhone.slice(-10))))) {
+          const updatedWallet = {
+            ...wallet,
+            cashBalance: Math.max(0, (wallet.cashBalance || 0) - newTxn.amount),
+          };
+          setWallet(updatedWallet);
+          setStoredWallet(updatedWallet);
+        }
       }
     }
     showToast(
@@ -1070,7 +1090,7 @@ export default function App() {
 
     // Rule 2: Admin Approval moves deposit funds to wallet cash balance
     // MANDATORY RULE: Koi bhi user jub fund add karega to uske balance company ke main balance wallet se deduct hoker hi melega aur uska record admin ke pass rahna chaiye.
-    if (prevTxn && prevTxn.type === 'DEPOSIT' && prevTxn.status === 'PENDING' && updatedTxn.status === 'SUCCESS') {
+    if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
       // 1. Deduct from Company Main Balance and create audit record in treasury logs
       const deductRes = deductForUserDepositApproval(
         updatedTxn.amount,
@@ -1091,6 +1111,13 @@ export default function App() {
         setStoredWallet(updatedWallet);
       }
 
+      // Voice announcement for deposit approval
+      audioAnnouncer.announceDepositApproved({
+        userName: updatedTxn.userName,
+        amount: updatedTxn.amount,
+        language: isHi ? 'hi' : 'en',
+      });
+
       showToast(
         isHi ? '✅ डिपॉजिट अप्रूव हुआ (कंपनी बैलेंस से डिडक्ट)!' : '✅ Deposit Approved (Deducted from Company Balance)!',
         isHi
@@ -1098,6 +1125,13 @@ export default function App() {
           : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet (Company Balance: ₹${(deductRes.treasury?.balance || 0).toLocaleString('en-IN')}).`
       );
       return;
+    } else if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && updatedTxn.type === 'WITHDRAWAL') {
+      // Voice announcement for withdrawal approval / completed payout
+      audioAnnouncer.announceWithdrawalApproved({
+        userName: updatedTxn.userName,
+        amount: updatedTxn.amount,
+        language: isHi ? 'hi' : 'en',
+      });
     } else if (prevTxn && prevTxn.type === 'DEPOSIT' && prevTxn.status === 'PENDING' && updatedTxn.status === 'REJECTED') {
       const updatedWallet: Wallet = {
         ...wallet,

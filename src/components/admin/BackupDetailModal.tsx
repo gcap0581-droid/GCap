@@ -525,8 +525,8 @@ export const BackupDetailModal: React.FC<BackupDetailModalProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
-                    {backup.payload.treasuryLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-800/30">
+                    {backup.payload.treasuryLogs.map((log, idx) => (
+                      <tr key={`${log.id || 'log'}-${idx}`} className="hover:bg-slate-800/30">
                         <td className="p-3 font-mono text-slate-400">
                           {new Date(log.timestamp || log.date).toLocaleDateString('en-IN')}
                         </td>

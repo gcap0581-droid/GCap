@@ -395,10 +395,10 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => {
+                filteredLogs.map((log, idx) => {
                   const isCredit = log.type === 'ADMIN_ADD' || log.type === 'ADMIN_FEE_GP_COLLECT' || log.type === 'ADMIN_FEE_GP_CONVERT';
                   return (
-                    <tr key={log.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={`${log.id || 'log'}-${idx}`} className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3.5 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
                         {new Date(log.timestamp).toLocaleString('en-IN', {
                           day: '2-digit',

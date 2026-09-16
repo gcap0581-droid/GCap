@@ -190,10 +190,10 @@ export const AdminDeductionsTab: React.FC<AdminDeductionsTabProps> = ({
     });
 
     // Treasury Logs manual deductions
-    treasuryLogs.forEach((log) => {
+    treasuryLogs.forEach((log, idx) => {
       if (log.type === 'ADMIN_DEDUCT' || log.type === 'USER_PAYOUT_DEDUCT') {
         items.push({
-          id: `tlog-${log.id}`,
+          id: `tlog-${log.id || 'log'}-${idx}`,
           txnId: log.id,
           date: log.date,
           timestamp: new Date(log.date).getTime() || Date.now(),

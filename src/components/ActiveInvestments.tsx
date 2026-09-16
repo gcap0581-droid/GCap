@@ -63,6 +63,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
   const isHi = language === 'hi';
   const [now, setNow] = useState<number>(Date.now());
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [scenarioOpenMap, setScenarioOpenMap] = useState<Record<string, boolean>>({});
 
   // Second-by-second decreasing clock ticker
   useEffect(() => {
@@ -660,6 +661,74 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                       <span>{isHi ? 'परिपक्वता:' : 'Maturity:'} {inv.endDate}</span>
                     </div>
                   </div>
+
+                  {/* USER FUTURE RETURN SCENARIO CALCULATOR (Req #8) */}
+                  {(() => {
+                    const dailyRet = inv.dailyReturnAmount || (inv.investedAmount * (isLongTerm ? 0.128 : 0.164) / 100);
+                    const proj30d = dailyRet * 30;
+                    const proj90d = dailyRet * 90;
+                    const proj180d = dailyRet * 180;
+                    const projMaturity = dailyRet * inv.durationDays;
+                    const projTotalMaturityAmount = inv.investedAmount + projMaturity;
+                    const isScenarioOpen = !!scenarioOpenMap[inv.id];
+
+                    return (
+                      <div className="mt-3">
+                        <button
+                          id={`btn-scenario-toggle-${inv.id}`}
+                          onClick={() => setScenarioOpenMap(prev => ({ ...prev, [inv.id]: !prev[inv.id] }))}
+                          className="w-full py-2 px-3 rounded-xl bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center justify-between gap-2 cursor-pointer transition-all shadow-md shadow-purple-950/20"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-purple-400" />
+                            <span>{isHi ? '🔮 भविष्य का अनुमानित रिटर्न सिनेरियो (Future Projection)' : '🔮 Future Return Scenario Projection'}</span>
+                          </span>
+                          <span className="text-[10px] bg-purple-500/20 px-2 py-0.5 rounded font-mono">
+                            {isScenarioOpen ? '▲ Hide' : '▼ View'}
+                          </span>
+                        </button>
+
+                        {isScenarioOpen && (
+                          <div className="mt-2.5 p-4 rounded-xl bg-slate-950 border border-purple-500/30 space-y-3 animate-fadeIn">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{isHi ? `यूनिक प्लान (${planUniqueCode}) भविष्य का रिटर्न` : `Plan (${planUniqueCode}) Future Returns`}</span>
+                              </span>
+                              <span className="text-[10px] text-amber-400 font-mono font-bold">
+                                {isHi ? 'सिमुलेशन सिनेरियो (No DB Change)' : 'Simulation Only'}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block">{isHi ? '1 महीना (30 दिन) बाद:' : 'After 1 Month (30d):'}</span>
+                                <span className="font-mono font-bold text-emerald-400">+{formatINR(proj30d)} GP</span>
+                              </div>
+                              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block">{isHi ? '3 महीने (90 दिन) बाद:' : 'After 3 Months (90d):'}</span>
+                                <span className="font-mono font-bold text-emerald-400">+{formatINR(proj90d)} GP</span>
+                              </div>
+                              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block">{isHi ? '6 महीने (180 दिन) बाद:' : 'After 6 Months (180d):'}</span>
+                                <span className="font-mono font-bold text-emerald-400">+{formatINR(proj180d)} GP</span>
+                              </div>
+                              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block">{isHi ? `परिपक्वता (${inv.durationDays} दिन) पर कुल:` : `At Full Maturity (${inv.durationDays}d):`}</span>
+                                <span className="font-mono font-black text-amber-300">{formatINR(projTotalMaturityAmount)}</span>
+                              </div>
+                            </div>
+
+                            <p className="text-[10px] text-slate-400 italic text-center pt-1">
+                              {isHi
+                                ? '*(नोट: यह कैलकुलेशन केवल आपके इस विशिष्ट प्लान के भविष्य के अनुमानित रिटर्न को देखने के लिए एक सिनेरियो है। इससे आपके वास्तविक डेटाबेस या वॉलेट में कोई बदलाव नहीं होता है।)*'
+                                : '*(Note: This is a scenario calculator to project future returns for this specific plan only. It does not modify your real database or wallet balance.)*'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Footer Certificate & View Action */}

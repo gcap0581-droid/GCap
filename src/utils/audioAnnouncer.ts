@@ -212,6 +212,85 @@ class AudioAnnouncerEngine {
 
     this.speak(text, isHi ? 'hi' : 'en');
   }
+
+  /**
+   * 7. Direct Balance / Fund Given Voice Announcement
+   */
+  public announceBalanceCredit(options: AudioVoiceAnnouncementOptions) {
+    const rawName = options.userName?.trim() || 'साथी';
+    const name = rawName.split(' ')[0] || rawName;
+    const amount = options.amount ? Math.round(options.amount).toLocaleString('en-IN') : '0';
+    const isHi = options.language !== 'en';
+
+    const text = isHi
+      ? `नमस्ते ${name} जी! आपके वॉलेट में ${amount} रुपये का बैलेंस सफलतापूर्वक जोड़ दिया गया है!`
+      : `Hello ${name}! ${amount} rupees has been successfully credited to your wallet!`;
+
+    this.speak(text, isHi ? 'hi' : 'en');
+  }
+
+  /**
+   * 8. Balance Deduct / Reclaim Voice Announcement
+   */
+  public announceBalanceDeduct(options: AudioVoiceAnnouncementOptions) {
+    const rawName = options.userName?.trim() || 'साथी';
+    const name = rawName.split(' ')[0] || rawName;
+    const amount = options.amount ? Math.round(options.amount).toLocaleString('en-IN') : '0';
+    const isHi = options.language !== 'en';
+
+    const text = isHi
+      ? `नमस्ते ${name} जी! आपके खाते से ${amount} रुपये का समायोजन सफलतापूर्वक हो गया है।`
+      : `Hello ${name}! ${amount} rupees has been adjusted from your account.`;
+
+    this.speak(text, isHi ? 'hi' : 'en');
+  }
+
+  /**
+   * 9. Deposit Approved Voice Announcement
+   */
+  public announceDepositApproved(options: AudioVoiceAnnouncementOptions) {
+    const rawName = options.userName?.trim() || 'साथी';
+    const name = rawName.split(' ')[0] || rawName;
+    const amount = options.amount ? Math.round(options.amount).toLocaleString('en-IN') : '0';
+    const isHi = options.language !== 'en';
+
+    const text = isHi
+      ? `बधाई हो ${name} जी! आपका ${amount} रुपये का डिपॉजिट अनुरोध सफलतापूर्वक स्वीकृत हो गया है!`
+      : `Congratulations ${name}! Your deposit of ${amount} rupees has been approved!`;
+
+    this.speak(text, isHi ? 'hi' : 'en');
+  }
+
+  /**
+   * 10. Withdrawal Approved / Paid Out Voice Announcement
+   */
+  public announceWithdrawalApproved(options: AudioVoiceAnnouncementOptions) {
+    const rawName = options.userName?.trim() || 'साथी';
+    const name = rawName.split(' ')[0] || rawName;
+    const amount = options.amount ? Math.round(options.amount).toLocaleString('en-IN') : '0';
+    const isHi = options.language !== 'en';
+
+    const text = isHi
+      ? `नमस्ते ${name} जी! आपका ${amount} रुपये की निकासी का भुगतान सफलतापूर्वक पूरा हो गया है!`
+      : `Hello ${name}! Your withdrawal payout of ${amount} rupees has been completed!`;
+
+    this.speak(text, isHi ? 'hi' : 'en');
+  }
+
+  /**
+   * 11. Profile Update Voice Announcement
+   */
+  public announceProfileUpdate(options: AudioVoiceAnnouncementOptions) {
+    const rawName = options.userName?.trim() || 'साथी';
+    const name = rawName.split(' ')[0] || rawName;
+    const isHi = options.language !== 'en';
+
+    const text = isHi
+      ? `नमस्ते ${name} जी! आपकी खाता जानकारी सफलतापूर्वक अपडेट कर दी गई है।`
+      : `Hello ${name}! Your account information has been updated successfully.`;
+
+    this.speak(text, isHi ? 'hi' : 'en');
+  }
 }
 
 export const audioAnnouncer = AudioAnnouncerEngine.getInstance();

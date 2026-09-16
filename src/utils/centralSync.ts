@@ -533,7 +533,7 @@ export async function apiUpdateTransaction(
  */
 export async function apiAddTransaction(
   transaction: Transaction
-): Promise<{ success: boolean; transaction?: Transaction; error?: string }> {
+): Promise<{ success: boolean; transaction?: Transaction; treasury?: CompanyTreasury; error?: string }> {
   try {
     const res = await apiFetch(`${API_BASE}/transactions/add`, {
       method: 'POST',
@@ -542,7 +542,12 @@ export async function apiAddTransaction(
     });
     if (res.ok) {
       const result = await res.json().catch(() => null);
-      if (result && result.success) return result;
+      if (result && result.success) {
+        if (result.treasury) {
+          updateFirestoreBridgeCache({ treasury: result.treasury });
+        }
+        return result;
+      }
     }
   } catch (err: any) {
     console.warn('[apiAddTransaction] API failed, using direct Firestore:', err);
@@ -553,7 +558,22 @@ export async function apiAddTransaction(
     const currentTxns = fs?.transactions || [];
     const updated = [transaction, ...currentTxns.filter((t) => t.id !== transaction.id)];
     await saveTransactionsToFirestore(updated);
-    return { success: true, transaction };
+    
+    let updatedTreasury = fs?.treasury;
+    const amount = Number(transaction.amount || 0);
+    if (transaction.status === 'SUCCESS' && (transaction.type === 'DEPOSIT' || transaction.type === 'ADMIN_ADD') && amount > 0 && fs?.treasury) {
+      const prevBal = fs.treasury.balance || 0;
+      const newBal = Math.max(0, prevBal - amount);
+      updatedTreasury = {
+        ...fs.treasury,
+        balance: newBal,
+        totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + amount,
+        totalDeducted: (fs.treasury.totalDeducted || 0) + amount,
+      };
+      await saveTreasuryToFirestore(updatedTreasury);
+    }
+
+    return { success: true, transaction, treasury: updatedTreasury };
   } catch (fsErr: any) {
     return { success: false, error: fsErr.message };
   }
@@ -868,7 +888,7 @@ export async function apiAdminAdjustUserWallet(
     reason?: string;
   },
   adminName?: string
-): Promise<{ success: boolean; wallet?: Wallet; error?: string }> {
+): Promise<{ success: boolean; wallet?: Wallet; treasury?: CompanyTreasury; error?: string }> {
   if (!userId) {
     return { success: false, error: 'User ID is required' };
   }
@@ -886,7 +906,8 @@ export async function apiAdminAdjustUserWallet(
           updateFirestoreBridgeCache({
             wallets: {
               [userId]: result.wallet
-            }
+            },
+            ...(result.treasury ? { treasury: result.treasury } : {})
           });
         }
         return result;
@@ -902,6 +923,7 @@ export async function apiAdminAdjustUserWallet(
     const existing = getWalletForUser(userId, currentWallets, fs?.users || []);
 
     const finalWallet: Wallet = { ...existing, ...wallet };
+    let updatedTreasury = fs?.treasury;
     
     // Apply adjustment directly to finalWallet if present
     if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
@@ -913,8 +935,29 @@ export async function apiAdminAdjustUserWallet(
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {
         calculatedVal = currentVal + amount;
+        // Deduct from company treasury if cash or GP added to user
+        if (fs?.treasury && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
+          const prevBal = fs.treasury.balance || 0;
+          updatedTreasury = {
+            ...fs.treasury,
+            balance: Math.max(0, prevBal - amount),
+            totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + amount,
+            totalDeducted: (fs.treasury.totalDeducted || 0) + amount,
+          };
+          await saveTreasuryToFirestore(updatedTreasury);
+        }
       } else if (adjType === 'DEDUCT') {
         calculatedVal = currentVal - amount;
+        // Reclaim to company treasury if cash or GP deducted from user
+        if (fs?.treasury && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
+          const prevBal = fs.treasury.balance || 0;
+          updatedTreasury = {
+            ...fs.treasury,
+            balance: prevBal + amount,
+            totalAdded: (fs.treasury.totalAdded || 0) + amount,
+          };
+          await saveTreasuryToFirestore(updatedTreasury);
+        }
       } else if (adjType === 'SET') {
         calculatedVal = amount;
       }
@@ -924,7 +967,7 @@ export async function apiAdminAdjustUserWallet(
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], finalWallet);
     await saveWalletsToFirestore(updatedWallets);
 
-    return { success: true, wallet: finalWallet };
+    return { success: true, wallet: finalWallet, treasury: updatedTreasury };
   } catch (fsErr: any) {
     return { success: false, error: fsErr.message };
   }

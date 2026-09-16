@@ -1,4 +1,4 @@
-import { Wallet, ActiveInvestment, Transaction, BankAccountDetails } from '../types';
+import { Wallet, ActiveInvestment, Transaction, BankAccountDetails, UserProfile } from '../types';
 import { INVESTMENT_PLANS } from '../data/plans';
 import { alignInvestmentCycleTimestamps } from './cycleTiming';
 

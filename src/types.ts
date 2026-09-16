@@ -39,24 +39,32 @@ export interface ActiveInvestment {
   id: string;
   userId?: string;
   userLoginId?: string;
+  userName?: string;
+  userPhone?: string;
+  timestamp?: number;
   planUniqueId?: string; // Unique human-readable searchable plan ID (e.g., STP-641D-89421)
+  planUniqueCode?: string;
   planId: string;
   planName: string;
+  planNameHi?: string;
   investedAmount: number;
   dailyRoiPercent: number;
   dailyReturnAmount: number;
   totalExpectedReturn: number;
   earnedSoFar: number;
+  totalEarnedSoFar?: number;
   claimedSoFar: number;
   totalWithdrawn?: number; // Total amount user has withdrawn from this investment
   unclaimedEarnings: number;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   durationDays: number;
-  daysCompleted: number;
-  lastPayoutTimestamp: number;
+  daysCompleted?: number;
+  lastPayoutTimestamp?: number;
   status: 'ACTIVE' | 'COMPLETED';
-  autoReinvest: boolean;
+  autoReinvest?: boolean;
+  createdAt?: number;
+  cyclesCompleted?: number;
   // 641 Days Maturity and Renewal properties
   isMatured?: boolean; // True when 641 days are reached
   renewedCount?: number; // Times this plan ID has been renewed
@@ -67,11 +75,11 @@ export interface ActiveInvestment {
   lockedUntilTimestamp: number; // 24 hours lock deadline (activationTimestamp + 24*3600*1000)
   isInitialLockCompleted: boolean; // True once 24 hours have elapsed
   lockCongratulationsShown?: boolean; // Whether 24h completion modal was displayed
-  cycleDurationHours: number; // 6 hours
-  currentCycleStartTimestamp: number; // Start timestamp of current 6h cycle
-  currentCycleEndTimestamp: number; // Target timestamp of current 6h cycle (start + 6*3600*1000)
-  completedCyclesCount: number; // Total number of 6h cycles completed
-  cycleReturnAmount: number; // Return amount per 6h cycle = 0.04% or 0.03% of invested amount
+  cycleDurationHours?: number; // 6 hours
+  currentCycleStartTimestamp?: number; // Start timestamp of current 6h cycle
+  currentCycleEndTimestamp?: number; // Target timestamp of current 6h cycle (start + 6*3600*1000)
+  completedCyclesCount?: number; // Total number of 6h cycles completed
+  cycleReturnAmount?: number; // Return amount per 6h cycle = 0.04% or 0.03% of invested amount
   // Long Term Plan & Royalty properties
   royaltyStage?: '365D_INITIAL' | '1461D_LOCK' | '1825D_ROYALTY' | 'COMPLETED';
   royaltyDaysCompleted?: number;
@@ -81,10 +89,13 @@ export interface ActiveInvestment {
 
 export type TransactionType =
   | 'DEPOSIT'
+  | 'ADMIN_ADD'
   | 'SWAP_GP'
   | 'INVEST'
   | 'RETURN_PAYOUT'
   | 'WITHDRAWAL'
+  | 'WITHDRAW'
+  | 'ADMIN_DEDUCT'
   | 'CAPITAL_RETURN'
   | 'REFERRAL_BONUS'
   | 'TRANSFER';
@@ -104,6 +115,7 @@ export interface Transaction {
   referenceId: string;
   note: string;
   noteHi: string;
+  actor?: string;
   withdrawalSource?: WithdrawalSource;
   gpEarned?: number;
   // Payment voucher breakdown fields
@@ -218,6 +230,7 @@ export interface CompanyTreasury {
   totalInjected: number;
   totalDeducted: number;
   totalTransferredToUsers: number;
+  totalAdded?: number;
   collectedFeeGpBalance?: number; // Accumulated GP collected from transaction charges / admin fees
   totalFeeGpConverted?: number;   // Total Fee GP converted into Cash/Rupees
   lastUpdated: string;

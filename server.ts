@@ -1521,12 +1521,39 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
     const db = ensureDb();
     db.transactions.unshift(transaction);
+
+    // If transaction is SUCCESS and credits funds (DEPOSIT or ADMIN_ADD), deduct from Company Treasury Balance
+    const amount = Number(transaction.amount || 0);
+    if (transaction.status === "SUCCESS" && (transaction.type === "DEPOSIT" || transaction.type === "ADMIN_ADD") && amount > 0) {
+      const prevBal = db.treasury.balance || 0;
+      db.treasury.balance = Math.max(0, prevBal - amount);
+      db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
+      db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+      const treasuryLog = {
+        id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        type: 'USER_FUND_ADD_DEDUCT',
+        amount: amount,
+        balanceBefore: prevBal,
+        balanceAfter: db.treasury.balance,
+        reason: `Direct Balance Credit to user ${transaction.userName || transaction.userId || 'User'}: ₹${amount} deducted from Company Treasury (Ref: ${transaction.referenceId || transaction.id})`,
+        reasonHi: `यूज़र ${transaction.userName || transaction.userId || 'User'} को डायरेक्ट बैलेंस: कंपनी ट्रेजरी से ₹${amount} डिडक्ट (Ref: ${transaction.referenceId || transaction.id})`,
+        actor: 'Super Admin (admin)',
+        referenceId: transaction.referenceId || transaction.id,
+      };
+      db.treasuryLogs.unshift(treasuryLog);
+      syncAdminWalletWithTreasury(db);
+      broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+      console.log(`[GCap DB] Transaction Added: ₹${amount} deducted from Company Treasury. New Treasury Balance: ₹${db.treasury.balance}`);
+    }
+
     saveDb(db);
 
     broadcastRealtimeEvent("transaction_created", { transaction, timestamp: Date.now() });
     broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_ADD", timestamp: Date.now() });
 
-    res.json({ success: true, transaction });
+    res.json({ success: true, transaction, treasury: db.treasury });
   });
 
   // DELETE: Admin deletes transaction
@@ -1913,7 +1940,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     broadcastRealtimeEvent("state_changed", { type: "ADMIN_WALLET_ADJUST", userId: effectiveUserId, timestamp: Date.now() });
 
     console.log(`[GCap Admin] Wallet adjusted for user ${user?.name || effectiveUserId}:`, updatedWallet);
-    res.json({ success: true, wallet: updatedWallet });
+    res.json({ success: true, wallet: updatedWallet, treasury: db.treasury, treasuryLogs: db.treasuryLogs });
   });
 
   // POST: Update Wallet directly

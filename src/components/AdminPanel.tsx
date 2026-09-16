@@ -74,6 +74,7 @@ import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
+import { AdminCurrentActivityTab } from './admin/AdminCurrentActivityTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
 import { ConvertFeeGpModal } from './admin/ConvertFeeGpModal';
@@ -129,8 +130,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
-  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS';
-  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS') => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
 }
 
@@ -181,7 +182,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -376,10 +377,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }) => {
     setIsSyncingUsers(true);
     try {
-      let targetUserId = data.userId || (data.phone.trim().replace(/[^0-9]/g, ""));
+      const existingUser = usersList.find(u => u.id === data.userId || (data.phone && u.phone && u.phone.includes(data.phone.slice(-10))));
+      const isExistingUser = Boolean(data.userId || existingUser);
+      const isPasswordActuallyChanged = Boolean(
+        isExistingUser &&
+        existingUser?.password &&
+        data.password &&
+        data.password.trim() &&
+        existingUser.password.trim() !== data.password.trim()
+      );
       
-      if (data.userId) {
-        const res = await adminUpdateUserAsync(data.userId, {
+      let targetUserId = data.userId || existingUser?.id || (data.phone.trim().replace(/[^0-9]/g, ""));
+      
+      if (data.userId || existingUser?.id) {
+        const uId = data.userId || existingUser!.id;
+        const res = await adminUpdateUserAsync(uId, {
           name: data.name,
           loginId: data.loginId,
           phone: data.phone,
@@ -396,7 +408,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         if (!res.success) {
           console.warn('User update error:', res.error);
         }
-        if (data.password && data.password.trim()) {
+        
+        // ONLY announce password change if the password was actually altered from previous value
+        if (isPasswordActuallyChanged) {
           audioAnnouncer.announcePasswordChange({
             userName: data.name,
             language: language === 'hi' ? 'hi' : 'en',
@@ -424,6 +438,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             const filtered = prev.filter(u => u.id !== createdUser.id && u.phone !== createdUser.phone);
             return [createdUser, ...filtered];
           });
+          // Announce new user created
+          audioAnnouncer.announceRegistration({
+            userName: data.name,
+            language: language === 'hi' ? 'hi' : 'en',
+          });
         } else if (!res.success) {
           console.warn('User add error:', res.error);
         }
@@ -448,6 +467,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             ...(cleanPhone10 ? { [cleanPhone10]: w } : {}),
             ...(data.loginId ? { [data.loginId]: w } : {}),
           }));
+
+          // If admin added money to user wallet, deduct from Company Treasury Balance & Announce Balance Credit
+          if (data.walletAdjustment?.type === 'ADD' && data.walletAdjustment.amount > 0) {
+            if (data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance') {
+              onAdminDeductCompanyBalance(
+                data.walletAdjustment.amount,
+                `Direct Balance Credit to user ${data.name} (${data.phone}): ₹${data.walletAdjustment.amount} deducted from Company Treasury`,
+                `यूज़र ${data.name} (${data.phone}) के वॉलेट में सीधा फंड जोड़ा गया: ₹${data.walletAdjustment.amount} कंपनी बैलेंस से डिडक्ट हुआ।`,
+                `ADM-USER-${targetUserId.slice(-6)}`
+              );
+            }
+            // Announce money given / credited voice announcement
+            audioAnnouncer.announceBalanceCredit({
+              userName: data.name,
+              amount: data.walletAdjustment.amount,
+              language: language === 'hi' ? 'hi' : 'en',
+            });
+          } else if (data.walletAdjustment?.type === 'DEDUCT' && data.walletAdjustment.amount > 0) {
+            if (data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance') {
+              onAdminAddCompanyBalance(
+                data.walletAdjustment.amount,
+                `Reclaimed balance from user ${data.name} (${data.phone}): ₹${data.walletAdjustment.amount} credited back to Company Treasury`,
+                `यूज़र ${data.name} (${data.phone}) से कंपनी बैलेंस में वापस जमा: ₹${data.walletAdjustment.amount}`,
+                `REC-USER-${targetUserId.slice(-6)}`
+              );
+            }
+            // Announce money deduction voice announcement
+            audioAnnouncer.announceBalanceDeduct({
+              userName: data.name,
+              amount: data.walletAdjustment.amount,
+              language: language === 'hi' ? 'hi' : 'en',
+            });
+          } else if (data.walletAdjustment?.type === 'SET' && data.walletAdjustment.amount > 0) {
+            audioAnnouncer.announceBalanceCredit({
+              userName: data.name,
+              amount: data.walletAdjustment.amount,
+              language: language === 'hi' ? 'hi' : 'en',
+            });
+          }
         }
       }
 
@@ -819,15 +877,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div className={`p-1.5 rounded-lg border ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' : 'bg-slate-800 border-slate-700 text-rose-400'}`}>
                         <Bell className="w-4 h-4" />
                       </div>
-                      {messages.length > 0 ? (
-                        <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-rose-500 text-slate-950 font-bold">
-                          {messages.length} SMS
-                        </span>
-                      ) : (
-                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-400'}`}>
-                          OTA BROAD
-                        </span>
-                      )}
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'MESSAGES' ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-rose-400'}`}>
+                        NOTIFY
+                      </span>
                     </div>
                     <div className="leading-tight pt-1">
                       <h4 className="text-sm font-black tracking-tight">{isHi ? 'ब्रॉडकास्ट' : 'Messages'}</h4>
@@ -935,6 +987,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="leading-tight pt-1">
                     <h4 className="text-sm font-black tracking-tight">{isHi ? 'यूज़र गाइड' : 'Manual'}</h4>
                     <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'प्रशिक्षण गाइड' : 'Admin Guide'}</p>
+                  </div>
+                </button>
+
+                {/* CURRENT_ACTIVITY */}
+                <button
+                  id="tab-admin-current-activity"
+                  onClick={() => setActiveSubTab('CURRENT_ACTIVITY')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    (activeSubTab as string) === 'CURRENT_ACTIVITY'
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${(activeSubTab as string) === 'CURRENT_ACTIVITY' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${(activeSubTab as string) === 'CURRENT_ACTIVITY' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                      LEDGER
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'करंट एक्टिविटी' : 'Activity'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी मास्टर समरी' : 'Master Summary'}</p>
                   </div>
                 </button>
 
@@ -1617,6 +1693,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           transactions={transactions}
           treasuryLogs={treasuryLogs}
           language={language}
+        />
+      )}
+
+      {/* TAB 13: ADMIN CURRENT ACTIVITY & MASTER SUMMARY */}
+      {activeSubTab === 'CURRENT_ACTIVITY' && (
+        <AdminCurrentActivityTab
+          language={language}
+          users={usersList}
+          investments={investments}
+          transactions={transactions}
+          treasury={treasury}
+          wallets={walletsMap}
         />
       )}
 

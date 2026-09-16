@@ -33,6 +33,31 @@ const INITIAL_LOGS: TreasuryLog[] = [
   }
 ];
 
+function generateUniqueLogId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+export function deduplicateTreasuryLogs(logs: TreasuryLog[]): TreasuryLog[] {
+  if (!Array.isArray(logs)) return INITIAL_LOGS;
+  const seenIds = new Set<string>();
+  const sanitized: TreasuryLog[] = [];
+  
+  for (let i = 0; i < logs.length; i++) {
+    const log = logs[i];
+    if (!log) continue;
+    let logId = log.id;
+    if (!logId || seenIds.has(logId)) {
+      logId = `${logId || 'tr-log'}-${i}-${Math.random().toString(36).substring(2, 7)}`;
+    }
+    seenIds.add(logId);
+    sanitized.push({
+      ...log,
+      id: logId,
+    });
+  }
+  return sanitized;
+}
+
 export function getStoredTreasury(): CompanyTreasury {
   try {
     const raw = localStorage.getItem(TREASURY_STORAGE_KEY);
@@ -69,7 +94,8 @@ export function getStoredTreasuryLogs(): TreasuryLog[] {
     if (!raw) {
       return INITIAL_LOGS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return deduplicateTreasuryLogs(parsed);
   } catch {
     return INITIAL_LOGS;
   }
@@ -77,11 +103,12 @@ export function getStoredTreasuryLogs(): TreasuryLog[] {
 
 export function setStoredTreasuryLogs(logs: TreasuryLog[]) {
   try {
+    const uniqueLogs = deduplicateTreasuryLogs(logs);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(TREASURY_LOGS_STORAGE_KEY, JSON.stringify(logs));
+      localStorage.setItem(TREASURY_LOGS_STORAGE_KEY, JSON.stringify(uniqueLogs));
     }
     const currentTreasury = getStoredTreasury();
-    apiUpdateTreasury(currentTreasury, logs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
+    apiUpdateTreasury(currentTreasury, uniqueLogs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
   } catch (err) {
     console.error('Failed to save treasury logs:', err);
   }
@@ -109,7 +136,7 @@ export function adminAddCompanyBalance(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-add-${Date.now()}`,
+    id: generateUniqueLogId('tr-add'),
     type: 'ADMIN_ADD',
     amount,
     balanceBefore,
@@ -163,7 +190,7 @@ export function adminDeductCompanyBalance(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-dec-${Date.now()}`,
+    id: generateUniqueLogId('tr-dec'),
     type: 'ADMIN_DEDUCT',
     amount,
     balanceBefore,
@@ -214,7 +241,7 @@ export function deductForUserInvestment(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-inv-${Date.now()}`,
+    id: generateUniqueLogId('tr-inv'),
     type: 'USER_INVESTMENT_DEDUCT',
     amount,
     balanceBefore,
@@ -261,7 +288,7 @@ export function deductForUserDepositApproval(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-dep-appr-${Date.now()}`,
+    id: generateUniqueLogId('tr-dep-appr'),
     type: 'USER_FUND_ADD_DEDUCT',
     amount,
     balanceBefore,
@@ -309,7 +336,7 @@ export function deductForAdminDirectUserTransfer(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-adm-direct-${Date.now()}`,
+    id: generateUniqueLogId('tr-adm-direct'),
     type: 'ADMIN_DEDUCT',
     amount,
     balanceBefore,
@@ -355,7 +382,7 @@ export function reclaimFromUserToCompany(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-adm-rec-${Date.now()}`,
+    id: generateUniqueLogId('tr-adm-rec'),
     type: 'ADMIN_ADD',
     amount,
     balanceBefore,
@@ -403,7 +430,7 @@ export function deductForUserPayout(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-pay-${Date.now()}`,
+    id: generateUniqueLogId('tr-pay'),
     type: 'USER_PAYOUT_DEDUCT',
     amount,
     balanceBefore,
@@ -465,7 +492,7 @@ export function addAdminFeeGp(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-fee-gp-${Date.now()}`,
+    id: generateUniqueLogId('tr-fee-gp'),
     type: 'ADMIN_FEE_GP_COLLECT',
     amount: gpAmount,
     balanceBefore: currentFeeGp,
@@ -532,7 +559,7 @@ export function convertAdminFeeGpToRupees(
   };
 
   const newLog: TreasuryLog = {
-    id: `tr-fee-conv-${Date.now()}`,
+    id: generateUniqueLogId('tr-fee-conv'),
     type: 'ADMIN_FEE_GP_CONVERT',
     amount: rupeesAmount,
     balanceBefore: current.balance,
