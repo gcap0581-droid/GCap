@@ -19,7 +19,34 @@ const INITIAL_WALLET: Wallet = {
   pendingDeposits: 0,
 };
 
-const INITIAL_INVESTMENTS: ActiveInvestment[] = [];
+const INITIAL_INVESTMENTS: ActiveInvestment[] = [
+  {
+    id: "inv-sandhya-7808056040",
+    userId: "usr-1789384741169",
+    userLoginId: "917808056040",
+    userPhone: "+91 7808056040",
+    userName: "Sandhya",
+    planId: "short-term",
+    planName: "641-Day High Yield Growth Plan",
+    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+    planUniqueId: "STP-641D-89421",
+    investedAmount: 9800,
+    dailyRoiPercent: 0.164,
+    dailyReturnAmount: 16.07,
+    totalExpectedReturn: 10298.87,
+    earnedSoFar: 0,
+    claimedSoFar: 0,
+    unclaimedEarnings: 0,
+    durationDays: 641,
+    status: "ACTIVE",
+    startDate: "2026-09-14T20:00:00.000Z",
+    createdAt: 1789472000000,
+    lockExpiresAt: 1789558400000,
+    nextCycleAt: 1789579200000,
+    cyclesCompleted: 0,
+    totalEarnedSoFar: 0
+  }
+];
 
 const INITIAL_TRANSACTIONS: Transaction[] = [];
 
