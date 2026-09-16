@@ -960,8 +960,31 @@ export async function apiAdminAdjustUserWallet(
         }
       } else if (adjType === 'SET') {
         calculatedVal = amount;
+        const diff = amount - currentVal;
+        if (fs?.treasury && diff !== 0 && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
+          const prevBal = fs.treasury.balance || 0;
+          updatedTreasury = {
+            ...fs.treasury,
+            balance: Math.max(0, prevBal - diff),
+            totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + (diff > 0 ? diff : 0),
+          };
+          await saveTreasuryToFirestore(updatedTreasury);
+        }
       }
       finalWallet[targetWallet] = calculatedVal;
+    } else if (wallet && fs?.treasury) {
+      const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existing.cashBalance || 0)) : 0;
+      const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existing.gpBalance || 0)) : 0;
+      const totalDiff = cashDiff + gpDiff;
+      if (totalDiff !== 0) {
+        const prevBal = fs.treasury.balance || 0;
+        updatedTreasury = {
+          ...fs.treasury,
+          balance: Math.max(0, prevBal - totalDiff),
+          totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + (totalDiff > 0 ? totalDiff : 0),
+        };
+        await saveTreasuryToFirestore(updatedTreasury);
+      }
     }
 
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], finalWallet);

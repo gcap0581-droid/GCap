@@ -277,6 +277,37 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       if (finalTotalEarned !== (wallet?.totalEarned || 0)) walletUpdates.totalEarned = finalTotalEarned;
       if (finalRoyalty !== (wallet?.royaltyEarned || 0)) walletUpdates.royaltyEarned = finalRoyalty;
 
+      // Ensure walletAdjustment accurately reflects whether via Quick Tool or direct input
+      let resolvedAdjustment: any = undefined;
+      if (hasAdjustment) {
+        resolvedAdjustment = {
+          type: adjType,
+          targetWallet: adjTarget,
+          amount: parsedAdjAmount,
+          reason: adjReason.trim() || (isHi ? 'एडमिन द्वारा मैनुअल समायोजन' : 'Admin manual balance adjustment'),
+        };
+      } else if (walletUpdates.cashBalance !== undefined) {
+        const cashDiff = walletUpdates.cashBalance - (wallet?.cashBalance || 0);
+        if (cashDiff !== 0) {
+          resolvedAdjustment = {
+            type: cashDiff > 0 ? 'ADD' : 'DEDUCT',
+            targetWallet: 'cashBalance',
+            amount: Math.abs(cashDiff),
+            reason: isHi ? 'एडमिन द्वारा कैश बैलेंस अपडेट' : 'Admin manual cash balance update',
+          };
+        }
+      } else if (walletUpdates.gpBalance !== undefined) {
+        const gpDiff = walletUpdates.gpBalance - (wallet?.gpBalance || 0);
+        if (gpDiff !== 0) {
+          resolvedAdjustment = {
+            type: gpDiff > 0 ? 'ADD' : 'DEDUCT',
+            targetWallet: 'gpBalance',
+            amount: Math.abs(gpDiff),
+            reason: isHi ? 'एडमिन द्वारा GP पॉइंट्स अपडेट' : 'Admin manual GP balance update',
+          };
+        }
+      }
+
       await onSave({
         userId: user?.id,
         name: name.trim(),
@@ -304,12 +335,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           upiId: upiId.trim(),
         } : undefined,
         walletUpdates: Object.keys(walletUpdates).length > 0 ? walletUpdates : undefined,
-        walletAdjustment: hasAdjustment ? {
-          type: adjType,
-          targetWallet: adjTarget,
-          amount: parsedAdjAmount,
-          reason: adjReason.trim() || (isHi ? 'एडमिन द्वारा मैनुअल समायोजन' : 'Admin manual balance adjustment'),
-        } : undefined,
+        walletAdjustment: resolvedAdjustment,
         backdatedPlanId: backdatedPlanId || undefined,
         backdatedAmount: Number(backdatedAmount) || 0,
         backdatedWithdrawal: Number(backdatedWithdrawal) || 0,

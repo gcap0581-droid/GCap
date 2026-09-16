@@ -450,6 +450,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       // Handle Wallet Updates and Adjustments if present
       if (targetUserId && (data.walletUpdates || data.walletAdjustment)) {
+        // Capture existing wallet before adjustment
+        const fallbackWallet: Wallet = {
+          cashBalance: 0,
+          gpBalance: 0,
+          totalInvested: 0,
+          totalEarned: 0,
+          royaltyEarned: 0,
+          pendingWithdrawals: 0,
+          pendingDeposits: 0,
+        };
+        const prevTargetWallet = walletsMap[targetUserId] || walletsMap[data.phone.trim().replace(/[^0-9]/g, "")] || walletsMap[data.phone.trim().replace(/[^0-9]/g, "").slice(-10)] || fallbackWallet;
+
         const adjustRes = await apiAdminAdjustUserWallet(
           targetUserId,
           data.walletUpdates || {},
@@ -468,41 +480,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             ...(data.loginId ? { [data.loginId]: w } : {}),
           }));
 
-          // If admin added money to user wallet, deduct from Company Treasury Balance & Announce Balance Credit
-          if (data.walletAdjustment?.type === 'ADD' && data.walletAdjustment.amount > 0) {
-            if (data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance') {
-              onAdminDeductCompanyBalance(
-                data.walletAdjustment.amount,
-                `Direct Balance Credit to user ${data.name} (${data.phone}): ₹${data.walletAdjustment.amount} deducted from Company Treasury`,
-                `यूज़र ${data.name} (${data.phone}) के वॉलेट में सीधा फंड जोड़ा गया: ₹${data.walletAdjustment.amount} कंपनी बैलेंस से डिडक्ट हुआ।`,
-                `ADM-USER-${targetUserId.slice(-6)}`
-              );
+          // Calculate exact net fund credited or debited to user
+          let netAdded = 0;
+          let netDeducted = 0;
+
+          if (data.walletAdjustment?.amount && data.walletAdjustment.amount > 0) {
+            const isCashOrGp = !data.walletAdjustment.targetWallet || data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance';
+            if (isCashOrGp) {
+              if (data.walletAdjustment.type === 'ADD') {
+                netAdded = data.walletAdjustment.amount;
+              } else if (data.walletAdjustment.type === 'DEDUCT') {
+                netDeducted = data.walletAdjustment.amount;
+              } else if (data.walletAdjustment.type === 'SET') {
+                const prevVal = (data.walletAdjustment.targetWallet === 'gpBalance' ? prevTargetWallet.gpBalance : prevTargetWallet.cashBalance) || 0;
+                if (data.walletAdjustment.amount > prevVal) {
+                  netAdded = data.walletAdjustment.amount - prevVal;
+                } else if (data.walletAdjustment.amount < prevVal) {
+                  netDeducted = prevVal - data.walletAdjustment.amount;
+                }
+              }
             }
-            // Announce money given / credited voice announcement
+          } else if (data.walletUpdates) {
+            const prevCash = prevTargetWallet.cashBalance || 0;
+            const prevGp = prevTargetWallet.gpBalance || 0;
+            const newCash = data.walletUpdates.cashBalance !== undefined ? data.walletUpdates.cashBalance : prevCash;
+            const newGp = data.walletUpdates.gpBalance !== undefined ? data.walletUpdates.gpBalance : prevGp;
+            const diff = (newCash - prevCash) + (newGp - prevGp);
+            if (diff > 0) {
+              netAdded = diff;
+            } else if (diff < 0) {
+              netDeducted = Math.abs(diff);
+            }
+          }
+
+          // If money was added to user wallet, deduct from Company Treasury Balance (e.g. 11,00,000) & Announce Balance Credit
+          if (netAdded > 0) {
+            onAdminDeductCompanyBalance(
+              netAdded,
+              `Direct Balance Credit to user ${data.name} (${data.phone}): ₹${netAdded} deducted from Company Treasury`,
+              `यूज़र ${data.name} (${data.phone}) के वॉलेट में सीधा फंड जोड़ा गया: ₹${netAdded} कंपनी बैलेंस से डिडक्ट हुआ।`,
+              `ADM-USER-${targetUserId.slice(-6)}`
+            );
             audioAnnouncer.announceBalanceCredit({
               userName: data.name,
-              amount: data.walletAdjustment.amount,
+              amount: netAdded,
               language: language === 'hi' ? 'hi' : 'en',
             });
-          } else if (data.walletAdjustment?.type === 'DEDUCT' && data.walletAdjustment.amount > 0) {
-            if (data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance') {
-              onAdminAddCompanyBalance(
-                data.walletAdjustment.amount,
-                `Reclaimed balance from user ${data.name} (${data.phone}): ₹${data.walletAdjustment.amount} credited back to Company Treasury`,
-                `यूज़र ${data.name} (${data.phone}) से कंपनी बैलेंस में वापस जमा: ₹${data.walletAdjustment.amount}`,
-                `REC-USER-${targetUserId.slice(-6)}`
-              );
-            }
-            // Announce money deduction voice announcement
+          } else if (netDeducted > 0) {
+            onAdminAddCompanyBalance(
+              netDeducted,
+              `Reclaimed balance from user ${data.name} (${data.phone}): ₹${netDeducted} credited back to Company Treasury`,
+              `यूज़र ${data.name} (${data.phone}) से कंपनी बैलेंस में वापस जमा: ₹${netDeducted}`,
+              `REC-USER-${targetUserId.slice(-6)}`
+            );
             audioAnnouncer.announceBalanceDeduct({
               userName: data.name,
-              amount: data.walletAdjustment.amount,
-              language: language === 'hi' ? 'hi' : 'en',
-            });
-          } else if (data.walletAdjustment?.type === 'SET' && data.walletAdjustment.amount > 0) {
-            audioAnnouncer.announceBalanceCredit({
-              userName: data.name,
-              amount: data.walletAdjustment.amount,
+              amount: netDeducted,
               language: language === 'hi' ? 'hi' : 'en',
             });
           }

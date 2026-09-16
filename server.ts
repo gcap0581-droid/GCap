@@ -1866,50 +1866,72 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
       db.transactions.unshift(newTxn);
       broadcastRealtimeEvent("transaction_created", { transaction: newTxn, userId: effectiveUserId, timestamp: Date.now() });
+    }
 
-      // Deduct from Company Main Balance when admin credits user directly; reclaim when admin debits user
-      if (adjType === 'ADD' && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
-        const prevBal = db.treasury.balance || 0;
-        db.treasury.balance = Math.max(0, prevBal - amount);
-        db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
-        db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
-        const treasuryLog = {
-          id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-          timestamp: Date.now(),
-          date: new Date().toISOString(),
-          type: 'ADMIN_DEDUCT',
-          amount: amount,
-          balanceBefore: prevBal,
-          balanceAfter: db.treasury.balance,
-          reason: `Direct funds transfer to user ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}): ₹${amount}`,
-          reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) को डायरेक्ट फंड ट्रांसफर: ₹${amount}`,
-          actor: adminName || 'Super Admin (admin)',
-          referenceId: 'TRF' + Math.floor(10000000 + Math.random() * 90000000),
-        };
-        db.treasuryLogs.unshift(treasuryLog);
-        syncAdminWalletWithTreasury(db);
-        broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
-      } else if (adjType === 'DEDUCT' && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
-        const prevBal = db.treasury.balance || 0;
-        db.treasury.balance = prevBal + amount;
-        db.treasury.totalTransferredToUsers = Math.max(0, (db.treasury.totalTransferredToUsers || 0) - amount);
-        const treasuryLog = {
-          id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-          timestamp: Date.now(),
-          date: new Date().toISOString(),
-          type: 'ADMIN_ADD',
-          amount: amount,
-          balanceBefore: prevBal,
-          balanceAfter: db.treasury.balance,
-          reason: `Funds reclaimed from user ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) to Company Main Balance: ₹${amount}`,
-          reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.loginId || effectiveUserId}) से फंड कंपनी मुख्य बैलेंस में वापस रिकवर: ₹${amount}`,
-          actor: adminName || 'Super Admin (admin)',
-          referenceId: 'REC' + Math.floor(10000000 + Math.random() * 90000000),
-        };
-        db.treasuryLogs.unshift(treasuryLog);
-        syncAdminWalletWithTreasury(db);
-        broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+    // Calculate net funds transferred to/reclaimed from user for Company Treasury Balance Synchronization
+    let netTransferToUser = 0;
+    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
+      const amount = Number(adjustment.amount);
+      const adjType = adjustment.type || 'ADD';
+      const targetWallet = adjustment.targetWallet || 'cashBalance';
+      if (targetWallet === 'cashBalance' || targetWallet === 'gpBalance') {
+        if (adjType === 'ADD') {
+          netTransferToUser = amount;
+        } else if (adjType === 'DEDUCT') {
+          netTransferToUser = -amount;
+        } else if (adjType === 'SET') {
+          const currentVal = existingWallet[targetWallet] || 0;
+          netTransferToUser = amount - currentVal;
+        }
       }
+    } else if (wallet && typeof wallet === 'object') {
+      const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existingWallet.cashBalance || 0)) : 0;
+      const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existingWallet.gpBalance || 0)) : 0;
+      netTransferToUser = cashDiff + gpDiff;
+    }
+
+    if (netTransferToUser > 0) {
+      const prevBal = db.treasury.balance || 0;
+      db.treasury.balance = Math.max(0, prevBal - netTransferToUser);
+      db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + netTransferToUser;
+      db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + netTransferToUser;
+      const treasuryLog = {
+        id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        type: 'ADMIN_DEDUCT',
+        amount: netTransferToUser,
+        balanceBefore: prevBal,
+        balanceAfter: db.treasury.balance,
+        reason: `Direct funds transfer to user ${user?.name || effectiveUserId} (${user?.phone || user?.loginId || effectiveUserId}): ₹${netTransferToUser}`,
+        reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.phone || user?.loginId || effectiveUserId}) को डायरेक्ट फंड ट्रांसफर: ₹${netTransferToUser} कंपनी बैलेंस से डिडक्ट`,
+        actor: adminName || 'Super Admin (admin)',
+        referenceId: 'TRF' + Math.floor(10000000 + Math.random() * 90000000),
+      };
+      db.treasuryLogs.unshift(treasuryLog);
+      syncAdminWalletWithTreasury(db);
+      broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+    } else if (netTransferToUser < 0) {
+      const reclaimAmt = Math.abs(netTransferToUser);
+      const prevBal = db.treasury.balance || 0;
+      db.treasury.balance = prevBal + reclaimAmt;
+      db.treasury.totalTransferredToUsers = Math.max(0, (db.treasury.totalTransferredToUsers || 0) - reclaimAmt);
+      const treasuryLog = {
+        id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        type: 'ADMIN_ADD',
+        amount: reclaimAmt,
+        balanceBefore: prevBal,
+        balanceAfter: db.treasury.balance,
+        reason: `Funds reclaimed from user ${user?.name || effectiveUserId} (${user?.phone || user?.loginId || effectiveUserId}) to Company Main Balance: ₹${reclaimAmt}`,
+        reasonHi: `यूज़र ${user?.name || effectiveUserId} (${user?.phone || user?.loginId || effectiveUserId}) से फंड कंपनी मुख्य बैलेंस में वापस रिकवर: ₹${reclaimAmt}`,
+        actor: adminName || 'Super Admin (admin)',
+        referenceId: 'REC' + Math.floor(10000000 + Math.random() * 90000000),
+      };
+      db.treasuryLogs.unshift(treasuryLog);
+      syncAdminWalletWithTreasury(db);
+      broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
     }
 
     // Synchronize and persist updated wallet under ALL alias keys for this user
