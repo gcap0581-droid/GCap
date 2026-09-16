@@ -28,13 +28,33 @@ import {
   FirestoreDatabaseState,
 } from '../lib/firestoreBridge';
 
+// Helper to retrieve current active user session directly from localStorage safely
+function getLocalCurrentUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('gcap_active_session_v1');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Helper to resolve user from multiple identifiers and generate all alias keys
 export function findUserAndAllAliases(userId: string, users: UserProfile[]): { user: UserProfile | null, aliases: string[] } {
   const cleanId = String(userId || '').trim();
   const cleanDigits = cleanId.replace(/[^0-9]/g, "");
   const last10 = cleanDigits.slice(-10);
 
-  const user = (users || []).find(
+  // Combine provided users with the active session user to guarantee correct link even if users list is empty
+  const activeUser = getLocalCurrentUser();
+  const combinedUsers = [...(users || [])];
+  if (activeUser && activeUser.id) {
+    if (!combinedUsers.some(u => u.id === activeUser.id)) {
+      combinedUsers.push(activeUser);
+    }
+  }
+
+  const user = combinedUsers.find(
     (u) =>
       (u.id && u.id === cleanId) ||
       (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
@@ -239,10 +259,18 @@ export async function fetchCentralState(
             lastUpdated: data.lastUpdated || new Date().toISOString(),
           });
         } else if (userId) {
+          const { aliases } = findUserAndAllAliases(userId, []);
+          const walletsMap: Record<string, Wallet> = {};
+          if (data.wallet) {
+            aliases.forEach(alias => {
+              if (alias) walletsMap[alias] = data.wallet!;
+            });
+          }
+
           updateFirestoreBridgeCache({
             transactions: data.transactions || [],
             investments: data.investments || [],
-            wallets: data.wallet ? { [userId]: data.wallet } : {},
+            wallets: walletsMap,
             bankDetails: data.bankDetails ? { [userId]: data.bankDetails as BankAccountDetails } : {},
             plans: data.plans || [],
             rules: data.rules || null,
@@ -380,10 +408,13 @@ export async function apiCreateTransaction(
   wallet?: Wallet
 ): Promise<{ success: boolean; transaction?: Transaction; wallet?: Wallet; error?: string }> {
   if (wallet) {
+    const { aliases } = findUserAndAllAliases(userId, []);
+    const walletsMap: Record<string, Wallet> = {};
+    aliases.forEach(alias => {
+      if (alias) walletsMap[alias] = wallet;
+    });
     updateFirestoreBridgeCache({
-      wallets: {
-        [userId]: wallet,
-      },
+      wallets: walletsMap,
     });
   }
 
@@ -397,10 +428,13 @@ export async function apiCreateTransaction(
       const result = await res.json().catch(() => null);
       if (result && result.success) {
         if (result.wallet) {
+          const { aliases } = findUserAndAllAliases(userId, []);
+          const walletsMap: Record<string, Wallet> = {};
+          aliases.forEach(alias => {
+            if (alias) walletsMap[alias] = result.wallet;
+          });
           updateFirestoreBridgeCache({
-            wallets: {
-              [userId]: result.wallet,
-            },
+            wallets: walletsMap,
           });
         }
         return result;
@@ -445,10 +479,13 @@ export async function apiCreateTransaction(
     await saveTransactionsToFirestore(updatedTxns);
     await saveWalletsToFirestore(updatedWallets);
 
+    const { aliases } = findUserAndAllAliases(userId, fs?.users || []);
+    const walletsMap: Record<string, Wallet> = {};
+    aliases.forEach(alias => {
+      if (alias) walletsMap[alias] = userWallet;
+    });
     updateFirestoreBridgeCache({
-      wallets: {
-        [userId]: userWallet,
-      },
+      wallets: walletsMap,
     });
 
     return { success: true, transaction: newTxn, wallet: userWallet };
@@ -1038,10 +1075,13 @@ export async function apiUpdateWallet(
       const result = await res.json().catch(() => null);
       if (result && result.success) {
         if (result.wallet) {
+          const { aliases } = findUserAndAllAliases(userId, []);
+          const walletsMap: Record<string, Wallet> = {};
+          aliases.forEach(alias => {
+            if (alias) walletsMap[alias] = result.wallet;
+          });
           updateFirestoreBridgeCache({
-            wallets: {
-              [userId]: result.wallet
-            }
+            wallets: walletsMap
           });
         }
         return result;
@@ -1056,6 +1096,16 @@ export async function apiUpdateWallet(
     const currentWallets = fs?.wallets || {};
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], wallet);
     await saveWalletsToFirestore(updatedWallets);
+
+    const { aliases } = findUserAndAllAliases(userId, fs?.users || []);
+    const walletsMap: Record<string, Wallet> = {};
+    aliases.forEach(alias => {
+      if (alias) walletsMap[alias] = wallet;
+    });
+    updateFirestoreBridgeCache({
+      wallets: walletsMap
+    });
+
     return { success: true, wallet };
   } catch (fsErr: any) {
     return { success: false, error: fsErr.message };

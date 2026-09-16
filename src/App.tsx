@@ -393,13 +393,14 @@ export default function App() {
       } else if (currentUser) {
         // Regular User
         const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
-        const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, fs.users || []);
+        const combinedUsers = fs.users && fs.users.length > 0 ? fs.users : [currentUser];
+        const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
         if (myWallet) {
           setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
           setStoredWallet(myWallet);
         }
         if (fs.transactions) {
-          const { aliases } = findUserAndAllAliases(currentUser.id, fs.users || []);
+          const { aliases } = findUserAndAllAliases(currentUser.id, combinedUsers);
           const cleanLogin = (currentUser.loginId || '').toLowerCase().trim();
           const cleanPhone = (currentUser.phone || '').replace(/[^0-9]/g, "");
           const phone10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
@@ -463,8 +464,7 @@ export default function App() {
 
     const syncWithCentralDb = async () => {
       try {
-        const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
-        const primarySyncId = userPhoneDigits || currentUser.id;
+        const primarySyncId = currentUser.id;
         const state = await fetchCentralState(primarySyncId, currentUser.role);
         if (isCancelled || !state || !state.success) return;
 
