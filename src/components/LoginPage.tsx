@@ -380,10 +380,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <User className="w-4 h-4" />
                       </div>
                       <input
-                        type="tel"
-                        inputMode="tel"
+                        type="text"
                         name="gcap_login_id_none_autofill"
-                        autoComplete="off-completely"
+                        autoComplete="off"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
@@ -392,7 +391,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         spellCheck={false}
                         required
                         value={loginId}
-                        onChange={(e) => setLoginId(e.target.value.replace(/[^0-9]/g, ''))}
+                        onChange={(e) => setLoginId(e.target.value)}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
@@ -411,9 +410,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type="text"
                         name="gcap_login_password_none_autofill"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         autoCorrect="off"
@@ -423,6 +422,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={isHi ? 'पासवर्ड दर्ज करें' : 'Enter password'}
+                        style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' } as any}
                         className="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
                       <button
