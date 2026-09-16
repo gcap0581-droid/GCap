@@ -1951,7 +1951,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     });
 
     db.lastUpdated = new Date().toISOString();
-    saveDb(db);
+    saveDb(db, true);
 
     // Broadcast wallet_updated for ALL keys so connected clients update immediately
     keysToSave.forEach((k) => {

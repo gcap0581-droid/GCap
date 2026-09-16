@@ -144,13 +144,31 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
 
 // Helper to update a user's wallet across all aliases in the map
 export function updateWalletForUserInMap(userId: string, wallets: Record<string, Wallet>, users: UserProfile[], updatedWallet: Wallet): Record<string, Wallet> {
-  const { aliases } = findUserAndAllAliases(userId, users);
+  const { user, aliases } = findUserAndAllAliases(userId, users);
   const updated = { ...wallets };
-  for (const alias of aliases) {
-    if (alias) {
-      updated[alias] = { ...updatedWallet };
+  const keysToUpdate = new Set<string>(aliases);
+
+  const cleanId = String(userId || '').trim().replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+  const phoneDigits = user?.phone ? user.phone.replace(/[^0-9]/g, '') : '';
+  const phone10 = phoneDigits.slice(-10);
+
+  for (const key of Object.keys(wallets)) {
+    const cleanKey = key.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+    if (
+      (cleanId && (cleanKey === cleanId || cleanKey.endsWith(cleanId) || cleanId.endsWith(cleanKey))) ||
+      (phone10 && phone10.length >= 6 && cleanKey.includes(phone10)) ||
+      (phoneDigits && phoneDigits.length >= 6 && cleanKey.includes(phoneDigits))
+    ) {
+      keysToUpdate.add(key);
     }
   }
+
+  keysToUpdate.forEach((k) => {
+    if (k) {
+      updated[k] = { ...updatedWallet };
+    }
+  });
+
   return updated;
 }
 
@@ -903,6 +921,18 @@ export async function apiAdminAdjustUserWallet(
       const result = await res.json().catch(() => null);
       if (result && result.success) {
         if (result.wallet) {
+          try {
+            const fs = await fetchFullFirestoreState();
+            const currentWallets = fs?.wallets || {};
+            const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], result.wallet);
+            await saveWalletsToFirestore(updatedWallets);
+            if (result.treasury) {
+              await saveTreasuryToFirestore(result.treasury, result.treasuryLogs);
+            }
+          } catch (fsSyncErr) {
+            console.warn('[apiAdminAdjustUserWallet] Direct Firestore sync warn:', fsSyncErr);
+          }
+
           updateFirestoreBridgeCache({
             wallets: {
               [userId]: result.wallet
