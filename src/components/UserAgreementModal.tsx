@@ -85,11 +85,11 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
   };
 
   const longTermPlan = activePlans.find(
-    (p) => p.durationDays === 375 || p.durationDays === 365 || p.name.toLowerCase().includes('long') || p.id.includes('ltp')
+    (p) => p.durationDays === 365 || p.name.toLowerCase().includes('long') || p.id.includes('ltp')
   ) || {
-    name: 'GCap 375-Day Long Term Royalty Asset Plan',
-    nameHi: 'जीकैप 375-दिन लॉन्ग टर्म रॉयल्टी प्लान',
-    durationDays: 375,
+    name: 'GCap 365-Day Long Term Royalty Asset Plan',
+    nameHi: 'जीकैप 365-दिन लॉन्ग टर्म रॉयल्टी प्लान',
+    durationDays: 365,
     dailyRoiPercent: 0.124,
     minAmount: 10000,
     maxAmount: 100000,

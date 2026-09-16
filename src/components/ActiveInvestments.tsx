@@ -224,12 +224,20 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const cycleRemainingMs = Math.max(0, (inv.currentCycleEndTimestamp || 0) - now);
             const cycleClock = formatCountdown(cycleRemainingMs);
 
-            const isShortTerm = inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D';
+            const isShortTerm = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
             const isLongTerm = !isShortTerm || !!inv.royaltyStage;
             const cyclePercentStr = isLongTerm ? '0.032%' : '0.041%';
-            const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount * (isLongTerm ? 0.032 : 0.041) / 100);
-            const durationDays = inv.durationDays || (isLongTerm ? 375 : 641);
-            const planUniqueCode = inv.planUniqueId || (isLongTerm ? `LTP-375D-${inv.id.slice(-5)}` : `STP-641D-${inv.id.slice(-5)}`);
+            const cycleReturn = isLongTerm
+              ? (inv.investedAmount * 0.032 / 100)
+              : (inv.cycleReturnAmount || (inv.investedAmount * 0.041 / 100));
+            const durationDays = isLongTerm ? 365 : 641;
+            let planUniqueCode = inv.planUniqueId || (isLongTerm ? `LTP-365D-${inv.id.slice(-5)}` : `STP-641D-${inv.id.slice(-5)}`);
+            if (isLongTerm && planUniqueCode.startsWith('STP-')) {
+              planUniqueCode = planUniqueCode.replace(/^STP-\d+D-/, 'LTP-365D-').replace(/^STP-/, 'LTP-365D-');
+            }
+            if (isLongTerm && planUniqueCode.startsWith('LTP-375D-')) {
+              planUniqueCode = planUniqueCode.replace(/^LTP-375D-/, 'LTP-365D-');
+            }
             const isMatured = (inv.royaltyStage === '1825D_ROYALTY' ? (inv.royaltyDaysCompleted || 0) >= 1825 : (inv.daysCompleted || 0) >= durationDays) || inv.isMatured;
             const isCompleted = inv.status === 'COMPLETED';
 
@@ -329,7 +337,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                             : inv.royaltyStage === '1461D_LOCK'
                             ? (isHi ? '🎉 1461 दिन रॉयल्टी लॉक पूर्ण!' : '🎉 1461 Days Royalty Lock Matured!')
                             : isLongTerm
-                            ? (isHi ? '🎉 375 दिन पूर्ण! विकल्प चुनें' : '🎉 375 Days Matured! Select Option')
+                            ? (isHi ? '🎉 365 दिन पूर्ण! विकल्प चुनें' : '🎉 365 Days Matured! Select Option')
                             : (isHi ? '🎉 641 दिन पूर्ण! परिपक्वता विकल्प चुनें' : '🎉 641 Days Matured! Select Action')}
                         </span>
                       </div>
@@ -345,11 +353,11 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                               : `1461 days lock complete! Claim full principal (${formatINR(inv.investedAmount)}) + yield and enter 1825-Day Lifetime Royalty Reward phase.`)
                           : isLongTerm
                           ? (isHi
-                              ? `375 दिन की अवधि पूर्ण हो चुकी है। आप पूरा मूलधन + लाभ निकालकर क्लोज कर सकते हैं अथवा 1461-दिवसीय रॉयल्टी प्लान में स्थानांतरित हो सकते हैं।`
-                              : `375 days term complete. Claim full principal & yield or transition into 1461-Day Royalty Plan.`)
+                              ? `365 दिन की अवधि पूर्ण हो चुकी है। आप पूरा मूलधन + लाभ निकालकर क्लोज कर सकते हैं अथवा 1461-दिवसीय रॉयल्टी प्लान में स्थानांतरित हो सकते हैं।`
+                              : `365 days term complete. Claim full principal & yield or transition into 1461-Day Royalty Plan.`)
                           : (isHi
-                              ? `आपका ${inv.durationDays} दिनों का कार्यकाल पूर्ण हो गया है। आप उसी ID (${planUniqueCode}) से रिन्यू कर सकते हैं या पूरा मूलधन + शेष लाभ निकालकर क्लोज कर सकते हैं।`
-                              : `Your ${inv.durationDays}-day term is complete. You may renew under the same Plan ID (${planUniqueCode}) or claim full maturity and close.`)}
+                              ? `आपका ${durationDays} दिनों का कार्यकाल पूर्ण हो गया है। आप उसी ID (${planUniqueCode}) से रिन्यू कर सकते हैं या पूरा मूलधन + शेष लाभ निकालकर क्लोज कर सकते हैं।`
+                              : `Your ${durationDays}-day term is complete. You may renew under the same Plan ID (${planUniqueCode}) or claim full maturity and close.`)}
                       </p>
 
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
@@ -580,12 +588,12 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
                             {isLongTerm && (inv.royaltyStage === '365D_INITIAL' || !inv.royaltyStage) && onSimulateMaturity365Days && (
                               <button
-                                id={`btn-sim-375d-${inv.id}`}
+                                id={`btn-sim-365d-${inv.id}`}
                                 onClick={() => onSimulateMaturity365Days(inv.id)}
                                 className="py-1 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold border border-amber-500/40 inline-flex items-center gap-1 cursor-pointer transition-all"
                               >
                                 <Award className="w-3 h-3 text-amber-400" />
-                                <span>{isHi ? '⚡ टेस्ट 375 दिन परिपक्वता' : '⚡ Fast-Forward 375 Days'}</span>
+                                <span>{isHi ? '⚡ टेस्ट 365 दिन परिपक्वता' : '⚡ Fast-Forward 365 Days'}</span>
                               </button>
                             )}
 
@@ -649,13 +657,13 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                   {/* Term Progress Bar */}
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex justify-between items-center text-slate-400">
-                      <span>{isHi ? `कार्यकाल स्थिति (${inv.daysCompleted || 0}/${inv.durationDays} दिन):` : `Term Progress (${inv.daysCompleted || 0}/${inv.durationDays} Days):`}</span>
-                      <span className="font-mono font-bold text-emerald-400">{Math.min(100, Math.round(((inv.daysCompleted || 0) / inv.durationDays) * 100))}%</span>
+                      <span>{isHi ? `कार्यकाल स्थिति (${inv.daysCompleted || 0}/${durationDays} दिन):` : `Term Progress (${inv.daysCompleted || 0}/${durationDays} Days):`}</span>
+                      <span className="font-mono font-bold text-emerald-400">{Math.min(100, Math.round(((inv.daysCompleted || 0) / durationDays) * 100))}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.round(((inv.daysCompleted || 0) / inv.durationDays) * 100))}%` }}
+                        style={{ width: `${Math.min(100, Math.round(((inv.daysCompleted || 0) / durationDays) * 100))}%` }}
                       ></div>
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono pt-1">
@@ -666,11 +674,13 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
                   {/* USER FUTURE RETURN SCENARIO CALCULATOR (Req #8) */}
                   {(() => {
-                    const dailyRet = inv.dailyReturnAmount || (inv.investedAmount * (isLongTerm ? 0.128 : 0.164) / 100);
+                    const dailyRet = isLongTerm
+                      ? (inv.investedAmount * 0.128 / 100)
+                      : (inv.dailyReturnAmount || (inv.investedAmount * 0.164 / 100));
                     const proj30d = dailyRet * 30;
                     const proj90d = dailyRet * 90;
                     const proj180d = dailyRet * 180;
-                    const projMaturity = dailyRet * inv.durationDays;
+                    const projMaturity = dailyRet * durationDays;
                     const projTotalMaturityAmount = inv.investedAmount + projMaturity;
                     const isScenarioOpen = !!scenarioOpenMap[inv.id];
 
@@ -716,7 +726,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                                 <span className="font-mono font-bold text-emerald-400">+{formatINR(proj180d)} GP</span>
                               </div>
                               <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                                <span className="text-[10px] text-slate-400 block">{isHi ? `परिपक्वता (${inv.durationDays} दिन) पर कुल:` : `At Full Maturity (${inv.durationDays}d):`}</span>
+                                <span className="text-[10px] text-slate-400 block">{isHi ? `परिपक्वता (${durationDays} दिन) पर कुल:` : `At Full Maturity (${durationDays}d):`}</span>
                                 <span className="font-mono font-black text-amber-300">{formatINR(projTotalMaturityAmount)}</span>
                               </div>
                             </div>

@@ -31,9 +31,9 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
   const isShortTerm = investment.planId === 'short-term' || investment.planId === 'SHORT_TERM_641D';
   const isLtp365 = !isShortTerm && !isRoyaltyMaster;
 
-  const defaultCertPrefix = isRoyaltyMaster ? 'GCAP-ROYAL-1825' : isLtp365 ? 'GCAP-LTP-375' : 'GCAP-STP-641';
+  const defaultCertPrefix = isRoyaltyMaster ? 'GCAP-ROYAL-1825' : isLtp365 ? 'GCAP-LTP-365' : 'GCAP-STP-641';
   const certNumber = investment.certificateNumber || `${defaultCertPrefix}-${investment.id.slice(-6).toUpperCase()}`;
-  const planCode = investment.planUniqueId || (isLtp365 ? `LTP-375D-${investment.id.slice(-5)}` : `STP-641D-${investment.id.slice(-5)}`);
+  const planCode = investment.planUniqueId || (isLtp365 ? `LTP-365D-${investment.id.slice(-5)}` : `STP-641D-${investment.id.slice(-5)}`);
   const userName = user?.name || user?.email?.split('@')[0] || 'Valued Investor';
 
   const totalCycles = investment.completedCyclesCount || (investment.durationDays * 4);
@@ -45,7 +45,7 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
   const certBadgeText = isRoyaltyMaster
     ? (isHi ? '👑 ग्रैंड रॉयल्टी मास्टर प्रमाण पत्र' : '👑 GRAND ROYALTY MASTER CERTIFICATE')
     : isLtp365
-    ? (isHi ? '👑 375-दिवसीय लॉन्ग टर्म परिपक्वता प्रमाण पत्र' : '👑 375-DAY LONG TERM MATURITY CERTIFICATE')
+    ? (isHi ? '👑 365-दिवसीय लॉन्ग टर्म परिपक्वता प्रमाण पत्र' : '👑 365-DAY LONG TERM MATURITY CERTIFICATE')
     : (isHi ? '⚡ 641-दिवसीय परिपक्वता प्रमाण पत्र' : '⚡ 641-DAY SHORT TERM MATURITY CERTIFICATE');
 
   const certTitleText = isRoyaltyMaster
@@ -58,8 +58,8 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
         : `This is to officially certify that ${userName} has successfully completed the 5-Year (1825-Day) Lifetime Royalty Master Term with full distinction.`)
     : isLtp365
     ? (isHi
-        ? `यह प्रमाणित किया जाता है कि निवेशक ${userName} ने ${profile.tradeName || profile.companyName} की 375-दिवसीय लॉन्ग टर्म निवेश योजना को पूर्ण निष्ठा के साथ संपन्न किया है।`
-        : `This is to officially certify that ${userName} has successfully completed the 375-Day Long Term Investment Term.`)
+        ? `यह प्रमाणित किया जाता है कि निवेशक ${userName} ने ${profile.tradeName || profile.companyName} की 365-दिवसीय लॉन्ग टर्म निवेश योजना को पूर्ण निष्ठा के साथ संपन्न किया है।`
+        : `This is to officially certify that ${userName} has successfully completed the 365-Day Long Term Investment Term.`)
     : (isHi
         ? `यह प्रमाणित किया जाता है कि निवेशक ${userName} ने ${profile.tradeName || profile.companyName} की 641-दिवसीय शॉर्ट टर्म योजना को सफलतापूर्वक पूर्ण कर लिया है।`
         : `This is to officially certify that ${userName} has successfully completed the 641-Day Short Term Investment Term with full compliance.`);

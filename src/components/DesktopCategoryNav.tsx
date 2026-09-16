@@ -49,7 +49,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
       id: 'plans',
       labelEn: 'Top Plans 🔥',
       labelHi: 'सुपर प्लान्स 🔥',
-      subEn: '641D / 375D Schemes',
+      subEn: '641D / 365D Schemes',
       subHi: '2.2% से 3.5% दैनिक लाभ',
       icon: Flame,
       badge: 'TOP ROI',

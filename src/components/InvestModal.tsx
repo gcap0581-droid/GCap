@@ -82,7 +82,7 @@ export const InvestModal: React.FC<InvestModalProps> = ({
 
     // Specific plan range validations requested by user
     const isShortTerm = plan.id === 'short-term' || plan.durationDays === 641;
-    const isLongTerm = plan.id === 'long-term' || plan.durationDays === 375 || plan.durationDays === 365;
+    const isLongTerm = plan.id === 'long-term' || plan.durationDays === 365;
 
     if (isShortTerm && amount < 100000) {
       setError(

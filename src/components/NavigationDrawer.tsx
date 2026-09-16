@@ -431,7 +431,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    <span>{isHi ? '📈 375D लॉन्ग टर्म योजना विवरण PDF' : '📈 375D Long Term Guide PDF'}</span>
+                    <span>{isHi ? '📈 365D लॉन्ग टर्म योजना विवरण PDF' : '📈 365D Long Term Guide PDF'}</span>
                   </div>
                   <span className="text-[11px] text-emerald-400 font-mono">PDF</span>
                 </button>
