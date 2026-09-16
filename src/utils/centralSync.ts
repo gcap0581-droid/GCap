@@ -892,7 +892,7 @@ export async function apiAdminAdjustUserWallet(
       const amount = Number(adjustment.amount);
       const adjType = adjustment.type || 'ADD';
       const targetWallet = adjustment.targetWallet || 'cashBalance';
-      const currentVal = finalWallet[targetWallet] || 0;
+      const currentVal = existing[targetWallet] || 0;
       
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {

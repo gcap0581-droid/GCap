@@ -27,6 +27,7 @@ import {
   setStoredTransactions,
   resetPortalData,
   formatINR,
+  filterUserInvestments,
 } from './utils/storage';
 import { getNextFixedCycleTimestamp, formatFixedSlotTime } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
@@ -424,13 +425,12 @@ export default function App() {
           setStoredTransactions(myTxns);
         }
         if (fs.investments) {
-          const myInvs = fs.investments.filter(
-            (i) =>
-              i.userId === currentUser.id ||
-              (userPhoneDigits && (i as any).userPhone && (i as any).userPhone.includes(userPhoneDigits))
-          );
+          const myInvs = filterUserInvestments(fs.investments, currentUser);
           setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
-          setStoredInvestments(myInvs);
+          const allStored = [...getStoredInvestments(), ...fs.investments];
+          const uniqueMap = new Map();
+          allStored.forEach(i => { if (i && i.id) uniqueMap.set(i.id, i); });
+          setStoredInvestments(Array.from(uniqueMap.values()));
         }
         if (fs.messages) {
           const myMsgs = fs.messages.filter(
@@ -506,8 +506,12 @@ export default function App() {
             setStoredTransactions(state.transactions);
           }
           if (state.investments) {
-            setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(state.investments) ? state.investments : prev));
-            setStoredInvestments(state.investments);
+            const myInvs = filterUserInvestments(state.investments, currentUser);
+            setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
+            const allStored = [...getStoredInvestments(), ...state.investments];
+            const uniqueMap = new Map();
+            allStored.forEach(i => { if (i && i.id) uniqueMap.set(i.id, i); });
+            setStoredInvestments(Array.from(uniqueMap.values()));
           }
         }
       } catch {

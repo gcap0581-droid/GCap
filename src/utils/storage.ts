@@ -124,6 +124,41 @@ export function setStoredInvestments(investments: ActiveInvestment[]) {
   }
 }
 
+export function filterUserInvestments(allInvestments: ActiveInvestment[], user: UserProfile | null): ActiveInvestment[] {
+  if (!user) return getStoredInvestments();
+  const localStoredInvs = getStoredInvestments();
+  const merged = [...(allInvestments || []), ...localStoredInvs];
+  const uniqueMap = new Map();
+  merged.forEach(inv => {
+    if (inv && inv.id) uniqueMap.set(inv.id, inv);
+  });
+  const allInvs = Array.from(uniqueMap.values());
+
+  if (user.role === 'ADMIN') return allInvs;
+
+  const userIdLower = (user.id || '').toLowerCase().trim();
+  const loginIdLower = (user.loginId || '').toLowerCase().trim();
+  const phoneClean = (user.phone || '').replace(/[^0-9]/g, "");
+  const phone10 = phoneClean.length >= 10 ? phoneClean.slice(-10) : phoneClean;
+
+  return allInvs.filter(i => {
+    if (!i) return false;
+    const iUserId = (i.userId || '').toLowerCase().trim();
+    const iLoginId = (i.userLoginId || '').toLowerCase().trim();
+    const iPhone = (i.userPhone || '').replace(/[^0-9]/g, "");
+    const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
+
+    return (
+      (userIdLower && iUserId === userIdLower) ||
+      (loginIdLower && iLoginId === loginIdLower) ||
+      (phone10 && iPhone10 === phone10) ||
+      (userIdLower && iUserId.includes(phone10)) ||
+      (phone10 && iUserId.includes(phone10)) ||
+      !i.userId
+    );
+  });
+}
+
 export function getStoredTransactions(): Transaction[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);

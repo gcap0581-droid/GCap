@@ -1788,7 +1788,6 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
       const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
 
-      // Check if wallet passed in req.body already modified targetWallet from existingWallet; if not, apply adjustment directly
       const currentVal = existingWallet[targetWallet] || 0;
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {
@@ -1799,9 +1798,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
         calculatedVal = amount;
       }
 
-      if (!wallet || wallet[targetWallet] === undefined || wallet[targetWallet] === existingWallet[targetWallet]) {
-        updatedWallet[targetWallet] = calculatedVal;
-      }
+      updatedWallet[targetWallet] = calculatedVal;
 
       const reason = adjustment.reason?.trim() || 'Admin manual balance adjustment';
       const targetLabelEn = targetWallet === 'cashBalance' ? 'Cash Balance' : targetWallet === 'gpBalance' ? 'GP Balance' : targetWallet === 'totalEarned' ? 'Total Earnings' : 'Royalty Balance';
