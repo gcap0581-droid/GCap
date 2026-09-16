@@ -73,12 +73,12 @@ export function getStoredInvestments(): ActiveInvestment[] {
       const cycleHours = inv.cycleDurationHours || 6;
       
       const isShortTerm = inv.planId === 'short-term';
-      const duration = isShortTerm ? 641 : (inv.durationDays || 641);
+      const duration = isShortTerm ? 641 : (inv.durationDays || 365);
       const investedAmount = isShortTerm && inv.investedAmount < 10000 ? 10000 : inv.investedAmount;
-      // 0.041% of invested amount per 6 hours
+      // 0.041% per 6h for short term (0.164% daily), 0.032% per 6h for long term (0.128% daily)
       const cycleReturn = isShortTerm
         ? Math.round((investedAmount * 0.041) / 100 * 100) / 100
-        : (inv.cycleReturnAmount || (inv.dailyReturnAmount ? inv.dailyReturnAmount / 4 : (investedAmount * ((inv.dailyRoiPercent || 0.124) / 4)) / 100));
+        : Math.round((investedAmount * 0.032) / 100 * 100) / 100;
 
       const planUniqueId = inv.planUniqueId || (isShortTerm 
         ? `STP-641D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '89421'}`
@@ -96,7 +96,7 @@ export function getStoredInvestments(): ActiveInvestment[] {
         planUniqueId,
         investedAmount,
         durationDays: duration,
-        dailyRoiPercent: isShortTerm ? 0.164 : (inv.planId === 'long-term' ? 0.124 : inv.dailyRoiPercent),
+        dailyRoiPercent: isShortTerm ? 0.164 : (inv.planId === 'long-term' ? 0.128 : inv.dailyRoiPercent),
         dailyReturnAmount: cycleReturn * 4,
         totalExpectedReturn: cycleReturn * 4 * duration,
         totalWithdrawn: inv.totalWithdrawn || 0,

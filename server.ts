@@ -271,62 +271,62 @@ const DEFAULT_WALLET: Wallet = {
 const DEFAULT_PLANS: InvestmentPlan[] = [
   {
     id: "short-term",
-    name: "Short Term Plan",
-    nameHi: "शॉर्ट टर्म प्लान (Short Term Plan)",
-    dailyRoiPercent: 0.16,
+    name: "Short Term Plan (641-Day Plan)",
+    nameHi: "शॉर्ट टर्म प्लान (641-Day Plan)",
+    dailyRoiPercent: 0.164,
     durationDays: 641,
     minAmount: 10000,
-    maxAmount: 100000,
+    maxAmount: 1000000000,
     payoutFrequency: "Daily",
-    payoutFrequencyHi: "हर 6 घंटे में 0.04% GP",
+    payoutFrequencyHi: "हर 6 घंटे में 0.041% GP",
     risk: "Low",
-    tag: "641 Days Lock + 0.04%/6h GP",
-    tagHi: "641 दिन लॉक + हर 6h में 0.04% GP",
-    badge: "⚡ 641-Day Short Term Plan",
-    description: "Special 641-day Short Term investment plan. Deposit ₹10,000 to ₹100,000. Earn 0.04% every 6 hours automatically credited to earnings.",
-    descriptionHi: "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से ₹1,00,000 तक। हर 6 घंटे में 0.04% GP स्वतः जमा।",
+    tag: "641 Days • First 24h Lock • 0.041%/6h GP",
+    tagHi: "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.041% GP",
+    badge: "⚡ 641-Day Short Term Plan (Unlimited)",
+    description: "Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.",
+    descriptionHi: "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.041% GP स्वतः जमा।",
     features: [
-      "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-      "परिपक्वता अवधि 641 दिन",
-      "हर 6 घंटे में 0.04% GP लाभ",
+      "न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)",
+      "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
+      "हर 6 घंटे में 0.041% GP लाभ",
       "महीने की 1 से 5 तारीख तक निकासी",
     ],
     featuresHi: [
-      "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-      "परिपक्वता अवधि 641 दिन",
-      "हर 6 घंटे में 0.04% GP लाभ",
+      "न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)",
+      "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
+      "हर 6 घंटे में 0.041% GP लाभ",
       "महीने की 1 से 5 तारीख तक निकासी",
     ],
   },
   {
     id: "long-term",
-    name: "Long Term Plan",
-    nameHi: "लॉन्ग टर्म प्लान (Long Term Plan)",
-    dailyRoiPercent: 0.12,
+    name: "Long Term Plan (365-Day & Royalty Plan)",
+    nameHi: "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
+    dailyRoiPercent: 0.128,
     durationDays: 365,
     minAmount: 10000,
     maxAmount: 100000,
     payoutFrequency: "Daily",
-    payoutFrequencyHi: "हर 6 घंटे में 0.03% GP",
+    payoutFrequencyHi: "हर 6 घंटे में 0.032% GP",
     risk: "Low",
-    tag: "365 Days Lock + Royalty Pathway",
-    tagHi: "365 दिन लॉक + 0.03%/6h GP + रॉयल्टी प्लान",
+    tag: "365 Days • First 24h Lock • 0.032%/6h GP + Royalty",
+    tagHi: "365 दिन • पहले 24 घंटे का लॉक • 0.032%/6h GP + रॉयल्टी पाथवे",
     badge: "👑 365-Day Long Term & Royalty Plan",
-    description: "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. Earn 0.03% every 6 hours.",
-    descriptionHi: "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक।",
+    description: "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.032% every 6 hours.",
+    descriptionHi: "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.032% GP लाभ + रॉयल्टी पाथवे।",
     features: [
       "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-      "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
-      "हर 6 घंटे में 0.03% GP लाभ",
+      "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
+      "हर 6 घंटे में 0.032% GP लाभ",
       "महीने की 1 से 5 तारीख तक निकासी",
     ],
     featuresHi: [
       "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-      "अवधि 365 दिन + 1461 दिन रॉयल्टी विकल्प",
-      "हर 6 घंटे में 0.03% GP लाभ",
+      "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
+      "हर 6 घंटे में 0.032% GP लाभ",
       "महीने की 1 से 5 तारीख तक निकासी",
     ],
-  },
+  }
 ];
 
 const DEFAULT_RULES: AppRules = {
@@ -1264,11 +1264,24 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
     const userInvs = reqUserId
       ? db.investments.filter((i) => {
-          const iPhone10 = (i.userPhone || i.userId || "").replace(/[^0-9]/g, "").slice(-10);
+          if (!i) return false;
+          const iUserId = (i.userId || "").toLowerCase().trim();
+          const iUserLoginId = (i.userLoginId || "").toLowerCase().trim();
+          const iPhone = (i.userPhone || "").replace(/[^0-9]/g, "");
+          const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
+
+          const reqClean = reqUserId.toLowerCase().trim();
+          const effClean = effectiveId.toLowerCase().trim();
+          const foundClean = foundUser ? foundUser.id.toLowerCase().trim() : "";
+          const foundLogin = foundUser && foundUser.loginId ? foundUser.loginId.toLowerCase().trim() : "";
+
           return (
+            iUserId === reqClean ||
+            iUserId === effClean ||
+            (foundClean && iUserId === foundClean) ||
+            (foundLogin && (iUserLoginId === foundLogin || iUserId === foundLogin)) ||
+            (reqPhone10 && iPhone10 === reqPhone10) ||
             (uPhone10 && iPhone10 === uPhone10) ||
-            i.userId === effectiveId ||
-            i.userId === reqUserId ||
             !i.userId
           );
         })

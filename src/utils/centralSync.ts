@@ -298,9 +298,25 @@ export async function fetchCentralState(
 
         return isDirectMatch || isNoteMatch;
       });
-      const userInvestments = (fs.investments || []).filter(
-        (i) => i.userId === userId
-      );
+      const userInvestments = (fs.investments || []).filter((i) => {
+        if (!i) return false;
+        const iUserId = (i.userId || "").toLowerCase().trim();
+        const iUserLoginId = (i.userLoginId || "").toLowerCase().trim();
+        const iPhone = (i.userPhone || "").replace(/[^0-9]/g, "");
+        const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
+
+        return aliases.some((a) => {
+          if (!a) return false;
+          const cleanA = a.toLowerCase().trim();
+          const clean10 = cleanA.replace(/[^0-9]/g, "").slice(-10);
+          return (
+            iUserId === cleanA ||
+            iUserLoginId === cleanA ||
+            (clean10 && clean10.length >= 6 && iPhone10 === clean10) ||
+            iUserId.includes(cleanA)
+          );
+        }) || !i.userId;
+      });
       const userWallet = userId ? getWalletForUser(userId, fs.wallets || {}, fs.users || []) : {
         cashBalance: 0,
         gpBalance: 0,
