@@ -215,37 +215,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleApplyQuickAdjustment = () => {
-    // Replace various dash characters with standard minus sign just in case and remove spaces
-    const safeAdjAmount = adjAmount.replace(/\s+/g, '').replace(/[−–—]/g, '-');
-    const num = parseFloat(safeAdjAmount);
-    if (isNaN(num) || num <= 0) {
-      setError(isHi ? 'कृपया मान्य राशि दर्ज करें।' : 'Please enter a valid adjustment amount.');
-      return;
-    }
-
-    if (adjTarget === 'cashBalance') {
-      if (adjType === 'ADD') setCashBalance((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setCashBalance((prev) => Math.max(0, Number(prev) - num));
-      else if (adjType === 'SET') setCashBalance(Math.max(0, num));
-    } else if (adjTarget === 'gpBalance') {
-      if (adjType === 'ADD') setGpBalance((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setGpBalance((prev) => Math.max(0, Number(prev) - num));
-      else if (adjType === 'SET') setGpBalance(Math.max(0, num));
-    } else if (adjTarget === 'totalEarned') {
-      if (adjType === 'ADD') setTotalEarned((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setTotalEarned((prev) => Math.max(0, Number(prev) - num));
-      else if (adjType === 'SET') setTotalEarned(Math.max(0, num));
-    } else if (adjTarget === 'royaltyEarned') {
-      if (adjType === 'ADD') setRoyaltyEarned((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => Math.max(0, Number(prev) - num));
-      else if (adjType === 'SET') setRoyaltyEarned(Math.max(0, num));
-    }
-
-    setAdjAmount('');
-    setError('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || name.length < 2) {
@@ -331,6 +300,9 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           };
         }
       }
+
+      onClose();
+      setIsSubmitting(false);
 
       await onSave({
         userId: user?.id,
@@ -933,24 +905,17 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                     <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                       {isHi ? 'राशि दर्ज करें:' : 'Amount:'}
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text" inputMode="decimal"
-                        
-                        step="any"
-                        value={adjAmount}
-                        onChange={(e) => setAdjAmount(e.target.value)}
-                        placeholder="e.g. 5000"
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-emerald-400 font-bold focus:border-cyan-400 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyQuickAdjustment}
-                        className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer shadow-md shadow-cyan-600/20"
-                      >
-                        {isHi ? 'लागू करें' : 'Apply'}
-                      </button>
-                    </div>
+                    <input
+                      type="text" inputMode="decimal"
+                      step="any"
+                      value={adjAmount}
+                      onChange={(e) => setAdjAmount(e.target.value)}
+                      placeholder="e.g. 5000"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-emerald-400 font-bold focus:border-cyan-400 focus:outline-none"
+                    />
+                    <p className="text-[10px] text-cyan-400/90 mt-1">
+                      {isHi ? '* (नीचे "परिवर्तन सहेजें" बटन दबाने पर यह राशि स्वतः लागू हो जाएगी)' : '* (Amount will apply automatically upon clicking Save Changes)'}
+                    </p>
                   </div>
                 </div>
 
@@ -1136,7 +1101,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                 disabled={isSubmitting}
                 className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition-all shadow-md shadow-cyan-600/30 cursor-pointer disabled:opacity-50"
               >
-                <Check className="w-4 h-4" />
+                {isSubmitting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
                 <span>
                   {isSubmitting
                     ? (isHi ? 'सहेज रहे हैं...' : 'Saving...')

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   ShoppingCart,
@@ -43,8 +43,8 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       tagColor: 'bg-amber-400 text-slate-950 font-black',
       title: isHi ? 'शॉर्ट टर्म प्लान — 641 दिन लॉक • हर 6 घंटे में 0.041% GP' : 'Short Term Plan — 641-Day Lock • 0.041% GP Every 6 Hours',
       desc: isHi
-        ? 'निवेश सीमा ₹10,000 - ₹1,00,000 • हर 6h में 0.041% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
-        : 'Deposit ₹10,000 - ₹1,00,000 • 0.041% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
+        ? 'न्यूनतम निवेश ₹1,00,000 से असीमित (Unlimited) • हर 6h में 0.041% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
+        : 'Deposit ₹1,00,000 to Unlimited • 0.041% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
       badgeText: '0.164%/DAY',
       badgeSub: isHi ? '641 दिन लॉक' : '641-Day Maturity',
       ctaText: isHi ? 'शॉर्ट टर्म प्लान चुनें' : 'View Short Term Plan',
@@ -67,13 +67,13 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
     },
     {
       id: 'deal-deposit',
-      tag: isHi ? '⚡ इंस्टेंट UPI डिपॉजिट' : '⚡ INSTANT UPI 0% FEE',
+      tag: isHi ? '⚡ इंस्टेंट UPI (केवल 2% शुल्क)' : '⚡ INSTANT UPI 2% FEE ONLY',
       tagColor: 'bg-cyan-400 text-slate-950 font-black',
-      title: isHi ? '0% शुल्क पर मिनटों में पैसे जोड़ें' : 'Zero Fee Instant UPI & QR Deposit',
+      title: isHi ? 'केवल 2% शुल्क पर मिनटों में पैसे जोड़ें' : 'Instant UPI & QR Deposit (2% Fee Only)',
       desc: isHi
         ? 'PhonePe, Google Pay, Paytm व सभी UPI ऐप्स से डायरेक्ट जमा • 100% सुरक्षित गेटवे'
         : 'Instant deposit via PhonePe, GPay, Paytm & bank transfer with 100% security',
-      badgeText: '0% FEE',
+      badgeText: '2% FEE ONLY',
       badgeSub: isHi ? 'तत्काल क्रेडिट' : 'Instant Credit',
       ctaText: isHi ? 'पैसे जोड़ें (Deposit)' : 'Add Funds Now',
       targetTab: 'wallet' as const,
@@ -82,12 +82,29 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
     },
   ];
 
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-scroll banner every 4 seconds continuously, pausing on touch/hover
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % deals.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [deals.length, isPaused]);
+
   const currentDeal = deals[activeSlide];
 
   return (
     <div className="space-y-3">
       {/* Flipkart / Amazon Style Hero Banner Slider */}
-      <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-r ${currentDeal.gradient} p-4 sm:p-6 shadow-xl transition-all duration-300`}>
+      <div 
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
+        className={`relative overflow-hidden rounded-2xl border bg-gradient-to-r ${currentDeal.gradient} p-4 sm:p-6 shadow-xl transition-all duration-300 cursor-pointer h-[200px] sm:h-[210px] flex flex-col justify-between`}
+      >
         {/* Background glow orbs */}
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute left-1/3 -top-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -104,11 +121,11 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
               </span>
             </div>
 
-            <h2 className="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight leading-snug">
+            <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug line-clamp-1">
               {currentDeal.title}
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">
               {currentDeal.desc}
             </p>
 

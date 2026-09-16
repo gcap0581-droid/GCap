@@ -79,6 +79,29 @@ export const InvestModal: React.FC<InvestModalProps> = ({
 
   const handleConfirmInvestment = (shouldAutoSwap: boolean = false) => {
     setError('');
+
+    // Specific plan range validations requested by user
+    const isShortTerm = plan.id === 'short-term' || plan.durationDays === 641;
+    const isLongTerm = plan.id === 'long-term' || plan.durationDays === 365;
+
+    if (isShortTerm && amount < 100000) {
+      setError(
+        isHi
+          ? 'आप इतने का प्लान नहीं ले सकते, कम से कम ₹1,00,000 का लेना होगा।'
+          : 'You cannot take this plan for this amount. Minimum investment for Short Term plan is ₹1,00,000.'
+      );
+      return;
+    }
+
+    if (isLongTerm && (amount < 10000 || amount > 100000)) {
+      setError(
+        isHi
+          ? 'लॉन्ग टर्म प्लान के लिए न्यूनतम निवेश ₹10,000 और अधिकतम ₹1,00,000 होना चाहिए।'
+          : 'Long term plan investment must be between ₹10,000 and ₹1,00,000.'
+      );
+      return;
+    }
+
     if (amount < plan.minAmount) {
       setError(
         isHi

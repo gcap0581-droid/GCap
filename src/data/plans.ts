@@ -7,18 +7,18 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     nameHi: 'शॉर्ट टर्म प्लान (641-Day Plan)',
     dailyRoiPercent: 0.164, // 0.041% every 6 hours (0.041% * 4 = 0.164% per day)
     durationDays: 641,
-    minAmount: 10000, // Min ₹10,000
-    maxAmount: 1000000000, // Unlimited (₹10,000 to Unlimited)
+    minAmount: 100000, // Min ₹1,00,000
+    maxAmount: 1000000000, // Unlimited
     payoutFrequency: 'Daily',
     payoutFrequencyHi: 'हर 6 घंटे में 0.041% GP',
     risk: 'Low',
     tag: '641 Days • First 24h Lock • 0.041%/6h GP',
     tagHi: '641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.041% GP',
-    badge: '⚡ 641-Day Short Term Plan (Unlimited)',
-    description: 'Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning.',
-    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.041% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा।',
+    badge: '⚡ 641-Day Short Term Plan (Min ₹1 Lakh)',
+    description: 'Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000 to Unlimited. First 24 hours lock. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning.',
+    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.041% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा।',
     features: [
-      'न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)',
+      'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
       'परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)',
       'प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा',
@@ -28,7 +28,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
       'प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र'
     ],
     featuresHi: [
-      'न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)',
+      'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
       'परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)',
       'हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)',
       'प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा',

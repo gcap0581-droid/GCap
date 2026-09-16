@@ -13,7 +13,7 @@ export function sanitizePlans(plans: InvestmentPlan[]): { sanitized: InvestmentP
       const defaultLongTerm = DEFAULT_PLANS.find((p) => p.id === 'long-term') || plan;
       return { ...defaultLongTerm };
     }
-    if (plan.id === 'short-term' && (plan.minAmount !== 10000 || plan.maxAmount !== 100000)) {
+    if (plan.id === 'short-term' && plan.minAmount !== 100000) {
       changed = true;
       const defaultShortTerm = DEFAULT_PLANS.find((p) => p.id === 'short-term') || plan;
       return { ...defaultShortTerm };

@@ -1874,9 +1874,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
       const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
 
-      const currentVal = (wallet && typeof wallet[targetWallet] === 'number')
-        ? wallet[targetWallet]!
-        : (existingWallet[targetWallet] || 0);
+      const currentVal = existingWallet[targetWallet] || 0;
 
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {

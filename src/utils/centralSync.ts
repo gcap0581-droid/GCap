@@ -955,7 +955,8 @@ export async function apiAdminAdjustUserWallet(
     const finalWallet: Wallet = { ...existing, ...wallet };
     let updatedTreasury = fs?.treasury;
     
-    // Apply adjustment directly to finalWallet if present
+    // Calculate net transfer to user and update treasury accordingly
+    let netTransferToUser = 0;
     if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
       const amount = Number(adjustment.amount);
       const adjType = adjustment.type || 'ADD';
@@ -965,56 +966,43 @@ export async function apiAdminAdjustUserWallet(
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {
         calculatedVal = currentVal + amount;
-        // Deduct from company treasury if cash or GP added to user
-        if (fs?.treasury && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
-          const prevBal = fs.treasury.balance || 0;
-          updatedTreasury = {
-            ...fs.treasury,
-            balance: Math.max(0, prevBal - amount),
-            totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + amount,
-            totalDeducted: (fs.treasury.totalDeducted || 0) + amount,
-          };
-          await saveTreasuryToFirestore(updatedTreasury);
-        }
+        netTransferToUser = amount;
       } else if (adjType === 'DEDUCT') {
-        calculatedVal = currentVal - amount;
-        // Reclaim to company treasury if cash or GP deducted from user
-        if (fs?.treasury && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
-          const prevBal = fs.treasury.balance || 0;
-          updatedTreasury = {
-            ...fs.treasury,
-            balance: prevBal + amount,
-            totalAdded: (fs.treasury.totalAdded || 0) + amount,
-          };
-          await saveTreasuryToFirestore(updatedTreasury);
-        }
+        calculatedVal = Math.max(0, currentVal - amount);
+        netTransferToUser = -amount;
       } else if (adjType === 'SET') {
-        calculatedVal = amount;
-        const diff = amount - currentVal;
-        if (fs?.treasury && diff !== 0 && (targetWallet === 'cashBalance' || targetWallet === 'gpBalance')) {
-          const prevBal = fs.treasury.balance || 0;
-          updatedTreasury = {
-            ...fs.treasury,
-            balance: Math.max(0, prevBal - diff),
-            totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + (diff > 0 ? diff : 0),
-          };
-          await saveTreasuryToFirestore(updatedTreasury);
-        }
+        calculatedVal = Math.max(0, amount);
+        netTransferToUser = amount - currentVal;
       }
       finalWallet[targetWallet] = calculatedVal;
-    } else if (wallet && fs?.treasury) {
+    } else if (wallet && typeof wallet === 'object') {
       const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existing.cashBalance || 0)) : 0;
       const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existing.gpBalance || 0)) : 0;
-      const totalDiff = cashDiff + gpDiff;
-      if (totalDiff !== 0) {
-        const prevBal = fs.treasury.balance || 0;
+      const earnDiff = typeof wallet.totalEarned === 'number' ? (wallet.totalEarned - (existing.totalEarned || 0)) : 0;
+      const royDiff = typeof wallet.royaltyEarned === 'number' ? (wallet.royaltyEarned - (existing.royaltyEarned || 0)) : 0;
+      netTransferToUser = cashDiff + gpDiff + earnDiff + royDiff;
+    }
+
+    if (fs?.treasury && netTransferToUser !== 0) {
+      const prevBal = fs.treasury.balance || 0;
+      if (netTransferToUser > 0) {
+        // Funds given to user -> Treasury decreases
         updatedTreasury = {
           ...fs.treasury,
-          balance: Math.max(0, prevBal - totalDiff),
-          totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + (totalDiff > 0 ? totalDiff : 0),
+          balance: Math.max(0, prevBal - netTransferToUser),
+          totalTransferredToUsers: (fs.treasury.totalTransferredToUsers || 0) + netTransferToUser,
+          totalDeducted: (fs.treasury.totalDeducted || 0) + netTransferToUser,
         };
-        await saveTreasuryToFirestore(updatedTreasury);
+      } else {
+        // Funds deducted/reclaimed from user -> Treasury increases
+        const reclaimAmt = Math.abs(netTransferToUser);
+        updatedTreasury = {
+          ...fs.treasury,
+          balance: prevBal + reclaimAmt,
+          totalAdded: (fs.treasury.totalAdded || 0) + reclaimAmt,
+        };
       }
+      await saveTreasuryToFirestore(updatedTreasury);
     }
 
     const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], finalWallet);
