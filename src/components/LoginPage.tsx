@@ -382,7 +382,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       <input
                         type="tel"
                         inputMode="tel"
-                        autoComplete="one-time-code"
+                        name="gcap_login_id_none_autofill"
+                        autoComplete="off-completely"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
@@ -411,7 +412,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
-                        autoComplete="one-time-code"
+                        name="gcap_login_password_none_autofill"
+                        autoComplete="new-password"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         autoCorrect="off"
@@ -449,18 +451,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isLoading}
                     id="btn-submit-login"
                     className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20"
                   >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <span>{isHi ? 'लॉगिन करें' : 'Sign In'}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
+                    <span>{isHi ? 'लॉगिन करें' : 'Sign In'}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
               ) : (
@@ -626,18 +621,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isLoading}
                     id="btn-submit-register"
                     className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
                   >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <span>{isHi ? 'खाता बनाएं एवं लॉगिन करें' : 'Create Account & Enter'}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
+                    <span>{isHi ? 'खाता बनाएं एवं लॉगिन करें' : 'Create Account & Enter'}</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
               )}
