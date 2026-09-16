@@ -49,6 +49,7 @@ export interface UserEditModalProps {
       amount: number;
       reason?: string;
     };
+    isPasswordChanged?: boolean;
     backdatedPlanId?: string;
     backdatedAmount?: number;
     backdatedWithdrawal?: number;
@@ -78,6 +79,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordDirty, setIsPasswordDirty] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('USER');
   const [status, setStatus] = useState<'ACTIVE' | 'BLOCKED'>('ACTIVE');
@@ -138,6 +140,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         }
         setEmail(cleanEmailStr);
         
+        setIsPasswordDirty(false);
         setPassword(user.password || '');
         setRole(user.role || 'USER');
         setStatus(user.status || 'ACTIVE');
@@ -216,30 +219,30 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     // Replace various dash characters with standard minus sign just in case and remove spaces
     const safeAdjAmount = adjAmount.replace(/\s+/g, '').replace(/[−–—]/g, '-');
     const num = parseFloat(safeAdjAmount);
-    if (isNaN(num)) {
+    if (isNaN(num) || num <= 0) {
       setError(isHi ? 'कृपया मान्य राशि दर्ज करें।' : 'Please enter a valid adjustment amount.');
       return;
     }
 
     if (adjTarget === 'cashBalance') {
       if (adjType === 'ADD') setCashBalance((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setCashBalance((prev) => Number(prev) - num);
-      else if (adjType === 'SET') setCashBalance(num);
+      else if (adjType === 'DEDUCT') setCashBalance((prev) => Math.max(0, Number(prev) - num));
+      else if (adjType === 'SET') setCashBalance(Math.max(0, num));
     } else if (adjTarget === 'gpBalance') {
       if (adjType === 'ADD') setGpBalance((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setGpBalance((prev) => Number(prev) - num);
-      else if (adjType === 'SET') setGpBalance(num);
+      else if (adjType === 'DEDUCT') setGpBalance((prev) => Math.max(0, Number(prev) - num));
+      else if (adjType === 'SET') setGpBalance(Math.max(0, num));
     } else if (adjTarget === 'totalEarned') {
       if (adjType === 'ADD') setTotalEarned((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setTotalEarned((prev) => Number(prev) - num);
-      else if (adjType === 'SET') setTotalEarned(num);
+      else if (adjType === 'DEDUCT') setTotalEarned((prev) => Math.max(0, Number(prev) - num));
+      else if (adjType === 'SET') setTotalEarned(Math.max(0, num));
     } else if (adjTarget === 'royaltyEarned') {
       if (adjType === 'ADD') setRoyaltyEarned((prev) => Number(prev) + num);
-      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => Number(prev) - num);
-      else if (adjType === 'SET') setRoyaltyEarned(num);
+      else if (adjType === 'DEDUCT') setRoyaltyEarned((prev) => Math.max(0, Number(prev) - num));
+      else if (adjType === 'SET') setRoyaltyEarned(Math.max(0, num));
     }
 
-    // setAdjAmount('');
+    setAdjAmount('');
     setError('');
   };
 
@@ -264,12 +267,33 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     try {
       const safeAdjAmount = adjAmount.replace(/\s+/g, '').replace(/[−–—]/g, '-');
       const parsedAdjAmount = parseFloat(safeAdjAmount);
-      const hasAdjustment = !isNaN(parsedAdjAmount) && parsedAdjAmount !== 0;
+      const hasAdjustment = !isNaN(parsedAdjAmount) && parsedAdjAmount > 0;
 
       let finalCash = cashBalance;
       let finalGp = gpBalance;
       let finalTotalEarned = totalEarned;
       let finalRoyalty = royaltyEarned;
+
+      // If user typed in adjustment box without pressing 'Apply' beforehand, calculate final value
+      if (hasAdjustment) {
+        if (adjTarget === 'cashBalance') {
+          if (adjType === 'ADD') finalCash = Number(cashBalance) + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalCash = Math.max(0, Number(cashBalance) - parsedAdjAmount);
+          else if (adjType === 'SET') finalCash = Math.max(0, parsedAdjAmount);
+        } else if (adjTarget === 'gpBalance') {
+          if (adjType === 'ADD') finalGp = Number(gpBalance) + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalGp = Math.max(0, Number(gpBalance) - parsedAdjAmount);
+          else if (adjType === 'SET') finalGp = Math.max(0, parsedAdjAmount);
+        } else if (adjTarget === 'totalEarned') {
+          if (adjType === 'ADD') finalTotalEarned = Number(totalEarned) + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalTotalEarned = Math.max(0, Number(totalEarned) - parsedAdjAmount);
+          else if (adjType === 'SET') finalTotalEarned = Math.max(0, parsedAdjAmount);
+        } else if (adjTarget === 'royaltyEarned') {
+          if (adjType === 'ADD') finalRoyalty = Number(royaltyEarned) + parsedAdjAmount;
+          else if (adjType === 'DEDUCT') finalRoyalty = Math.max(0, Number(royaltyEarned) - parsedAdjAmount);
+          else if (adjType === 'SET') finalRoyalty = Math.max(0, parsedAdjAmount);
+        }
+      }
 
       const walletUpdates: any = {};
       if (finalCash !== (wallet?.cashBalance || 0)) walletUpdates.cashBalance = finalCash;
@@ -336,6 +360,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         } : undefined,
         walletUpdates: Object.keys(walletUpdates).length > 0 ? walletUpdates : undefined,
         walletAdjustment: resolvedAdjustment,
+        isPasswordChanged: isPasswordDirty && Boolean(password && password.trim() && (!user?.password || password.trim() !== user.password.trim())),
         backdatedPlanId: backdatedPlanId || undefined,
         backdatedAmount: Number(backdatedAmount) || 0,
         backdatedWithdrawal: Number(backdatedWithdrawal) || 0,
@@ -543,7 +568,10 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                       autoCapitalize="none"
                       spellCheck={false}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setIsPasswordDirty(true);
+                      }}
                       className="w-full pl-3 pr-10 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-amber-300 focus:border-cyan-400 focus:outline-none"
                       placeholder={isEditing ? 'नया पासवर्ड दर्ज करें (या पहले जैसा रहने दें)' : 'Enter initial password'}
                     />

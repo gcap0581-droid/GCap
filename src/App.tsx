@@ -3641,6 +3641,10 @@ export default function App() {
               onSimulateMaturity641Days={handleSimulateMaturity641Days}
               onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
               onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+              onUpdateTreasuryDirect={(t, logs) => {
+                setTreasury(t);
+                if (logs) setTreasuryLogs(logs);
+              }}
               onResetSystemFresh={handleResetData}
               onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
               onResetTreasury={handleResetTreasury}
@@ -3718,6 +3722,10 @@ export default function App() {
                 onSimulateMaturity641Days={handleSimulateMaturity641Days}
                 onAdminAddCompanyBalance={handleAdminAddCompanyBalance}
                 onAdminDeductCompanyBalance={handleAdminDeductCompanyBalance}
+                onUpdateTreasuryDirect={(t, logs) => {
+                  setTreasury(t);
+                  if (logs) setTreasuryLogs(logs);
+                }}
                 onResetSystemFresh={handleResetData}
                 onQuickAddCompanyBalance={handleQuickAddCompanyBalance}
                 onResetTreasury={handleResetTreasury}

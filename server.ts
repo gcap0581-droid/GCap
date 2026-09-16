@@ -1107,77 +1107,108 @@ async function startServer() {
     });
   });
 
-function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet {
-  if (!reqUserId) return DEFAULT_WALLET;
+function findUserInDb(db: any, queryIdOrPhone: string): any {
+  if (!queryIdOrPhone) return null;
+  const clean = String(queryIdOrPhone).trim();
+  const lowerClean = clean.toLowerCase();
+  const digits = clean.replace(/[^0-9]/g, "");
+  const last10 = digits.length >= 10 ? digits.slice(-10) : (digits.length >= 6 ? digits : "");
 
-  const candidates: Wallet[] = [];
-  const keysToTest = new Set<string>();
-
-  const cleanReq = String(reqUserId).trim();
-  const reqDigits = cleanReq.replace(/[^0-9]/g, "");
-  const reqPhone10 = reqDigits.length >= 10 ? reqDigits.slice(-10) : reqDigits;
-
-  if (cleanReq) keysToTest.add(cleanReq);
-  if (reqDigits) keysToTest.add(reqDigits);
-  if (reqPhone10) keysToTest.add(reqPhone10);
-
-  const user = foundUser || (db.users || []).find((u: any) => {
-    const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
-    return (
-      (reqPhone10 && uPhone10 && uPhone10 === reqPhone10) ||
-      u.id === cleanReq ||
-      (u.loginId && u.loginId.toLowerCase() === cleanReq.toLowerCase())
-    );
+  return (db.users || []).find((u: any) => {
+    if (!u) return false;
+    if (u.id === clean || (u.id && u.id.toLowerCase() === lowerClean)) return true;
+    if (u.loginId && u.loginId.toLowerCase() === lowerClean) return true;
+    const uDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+    const uLast10 = uDigits.length >= 10 ? uDigits.slice(-10) : uDigits;
+    if (digits && uDigits && uDigits === digits) return true;
+    if (last10 && uLast10 && uLast10 === last10) return true;
+    if (u.loginId) {
+      const uLoginDigits = u.loginId.replace(/[^0-9]/g, "");
+      const uLoginLast10 = uLoginDigits.length >= 10 ? uLoginDigits.slice(-10) : uLoginDigits;
+      if (last10 && uLoginLast10 && uLoginLast10 === last10) return true;
+    }
+    return false;
   });
+}
 
+function getAllUserWalletKeys(db: any, queryId: string, foundUser?: any): string[] {
+  const keys = new Set<string>();
+  const clean = String(queryId || "").trim();
+  if (clean) keys.add(clean);
+  const digits = clean.replace(/[^0-9]/g, "");
+  if (digits) keys.add(digits);
+  if (digits.length >= 10) keys.add(digits.slice(-10));
+
+  const user = foundUser || findUserInDb(db, queryId);
   if (user) {
-    if (user.id) keysToTest.add(user.id);
-    if (user.loginId) keysToTest.add(user.loginId);
+    if (user.id) keys.add(user.id);
+    if (user.loginId) keys.add(user.loginId);
     if (user.phone) {
-      const pClean = user.phone.replace(/[^0-9]/g, "");
-      if (pClean) keysToTest.add(pClean);
-      if (pClean.length >= 10) keysToTest.add(pClean.slice(-10));
+      const p = user.phone.replace(/[^0-9]/g, "");
+      if (p) keys.add(p);
+      if (p.length >= 10) keys.add(p.slice(-10));
     }
   }
 
-  keysToTest.forEach((k) => {
+  // Match any existing keys in db.wallets that correspond to this user
+  if (user && db.wallets) {
+    const uDigits = (user.phone || "").replace(/[^0-9]/g, "");
+    const uLast10 = uDigits.slice(-10);
+    const uLoginDigits = (user.loginId || "").replace(/[^0-9]/g, "");
+    const uLoginLast10 = uLoginDigits.slice(-10);
+
+    Object.keys(db.wallets).forEach((k) => {
+      const kDigits = k.replace(/[^0-9]/g, "");
+      const kLast10 = kDigits.slice(-10);
+      if (
+        k === user.id ||
+        k === user.loginId ||
+        (uLast10 && kLast10 && uLast10 === kLast10) ||
+        (uLoginLast10 && kLast10 && uLoginLast10 === kLast10)
+      ) {
+        keys.add(k);
+      }
+    });
+  }
+
+  return Array.from(keys).filter(Boolean);
+}
+
+function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet {
+  if (!reqUserId) return DEFAULT_WALLET;
+
+  const user = foundUser || findUserInDb(db, reqUserId);
+  const keys = getAllUserWalletKeys(db, reqUserId, user);
+
+  // 1. Prefer canonical user.id if present in db.wallets
+  if (user?.id && db.wallets && db.wallets[user.id]) {
+    const canonical = db.wallets[user.id];
+    // Synchronize all other alias keys so they match canonical
+    keys.forEach((k) => {
+      if (k && db.wallets) db.wallets[k] = { ...canonical };
+    });
+    return { ...canonical };
+  }
+
+  // 2. Otherwise search for any available wallet in the user's alias keys
+  let foundWallet: Wallet | null = null;
+  for (const k of keys) {
     if (k && db.wallets && db.wallets[k]) {
-      candidates.push(db.wallets[k]);
+      foundWallet = db.wallets[k];
+      break;
     }
+  }
+
+  if (!foundWallet) {
+    return DEFAULT_WALLET;
+  }
+
+  // Synchronize all alias keys
+  keys.forEach((k) => {
+    if (k && db.wallets) db.wallets[k] = { ...foundWallet };
   });
 
-  if (candidates.length === 0) return DEFAULT_WALLET;
-
-  candidates.sort((a, b) => {
-    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
-    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-    if (valB !== valA) {
-      return valB - valA;
-    }
-    // Tie-breaker 1: Prefer wallet with higher GP balance (result of Cash -> GP swap)
-    const gpA = a.gpBalance || 0;
-    const gpB = b.gpBalance || 0;
-    if (gpB !== gpA) {
-      return gpB - gpA;
-    }
-    // Tie-breaker 2: Prefer wallet with more total invested or total earned
-    const earnedA = (a.totalInvested || 0) + (a.totalEarned || 0) + (a.royaltyEarned || 0);
-    const earnedB = (b.totalInvested || 0) + (b.totalEarned || 0) + (b.royaltyEarned || 0);
-    if (earnedB !== earnedA) {
-      return earnedB - earnedA;
-    }
-    return 0;
-  });
-
-  const best = candidates[0];
-
-  keysToTest.forEach((k) => {
-    if (k && db.wallets) {
-      db.wallets[k] = { ...best };
-    }
-  });
-
-  return { ...best };
+  return { ...foundWallet };
 }
 
   // GET: Central real-time state for any user or admin across the world
@@ -1533,7 +1564,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
         id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         timestamp: Date.now(),
         date: new Date().toISOString(),
-        type: 'USER_FUND_ADD_DEDUCT',
+        type: 'ADMIN_DEDUCT',
         amount: amount,
         balanceBefore: prevBal,
         balanceAfter: db.treasury.balance,
@@ -1546,6 +1577,27 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       syncAdminWalletWithTreasury(db);
       broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
       console.log(`[GCap DB] Transaction Added: ₹${amount} deducted from Company Treasury. New Treasury Balance: ₹${db.treasury.balance}`);
+    } else if (transaction.status === "SUCCESS" && transaction.type === "ADMIN_DEDUCT" && amount > 0) {
+      const prevBal = db.treasury.balance || 0;
+      db.treasury.balance = prevBal + amount;
+      db.treasury.totalTransferredToUsers = Math.max(0, (db.treasury.totalTransferredToUsers || 0) - amount);
+      const treasuryLog = {
+        id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        type: 'ADMIN_ADD',
+        amount: amount,
+        balanceBefore: prevBal,
+        balanceAfter: db.treasury.balance,
+        reason: `Funds reclaimed from user ${transaction.userName || transaction.userId || 'User'} to Company Treasury: ₹${amount}`,
+        reasonHi: `यूज़र ${transaction.userName || transaction.userId || 'User'} से ₹${amount} कंपनी ट्रेजरी में वापस जमा`,
+        actor: 'Super Admin (admin)',
+        referenceId: transaction.referenceId || transaction.id,
+      };
+      db.treasuryLogs.unshift(treasuryLog);
+      syncAdminWalletWithTreasury(db);
+      broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
+      console.log(`[GCap DB] Transaction Added: ₹${amount} credited back to Company Treasury. New Treasury Balance: ₹${db.treasury.balance}`);
     }
 
     saveDb(db);
@@ -1794,24 +1846,18 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
     const db = ensureDb();
     const cleanId = String(userId).trim();
-    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
 
-    // Multi-criteria user lookup
-    const user = db.users.find(
-      (u) =>
-        u.id === cleanId ||
-        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
-        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
-    );
-
+    // Multi-criteria user lookup using standardized helper
+    const user = findUserInDb(db, cleanId);
     const effectiveUserId = user ? user.id : cleanId;
 
-    // Retrieve existing wallet checking effectiveUserId, loginId, phone, and cleanId
+    // Retrieve existing wallet checking all user aliases
     const existingWallet = getBestUserWallet(db, cleanId, user);
 
-    let updatedWallet = { ...existingWallet };
+    let updatedWallet: Wallet = { ...existingWallet };
     if (wallet && typeof wallet === 'object') {
       updatedWallet = {
+        ...existingWallet,
         cashBalance: typeof wallet.cashBalance === 'number' ? wallet.cashBalance : existingWallet.cashBalance,
         gpBalance: typeof wallet.gpBalance === 'number' ? wallet.gpBalance : existingWallet.gpBalance,
         totalInvested: typeof wallet.totalInvested === 'number' ? wallet.totalInvested : existingWallet.totalInvested,
@@ -1828,14 +1874,17 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
       const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
 
-      const currentVal = existingWallet[targetWallet] || 0;
+      const currentVal = (wallet && typeof wallet[targetWallet] === 'number')
+        ? wallet[targetWallet]!
+        : (existingWallet[targetWallet] || 0);
+
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {
         calculatedVal = currentVal + amount;
       } else if (adjType === 'DEDUCT') {
-        calculatedVal = currentVal - amount;
+        calculatedVal = Math.max(0, currentVal - amount);
       } else if (adjType === 'SET') {
-        calculatedVal = amount;
+        calculatedVal = Math.max(0, amount);
       }
 
       updatedWallet[targetWallet] = calculatedVal;
@@ -1874,20 +1923,20 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       const amount = Number(adjustment.amount);
       const adjType = adjustment.type || 'ADD';
       const targetWallet = adjustment.targetWallet || 'cashBalance';
-      if (targetWallet === 'cashBalance' || targetWallet === 'gpBalance') {
-        if (adjType === 'ADD') {
-          netTransferToUser = amount;
-        } else if (adjType === 'DEDUCT') {
-          netTransferToUser = -amount;
-        } else if (adjType === 'SET') {
-          const currentVal = existingWallet[targetWallet] || 0;
-          netTransferToUser = amount - currentVal;
-        }
+      if (adjType === 'ADD') {
+        netTransferToUser = amount;
+      } else if (adjType === 'DEDUCT') {
+        netTransferToUser = -amount;
+      } else if (adjType === 'SET') {
+        const currentVal = (existingWallet as any)[targetWallet] || 0;
+        netTransferToUser = amount - currentVal;
       }
     } else if (wallet && typeof wallet === 'object') {
       const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existingWallet.cashBalance || 0)) : 0;
       const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existingWallet.gpBalance || 0)) : 0;
-      netTransferToUser = cashDiff + gpDiff;
+      const earnDiff = typeof wallet.totalEarned === 'number' ? (wallet.totalEarned - (existingWallet.totalEarned || 0)) : 0;
+      const royDiff = typeof wallet.royaltyEarned === 'number' ? (wallet.royaltyEarned - (existingWallet.royaltyEarned || 0)) : 0;
+      netTransferToUser = cashDiff + gpDiff + earnDiff + royDiff;
     }
 
     if (netTransferToUser > 0) {
@@ -1935,19 +1984,10 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     }
 
     // Synchronize and persist updated wallet under ALL alias keys for this user
-    const keysToSave = new Set<string>();
-    if (cleanId) keysToSave.add(cleanId);
-    if (effectiveUserId) keysToSave.add(effectiveUserId);
-    if (user?.id) keysToSave.add(user.id);
-    if (user?.loginId) keysToSave.add(user.loginId);
-    if (user?.phone) {
-      const cleanP = user.phone.replace(/[^0-9]/g, "");
-      if (cleanP) keysToSave.add(cleanP);
-      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
-    }
+    const keysToSave = getAllUserWalletKeys(db, cleanId, user);
 
     keysToSave.forEach((k) => {
-      if (k) db.wallets[k] = { ...updatedWallet };
+      if (k && db.wallets) db.wallets[k] = { ...updatedWallet };
     });
 
     db.lastUpdated = new Date().toISOString();
@@ -1972,30 +2012,17 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
     const db = ensureDb();
     const cleanId = String(userId).trim();
-    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
-    const user = db.users.find(
-      (u) =>
-        u.id === cleanId ||
-        (u.loginId && u.loginId.toLowerCase() === cleanId.toLowerCase()) ||
-        (cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits)
-    );
+    const user = findUserInDb(db, cleanId);
 
     const updated = { ...DEFAULT_WALLET, ...wallet };
-    const keysToSave = new Set<string>();
-    keysToSave.add(cleanId);
-    if (user?.id) keysToSave.add(user.id);
-    if (user?.loginId) keysToSave.add(user.loginId);
-    if (user?.phone) {
-      const cleanP = user.phone.replace(/[^0-9]/g, "");
-      if (cleanP) keysToSave.add(cleanP);
-      if (cleanP.length >= 10) keysToSave.add(cleanP.slice(-10));
-    }
+    const keysToSave = getAllUserWalletKeys(db, cleanId, user);
 
     keysToSave.forEach((k) => {
-      if (k) db.wallets[k] = updated;
+      if (k && db.wallets) db.wallets[k] = { ...updated };
     });
 
-    saveDb(db);
+    db.lastUpdated = new Date().toISOString();
+    saveDb(db, true);
 
     keysToSave.forEach((k) => {
       if (k) {

@@ -119,6 +119,7 @@ interface AdminPanelProps {
   onSimulateMaturity641Days?: (investmentId: string) => void;
   onAdminAddCompanyBalance: (amount: number, reason: string, reasonHi: string, refId?: string) => void;
   onAdminDeductCompanyBalance: (amount: number, reason: string, reasonHi: string, refId?: string) => void;
+  onUpdateTreasuryDirect?: (treasury: CompanyTreasury, logs?: TreasuryLog[]) => void;
   onResetSystemFresh?: () => void;
   onQuickAddCompanyBalance: (amount: number) => void;
   onResetTreasury: () => void;
@@ -165,6 +166,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSimulateMaturity641Days,
   onAdminAddCompanyBalance,
   onAdminDeductCompanyBalance,
+  onUpdateTreasuryDirect,
   onResetSystemFresh,
   onQuickAddCompanyBalance,
   onResetTreasury,
@@ -371,6 +373,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       amount: number;
       reason?: string;
     };
+    isPasswordChanged?: boolean;
     backdatedPlanId?: string;
     backdatedAmount?: number;
     backdatedWithdrawal?: number;
@@ -409,8 +412,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           console.warn('User update error:', res.error);
         }
         
-        // ONLY announce password change if the password was actually altered from previous value
-        if (isPasswordActuallyChanged) {
+        // ONLY announce password change if the password was explicitly changed AND no wallet balance was adjusted
+        if (data.isPasswordChanged && !data.walletAdjustment && !data.walletUpdates) {
           audioAnnouncer.announcePasswordChange({
             userName: data.name,
             language: language === 'hi' ? 'hi' : 'en',
@@ -480,32 +483,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             ...(data.loginId ? { [data.loginId]: w } : {}),
           }));
 
+          // Direct treasury state synchronization from authoritative backend response
+          if (adjustRes.treasury && onUpdateTreasuryDirect) {
+            onUpdateTreasuryDirect(adjustRes.treasury, (adjustRes as any).treasuryLogs);
+          }
+
           // Calculate exact net fund credited or debited to user
           let netAdded = 0;
           let netDeducted = 0;
 
           if (data.walletAdjustment?.amount && data.walletAdjustment.amount > 0) {
-            const isCashOrGp = !data.walletAdjustment.targetWallet || data.walletAdjustment.targetWallet === 'cashBalance' || data.walletAdjustment.targetWallet === 'gpBalance';
-            if (isCashOrGp) {
-              if (data.walletAdjustment.type === 'ADD') {
-                netAdded = data.walletAdjustment.amount;
-              } else if (data.walletAdjustment.type === 'DEDUCT') {
-                netDeducted = data.walletAdjustment.amount;
-              } else if (data.walletAdjustment.type === 'SET') {
-                const prevVal = (data.walletAdjustment.targetWallet === 'gpBalance' ? prevTargetWallet.gpBalance : prevTargetWallet.cashBalance) || 0;
-                if (data.walletAdjustment.amount > prevVal) {
-                  netAdded = data.walletAdjustment.amount - prevVal;
-                } else if (data.walletAdjustment.amount < prevVal) {
-                  netDeducted = prevVal - data.walletAdjustment.amount;
-                }
+            if (data.walletAdjustment.type === 'ADD') {
+              netAdded = data.walletAdjustment.amount;
+            } else if (data.walletAdjustment.type === 'DEDUCT') {
+              netDeducted = data.walletAdjustment.amount;
+            } else if (data.walletAdjustment.type === 'SET') {
+              const targetKey = data.walletAdjustment.targetWallet || 'cashBalance';
+              const prevVal = ((prevTargetWallet as any)[targetKey]) || 0;
+              if (data.walletAdjustment.amount > prevVal) {
+                netAdded = data.walletAdjustment.amount - prevVal;
+              } else if (data.walletAdjustment.amount < prevVal) {
+                netDeducted = prevVal - data.walletAdjustment.amount;
               }
             }
           } else if (data.walletUpdates) {
             const prevCash = prevTargetWallet.cashBalance || 0;
             const prevGp = prevTargetWallet.gpBalance || 0;
+            const prevEarn = prevTargetWallet.totalEarned || 0;
+            const prevRoy = prevTargetWallet.royaltyEarned || 0;
             const newCash = data.walletUpdates.cashBalance !== undefined ? data.walletUpdates.cashBalance : prevCash;
             const newGp = data.walletUpdates.gpBalance !== undefined ? data.walletUpdates.gpBalance : prevGp;
-            const diff = (newCash - prevCash) + (newGp - prevGp);
+            const newEarn = data.walletUpdates.totalEarned !== undefined ? data.walletUpdates.totalEarned : prevEarn;
+            const newRoy = data.walletUpdates.royaltyEarned !== undefined ? data.walletUpdates.royaltyEarned : prevRoy;
+            const diff = (newCash - prevCash) + (newGp - prevGp) + (newEarn - prevEarn) + (newRoy - prevRoy);
             if (diff > 0) {
               netAdded = diff;
             } else if (diff < 0) {
@@ -513,26 +523,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }
           }
 
-          // If money was added to user wallet, deduct from Company Treasury Balance (e.g. 11,00,000) & Announce Balance Credit
+          // Announce relevant wallet action
           if (netAdded > 0) {
-            onAdminDeductCompanyBalance(
-              netAdded,
-              `Direct Balance Credit to user ${data.name} (${data.phone}): ₹${netAdded} deducted from Company Treasury`,
-              `यूज़र ${data.name} (${data.phone}) के वॉलेट में सीधा फंड जोड़ा गया: ₹${netAdded} कंपनी बैलेंस से डिडक्ट हुआ।`,
-              `ADM-USER-${targetUserId.slice(-6)}`
-            );
             audioAnnouncer.announceBalanceCredit({
               userName: data.name,
               amount: netAdded,
               language: language === 'hi' ? 'hi' : 'en',
             });
           } else if (netDeducted > 0) {
-            onAdminAddCompanyBalance(
-              netDeducted,
-              `Reclaimed balance from user ${data.name} (${data.phone}): ₹${netDeducted} credited back to Company Treasury`,
-              `यूज़र ${data.name} (${data.phone}) से कंपनी बैलेंस में वापस जमा: ₹${netDeducted}`,
-              `REC-USER-${targetUserId.slice(-6)}`
-            );
             audioAnnouncer.announceBalanceDeduct({
               userName: data.name,
               amount: netDeducted,
