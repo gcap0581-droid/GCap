@@ -154,8 +154,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   placeholder={
                     isHi
-                      ? 'प्लान्स, रिटर्न खोजें (641D, 365D)...'
-                      : 'Search plans, daily ROI (641D, 365D)...'
+                      ? 'प्लान्स, रिटर्न खोजें (641D, 375D)...'
+                      : 'Search plans, daily ROI (641D, 375D)...'
                   }
                   className="w-full pl-8 pr-16 py-1.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
                 />

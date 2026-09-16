@@ -53,18 +53,18 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     userLoginId: "917808056040",
     userPhone: "+91 7808056040",
     userName: "Sandhya",
-    planId: "short-term",
-    planName: "641-Day High Yield Growth Plan",
-    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
-    planUniqueId: "STP-641D-89421",
+    planId: "long-term",
+    planName: "375-Day Long Term Royalty Asset Plan",
+    planNameHi: "375-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
+    planUniqueId: "LTP-375D-89421",
     investedAmount: 10000,
-    dailyRoiPercent: 0.164,
-    dailyReturnAmount: 16.4,
-    totalExpectedReturn: 20512.4,
+    dailyRoiPercent: 0.128,
+    dailyReturnAmount: 12.8,
+    totalExpectedReturn: 14800,
     earnedSoFar: 0,
     claimedSoFar: 0,
     unclaimedEarnings: 0,
-    durationDays: 641,
+    durationDays: 375,
     status: "ACTIVE",
     startDate: new Date().toISOString(),
     createdAt: Date.now() - 3600000,
@@ -128,6 +128,32 @@ export function getStoredInvestments(): ActiveInvestment[] {
       workingList = [...parsed, ...INITIAL_INVESTMENTS.filter(init => !parsed.some(p => p.id === init.id))];
       setStoredInvestments(workingList);
     }
+
+    // Auto-migrate: convert any investments under 100,000 (1 Lakh) that are misclassified as short-term to the 375-day long-term plan
+    let migrated = false;
+    workingList = workingList.map((inv) => {
+      if (inv.investedAmount < 100000 && (inv.planId === 'short-term' || inv.durationDays === 641 || (inv.planUniqueId && inv.planUniqueId.startsWith('STP-641D')))) {
+        migrated = true;
+        const shortCode = inv.planUniqueId?.split('-').pop() || inv.id.replace(/[^0-9]/g, '').slice(-5) || '89421';
+        return {
+          ...inv,
+          planId: "long-term",
+          planName: "375-Day Long Term Royalty Asset Plan",
+          planNameHi: "375-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
+          planUniqueId: `LTP-375D-${shortCode}`,
+          durationDays: 375,
+          dailyRoiPercent: 0.128,
+          dailyReturnAmount: inv.investedAmount * 0.128 / 100,
+          totalExpectedReturn: (inv.investedAmount * 0.128 / 100) * 375,
+        };
+      }
+      return inv;
+    });
+
+    if (migrated) {
+      setStoredInvestments(workingList);
+    }
+
     // Normalize properties for all investments
     return workingList.map((inv) => {
       const activation = inv.activationTimestamp || (inv.startDate ? new Date(inv.startDate).getTime() : Date.now());
@@ -136,7 +162,7 @@ export function getStoredInvestments(): ActiveInvestment[] {
       const cycleHours = inv.cycleDurationHours || 6;
       
       const isShortTerm = inv.planId === 'short-term';
-      const duration = isShortTerm ? 641 : (inv.durationDays || 365);
+      const duration = isShortTerm ? 641 : (inv.durationDays || 375);
       const investedAmount = isShortTerm && inv.investedAmount < 10000 ? 10000 : inv.investedAmount;
       // 0.041% per 6h for short term (0.164% daily), 0.032% per 6h for long term (0.128% daily)
       const cycleReturn = isShortTerm
@@ -145,7 +171,7 @@ export function getStoredInvestments(): ActiveInvestment[] {
 
       const planUniqueId = inv.planUniqueId || (isShortTerm 
         ? `STP-641D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '89421'}`
-        : `LTP-365D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '72910'}`);
+        : `LTP-375D-${inv.id.replace(/[^0-9]/g, '').slice(-5) || '72910'}`);
 
       const alignedTiming = alignInvestmentCycleTimestamps({
         isInitialLockCompleted: isLockDone,
@@ -172,6 +198,7 @@ export function getStoredInvestments(): ActiveInvestment[] {
         currentCycleEndTimestamp: alignedTiming.currentCycleEndTimestamp,
         completedCyclesCount: inv.completedCyclesCount || 0,
         cycleReturnAmount: cycleReturn,
+        daysCompleted: inv.daysCompleted || 0,
       };
     });
   } catch {

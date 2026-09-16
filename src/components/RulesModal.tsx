@@ -187,7 +187,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                     }}
                     className="p-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <span>📈 365D लॉन्ग टर्म गाइड PDF</span>
+                    <span>📈 375D लॉन्ग टर्म गाइड PDF</span>
                   </button>
 
                   <button

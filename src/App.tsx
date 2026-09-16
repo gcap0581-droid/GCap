@@ -1929,7 +1929,7 @@ export default function App() {
     const cycleReturn = (amount * (plan.dailyRoiPercent / 4)) / 100;
 
     const uniqueCode = plan.id === 'long-term' 
-      ? `LTP-365D-${Math.floor(10000 + Math.random() * 90000)}`
+      ? `LTP-375D-${Math.floor(10000 + Math.random() * 90000)}`
       : `STP-641D-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const newInvestment: ActiveInvestment = {
@@ -2987,7 +2987,7 @@ export default function App() {
       if (inv.id === investmentId) {
         return {
           ...inv,
-          daysCompleted: 365,
+          daysCompleted: inv.durationDays || 375,
           isMatured: true,
           isInitialLockCompleted: true,
         };
@@ -2997,10 +2997,10 @@ export default function App() {
     setInvestments(updated);
     confetti({ particleCount: 90, spread: 80 });
     showToast(
-      isHi ? '⚡ टेस्ट: 365 दिन परिपक्वता पूर्ण' : '⚡ Test: Fast-Forward 365 Days',
+      isHi ? '⚡ टेस्ट: 375 दिन परिपक्वता पूर्ण' : '⚡ Test: Fast-Forward 375 Days',
       isHi
-        ? '365 दिन की परिपक्वता पूर्ण! अब आप क्लोज अथवा 1461-दिवसीय रॉयल्टी प्लान में जाने का विकल्प चुन सकते हैं।'
-        : '365 days completed! You can now choose to exit with Certificate or enter 1461-Day Royalty Path.'
+        ? '375 दिन की परिपक्वता पूर्ण! अब आप क्लोज अथवा 1461-दिवसीय रॉयल्टी प्लान में जाने का विकल्प चुन सकते हैं।'
+        : '375 days completed! You can now choose to exit with Certificate or enter 1461-Day Royalty Path.'
     );
   };
 
@@ -3072,8 +3072,8 @@ export default function App() {
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
               {isHi
-                ? (liveConfig?.heroSubtextHi || 'शॉर्ट टर्म (641D) एवं लॉन्ग टर्म (365D) में सुरक्षित निवेश करें। 100% मूलधन सुरक्षा एवं स्वचालित 6-घंटे रिटर्न।')
-                : (liveConfig?.heroSubtext || 'Invest safely in Short Term (641D) and Long Term (365D) plans with 100% capital guarantee and 6-hour automated payouts.')}
+                ? (liveConfig?.heroSubtextHi || 'शॉर्ट टर्म (641D) एवं लॉन्ग टर्म (375D) में सुरक्षित निवेश करें। 100% मूलधन सुरक्षा एवं स्वचालित 6-घंटे रिटर्न।')
+                : (liveConfig?.heroSubtext || 'Invest safely in Short Term (641D) and Long Term (375D) plans with 100% capital guarantee and 6-hour automated payouts.')}
             </p>
           </div>
 

@@ -36,7 +36,7 @@ export const PlansList: React.FC<PlansListProps> = ({
 }) => {
   const isHi = language === 'hi';
   const allPlans = plans && plans.length > 0 ? plans : INVESTMENT_PLANS;
-  const [selectedDurationFilter, setSelectedDurationFilter] = useState<'all' | '641' | '365' | 'lifetime'>('all');
+  const [selectedDurationFilter, setSelectedDurationFilter] = useState<'all' | '641' | '375' | 'lifetime'>('all');
 
   // Filter based on search or duration filter
   const filteredPlans = allPlans.filter((plan) => {
@@ -51,7 +51,7 @@ export const PlansList: React.FC<PlansListProps> = ({
     if (!matchesSearch) return false;
 
     if (selectedDurationFilter === '641') return plan.durationDays === 641;
-    if (selectedDurationFilter === '365') return plan.durationDays >= 365 && plan.durationDays < 641;
+    if (selectedDurationFilter === '375') return plan.durationDays >= 375 && plan.durationDays < 641;
     if (selectedDurationFilter === 'lifetime') return plan.durationDays > 641 || plan.name.includes('Royalty');
     return true;
   });
@@ -95,7 +95,7 @@ export const PlansList: React.FC<PlansListProps> = ({
           {[
             { id: 'all', label: isHi ? 'सभी दोनों प्लान्स' : 'All Plans' },
             { id: '641', label: isHi ? '⚡ शॉर्ट टर्म (641D)' : '⚡ Short Term (641D)' },
-            { id: '365', label: isHi ? '👑 लॉन्ग टर्म (365D & रॉयल्टी)' : '👑 Long Term (365D & Royalty)' },
+            { id: '375', label: isHi ? '👑 लॉन्ग टर्म (375D & रॉयल्टी)' : '👑 Long Term (375D & Royalty)' },
           ].map((filt) => (
             <button
               key={filt.id}

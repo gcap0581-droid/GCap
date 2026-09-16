@@ -657,7 +657,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                       }}
                       className="w-full text-left px-3 py-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 text-slate-200 flex items-center justify-between"
                     >
-                      <span>{isHi ? '• उपलब्ध प्लान्स (641D / 365D)' : '• All Investment Plans'}</span>
+                      <span>{isHi ? '• उपलब्ध प्लान्स (641D / 375D)' : '• All Investment Plans'}</span>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                     </button>
                     <button
