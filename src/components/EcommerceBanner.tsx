@@ -55,7 +55,7 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       id: 'deal-long-term',
       tag: isHi ? '👑 लॉन्ग टर्म निवेश व रॉयल्टी प्लान (365 दिन)' : '👑 LONG TERM & ROYALTY PLAN (365 DAYS)',
       tagColor: 'bg-emerald-400 text-slate-950 font-black',
-      title: isHi ? 'लॉन्ग टर्म प्लान — 365 दिन लॉक • हर 6 घंटे में 0.031% GP + 5-वर्ष रॉयल्टी' : 'Long Term Plan — 365-Day Lock • 0.031% GP Every 6 Hours + Royalty',
+      title: isHi ? 'लॉन्ग टर्म प्लान — 365 दिन लॉक • हर 6 घंटे में 0.032% GP + 5-वर्ष रॉयल्टी' : 'Long Term Plan — 365-Day Lock • 0.032% GP Every 6 Hours + Royalty',
       desc: isHi
         ? 'निवेश सीमा ₹10,000 - ₹1,00,000 • 365 दिन पर मूलधन वापसी या 1461 दिन रॉयल्टी विकल्प (1825 दिन तक लगातार रॉयल्टी अर्निंग)'
         : 'Deposit ₹10,000 - ₹1,00,000 • 365-day exit or 1461-day Royalty Pathway (earn continuous royalty for 1825 days)',

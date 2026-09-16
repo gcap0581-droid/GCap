@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Coins, ArrowRight, CheckCircle2, Building2, Wallet, Sparkles } from 'lucide-react';
 import { CompanyTreasury, Language } from '../../types';
 import { formatINR } from '../../utils/storage';
+import { getStoredRules } from '../../utils/rulesStorage';
 
 interface ConvertFeeGpModalProps {
   isOpen: boolean;
@@ -29,7 +30,9 @@ export const ConvertFeeGpModal: React.FC<ConvertFeeGpModalProps> = ({
   if (!isOpen) return null;
 
   const numGp = parseFloat(gpAmountInput) || 0;
-  const rupeeEquivalent = numGp * 1.0; // 1 GP = ₹1.00
+  const activeRules = getStoredRules();
+  const gpRate = activeRules?.gpRatePerRupee && activeRules.gpRatePerRupee > 0 ? activeRules.gpRatePerRupee : 0.98;
+  const rupeeEquivalent = numGp / gpRate; // Dynamic GP to Rupee conversion based on rate
 
   const handleMaxClick = () => {
     setGpAmountInput(effectiveFeeGpBalance.toString());
@@ -139,7 +142,7 @@ export const ConvertFeeGpModal: React.FC<ConvertFeeGpModalProps> = ({
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1.5 text-xs">
             <div className="flex items-center justify-between text-slate-400">
               <span>{isHi ? 'कन्वर्ट रेट (1 GP):' : 'Conversion Rate (1 GP):'}</span>
-              <span className="font-mono text-emerald-400 font-bold">₹1.00 INR</span>
+              <span className="font-mono text-emerald-400 font-bold">₹{(1 / gpRate).toFixed(4)} INR</span>
             </div>
             <div className="flex items-center justify-between pt-1 border-t border-slate-900 font-bold">
               <span className="text-slate-300">{isHi ? 'प्राप्त होने वाले रुपये (INR):' : 'Rupees to receive:'}</span>

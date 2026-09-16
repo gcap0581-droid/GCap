@@ -2,7 +2,7 @@ import { AppRules } from '../types';
 
 export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCap',
-  gpRatePerRupee: 1.0, // 1 INR = 1.0 GP (Adjustable by Admin anytime)
+  gpRatePerRupee: 0.98, // 1 INR = 0.98 GP (Adjustable by Admin anytime)
   minDeposit: 100,
   maxDeposit: Number.MAX_SAFE_INTEGER, // Unlimited upper deposit limit
   minWithdrawal: 200,

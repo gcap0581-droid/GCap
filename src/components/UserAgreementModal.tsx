@@ -421,7 +421,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                 </div>
                 <ul className="text-[11px] text-slate-300 print:text-slate-700 space-y-1 list-disc list-inside">
                   <li><b>{isHi ? 'अवधि:' : 'Tenure:'}</b> {longTermPlan.durationDays} {isHi ? 'दिन + रॉयल्टी सुरक्षा' : 'Days + Royalty Gateway'}</li>
-                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {longTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.031% प्रति 6 घंटे)' : 'per day (0.031% per 6h)'}</li>
+                  <li><b>{isHi ? 'दैनिक रिटर्न:' : 'Daily ROI:'}</b> {longTermPlan.dailyRoiPercent}% {isHi ? 'प्रति दिन (0.032% प्रति 6 घंटे)' : 'per day (0.032% per 6h)'}</li>
                   <li><b>{isHi ? 'रॉयल्टी निकासी:' : 'Royalty Window:'}</b> {isHi ? 'हर माह 6 से 10 तारीख तक' : '6th to 10th of each month'}</li>
                   <li><b>{isHi ? 'रॉयल्टी पात्रता:' : 'Royalty Stage:'}</b> {isHi ? '1461D लॉक उपरांत आजीवन रॉयल्टी' : 'Eligible for long term royalty stream'}</li>
                 </ul>

@@ -17,6 +17,7 @@ import {
 import { InvestmentPlan, Language } from '../types';
 import { INVESTMENT_PLANS } from '../data/plans';
 import { formatINR } from '../utils/storage';
+import { getStoredRules } from '../utils/rulesStorage';
 
 interface PlansListProps {
   language: Language;
@@ -244,12 +245,15 @@ export const PlansList: React.FC<PlansListProps> = ({
 
                 {/* Key Benefits List */}
                 <ul className="space-y-1.5 text-xs text-slate-300 border-t border-slate-800/80 pt-3 mb-5">
-                  {(isHi ? plan.featuresHi : plan.features).map((feat, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span className="leading-snug">{feat}</span>
-                    </li>
-                  ))}
+                  {(isHi ? plan.featuresHi : plan.features).map((feat, idx) => {
+                    const dynamicFeat = feat.replace(/1\s*GP\s*=\s*₹1(\s*INR)?/gi, `₹1 = ${getStoredRules().gpRatePerRupee ?? 0.98} GP`);
+                    return (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="leading-snug">{dynamicFeat}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 

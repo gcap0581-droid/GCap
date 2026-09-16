@@ -225,8 +225,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const cycleClock = formatCountdown(cycleRemainingMs);
 
             const isLongTerm = inv.planId === 'long-term' || !!inv.royaltyStage;
-            const cyclePercentStr = isLongTerm ? '0.031%' : '0.041%';
-            const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount * (isLongTerm ? 0.031 : 0.041) / 100);
+            const cyclePercentStr = isLongTerm ? '0.032%' : '0.041%';
+            const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount * (isLongTerm ? 0.032 : 0.041) / 100);
             const planUniqueCode = inv.planUniqueId || (isLongTerm ? `LTP-365D-${inv.id.slice(-5)}` : `STP-641D-${inv.id.slice(-5)}`);
             const isMatured = (inv.royaltyStage === '1825D_ROYALTY' ? (inv.royaltyDaysCompleted || 0) >= 1825 : inv.daysCompleted >= inv.durationDays) || inv.isMatured;
             const isCompleted = inv.status === 'COMPLETED';

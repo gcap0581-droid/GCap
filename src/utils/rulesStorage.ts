@@ -12,7 +12,11 @@ export function getStoredRules(): AppRules {
       return DEFAULT_GCAP_RULES;
     }
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_GCAP_RULES, ...parsed };
+    const rules = { ...DEFAULT_GCAP_RULES, ...parsed };
+    if (rules.gpRatePerRupee === 1.0) {
+      rules.gpRatePerRupee = 0.98;
+    }
+    return rules;
   } catch {
     return DEFAULT_GCAP_RULES;
   }

@@ -1046,7 +1046,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                   >
                     <option value="">{isHi ? '-- कोई नया प्लान नहीं जोड़ना --' : '-- No New Plan Allocation --'}</option>
                     <option value="SHORT_TERM_641D">641D Short Term Plan (0.041% / 6h, 641 Days Total)</option>
-                    <option value="LONG_TERM_365D">365D Long Term Plan (0.031% / 6h + 1825D Royalty)</option>
+                    <option value="LONG_TERM_365D">365D Long Term Plan (0.032% / 6h + 1825D Royalty)</option>
                   </select>
                 </div>
 

@@ -15,6 +15,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Language, AppRules } from '../types';
 import { formatINR } from '../utils/storage';
+import { getStoredRules } from '../utils/rulesStorage';
 
 interface DepositModalProps {
   isOpen: boolean;
@@ -153,8 +154,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               </li>
               <li>
                 {isHi
-                  ? 'सत्यापन के बाद आप अपनी इच्छानुसार जितना चाहें उतना कैश GP में स्वैप कर (1 GP = ₹1) प्लान खरीद सकते हैं। शेष कैश वॉलेट में सुरक्षित रहेगा।'
-                  : 'After verification, swap any desired cash into GP (1 GP = ₹1) to purchase plans. Remaining cash stays intact.'}
+                  ? `सत्यापन के बाद आप अपनी इच्छानुसार जितना चाहें उतना कैश GP में स्वैप कर (₹1 = ${rules?.gpRatePerRupee ?? getStoredRules().gpRatePerRupee ?? 0.98} GP) प्लान खरीद सकते हैं। शेष कैश वॉलेट में सुरक्षित रहेगा।`
+                  : `After verification, swap any desired cash into GP (@ ₹1 = ${rules?.gpRatePerRupee ?? getStoredRules().gpRatePerRupee ?? 0.98} GP) to purchase plans. Remaining cash stays intact.`}
               </li>
             </ul>
           </div>

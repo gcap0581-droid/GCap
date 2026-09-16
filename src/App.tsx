@@ -2861,8 +2861,8 @@ export default function App() {
     showToast(
       isHi ? '👑 1461-दिवसीय रॉयल्टी लॉक सक्रिय!' : '👑 1461-Day Royalty Lock Activated!',
       isHi
-        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.031% GP प्राप्त होता रहेगा।`
-        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.031% GP credited every 6 hours.`
+        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.032% GP प्राप्त होता रहेगा।`
+        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.032% GP credited every 6 hours.`
     );
   };
 
@@ -2919,7 +2919,7 @@ export default function App() {
       isHi ? '👑 मूलधन वापस प्राप्त & 1825-दिवसीय रॉयल्टी रिवॉर्ड प्रारंभ!' : '👑 Principal Returned & 1825-Day Royalty Started!',
       isHi
         ? `+${formatINR(payoutAmount)} (मूलधन + अर्निंग) आपके वॉलेट में ट्रांसफर कर दिए गए हैं! मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार अर्निंग मिलती रहेगी।`
-        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.031% GP every 6 hours for 1825 days.`
+        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.032% GP every 6 hours for 1825 days.`
     );
   };
 

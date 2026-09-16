@@ -4,6 +4,7 @@ import { ActiveInvestment, Language, UserProfile, CompanyProfile } from '../type
 import { formatINR } from '../utils/storage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
+import { getStoredRules } from '../utils/rulesStorage';
 
 interface MaturityCertificateModalProps {
   isOpen: boolean;
@@ -192,7 +193,7 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
           <div className="my-6 border border-slate-800 rounded-2xl overflow-hidden print:border-slate-300">
             <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-xs font-bold text-amber-400 print:bg-slate-100 print:text-slate-900 print:border-slate-300">
               <span>{isHi ? 'निवेश एवं परिपक्वता विवरण (Financial Statement)' : 'Investment & Payout Statement'}</span>
-              <span className="font-mono text-[10px] text-slate-400 print:text-slate-600">1 GP = ₹1 INR</span>
+              <span className="font-mono text-[10px] text-slate-400 print:text-slate-600">₹1 = {getStoredRules().gpRatePerRupee ?? 0.98} GP</span>
             </div>
             <div className="p-4 bg-slate-900/90 space-y-2.5 text-xs print:bg-white print:text-slate-900">
               <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-slate-200">
@@ -205,7 +206,7 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-slate-200">
                 <span className="text-slate-300 print:text-slate-700">{isHi ? 'कुल पूर्ण चक्र (6h Cycles Completed):' : 'Total 6h Cycles:'}</span>
-                <span className="font-mono font-bold text-slate-200 print:text-slate-900">{totalCycles} {isHi ? `चक्र (${investment.planId === 'long-term' ? '0.031%' : '0.041%'} GP/चक्र)` : 'Cycles'}</span>
+                <span className="font-mono font-bold text-slate-200 print:text-slate-900">{totalCycles} {isHi ? `चक्र (${investment.planId === 'long-term' ? '0.032%' : '0.041%'} GP/चक्र)` : 'Cycles'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60 print:border-slate-200">
                 <span className="text-slate-300 print:text-slate-700">{isHi ? 'कुल संचित लाभ (Total Earning Generated):' : 'Total Earnings Generated:'}</span>
