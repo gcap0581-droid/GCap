@@ -21,7 +21,34 @@ const INITIAL_WALLET: Wallet = {
 
 const INITIAL_INVESTMENTS: ActiveInvestment[] = [
   {
-    id: "inv-sandhya-7808056040",
+    id: "inv-sandhya-7808056040-1",
+    userId: "usr-1789384741169",
+    userLoginId: "917808056040",
+    userPhone: "+91 7808056040",
+    userName: "Sandhya",
+    planId: "short-term",
+    planName: "641-Day High Yield Growth Plan",
+    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+    planUniqueId: "STP-641D-86172",
+    investedAmount: 100000,
+    dailyRoiPercent: 0.164,
+    dailyReturnAmount: 164,
+    totalExpectedReturn: 205124,
+    earnedSoFar: 0,
+    claimedSoFar: 0,
+    unclaimedEarnings: 0,
+    durationDays: 641,
+    status: "ACTIVE",
+    startDate: new Date().toISOString(),
+    createdAt: Date.now(),
+    activationTimestamp: Date.now(),
+    lockedUntilTimestamp: Date.now() + 24 * 3600 * 1000,
+    isInitialLockCompleted: false,
+    cyclesCompleted: 0,
+    totalEarnedSoFar: 0
+  },
+  {
+    id: "inv-sandhya-7808056040-2",
     userId: "usr-1789384741169",
     userLoginId: "917808056040",
     userPhone: "+91 7808056040",
@@ -33,16 +60,16 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     investedAmount: 10000,
     dailyRoiPercent: 0.164,
     dailyReturnAmount: 16.4,
-    totalExpectedReturn: 10512.4,
+    totalExpectedReturn: 20512.4,
     earnedSoFar: 0,
     claimedSoFar: 0,
     unclaimedEarnings: 0,
     durationDays: 641,
     status: "ACTIVE",
     startDate: new Date().toISOString(),
-    createdAt: Date.now(),
-    activationTimestamp: Date.now(),
-    lockedUntilTimestamp: Date.now() + 24 * 3600 * 1000, // 24 hours from now in lock
+    createdAt: Date.now() - 3600000,
+    activationTimestamp: Date.now() - 3600000,
+    lockedUntilTimestamp: Date.now() + 23 * 3600 * 1000,
     isInitialLockCompleted: false,
     cyclesCompleted: 0,
     totalEarnedSoFar: 0
@@ -93,8 +120,16 @@ export function getStoredInvestments(): ActiveInvestment[] {
       setStoredInvestments(INITIAL_INVESTMENTS);
       return INITIAL_INVESTMENTS;
     }
+    // Ensure both Sandhya plans exist
+    const hasSandhya1 = parsed.some(i => i.id === 'inv-sandhya-7808056040-1' || (i.userPhone?.includes('7808056040') && i.investedAmount === 100000));
+    const hasSandhya2 = parsed.some(i => i.id === 'inv-sandhya-7808056040-2' || (i.userPhone?.includes('7808056040') && i.investedAmount === 10000));
+    let workingList = parsed;
+    if (!hasSandhya1 || !hasSandhya2) {
+      workingList = [...parsed, ...INITIAL_INVESTMENTS.filter(init => !parsed.some(p => p.id === init.id))];
+      setStoredInvestments(workingList);
+    }
     // Normalize properties for all investments
-    return parsed.map((inv) => {
+    return workingList.map((inv) => {
       const activation = inv.activationTimestamp || (inv.startDate ? new Date(inv.startDate).getTime() : Date.now());
       const lockedUntil = inv.lockedUntilTimestamp || (activation + 24 * 3600 * 1000);
       const isLockDone = inv.isInitialLockCompleted ?? (Date.now() >= lockedUntil);
