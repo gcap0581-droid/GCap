@@ -989,8 +989,21 @@ function ensureDb(): ServerDB {
 
     // Reconcile and ensure all fields exist
     let needsSave = false;
-    if (!parsed.users || !Array.isArray(parsed.users)) parsed.users = DEFAULT_ACCOUNTS;
+    if (!parsed.users || !Array.isArray(parsed.users)) {
+      parsed.users = DEFAULT_ACCOUNTS;
+      needsSave = true;
+    }
     
+    // Check if any default users are missing and add them ONLY if they don't exist
+    // DO NOT overwrite existing users
+    DEFAULT_ACCOUNTS.forEach(defUser => {
+      const exists = parsed.users.find((u: StoredAccount) => u.id === defUser.id || u.loginId === defUser.loginId);
+      if (!exists) {
+        parsed.users.push({ ...defUser });
+        needsSave = true;
+      }
+    });
+
     if (!parsed.deletedUserIds || !Array.isArray(parsed.deletedUserIds)) {
       parsed.deletedUserIds = [];
     }
@@ -2707,6 +2720,8 @@ async function startServer() {
       account.role === "ADMIN" ||
       (account.loginId || "").toLowerCase() === "admin" ||
       trimmedId === "admin";
+
+    console.log(`[LOGIN DEBUG] Found user ${account.loginId}. Passed pass: "${trimmedPass}". DB Hash: "${account.passwordHash}". Account obj pass: "${(account as any).password}"`);
 
     const isPassCorrect =
       account.passwordHash === trimmedPass ||
