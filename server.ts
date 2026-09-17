@@ -265,7 +265,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     email: "gcap0581@gmail.com",
     joinedDate: "2026-09-16",
     status: "ACTIVE",
-    passwordHash: "12345",
+    passwordHash: "1111",
   },
   {
     id: "usr-1789457522655",
@@ -2714,7 +2714,7 @@ async function startServer() {
       (isAdmin && trimmedPass === "ad123");
 
     if (!isPassCorrect) {
-      console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone || account.loginId}`);
+      console.log(`[LOGIN DEBUG] Password mismatch for user: ${account.phone || account.loginId}. Expected: ${account.passwordHash || (account as any).password}, Received: ${trimmedPass}`);
       return res.status(401).json({
         success: false,
         error: "गलत पासवर्ड। कृपया सही पासवर्ड दर्ज करें।",

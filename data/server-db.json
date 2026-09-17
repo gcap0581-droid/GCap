@@ -1,37 +1,38 @@
 {
   "users": [
     {
-      "passwordHash": "ad123",
-      "loginId": "Admin",
       "id": "usr-admin-01",
-      "name": "GCap System Admin",
-      "joinedDate": "2026-01-01",
-      "phone": "+91 98000 12345",
-      "status": "ACTIVE",
       "role": "ADMIN",
-      "email": "admin@gcap.in"
+      "joinedDate": "2026-01-01",
+      "status": "ACTIVE",
+      "email": "admin@gcap.in",
+      "loginId": "Admin",
+      "name": "GCap System Admin",
+      "phone": "+91 98000 12345",
+      "passwordHash": "ad123"
     },
     {
       "role": "USER",
-      "passwordHash": "12345",
-      "name": "Sandhya",
-      "email": "gcap0581@gmail.com",
+      "status": "ACTIVE",
       "loginId": "7808056040",
       "phone": "+91 7808056040",
+      "joinedDate": "2026-09-16",
+      "name": "Sandhya",
+      "passwordHash": "1111",
+      "email": "gcap0581@gmail.com",
       "id": "usr-1789384741169",
-      "status": "ACTIVE",
-      "joinedDate": "2026-09-16"
+      "password": "1111"
     },
     {
-      "joinedDate": "2026-09-16",
-      "phone": "+91 9661670322",
       "email": "puja@gmail.com",
-      "status": "ACTIVE",
       "name": "Puja kumari",
-      "role": "USER",
       "passwordHash": "12345",
+      "loginId": "9661670322",
       "id": "usr-1789457522655",
-      "loginId": "9661670322"
+      "role": "USER",
+      "status": "ACTIVE",
+      "phone": "+91 9661670322",
+      "joinedDate": "2026-09-16"
     }
   ],
   "wallets": {
@@ -243,62 +244,70 @@
   "transactions": [],
   "plans": [
     {
-      "maxAmount": 1000000000,
-      "features": [
-        "न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)",
-        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
-        "हर 6 घंटे में 0.041% GP लाभ",
-        "महीने की 1 से 5 तारीख तक निकासी"
-      ],
       "id": "short-term",
+      "name": "Short Term Plan (641-Day Plan)",
+      "nameHi": "शॉर्ट टर्म प्लान (641-Day Plan)",
+      "dailyRoiPercent": 0.164,
+      "durationDays": 641,
+      "minAmount": 100000,
+      "maxAmount": 1000000000,
+      "payoutFrequency": "Daily",
       "payoutFrequencyHi": "हर 6 घंटे में 0.041% GP",
       "risk": "Low",
-      "name": "Short Term Plan (641-Day Plan)",
       "tag": "641 Days • First 24h Lock • 0.041%/6h GP",
-      "durationDays": 641,
-      "description": "Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.",
-      "dailyRoiPercent": 0.164,
-      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.041% GP स्वतः जमा।",
       "tagHi": "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.041% GP",
-      "payoutFrequency": "Daily",
-      "badge": "⚡ 641-Day Short Term Plan (Unlimited)",
-      "nameHi": "शॉर्ट टर्म प्लान (641-Day Plan)",
-      "minAmount": 10000,
-      "featuresHi": [
-        "न्यूनतम निवेश ₹10,000 से अधिकतम असीमित (Unlimited)",
+      "badge": "⚡ 641-Day Short Term Plan (Min ₹1 Lakh)",
+      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000 to Unlimited. First 24 hours lock. Earn 0.041% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning.",
+      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.041% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा।",
+      "features": [
+        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
         "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
-        "हर 6 घंटे में 0.041% GP लाभ",
-        "महीने की 1 से 5 तारीख तक निकासी"
+        "हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)",
+        "प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा",
+        "कंपनी के नियमों के तहत निकासी (महीने की 1 से 5 तारीख)",
+        "एक यूजर एक से अधिक प्लान ले सकता है",
+        "641 दिन पूर्ण होने पर पूरा मूलधन व शेष अर्निंग निकासी अथवा उसी ID से रिन्यूअल",
+        "प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र"
+      ],
+      "featuresHi": [
+        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
+        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
+        "हर 6 घंटे में निवेश राशि का 0.041% GP लाभ (1 GP = ₹1)",
+        "प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा",
+        "कंपनी के नियमों के तहत निकासी (महीने की 1 से 5 तारीख)",
+        "एक यूजर एक से अधिक प्लान ले सकता है",
+        "641 दिन पूर्ण होने पर पूरा मूलधन व शेष अर्निंग निकासी अथवा उसी ID से रिन्यूअल",
+        "प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र"
       ]
     },
     {
-      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
-      "featuresHi": [
-        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-        "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
-        "हर 6 घंटे में 0.032% GP लाभ",
-        "महीने की 1 से 5 तारीख तक निकासी"
-      ],
-      "tag": "365 Days • First 24h Lock • 0.032%/6h GP + Royalty",
-      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.032% GP लाभ + रॉयल्टी पाथवे।",
-      "durationDays": 365,
-      "minAmount": 10000,
-      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.032% every 6 hours.",
       "payoutFrequencyHi": "हर 6 घंटे में 0.032% GP",
-      "tagHi": "365 दिन • पहले 24 घंटे का लॉक • 0.032%/6h GP + रॉयल्टी पाथवे",
-      "dailyRoiPercent": 0.128,
-      "name": "Long Term Plan (365-Day & Royalty Plan)",
-      "risk": "Low",
-      "maxAmount": 100000,
-      "id": "long-term",
       "features": [
         "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
         "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
         "हर 6 घंटे में 0.032% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ],
+      "name": "Long Term Plan (365-Day & Royalty Plan)",
+      "minAmount": 10000,
+      "durationDays": 365,
+      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
+      "id": "long-term",
+      "featuresHi": [
+        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
+        "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
+        "हर 6 घंटे में 0.032% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ],
+      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.032% every 6 hours.",
+      "risk": "Low",
+      "tag": "365 Days • First 24h Lock • 0.032%/6h GP + Royalty",
       "payoutFrequency": "Daily",
-      "badge": "👑 365-Day Long Term & Royalty Plan"
+      "badge": "👑 365-Day Long Term & Royalty Plan",
+      "tagHi": "365 दिन • पहले 24 घंटे का लॉक • 0.032%/6h GP + रॉयल्टी पाथवे",
+      "maxAmount": 100000,
+      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.032% GP लाभ + रॉयल्टी पाथवे।",
+      "dailyRoiPercent": 0.128
     }
   ],
   "rules": {
@@ -331,49 +340,49 @@
     "companyBankIfsc": "HDFC0000240"
   },
   "liveConfig": {
-    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
-    "liveBadgeText": "⚡ Live Main DB Connected",
-    "heroHeadline": "Smart Daily Returns & Automated Growth",
-    "maintenanceMessage": "System routine maintenance in progress.",
-    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
-    "bannerType": "success",
     "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
-    "lastUpdated": "2026-09-17 01:02",
-    "autoSyncIntervalSec": 3,
     "themeAccent": "emerald",
-    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
-    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
+    "maintenanceMessage": "System routine maintenance in progress.",
+    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
     "maintenanceMode": false,
-    "appVersion": "v2.5.2-MAIN-DB",
-    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
+    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
+    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
     "bannerEnabled": true,
-    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals."
+    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
+    "autoSyncIntervalSec": 3,
+    "heroHeadline": "Smart Daily Returns & Automated Growth",
+    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
+    "bannerType": "success",
+    "liveBadgeText": "⚡ Live Main DB Connected",
+    "appVersion": "v2.5.2-MAIN-DB",
+    "lastUpdated": "2026-09-17 01:02",
+    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि"
   },
   "bankDetails": {},
   "treasury": {
-    "balance": 600000,
-    "totalDeducted": 0,
     "lastUpdated": "2026-09-17T01:02:08.167Z",
-    "minAlertThreshold": 500000,
+    "balance": 600000,
     "totalTransferredToUsers": 0,
-    "totalInjected": 600000
+    "totalDeducted": 0,
+    "totalInjected": 600000,
+    "minAlertThreshold": 500000
   },
   "treasuryLogs": [
     {
+      "balanceAfter": 600000,
       "timestamp": 1789606928167,
-      "actor": "Super Admin (admin)",
+      "type": "ADMIN_ADD",
       "date": "2026-09-17T01:02:08.167Z",
+      "referenceId": "INJ-600000",
       "balanceBefore": 0,
       "reason": "Initial Company Liquidity Injection into Main Reserve",
-      "amount": 600000,
-      "reasonHi": "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
       "id": "tr-log-1",
-      "balanceAfter": 600000,
-      "type": "ADMIN_ADD",
-      "referenceId": "INJ-600000"
+      "reasonHi": "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
+      "amount": 600000,
+      "actor": "Super Admin (admin)"
     }
   ],
   "messages": [],
   "deletedUserIds": [],
-  "lastUpdated": "2026-09-17T01:08:27.312Z"
+  "lastUpdated": "2026-09-17T02:47:35.846Z"
 }
