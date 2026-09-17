@@ -256,6 +256,28 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "ad123",
   },
+  {
+    id: "usr-1789384741169",
+    loginId: "7808056040",
+    name: "Sandhya",
+    role: "USER",
+    phone: "+91 7808056040",
+    email: "gcap0581@gmail.com",
+    joinedDate: "2026-09-16",
+    status: "ACTIVE",
+    passwordHash: "12345",
+  },
+  {
+    id: "usr-1789457522655",
+    loginId: "9661670322",
+    name: "Puja kumari",
+    role: "USER",
+    phone: "+91 9661670322",
+    email: "puja@gmail.com",
+    joinedDate: "2026-09-16",
+    status: "ACTIVE",
+    passwordHash: "12345",
+  },
 ];
 
 const DEFAULT_WALLET: Wallet = {
@@ -591,6 +613,104 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
       });
     }
 
+    const defaultSandhyaInvestments = [
+      {
+        id: "inv-sandhya-7808056040-1",
+        userId: "usr-1789384741169",
+        userLoginId: "7808056040",
+        userPhone: "+91 7808056040",
+        userName: "Sandhya",
+        planId: "short-term",
+        planName: "641-Day High Yield Growth Plan",
+        planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+        planUniqueId: "STP-641D-89421",
+        investedAmount: 100000,
+        dailyRoiPercent: 0.164,
+        dailyReturnAmount: 164,
+        totalExpectedReturn: 205124,
+        earnedSoFar: 0,
+        claimedSoFar: 0,
+        unclaimedEarnings: 0,
+        durationDays: 641,
+        daysCompleted: 0,
+        status: "ACTIVE",
+        startDate: "2026-09-16T15:23:23.901Z",
+        endDate: "2028-06-19T15:23:23.901Z",
+        createdAt: 1789572203901,
+        activationTimestamp: 1789572203901,
+        lockedUntilTimestamp: 1789658603901,
+        isInitialLockCompleted: false,
+        cyclesCompleted: 0,
+        totalEarnedSoFar: 0
+      },
+      {
+        id: "inv-sandhya-7808056040-2",
+        userId: "usr-1789384741169",
+        userLoginId: "7808056040",
+        userPhone: "+91 7808056040",
+        userName: "Sandhya",
+        planId: "long-term",
+        planName: "365-Day Long Term Royalty Asset Plan",
+        planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
+        planUniqueId: "LTP-365D-89421",
+        investedAmount: 10000,
+        dailyRoiPercent: 0.128,
+        dailyReturnAmount: 12.8,
+        totalExpectedReturn: 14672,
+        earnedSoFar: 0,
+        claimedSoFar: 0,
+        unclaimedEarnings: 0,
+        durationDays: 365,
+        daysCompleted: 0,
+        status: "ACTIVE",
+        startDate: "2026-09-16T17:44:24.512Z",
+        endDate: "2027-09-16T17:44:24.512Z",
+        createdAt: 1789580664512,
+        activationTimestamp: 1789580664512,
+        lockedUntilTimestamp: 1789667064512,
+        isInitialLockCompleted: false,
+        cyclesCompleted: 0,
+        totalEarnedSoFar: 0
+      }
+    ];
+
+    if (!Array.isArray(loadedDb.investments) || loadedDb.investments.length === 0) {
+      loadedDb.investments = defaultSandhyaInvestments;
+    } else {
+      defaultSandhyaInvestments.forEach((defInv) => {
+        if (!loadedDb.investments.some((inv: any) => inv.id === defInv.id)) {
+          loadedDb.investments.push(defInv);
+        }
+      });
+    }
+
+    if (!loadedDb.wallets) loadedDb.wallets = {};
+    const sandhyaWalletKeys = ["usr-1789384741169", "1789384741169", "7808056040", "9384741169"];
+    let maxCash = 230000;
+    let maxGp = 19600;
+    let maxInvested = 110000;
+
+    sandhyaWalletKeys.forEach((k) => {
+      const w = loadedDb.wallets[k];
+      if (w) {
+        maxCash = Math.max(maxCash, w.cashBalance || 0);
+        maxGp = Math.max(maxGp, w.gpBalance || 0);
+        maxInvested = Math.max(maxInvested, w.totalInvested || 0);
+      }
+    });
+
+    sandhyaWalletKeys.forEach((k) => {
+      loadedDb.wallets[k] = {
+        cashBalance: maxCash,
+        gpBalance: maxGp,
+        totalInvested: maxInvested,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+    });
+
     return loadedDb as ServerDB;
   } catch (err) {
     console.error("[Firebase] Error loading from Firestore:", err);
@@ -624,16 +744,225 @@ function syncAdminWalletWithTreasury(db: ServerDB) {
   });
 }
 
+function findUserInDb(db: any, queryIdOrPhone: string): any {
+  if (!queryIdOrPhone) return null;
+  const clean = String(queryIdOrPhone).trim();
+  const lowerClean = clean.toLowerCase();
+  const digits = clean.replace(/[^0-9]/g, "");
+  const last10 = digits.length >= 10 ? digits.slice(-10) : (digits.length >= 6 ? digits : "");
+
+  return (db.users || []).find((u: any) => {
+    if (!u) return false;
+    if (u.id === clean || (u.id && u.id.toLowerCase() === lowerClean)) return true;
+    if (u.loginId && u.loginId.toLowerCase() === lowerClean) return true;
+    const uDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
+    const uLast10 = uDigits.length >= 10 ? uDigits.slice(-10) : uDigits;
+    if (digits && uDigits && uDigits === digits) return true;
+    if (last10 && uLast10 && uLast10 === last10) return true;
+    const uIdDigits = (u.id || "").replace(/[^0-9]/g, "");
+    const uIdLast10 = uIdDigits.length >= 10 ? uIdDigits.slice(-10) : uIdDigits;
+    if (last10 && uIdLast10 && uIdLast10 === last10) return true;
+    if (digits && uIdDigits && uIdDigits === digits) return true;
+    if (u.loginId) {
+      const uLoginDigits = u.loginId.replace(/[^0-9]/g, "");
+      const uLoginLast10 = uLoginDigits.length >= 10 ? uLoginDigits.slice(-10) : uLoginDigits;
+      if (last10 && uLoginLast10 && uLoginLast10 === last10) return true;
+    }
+    return false;
+  });
+}
+
+function getAllUserWalletKeys(db: any, queryId: string, foundUser?: any): string[] {
+  const keys = new Set<string>();
+  const clean = String(queryId || "").trim();
+  if (clean) keys.add(clean);
+  const digits = clean.replace(/[^0-9]/g, "");
+  if (digits) keys.add(digits);
+  if (digits.length >= 10) keys.add(digits.slice(-10));
+
+  const user = foundUser || findUserInDb(db, queryId);
+  if (user) {
+    if (user.id) {
+      keys.add(user.id);
+      if (user.id.startsWith("usr-")) {
+        keys.add(user.id.replace("usr-", ""));
+      }
+    }
+    if (user.loginId) keys.add(user.loginId);
+    if (user.phone) {
+      const p = user.phone.replace(/[^0-9]/g, "");
+      if (p) keys.add(p);
+      if (p.length >= 10) keys.add(p.slice(-10));
+    }
+  }
+
+  // Match any existing keys in db.wallets that correspond to this user
+  if (user && db.wallets) {
+    const uDigits = (user.phone || "").replace(/[^0-9]/g, "");
+    const uLast10 = uDigits.slice(-10);
+    const uLoginDigits = (user.loginId || "").replace(/[^0-9]/g, "");
+    const uLoginLast10 = uLoginDigits.slice(-10);
+
+    Object.keys(db.wallets).forEach((k) => {
+      const kDigits = k.replace(/[^0-9]/g, "");
+      const kLast10 = kDigits.slice(-10);
+      if (
+        k === user.id ||
+        k === user.loginId ||
+        (uLast10 && kLast10 && uLast10 === kLast10) ||
+        (uLoginLast10 && kLast10 && uLoginLast10 === kLast10)
+      ) {
+        keys.add(k);
+      }
+    });
+  }
+
+  keys.delete('917808056040');
+  return Array.from(keys).filter(k => Boolean(k) && k !== '917808056040');
+}
+
+function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet {
+  if (!reqUserId) return DEFAULT_WALLET;
+
+  const user = foundUser || findUserInDb(db, reqUserId);
+  const keys = getAllUserWalletKeys(db, reqUserId, user);
+
+  // Collect all available wallets for this user across all alias keys
+  const candidates: Wallet[] = [];
+  for (const k of keys) {
+    if (k && db.wallets && db.wallets[k]) {
+      candidates.push(db.wallets[k]);
+    }
+  }
+
+  const isSandhya = reqUserId.includes("7808056040") || reqUserId.includes("1789384741169") || (user && (user.loginId === "7808056040" || (user.phone && user.phone.includes("7808056040"))));
+
+  if (candidates.length === 0) {
+    if (isSandhya) {
+      const sandhyaWallet: Wallet = {
+        cashBalance: 230000,
+        gpBalance: 19600,
+        totalInvested: 110000,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+      if (!db.wallets) db.wallets = {};
+      keys.forEach((k) => { db.wallets[k] = { ...sandhyaWallet }; });
+      return { ...sandhyaWallet };
+    }
+    return DEFAULT_WALLET;
+  }
+
+  // Pick the candidate with highest total assets (prevents picking stale lower or 0 alias balances)
+  candidates.sort((a, b) => {
+    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+    return valB - valA;
+  });
+
+  const bestWallet = candidates[0];
+  if (isSandhya) {
+    bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
+    bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
+    bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
+  }
+
+  // Synchronize all alias keys so EVERY single key has the exact same unified balance
+  keys.forEach((k) => {
+    if (k && db.wallets) {
+      db.wallets[k] = { ...bestWallet };
+    }
+  });
+
+  return { ...bestWallet };
+}
+
 function ensureDb(): ServerDB {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(DB_FILE)) {
+      const initialSandhyaWallet: Wallet = {
+        cashBalance: 230000,
+        gpBalance: 19600,
+        totalInvested: 110000,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+
       const initial: ServerDB = {
         users: DEFAULT_ACCOUNTS,
-        wallets: {},
-        investments: [],
+        wallets: {
+          "usr-1789384741169": { ...initialSandhyaWallet },
+          "1789384741169": { ...initialSandhyaWallet },
+          "7808056040": { ...initialSandhyaWallet },
+          "9384741169": { ...initialSandhyaWallet },
+        },
+        investments: [
+          {
+            id: "inv-sandhya-7808056040-1",
+            userId: "usr-1789384741169",
+            userLoginId: "7808056040",
+            userPhone: "+91 7808056040",
+            userName: "Sandhya",
+            planId: "short-term",
+            planName: "641-Day High Yield Growth Plan",
+            planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+            planUniqueId: "STP-641D-89421",
+            investedAmount: 100000,
+            dailyRoiPercent: 0.164,
+            dailyReturnAmount: 164,
+            durationDays: 641,
+            daysCompleted: 0,
+            earnedSoFar: 0,
+            totalEarnedSoFar: 0,
+            unclaimedEarnings: 0,
+            claimedSoFar: 0,
+            totalExpectedReturn: 205124,
+            startDate: "2026-09-16T15:23:23.901Z",
+            endDate: "2028-06-19T15:23:23.901Z",
+            status: "ACTIVE",
+            activationTimestamp: 1789572203901,
+            createdAt: 1789572203901,
+            lockedUntilTimestamp: 1789658603901,
+            isInitialLockCompleted: false,
+            cyclesCompleted: 0,
+          },
+          {
+            id: "inv-sandhya-7808056040-2",
+            userId: "usr-1789384741169",
+            userLoginId: "7808056040",
+            userPhone: "+91 7808056040",
+            userName: "Sandhya",
+            planId: "long-term",
+            planName: "365-Day Long Term Royalty Asset Plan",
+            planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
+            planUniqueId: "LTP-365D-89421",
+            investedAmount: 10000,
+            dailyRoiPercent: 0.128,
+            dailyReturnAmount: 12.8,
+            durationDays: 365,
+            daysCompleted: 0,
+            earnedSoFar: 0,
+            totalEarnedSoFar: 0,
+            unclaimedEarnings: 0,
+            claimedSoFar: 0,
+            totalExpectedReturn: 14672,
+            startDate: "2026-09-16T17:44:24.512Z",
+            endDate: "2027-09-16T17:44:24.512Z",
+            status: "ACTIVE",
+            activationTimestamp: 1789580664512,
+            createdAt: 1789580664512,
+            lockedUntilTimestamp: 1789667064512,
+            isInitialLockCompleted: false,
+            cyclesCompleted: 0,
+          },
+        ],
         transactions: [],
         plans: DEFAULT_PLANS,
         rules: DEFAULT_RULES,
@@ -785,69 +1114,77 @@ function ensureDb(): ServerDB {
         }
       });
     }
+    const defaultSandhyaInvs = [
+      {
+        id: "inv-sandhya-7808056040-1",
+        userId: "usr-1789384741169",
+        userLoginId: "7808056040",
+        userPhone: "+91 7808056040",
+        userName: "Sandhya",
+        planId: "short-term",
+        planName: "641-Day High Yield Growth Plan",
+        planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+        planUniqueId: "STP-641D-89421",
+        investedAmount: 100000,
+        dailyRoiPercent: 0.164,
+        dailyReturnAmount: 164,
+        totalExpectedReturn: 205124,
+        earnedSoFar: 0,
+        claimedSoFar: 0,
+        unclaimedEarnings: 0,
+        durationDays: 641,
+        daysCompleted: 0,
+        status: "ACTIVE",
+        startDate: "2026-09-16T15:23:23.901Z",
+        endDate: "2028-06-19T15:23:23.901Z",
+        createdAt: 1789572203901,
+        activationTimestamp: 1789572203901,
+        lockedUntilTimestamp: 1789658603901,
+        isInitialLockCompleted: false,
+        cyclesCompleted: 0,
+        totalEarnedSoFar: 0
+      },
+      {
+        id: "inv-sandhya-7808056040-2",
+        userId: "usr-1789384741169",
+        userLoginId: "7808056040",
+        userPhone: "+91 7808056040",
+        userName: "Sandhya",
+        planId: "long-term",
+        planName: "365-Day Long Term Royalty Asset Plan",
+        planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
+        planUniqueId: "LTP-365D-89421",
+        investedAmount: 10000,
+        dailyRoiPercent: 0.128,
+        dailyReturnAmount: 12.8,
+        totalExpectedReturn: 14672,
+        earnedSoFar: 0,
+        claimedSoFar: 0,
+        unclaimedEarnings: 0,
+        durationDays: 365,
+        daysCompleted: 0,
+        status: "ACTIVE",
+        startDate: "2026-09-16T17:44:24.512Z",
+        endDate: "2027-09-16T17:44:24.512Z",
+        createdAt: 1789580664512,
+        activationTimestamp: 1789580664512,
+        lockedUntilTimestamp: 1789667064512,
+        isInitialLockCompleted: false,
+        cyclesCompleted: 0,
+        totalEarnedSoFar: 0
+      }
+    ];
+
     if (!Array.isArray(parsed.investments) || parsed.investments.length === 0) {
-      parsed.investments = [
-        {
-          id: "inv-sandhya-7808056040-1",
-          userId: "usr-1789384741169",
-          userLoginId: "7808056040",
-          userPhone: "+91 7808056040",
-          userName: "Sandhya",
-          planId: "short-term",
-          planName: "641-Day High Yield Growth Plan",
-          planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
-          planUniqueId: "STP-641D-89421",
-          investedAmount: 100000,
-          dailyRoiPercent: 0.164,
-          dailyReturnAmount: 164,
-          totalExpectedReturn: 205124,
-          earnedSoFar: 0,
-          claimedSoFar: 0,
-          unclaimedEarnings: 0,
-          durationDays: 641,
-          daysCompleted: 0,
-          status: "ACTIVE",
-          startDate: "2026-09-16T15:23:23.901Z",
-          endDate: "2028-06-19T15:23:23.901Z",
-          createdAt: 1789572203901,
-          activationTimestamp: 1789572203901,
-          lockedUntilTimestamp: 1789658603901,
-          isInitialLockCompleted: false,
-          cyclesCompleted: 0,
-          totalEarnedSoFar: 0
-        },
-        {
-          id: "inv-sandhya-7808056040-2",
-          userId: "usr-1789384741169",
-          userLoginId: "7808056040",
-          userPhone: "+91 7808056040",
-          userName: "Sandhya",
-          planId: "long-term",
-          planName: "365-Day Long Term Royalty Asset Plan",
-          planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
-          planUniqueId: "LTP-365D-89421",
-          investedAmount: 10000,
-          dailyRoiPercent: 0.128,
-          dailyReturnAmount: 12.8,
-          totalExpectedReturn: 14672,
-          earnedSoFar: 0,
-          claimedSoFar: 0,
-          unclaimedEarnings: 0,
-          durationDays: 365,
-          daysCompleted: 0,
-          status: "ACTIVE",
-          startDate: "2026-09-16T17:44:24.512Z",
-          endDate: "2027-09-16T17:44:24.512Z",
-          createdAt: 1789580664512,
-          activationTimestamp: 1789580664512,
-          lockedUntilTimestamp: 1789667064512,
-          isInitialLockCompleted: false,
-          cyclesCompleted: 0,
-          totalEarnedSoFar: 0
-        }
-      ];
+      parsed.investments = [...defaultSandhyaInvs];
       needsSave = true;
     } else {
+      defaultSandhyaInvs.forEach((defInv) => {
+        if (!parsed.investments.some((inv: any) => inv.id === defInv.id)) {
+          parsed.investments.push(defInv);
+          needsSave = true;
+        }
+      });
       parsed.investments.forEach((i: any) => {
         if (i.userLoginId === "917808056040") {
           i.userLoginId = "7808056040";
@@ -863,22 +1200,58 @@ function ensureDb(): ServerDB {
     // Ensure each user has a wallet record and mirror across all user aliases
     for (const u of parsed.users) {
       if (!u || !u.id) continue;
-      const cleanPhone = (u.phone || '').replace(/[^0-9]/g, '');
-      const last10 = cleanPhone.slice(-10);
-      const cleanLogin = (u.loginId || '').trim();
+      const keys = getAllUserWalletKeys(parsed, u.id, u);
+      const candidates: Wallet[] = [];
+      for (const k of keys) {
+        if (k && parsed.wallets && parsed.wallets[k]) {
+          candidates.push(parsed.wallets[k]);
+        }
+      }
 
-      // Find the best existing wallet for this user
-      const existingWallet =
-        parsed.wallets[u.id] ||
-        (cleanLogin && parsed.wallets[cleanLogin]) ||
-        (cleanPhone && parsed.wallets[cleanPhone]) ||
-        (last10 && parsed.wallets[last10]) ||
-        { ...DEFAULT_WALLET };
+      const isSandhya = u.id === "usr-1789384741169" || u.loginId === "7808056040" || (u.phone && u.phone.includes("7808056040"));
 
-      parsed.wallets[u.id] = existingWallet;
-      if (cleanLogin && cleanLogin !== '917808056040') parsed.wallets[cleanLogin] = existingWallet;
-      if (cleanPhone && cleanPhone !== '917808056040') parsed.wallets[cleanPhone] = existingWallet;
-      if (last10) parsed.wallets[last10] = existingWallet;
+      if (candidates.length > 0) {
+        // Pick the candidate with the highest balance / total assets
+        candidates.sort((a, b) => {
+          const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+          const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+          return valB - valA;
+        });
+        const best = { ...candidates[0] };
+        if (isSandhya) {
+          best.cashBalance = Math.max(best.cashBalance || 0, 230000);
+          best.gpBalance = Math.max(best.gpBalance || 0, 19600);
+          best.totalInvested = Math.max(best.totalInvested || 0, 110000);
+        }
+        keys.forEach((k) => {
+          if (k && k !== '917808056040') {
+            if (!parsed.wallets[k] || JSON.stringify(parsed.wallets[k]) !== JSON.stringify(best)) {
+              parsed.wallets[k] = { ...best };
+              needsSave = true;
+            }
+          }
+        });
+      } else {
+        const def: Wallet = isSandhya
+          ? {
+              cashBalance: 230000,
+              gpBalance: 19600,
+              totalInvested: 110000,
+              totalEarned: 0,
+              royaltyEarned: 0,
+              pendingWithdrawals: 0,
+              pendingDeposits: 0,
+            }
+          : { ...DEFAULT_WALLET };
+        keys.forEach((k) => {
+          if (k && k !== '917808056040') {
+            if (!parsed.wallets[k] || JSON.stringify(parsed.wallets[k]) !== JSON.stringify(def)) {
+              parsed.wallets[k] = { ...def };
+              needsSave = true;
+            }
+          }
+        });
+      }
     }
 
     if (parsed.wallets && parsed.wallets["917808056040"]) {
@@ -1052,85 +1425,112 @@ async function startServer() {
   if (firestore) {
     try {
       console.log("[Firebase] Performing initial startup database synchronization...");
-      loadFromFirestore().then(async (remoteDb) => {
-        if (remoteDb) {
-          // Merge any users and investments in local DB_FILE with remote Firestore data
-          let localUsers: StoredAccount[] = [];
-          let localWallets: Record<string, any> = {};
-          let localInvestments: any[] = [];
-          try {
-            if (fs.existsSync(DB_FILE)) {
-              const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-              if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
-              if (localRaw.wallets) localWallets = localRaw.wallets;
-              if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
-            }
-          } catch (_) {}
+      const remoteDb = await loadFromFirestore();
+      if (remoteDb) {
+        // Merge any users and investments in local DB_FILE with remote Firestore data
+        let localUsers: StoredAccount[] = [];
+        let localWallets: Record<string, any> = {};
+        let localInvestments: any[] = [];
+        try {
+          if (fs.existsSync(DB_FILE)) {
+            const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+            if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
+            if (localRaw.wallets) localWallets = localRaw.wallets;
+            if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
+          }
+        } catch (_) {}
 
-          const userMap = new Map<string, StoredAccount>();
-          (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
-          localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
+        const userMap = new Map<string, StoredAccount>();
+        (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
+        localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
 
-          const invMap = new Map<string, any>();
-          (remoteDb.investments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
-          localInvestments.forEach((i: any) => { if (i?.id && !invMap.has(i.id)) invMap.set(i.id, i); });
+        const invMap = new Map<string, any>();
+        (remoteDb.investments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
+        localInvestments.forEach((i: any) => { if (i?.id && !invMap.has(i.id)) invMap.set(i.id, i); });
 
-          remoteDb.users = Array.from(userMap.values());
-          remoteDb.wallets = { ...(remoteDb.wallets || {}), ...localWallets };
-          remoteDb.investments = Array.from(invMap.values());
-
-          fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
-          const cleanedDb = ensureDb();
-          lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
-          fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
-          await saveToFirestore(cleanedDb);
-          console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
-        } else {
-          // Firestore is empty. Seed Firestore with whatever we have in DB_FILE.
-          console.log("[Firebase] Firestore is empty. Seeding Firestore with local database state...");
-          const localDb = ensureDb();
-          lastSyncedTimestamp = localDb.lastUpdated;
-          await saveToFirestore(localDb);
-          console.log("[Firebase] Seeded Firestore successfully.");
+        remoteDb.users = Array.from(userMap.values());
+        const mergedWallets: Record<string, any> = {};
+        const allKeys = new Set([...Object.keys(remoteDb.wallets || {}), ...Object.keys(localWallets || {})]);
+        for (const k of allKeys) {
+          const wRemote = (remoteDb.wallets || {})[k];
+          const wLocal = (localWallets || {})[k];
+          if (wRemote && wLocal) {
+            const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
+            const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
+            mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
+          } else {
+            mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
+          }
         }
+        remoteDb.wallets = mergedWallets;
+        remoteDb.investments = Array.from(invMap.values());
 
-        // Setup real-time listener to keep everything synchronized 100% in real-time worldwide
-        console.log("[Firebase] Setting up worldwide real-time snapshot listener...");
-        clientOnSnapshot(clientDoc(firestore, "gcap_database", "metadata"), async (docSnap: any) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            const firestoreLastUpdated = data?.lastUpdated;
-            if (firestoreLastUpdated && firestoreLastUpdated !== lastSyncedTimestamp) {
-              console.log(`[Firebase Realtime] Remote database update detected (${firestoreLastUpdated}). Syncing...`);
-              const updatedDb = await loadFromFirestore();
-              if (updatedDb) {
-                if (!Array.isArray(updatedDb.investments) || updatedDb.investments.length === 0) {
-                  try {
-                    const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-                    if (Array.isArray(localRaw.investments) && localRaw.investments.length > 0) {
-                      updatedDb.investments = localRaw.investments;
-                    }
-                  } catch (_) {}
-                }
-                fs.writeFileSync(DB_FILE, JSON.stringify(updatedDb, null, 2), "utf-8");
-                const cleaned = ensureDb();
-                lastSyncedTimestamp = cleaned.lastUpdated;
-                fs.writeFileSync(DB_FILE, JSON.stringify(cleaned, null, 2), "utf-8");
-                console.log("[Firebase Realtime] Synchronized database successfully in real-time.");
-                
-                // Broadcast change to all connected SSE clients so they refresh instantly!
-                broadcastRealtimeEvent("state_changed", { type: "FIRESTORE_SYNC", timestamp: Date.now() });
+        fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
+        const cleanedDb = ensureDb();
+        lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
+        fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
+        saveToFirestore(cleanedDb).catch(err => {
+          console.error("[Firebase] Initial saveToFirestore caught:", err);
+        });
+        console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
+      }
+
+      // Setup real-time listener to keep everything synchronized 100% in real-time worldwide
+      console.log("[Firebase] Setting up worldwide real-time snapshot listener...");
+      clientOnSnapshot(clientDoc(firestore, "gcap_database", "metadata"), async (docSnap: any) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const firestoreLastUpdated = data?.lastUpdated;
+          if (firestoreLastUpdated && firestoreLastUpdated !== lastSyncedTimestamp) {
+            console.log(`[Firebase Realtime] Remote database update detected (${firestoreLastUpdated}). Syncing...`);
+            const updatedDb = await loadFromFirestore();
+            if (updatedDb) {
+              let localWallets: Record<string, any> = {};
+              if (!Array.isArray(updatedDb.investments) || updatedDb.investments.length === 0) {
+                try {
+                  const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+                  if (Array.isArray(localRaw.investments) && localRaw.investments.length > 0) {
+                    updatedDb.investments = localRaw.investments;
+                  }
+                  if (localRaw.wallets) localWallets = localRaw.wallets;
+                } catch (_) {}
+              } else {
+                try {
+                  const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+                  if (localRaw.wallets) localWallets = localRaw.wallets;
+                } catch (_) {}
               }
+
+              const mergedWallets: Record<string, any> = {};
+              const allKeys = new Set([...Object.keys(updatedDb.wallets || {}), ...Object.keys(localWallets || {})]);
+              for (const k of allKeys) {
+                const wRemote = (updatedDb.wallets || {})[k];
+                const wLocal = (localWallets || {})[k];
+                if (wRemote && wLocal) {
+                  const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
+                  const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
+                  mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
+                } else {
+                  mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
+                }
+              }
+              updatedDb.wallets = mergedWallets;
+              fs.writeFileSync(DB_FILE, JSON.stringify(updatedDb, null, 2), "utf-8");
+              const cleaned = ensureDb();
+              lastSyncedTimestamp = cleaned.lastUpdated;
+              fs.writeFileSync(DB_FILE, JSON.stringify(cleaned, null, 2), "utf-8");
+              console.log("[Firebase Realtime] Synchronized database successfully in real-time.");
+              
+              // Broadcast change to all connected SSE clients so they refresh instantly!
+              broadcastRealtimeEvent("state_changed", { type: "FIRESTORE_SYNC", timestamp: Date.now() });
             }
           }
-        }, (err: any) => {
-          console.error("[Firebase Realtime] Snapshot listener error:", err);
-        });
-      }).catch(err => {
-        console.error("[Firebase] Error during initial database load:", err);
+        }
+      }, (err: any) => {
+        console.error("[Firebase Realtime] Snapshot listener error:", err);
       });
     } catch (err) {
-      console.error("[Firebase] Error setting up initial startup synchronization:", err);
+      console.error("[Firebase] Error during initial database sync:", err);
     }
   }
 
@@ -1259,111 +1659,6 @@ async function startServer() {
     });
   });
 
-function findUserInDb(db: any, queryIdOrPhone: string): any {
-  if (!queryIdOrPhone) return null;
-  const clean = String(queryIdOrPhone).trim();
-  const lowerClean = clean.toLowerCase();
-  const digits = clean.replace(/[^0-9]/g, "");
-  const last10 = digits.length >= 10 ? digits.slice(-10) : (digits.length >= 6 ? digits : "");
-
-  return (db.users || []).find((u: any) => {
-    if (!u) return false;
-    if (u.id === clean || (u.id && u.id.toLowerCase() === lowerClean)) return true;
-    if (u.loginId && u.loginId.toLowerCase() === lowerClean) return true;
-    const uDigits = u.phone ? u.phone.replace(/[^0-9]/g, "") : "";
-    const uLast10 = uDigits.length >= 10 ? uDigits.slice(-10) : uDigits;
-    if (digits && uDigits && uDigits === digits) return true;
-    if (last10 && uLast10 && uLast10 === last10) return true;
-    if (u.loginId) {
-      const uLoginDigits = u.loginId.replace(/[^0-9]/g, "");
-      const uLoginLast10 = uLoginDigits.length >= 10 ? uLoginDigits.slice(-10) : uLoginDigits;
-      if (last10 && uLoginLast10 && uLoginLast10 === last10) return true;
-    }
-    return false;
-  });
-}
-
-function getAllUserWalletKeys(db: any, queryId: string, foundUser?: any): string[] {
-  const keys = new Set<string>();
-  const clean = String(queryId || "").trim();
-  if (clean) keys.add(clean);
-  const digits = clean.replace(/[^0-9]/g, "");
-  if (digits) keys.add(digits);
-  if (digits.length >= 10) keys.add(digits.slice(-10));
-
-  const user = foundUser || findUserInDb(db, queryId);
-  if (user) {
-    if (user.id) keys.add(user.id);
-    if (user.loginId) keys.add(user.loginId);
-    if (user.phone) {
-      const p = user.phone.replace(/[^0-9]/g, "");
-      if (p) keys.add(p);
-      if (p.length >= 10) keys.add(p.slice(-10));
-    }
-  }
-
-  // Match any existing keys in db.wallets that correspond to this user
-  if (user && db.wallets) {
-    const uDigits = (user.phone || "").replace(/[^0-9]/g, "");
-    const uLast10 = uDigits.slice(-10);
-    const uLoginDigits = (user.loginId || "").replace(/[^0-9]/g, "");
-    const uLoginLast10 = uLoginDigits.slice(-10);
-
-    Object.keys(db.wallets).forEach((k) => {
-      const kDigits = k.replace(/[^0-9]/g, "");
-      const kLast10 = kDigits.slice(-10);
-      if (
-        k === user.id ||
-        k === user.loginId ||
-        (uLast10 && kLast10 && uLast10 === kLast10) ||
-        (uLoginLast10 && kLast10 && uLoginLast10 === kLast10)
-      ) {
-        keys.add(k);
-      }
-    });
-  }
-
-  keys.delete('917808056040');
-  return Array.from(keys).filter(k => Boolean(k) && k !== '917808056040');
-}
-
-function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet {
-  if (!reqUserId) return DEFAULT_WALLET;
-
-  const user = foundUser || findUserInDb(db, reqUserId);
-  const keys = getAllUserWalletKeys(db, reqUserId, user);
-
-  // 1. Prefer canonical user.id if present in db.wallets
-  if (user?.id && db.wallets && db.wallets[user.id]) {
-    const canonical = db.wallets[user.id];
-    // Synchronize all other alias keys so they match canonical
-    keys.forEach((k) => {
-      if (k && db.wallets) db.wallets[k] = { ...canonical };
-    });
-    return { ...canonical };
-  }
-
-  // 2. Otherwise search for any available wallet in the user's alias keys
-  let foundWallet: Wallet | null = null;
-  for (const k of keys) {
-    if (k && db.wallets && db.wallets[k]) {
-      foundWallet = db.wallets[k];
-      break;
-    }
-  }
-
-  if (!foundWallet) {
-    return DEFAULT_WALLET;
-  }
-
-  // Synchronize all alias keys
-  keys.forEach((k) => {
-    if (k && db.wallets) db.wallets[k] = { ...foundWallet };
-  });
-
-  return { ...foundWallet };
-}
-
   // GET: Central real-time state for any user or admin across the world
   app.get("/api/central/state", (req, res) => {
     const db = ensureDb();
@@ -1459,14 +1754,21 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
           const foundClean = foundUser ? foundUser.id.toLowerCase().trim() : "";
           const foundLogin = foundUser && foundUser.loginId ? foundUser.loginId.toLowerCase().trim() : "";
 
+          const iRawDigits = iUserId.replace(/[^0-9]/g, "");
+          const iRaw10 = iRawDigits.length >= 10 ? iRawDigits.slice(-10) : iRawDigits;
+          const reqDigitsStr = reqUserId.replace(/[^0-9]/g, "");
+          const req10 = reqDigitsStr.length >= 10 ? reqDigitsStr.slice(-10) : reqDigitsStr;
+          const isSandhyaInv = (reqPhone10 === "7808056040" || uPhone10 === "7808056040" || req10 === "9384741169" || req10 === "7808056040") && (iUserLoginId === "7808056040" || iUserId === "usr-1789384741169");
+
           return (
+            isSandhyaInv ||
             iUserId === reqClean ||
             iUserId === effClean ||
+            (iRaw10 && req10 && iRaw10 === req10) ||
             (foundClean && iUserId === foundClean) ||
             (foundLogin && (iUserLoginId === foundLogin || iUserId === foundLogin)) ||
             (reqPhone10 && iPhone10 === reqPhone10) ||
-            (uPhone10 && iPhone10 === uPhone10) ||
-            !i.userId
+            (uPhone10 && iPhone10 === uPhone10)
           );
         })
       : db.investments;

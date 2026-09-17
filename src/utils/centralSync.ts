@@ -68,7 +68,12 @@ export function findUserAndAllAliases(userId: string, users: UserProfile[]): { u
   if (last10) aliases.add(last10);
 
   if (user) {
-    if (user.id) aliases.add(user.id);
+    if (user.id) {
+      aliases.add(user.id);
+      if (user.id.startsWith("usr-")) {
+        aliases.add(user.id.replace("usr-", ""));
+      }
+    }
     if (user.loginId) aliases.add(user.loginId);
     if (user.phone) {
       const cleanP = user.phone.replace(/[^0-9]/g, "");
