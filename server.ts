@@ -353,7 +353,7 @@ const DEFAULT_PLANS: InvestmentPlan[] = [
 
 const DEFAULT_RULES: AppRules = {
   platformName: "GCap",
-  gpRatePerRupee: 1.0,
+  gpRatePerRupee: 0.98,
   minDeposit: 100,
   maxDeposit: 500000,
   minWithdrawal: 200,
@@ -1034,6 +1034,10 @@ function ensureDb(): ServerDB {
     // Force set user's specific company details if legacy defaults are present
     if (parsed.rules.companyUpiId === "gcap.pay@hdfcbank" || !parsed.rules.companyUpiId) {
       parsed.rules.companyUpiId = "8603504808@axisbank";
+      needsSave = true;
+    }
+    if (parsed.rules.gpRatePerRupee !== 0.98) {
+      parsed.rules.gpRatePerRupee = 0.98;
       needsSave = true;
     }
     if (parsed.rules.companyBankAccountHolder === "GCap Capital Ventures Pvt Ltd" || parsed.rules.companyBankAccountHolder === "GCap Investments" || parsed.rules.companyBankAccountHolder === "GCap Asset Management (India) Pvt. Ltd." || !parsed.rules.companyBankAccountHolder) {
