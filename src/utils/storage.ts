@@ -23,13 +23,13 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
   {
     id: "inv-sandhya-7808056040-1",
     userId: "usr-1789384741169",
-    userLoginId: "917808056040",
+    userLoginId: "7808056040",
     userPhone: "+91 7808056040",
     userName: "Sandhya",
     planId: "short-term",
     planName: "641-Day High Yield Growth Plan",
     planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
-    planUniqueId: "STP-641D-86172",
+    planUniqueId: "STP-641D-89421",
     investedAmount: 100000,
     dailyRoiPercent: 0.164,
     dailyReturnAmount: 164,
@@ -38,6 +38,7 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     claimedSoFar: 0,
     unclaimedEarnings: 0,
     durationDays: 641,
+    daysCompleted: 0,
     status: "ACTIVE",
     startDate: new Date().toISOString(),
     createdAt: Date.now(),
@@ -50,7 +51,7 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
   {
     id: "inv-sandhya-7808056040-2",
     userId: "usr-1789384741169",
-    userLoginId: "917808056040",
+    userLoginId: "7808056040",
     userPhone: "+91 7808056040",
     userName: "Sandhya",
     planId: "long-term",
@@ -65,6 +66,7 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     claimedSoFar: 0,
     unclaimedEarnings: 0,
     durationDays: 365,
+    daysCompleted: 0,
     status: "ACTIVE",
     startDate: new Date().toISOString(),
     createdAt: Date.now() - 3600000,
@@ -160,6 +162,7 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
 
     return {
       ...item,
+      userLoginId: (item.userLoginId === '917808056040' ? '7808056040' : item.userLoginId),
       planUniqueId,
       investedAmount,
       durationDays: duration,
@@ -220,23 +223,19 @@ export function setStoredInvestments(investments: ActiveInvestment[]) {
 }
 
 export function filterUserInvestments(allInvestments: ActiveInvestment[], user: UserProfile | null): ActiveInvestment[] {
-  if (!user) return getStoredInvestments();
-  const localStoredInvs = getStoredInvestments();
-  const merged = [...(allInvestments || []), ...localStoredInvs];
-  const uniqueMap = new Map();
-  merged.forEach(inv => {
-    if (inv && inv.id) uniqueMap.set(inv.id, inv);
-  });
-  const allInvs = Array.from(uniqueMap.values());
+  const sourceList = (Array.isArray(allInvestments) && allInvestments.length > 0)
+    ? allInvestments
+    : getStoredInvestments();
 
-  if (user.role === 'ADMIN') return allInvs;
+  if (!user) return sourceList;
+  if (user.role === 'ADMIN') return sourceList;
 
   const userIdLower = (user.id || '').toLowerCase().trim();
   const loginIdLower = (user.loginId || '').toLowerCase().trim();
   const phoneClean = (user.phone || '').replace(/[^0-9]/g, "");
   const phone10 = phoneClean.length >= 10 ? phoneClean.slice(-10) : phoneClean;
 
-  return allInvs.filter(i => {
+  return sourceList.filter(i => {
     if (!i) return false;
     const iUserId = (i.userId || '').toLowerCase().trim();
     const iLoginId = (i.userLoginId || '').toLowerCase().trim();
@@ -247,7 +246,7 @@ export function filterUserInvestments(allInvestments: ActiveInvestment[], user: 
       (userIdLower && iUserId === userIdLower) ||
       (loginIdLower && iLoginId === loginIdLower) ||
       (phone10 && iPhone10 === phone10) ||
-      (userIdLower && iUserId.includes(phone10)) ||
+      (userIdLower && phone10 && iUserId.includes(phone10)) ||
       (phone10 && iUserId.includes(phone10)) ||
       !i.userId
     );
@@ -261,7 +260,31 @@ export function getStoredTransactions(): Transaction[] {
       setStoredTransactions(INITIAL_TRANSACTIONS);
       return INITIAL_TRANSACTIONS;
     }
-    return JSON.parse(raw);
+    const parsed: Transaction[] = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return INITIAL_TRANSACTIONS;
+    let modified = false;
+    const sanitized = parsed.map(t => {
+      let uLogin = t.userLoginId;
+      let note = t.note;
+      let noteHi = t.noteHi;
+      if (uLogin === '917808056040') {
+        uLogin = '7808056040';
+        modified = true;
+      }
+      if (note && note.includes('917808056040')) {
+        note = note.replaceAll('917808056040', '7808056040');
+        modified = true;
+      }
+      if (noteHi && noteHi.includes('917808056040')) {
+        noteHi = noteHi.replaceAll('917808056040', '7808056040');
+        modified = true;
+      }
+      return { ...t, userLoginId: uLogin, note, noteHi };
+    });
+    if (modified) {
+      setStoredTransactions(sanitized);
+    }
+    return sanitized;
   } catch {
     return INITIAL_TRANSACTIONS;
   }

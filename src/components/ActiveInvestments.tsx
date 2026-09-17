@@ -667,8 +667,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                       ></div>
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono pt-1">
-                      <span>{isHi ? 'शुरू:' : 'Start:'} {inv.startDate}</span>
-                      <span>{isHi ? 'परिपक्वता:' : 'Maturity:'} {inv.endDate}</span>
+                      <span>{isHi ? 'शुरू:' : 'Start:'} {inv.startDate ? (isNaN(new Date(inv.startDate).getTime()) ? inv.startDate : new Date(inv.startDate).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN', { day: '2-digit', month: 'short', year: 'numeric' })) : '-'}</span>
+                      <span>{isHi ? 'परिपक्वता:' : 'Maturity:'} {inv.endDate ? (isNaN(new Date(inv.endDate).getTime()) ? inv.endDate : new Date(inv.endDate).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN', { day: '2-digit', month: 'short', year: 'numeric' })) : (inv.startDate && !isNaN(new Date(inv.startDate).getTime()) ? new Date(new Date(inv.startDate).getTime() + durationDays * 86400000).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-')}</span>
                     </div>
                   </div>
 

@@ -76,7 +76,11 @@ export function findUserAndAllAliases(userId: string, users: UserProfile[]): { u
       if (cleanP.length >= 10) aliases.add(cleanP.slice(-10));
     }
   }
-  return { user: user || null, aliases: Array.from(aliases) };
+
+  // Explicitly purge 917808056040 and preserve 7808056040
+  aliases.delete('917808056040');
+
+  return { user: user || null, aliases: Array.from(aliases).filter(a => Boolean(a) && a !== '917808056040') };
 }
 
 // Helper to get a user's wallet with robust alias lookup

@@ -437,10 +437,7 @@ export default function App() {
         if (fs.investments) {
           const myInvs = filterUserInvestments(fs.investments, currentUser);
           setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
-          const allStored = [...getStoredInvestments(), ...fs.investments];
-          const uniqueMap = new Map();
-          allStored.forEach(i => { if (i && i.id) uniqueMap.set(i.id, i); });
-          setStoredInvestments(Array.from(uniqueMap.values()));
+          setStoredInvestments(myInvs);
         }
         if (fs.messages) {
           const myMsgs = fs.messages.filter(
@@ -517,10 +514,7 @@ export default function App() {
           if (state.investments) {
             const myInvs = filterUserInvestments(state.investments, currentUser);
             setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
-            const allStored = [...getStoredInvestments(), ...state.investments];
-            const uniqueMap = new Map();
-            allStored.forEach(i => { if (i && i.id) uniqueMap.set(i.id, i); });
-            setStoredInvestments(Array.from(uniqueMap.values()));
+            setStoredInvestments(myInvs);
           }
         }
       } catch {

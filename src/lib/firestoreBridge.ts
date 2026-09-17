@@ -114,6 +114,50 @@ export function cleanForFirestore<T>(input: T): any {
   return sanitize(JSON.parse(JSON.stringify(input)));
 }
 
+function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseState {
+  if (!state) return state;
+  // 1. Wallets: purge 917808056040 and preserve 7808056040
+  if (state.wallets && typeof state.wallets === 'object') {
+    if (state.wallets['917808056040']) {
+      if (!state.wallets['7808056040']) {
+        state.wallets['7808056040'] = state.wallets['917808056040'];
+      }
+      delete state.wallets['917808056040'];
+    }
+  }
+  // 2. Users: update loginId to 7808056040
+  if (Array.isArray(state.users)) {
+    state.users.forEach(u => {
+      if (u.loginId === '917808056040') {
+        u.loginId = '7808056040';
+      }
+    });
+  }
+  // 3. Transactions: update userLoginId and note text
+  if (Array.isArray(state.transactions)) {
+    state.transactions.forEach(t => {
+      if (t.userLoginId === '917808056040') {
+        t.userLoginId = '7808056040';
+      }
+      if (t.note && t.note.includes('917808056040')) {
+        t.note = t.note.replaceAll('917808056040', '7808056040');
+      }
+      if (t.noteHi && t.noteHi.includes('917808056040')) {
+        t.noteHi = t.noteHi.replaceAll('917808056040', '7808056040');
+      }
+    });
+  }
+  // 4. Investments: update userLoginId
+  if (Array.isArray(state.investments)) {
+    state.investments.forEach(i => {
+      if (i.userLoginId === '917808056040') {
+        i.userLoginId = '7808056040';
+      }
+    });
+  }
+  return state;
+}
+
 /**
  * Parses snapshot documents into structured state
  */
@@ -139,7 +183,7 @@ function parseSnapshotDocs(docs: any[]): FirestoreDatabaseState {
     lastUpdated: (map['metadata'] && map['metadata'].lastUpdated) || new Date().toISOString(),
   };
 
-  return state;
+  return cleanDatabaseState(state);
 }
 
 /**
@@ -301,13 +345,14 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       lastUpdated: (docMap['metadata'] && docMap['metadata'].lastUpdated) || new Date().toISOString(),
     };
 
-    (state as any)._cacheTime = Date.now();
-    cachedFirestoreDb = state;
+    const cleanedState = cleanDatabaseState(state);
+    (cleanedState as any)._cacheTime = Date.now();
+    cachedFirestoreDb = cleanedState;
 
     // Save to offline backup
-    saveOfflineDbToLocalStorage(state);
+    saveOfflineDbToLocalStorage(cleanedState);
 
-    return state;
+    return cleanedState;
   } catch (err) {
     const errMsg = String(err && (err as any).message || err || "").toLowerCase();
     if (errMsg.includes("resource_exhausted") || errMsg.includes("quota")) {
@@ -330,6 +375,28 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
  * Direct Firestore save helpers
  */
 export async function saveDocToFirestore(docId: string, data: any): Promise<boolean> {
+  // Ensure 917808056040 is never saved
+  if (docId === 'wallets' && data && typeof data === 'object') {
+    if (data['917808056040']) {
+      if (!data['7808056040']) data['7808056040'] = data['917808056040'];
+      delete data['917808056040'];
+    }
+  } else if (docId === 'users' && Array.isArray(data)) {
+    data.forEach(u => {
+      if (u && u.loginId === '917808056040') u.loginId = '7808056040';
+    });
+  } else if (docId === 'transactions' && Array.isArray(data)) {
+    data.forEach(t => {
+      if (t && t.userLoginId === '917808056040') t.userLoginId = '7808056040';
+      if (t && t.note && t.note.includes('917808056040')) t.note = t.note.replaceAll('917808056040', '7808056040');
+      if (t && t.noteHi && t.noteHi.includes('917808056040')) t.noteHi = t.noteHi.replaceAll('917808056040', '7808056040');
+    });
+  } else if (docId === 'investments' && Array.isArray(data)) {
+    data.forEach(i => {
+      if (i && i.userLoginId === '917808056040') i.userLoginId = '7808056040';
+    });
+  }
+
   // Update memory cache and offline localStorage backup instantly
   if (!cachedFirestoreDb) {
     cachedFirestoreDb = loadOfflineDbFromLocalStorage() || {
