@@ -1,4 +1,4 @@
-// Global Synchronized Fixed Time Slabs for 6-Hour Cycles (8 AM, 2 PM, 8 PM, 2 AM)
+// Global Synchronized Fixed Time Slabs for 6-Hour Cycles in IST (02:00 AM, 08:00 AM, 02:00 PM, 08:00 PM IST)
 export const FIXED_CYCLE_HOURS = [2, 8, 14, 20] as const;
 
 export const FIXED_SLAB_LABELS = [
@@ -8,29 +8,36 @@ export const FIXED_SLAB_LABELS = [
   '08:00 PM'
 ] as const;
 
+// IST offset from UTC in milliseconds (+5:30)
+const IST_OFFSET_MS = 5.5 * 3600 * 1000;
+
 /**
  * Given any timestamp (e.g. after 24h lock period ends),
- * finds the next upcoming fixed time slab milestone (8:00 AM, 2:00 PM, 8:00 PM, 2:00 AM).
+ * finds the next upcoming fixed time slab milestone (8:00 AM, 2:00 PM, 8:00 PM, 2:00 AM IST).
  */
 export function getNextFixedCycleTimestamp(fromTimestamp: number = Date.now()): number {
-  const d = new Date(fromTimestamp);
-  
-  // Candidates today
+  // Convert UTC timestamp to IST Date representation using UTC methods
+  const istDate = new Date(fromTimestamp + IST_OFFSET_MS);
+  const y = istDate.getUTCFullYear();
+  const m = istDate.getUTCMonth();
+  const d = istDate.getUTCDate();
+
   const candidates: number[] = [];
-  
+
+  // Candidates today (IST)
   for (const hour of FIXED_CYCLE_HOURS) {
-    const slot = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 0, 0, 0).getTime();
-    if (slot > fromTimestamp) {
-      candidates.push(slot);
+    const slotUtc = Date.UTC(y, m, d, hour, 0, 0, 0) - IST_OFFSET_MS;
+    if (slotUtc > fromTimestamp) {
+      candidates.push(slotUtc);
     }
   }
-  
-  // Candidates tomorrow
+
+  // Candidates tomorrow (IST)
   for (const hour of FIXED_CYCLE_HOURS) {
-    const slot = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, hour, 0, 0, 0).getTime();
-    candidates.push(slot);
+    const slotUtc = Date.UTC(y, m, d + 1, hour, 0, 0, 0) - IST_OFFSET_MS;
+    candidates.push(slotUtc);
   }
-  
+
   candidates.sort((a, b) => a - b);
   return candidates[0];
 }
@@ -48,9 +55,9 @@ export function getPreviousFixedCycleTimestamp(targetTimestamp: number = Date.no
  */
 export function formatFixedSlotTime(timestamp: number): string {
   if (!timestamp) return '08:00 AM';
-  const d = new Date(timestamp);
-  let hours = d.getHours();
-  const minutes = d.getMinutes();
+  const istDate = new Date(timestamp + IST_OFFSET_MS);
+  let hours = istDate.getUTCHours();
+  const minutes = istDate.getUTCMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   hours = hours ? hours : 12; // hour '0' should be '12'

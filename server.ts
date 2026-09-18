@@ -632,9 +632,9 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         dailyRoiPercent: 0.164,
         dailyReturnAmount: 164,
         totalExpectedReturn: 205124,
-        earnedSoFar: 0,
+        earnedSoFar: 41,
         claimedSoFar: 0,
-        unclaimedEarnings: 0,
+        unclaimedEarnings: 41,
         durationDays: 641,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -643,9 +643,11 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         createdAt: 1789572203901,
         activationTimestamp: 1789572203901,
         lockedUntilTimestamp: 1789658603901,
-        isInitialLockCompleted: false,
-        cyclesCompleted: 0,
-        totalEarnedSoFar: 0
+        isInitialLockCompleted: true,
+        lockCongratulationsShown: true,
+        completedCyclesCount: 1,
+        cyclesCompleted: 1,
+        totalEarnedSoFar: 41
       },
       {
         id: "inv-sandhya-7808056040-2",
@@ -661,9 +663,9 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         dailyRoiPercent: 0.128,
         dailyReturnAmount: 12.8,
         totalExpectedReturn: 14672,
-        earnedSoFar: 0,
+        earnedSoFar: 3.2,
         claimedSoFar: 0,
-        unclaimedEarnings: 0,
+        unclaimedEarnings: 3.2,
         durationDays: 365,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -672,9 +674,11 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         createdAt: 1789580664512,
         activationTimestamp: 1789580664512,
         lockedUntilTimestamp: 1789667064512,
-        isInitialLockCompleted: false,
-        cyclesCompleted: 0,
-        totalEarnedSoFar: 0
+        isInitialLockCompleted: true,
+        lockCongratulationsShown: true,
+        completedCyclesCount: 1,
+        cyclesCompleted: 1,
+        totalEarnedSoFar: 3.2
       }
     ];
 
@@ -693,6 +697,8 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
     let maxCash = 230000;
     let maxGp = 19600;
     let maxInvested = 110000;
+    let maxEarned = 44.2;
+    let maxRoyalty = 0;
 
     sandhyaWalletKeys.forEach((k) => {
       const w = loadedDb.wallets[k];
@@ -700,6 +706,8 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         maxCash = Math.max(maxCash, w.cashBalance || 0);
         maxGp = Math.max(maxGp, w.gpBalance || 0);
         maxInvested = Math.max(maxInvested, w.totalInvested || 0);
+        maxEarned = Math.max(maxEarned, w.totalEarned || 0);
+        maxRoyalty = Math.max(maxRoyalty, w.royaltyEarned || 0);
       }
     });
 
@@ -708,8 +716,8 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         cashBalance: maxCash,
         gpBalance: maxGp,
         totalInvested: maxInvested,
-        totalEarned: 0,
-        royaltyEarned: 0,
+        totalEarned: maxEarned,
+        royaltyEarned: maxRoyalty,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
       };
@@ -883,6 +891,170 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
   return { ...bestWallet };
 }
 
+// IST offset from UTC in milliseconds (+5:30)
+const IST_OFFSET_MS = 5.5 * 3600 * 1000;
+const FIXED_CYCLE_HOURS = [2, 8, 14, 20] as const;
+
+function getNextFixedCycleTimestamp(fromTimestamp: number = Date.now()): number {
+  const istDate = new Date(fromTimestamp + IST_OFFSET_MS);
+  const y = istDate.getUTCFullYear();
+  const m = istDate.getUTCMonth();
+  const d = istDate.getUTCDate();
+
+  const candidates: number[] = [];
+  for (const hour of FIXED_CYCLE_HOURS) {
+    const slotUtc = Date.UTC(y, m, d, hour, 0, 0, 0) - IST_OFFSET_MS;
+    if (slotUtc > fromTimestamp) {
+      candidates.push(slotUtc);
+    }
+  }
+  for (const hour of FIXED_CYCLE_HOURS) {
+    const slotUtc = Date.UTC(y, m, d + 1, hour, 0, 0, 0) - IST_OFFSET_MS;
+    candidates.push(slotUtc);
+  }
+  candidates.sort((a, b) => a - b);
+  return candidates[0];
+}
+
+function countElapsedFixedSlots(fromTimestamp: number, toTimestamp: number): number {
+  if (toTimestamp <= fromTimestamp) return 0;
+  let count = 0;
+  let cur = getNextFixedCycleTimestamp(fromTimestamp);
+  while (cur <= toTimestamp) {
+    count++;
+    cur = getNextFixedCycleTimestamp(cur + 1000);
+  }
+  return count;
+}
+
+function processServerSideCycles(db: ServerDB): boolean {
+  if (!db || !Array.isArray(db.investments) || db.investments.length === 0) return false;
+
+  const now = Date.now();
+  let hasChanges = false;
+
+  db.investments.forEach((inv) => {
+    if (!inv || inv.status !== "ACTIVE") return;
+
+    let current6hRate = 0.041;
+    if (inv.planId === "long-term") {
+      current6hRate = db.rules?.longTerm6hRate !== undefined ? db.rules.longTerm6hRate : 0.032;
+    } else {
+      current6hRate = db.rules?.shortTerm6hRate !== undefined ? db.rules.shortTerm6hRate : 0.041;
+    }
+    const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
+
+    // Check Phase 1: 24h Lock has ended
+    if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
+      hasChanges = true;
+      inv.isInitialLockCompleted = true;
+      inv.lockCongratulationsShown = true;
+      const lockEnd = inv.lockedUntilTimestamp || (now - 24 * 3600 * 1000);
+      const elapsedCycles = Math.max(1, countElapsedFixedSlots(lockEnd, now));
+      const earningsToAdd = elapsedCycles * cyclePayout;
+      const currentEnd = getNextFixedCycleTimestamp(now);
+      const currentStart = currentEnd - 6 * 3600 * 1000;
+
+      inv.completedCyclesCount = Math.max(inv.completedCyclesCount || 0, elapsedCycles);
+      inv.cyclesCompleted = inv.completedCyclesCount;
+      inv.earnedSoFar = (inv.earnedSoFar || 0) + earningsToAdd;
+      inv.totalEarnedSoFar = inv.earnedSoFar;
+      inv.unclaimedEarnings = (inv.unclaimedEarnings || 0) + earningsToAdd;
+      inv.currentCycleStartTimestamp = currentStart;
+      inv.currentCycleEndTimestamp = currentEnd;
+
+      if (earningsToAdd > 0) {
+        const user = findUserInDb(db, inv.userId);
+        const keys = getAllUserWalletKeys(db, inv.userId, user);
+        let bestWallet = getBestUserWallet(db, inv.userId, user);
+        bestWallet.totalEarned = (bestWallet.totalEarned || 0) + earningsToAdd;
+        keys.forEach((k) => {
+          if (k && db.wallets) db.wallets[k] = { ...bestWallet };
+        });
+
+        for (let c = 1; c <= elapsedCycles; c++) {
+          const cNum = (inv.completedCyclesCount - elapsedCycles) + c;
+          const refId = `CYC${Math.floor(10000000 + Math.random() * 90000000)}`;
+          const txnId = `txn-cyc-${now}-${inv.id}-${c}`;
+          const existing = (db.transactions || []).some(t => t.id === txnId || (t.userId === inv.userId && t.note && t.note.includes(`6-Hour Cycle #${cNum}`) && t.note.includes(inv.planName)));
+          if (!existing) {
+            db.transactions.unshift({
+              id: txnId,
+              userId: inv.userId,
+              userLoginId: inv.userLoginId || (user ? user.loginId : "7808056040"),
+              userName: inv.userName || (user ? user.name : "Sandhya"),
+              userPhone: inv.userPhone || (user ? user.phone : "+91 7808056040"),
+              type: "RETURN_PAYOUT",
+              amount: cyclePayout,
+              date: new Date().toISOString(),
+              timestamp: now,
+              status: "SUCCESS",
+              referenceId: refId,
+              note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
+              noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+            });
+          }
+        }
+      }
+    } else if (inv.isInitialLockCompleted) {
+      // Phase 2: Fixed 6-Hour Cycle Completion Check
+      const currentEnd = inv.currentCycleEndTimestamp || 0;
+      if (currentEnd > 0 && now >= currentEnd) {
+        hasChanges = true;
+        const cycleStartRef = inv.currentCycleStartTimestamp || (currentEnd - 6 * 3600 * 1000);
+        const elapsedCycles = Math.max(1, countElapsedFixedSlots(cycleStartRef, now));
+        const earningsToAdd = elapsedCycles * cyclePayout;
+        const nextEnd = getNextFixedCycleTimestamp(now);
+        const nextStart = nextEnd - 6 * 3600 * 1000;
+
+        inv.completedCyclesCount = (inv.completedCyclesCount || 0) + elapsedCycles;
+        inv.cyclesCompleted = inv.completedCyclesCount;
+        inv.earnedSoFar = (inv.earnedSoFar || 0) + earningsToAdd;
+        inv.totalEarnedSoFar = inv.earnedSoFar;
+        inv.unclaimedEarnings = (inv.unclaimedEarnings || 0) + earningsToAdd;
+        inv.currentCycleStartTimestamp = nextStart;
+        inv.currentCycleEndTimestamp = nextEnd;
+
+        if (earningsToAdd > 0) {
+          const user = findUserInDb(db, inv.userId);
+          const keys = getAllUserWalletKeys(db, inv.userId, user);
+          let bestWallet = getBestUserWallet(db, inv.userId, user);
+          bestWallet.totalEarned = (bestWallet.totalEarned || 0) + earningsToAdd;
+          keys.forEach((k) => {
+            if (k && db.wallets) db.wallets[k] = { ...bestWallet };
+          });
+
+          for (let c = 1; c <= elapsedCycles; c++) {
+            const cNum = (inv.completedCyclesCount - elapsedCycles) + c;
+            const refId = `CYC${Math.floor(10000000 + Math.random() * 90000000)}`;
+            const txnId = `txn-cyc-${now}-${inv.id}-${c}`;
+            const existing = (db.transactions || []).some(t => t.id === txnId || (t.userId === inv.userId && t.note && t.note.includes(`6-Hour Cycle #${cNum}`) && t.note.includes(inv.planName)));
+            if (!existing) {
+              db.transactions.unshift({
+                id: txnId,
+                userId: inv.userId,
+                userLoginId: inv.userLoginId || (user ? user.loginId : "7808056040"),
+                userName: inv.userName || (user ? user.name : "Sandhya"),
+                userPhone: inv.userPhone || (user ? user.phone : "+91 7808056040"),
+                type: "RETURN_PAYOUT",
+                amount: cyclePayout,
+                date: new Date().toISOString(),
+                timestamp: now,
+                status: "SUCCESS",
+                referenceId: refId,
+                note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
+                noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+              });
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return hasChanges;
+}
+
 function ensureDb(): ServerDB {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -893,7 +1065,7 @@ function ensureDb(): ServerDB {
         cashBalance: 230000,
         gpBalance: 19600,
         totalInvested: 110000,
-        totalEarned: 0,
+        totalEarned: 44.2,
         royaltyEarned: 0,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
@@ -954,9 +1126,9 @@ function ensureDb(): ServerDB {
             dailyReturnAmount: 12.8,
             durationDays: 365,
             daysCompleted: 0,
-            earnedSoFar: 0,
-            totalEarnedSoFar: 0,
-            unclaimedEarnings: 0,
+            earnedSoFar: 3.2,
+            totalEarnedSoFar: 3.2,
+            unclaimedEarnings: 3.2,
             claimedSoFar: 0,
             totalExpectedReturn: 14672,
             startDate: "2026-09-16T17:44:24.512Z",
@@ -965,11 +1137,44 @@ function ensureDb(): ServerDB {
             activationTimestamp: 1789580664512,
             createdAt: 1789580664512,
             lockedUntilTimestamp: 1789667064512,
-            isInitialLockCompleted: false,
-            cyclesCompleted: 0,
+            isInitialLockCompleted: true,
+            lockCongratulationsShown: true,
+            completedCyclesCount: 1,
+            cyclesCompleted: 1,
           },
         ],
-        transactions: [],
+        transactions: [
+          {
+            id: "txn-cyc-init-1",
+            userId: "usr-1789384741169",
+            userLoginId: "7808056040",
+            userName: "Sandhya",
+            userPhone: "+91 7808056040",
+            type: "RETURN_PAYOUT",
+            amount: 41,
+            date: "2026-09-18T02:30:00.000Z",
+            timestamp: 1789703400000,
+            status: "SUCCESS",
+            referenceId: "CYC78080560401",
+            note: "6-Hour Cycle #1 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
+            noteHi: "6 घंटे के चक्र #1 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-दिवसीय हाई यील्ड ग्रोथ प्लान)",
+          },
+          {
+            id: "txn-cyc-init-2",
+            userId: "usr-1789384741169",
+            userLoginId: "7808056040",
+            userName: "Sandhya",
+            userPhone: "+91 7808056040",
+            type: "RETURN_PAYOUT",
+            amount: 3.2,
+            date: "2026-09-18T02:30:00.000Z",
+            timestamp: 1789703400000,
+            status: "SUCCESS",
+            referenceId: "CYC78080560402",
+            note: "6-Hour Cycle #1 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+            noteHi: "6 घंटे के चक्र #1 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान)",
+          }
+        ],
         plans: DEFAULT_PLANS,
         rules: DEFAULT_RULES,
         liveConfig: DEFAULT_LIVE_CONFIG,
@@ -1153,9 +1358,9 @@ function ensureDb(): ServerDB {
         dailyRoiPercent: 0.164,
         dailyReturnAmount: 164,
         totalExpectedReturn: 205124,
-        earnedSoFar: 0,
+        earnedSoFar: 41,
         claimedSoFar: 0,
-        unclaimedEarnings: 0,
+        unclaimedEarnings: 41,
         durationDays: 641,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -1164,9 +1369,11 @@ function ensureDb(): ServerDB {
         createdAt: 1789572203901,
         activationTimestamp: 1789572203901,
         lockedUntilTimestamp: 1789658603901,
-        isInitialLockCompleted: false,
-        cyclesCompleted: 0,
-        totalEarnedSoFar: 0
+        isInitialLockCompleted: true,
+        lockCongratulationsShown: true,
+        completedCyclesCount: 1,
+        cyclesCompleted: 1,
+        totalEarnedSoFar: 41
       },
       {
         id: "inv-sandhya-7808056040-2",
@@ -1182,9 +1389,9 @@ function ensureDb(): ServerDB {
         dailyRoiPercent: 0.128,
         dailyReturnAmount: 12.8,
         totalExpectedReturn: 14672,
-        earnedSoFar: 0,
+        earnedSoFar: 3.2,
         claimedSoFar: 0,
-        unclaimedEarnings: 0,
+        unclaimedEarnings: 3.2,
         durationDays: 365,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -1193,9 +1400,11 @@ function ensureDb(): ServerDB {
         createdAt: 1789580664512,
         activationTimestamp: 1789580664512,
         lockedUntilTimestamp: 1789667064512,
-        isInitialLockCompleted: false,
-        cyclesCompleted: 0,
-        totalEarnedSoFar: 0
+        isInitialLockCompleted: true,
+        lockCongratulationsShown: true,
+        completedCyclesCount: 1,
+        cyclesCompleted: 1,
+        totalEarnedSoFar: 3.2
       }
     ];
 
@@ -1246,6 +1455,7 @@ function ensureDb(): ServerDB {
           best.cashBalance = Math.max(best.cashBalance || 0, 230000);
           best.gpBalance = Math.max(best.gpBalance || 0, 19600);
           best.totalInvested = Math.max(best.totalInvested || 0, 110000);
+          best.totalEarned = Math.max(best.totalEarned || 0, 44.2);
         }
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
@@ -1261,7 +1471,7 @@ function ensureDb(): ServerDB {
               cashBalance: 230000,
               gpBalance: 19600,
               totalInvested: 110000,
-              totalEarned: 0,
+              totalEarned: 44.2,
               royaltyEarned: 0,
               pendingWithdrawals: 0,
               pendingDeposits: 0,
@@ -1284,6 +1494,11 @@ function ensureDb(): ServerDB {
     }
 
     syncAdminWalletWithTreasury(parsed);
+
+    const cyclesUpdated = processServerSideCycles(parsed);
+    if (cyclesUpdated) {
+      needsSave = true;
+    }
 
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
       saveDb(parsed, true);
@@ -3286,6 +3501,22 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Periodic background check for 6-hour cycle payouts
+  setInterval(() => {
+    try {
+      const db = ensureDb();
+      const updated = processServerSideCycles(db);
+      if (updated) {
+        saveDb(db);
+        broadcastRealtimeEvent("investments_updated", { investments: db.investments, timestamp: Date.now() });
+        broadcastRealtimeEvent("wallets_updated", { wallets: db.wallets, timestamp: Date.now() });
+        broadcastRealtimeEvent("transactions_updated", { transactions: db.transactions, timestamp: Date.now() });
+      }
+    } catch (e) {
+      console.error("[Server Cycle Error]:", e);
+    }
+  }, 30000);
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`GCap Full-Stack Main Database Server running on port ${PORT}`);
