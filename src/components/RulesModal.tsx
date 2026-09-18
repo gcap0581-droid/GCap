@@ -44,9 +44,11 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   const [formData, setFormData] = useState<AppRules>(rules);
   const [savedNotice, setSavedNotice] = useState<boolean>(false);
 
-  // Sync formData and default to EDIT tab for Admin whenever modal opens
+  const prevIsOpenRef = React.useRef(false);
+
+  // Sync formData and default to EDIT tab for Admin only when modal transitions from closed to open
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       setFormData({
         ...rules,
         shortTerm6hRate: rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041,
@@ -56,6 +58,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         setActiveTab('EDIT');
       }
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, rules, isAdmin]);
 
   if (!isOpen) return null;
@@ -485,7 +488,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             </div>
           ) : (
             /* EDIT RULES FORM */
-            <form onSubmit={handleSave} className="space-y-4">
+            <form id="rules-form" onSubmit={handleSave} className="space-y-4">
               <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-300">
                 {isHi
                   ? 'नीचे दिए गए फ़ील्ड्स में अपनी आवश्यकतानुसार संख्याएं और नियम बदलें। यह तुरंत पूरी ऐप (डिपॉजिट, विथड्रॉल, प्लान्स) में लागू हो जाएगा।'
@@ -816,7 +819,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, isReferralEnabled: formData.isReferralEnabled === false ? true : false })}
+                    onClick={() => {
+                      const updatedValue = formData.isReferralEnabled === false ? true : false;
+                      const updatedRules = { ...formData, isReferralEnabled: updatedValue };
+                      setFormData(updatedRules);
+                      onSaveRules(updatedRules);
+                    }}
                     className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border shadow-sm ${
                       formData.isReferralEnabled !== false
                         ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 shadow-rose-500/20'
@@ -1026,12 +1034,24 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>{isHi ? 'नियम सक्रिय व सुरक्षित हैं' : 'Rules enforced across all portals'}</span>
           </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer"
-          >
-            {isHi ? 'बंद करें' : 'Close'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              type="button"
+              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer"
+            >
+              {isHi ? 'बंद करें' : 'Close'}
+            </button>
+            {activeTab === 'EDIT' && (
+              <button
+                type="submit"
+                form="rules-form"
+                className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer animate-bounce"
+              >
+                {isHi ? 'नियम सुरक्षित करें' : 'Save Rules'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

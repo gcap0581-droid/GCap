@@ -659,6 +659,29 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                     </div>
                   </div>
 
+                  {/* UNCLAIMED CYCLES RETURN CREDIT (GP) */}
+                  {inv.unclaimedEarnings !== undefined && inv.unclaimedEarnings > 0 && (
+                    <div className="mb-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-2.5 animate-pulse">
+                      <div>
+                        <span className="text-[10px] text-amber-300 block font-bold">
+                          {isHi ? '⏳ बिना क्लेम की गई कमाई (GP):' : '⏳ Unclaimed Earning (GP):'}
+                        </span>
+                        <span className="text-sm font-extrabold text-white font-mono">
+                          {inv.unclaimedEarnings.toLocaleString('en-IN')} GP
+                        </span>
+                      </div>
+                      {onClaimReturn && (
+                        <button
+                          id={`btn-claim-single-return-${inv.id}`}
+                          onClick={() => onClaimReturn(inv.id)}
+                          className="py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-all cursor-pointer shadow-sm shrink-0"
+                        >
+                          {isHi ? 'क्लेम करें' : 'Claim'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Term Progress Bar */}
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex justify-between items-center text-slate-400">

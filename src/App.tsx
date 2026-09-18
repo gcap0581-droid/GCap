@@ -30,7 +30,7 @@ import {
   filterUserInvestments,
   normalizeInvestmentsList,
 } from './utils/storage';
-import { getNextFixedCycleTimestamp, formatFixedSlotTime } from './utils/cycleTiming';
+import { getNextFixedCycleTimestamp, formatFixedSlotTime, countElapsedFixedSlots } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
 import { getStoredCompanyProfile, saveStoredCompanyProfile } from './utils/companyStorage';
 import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers } from './utils/authStorage';
@@ -97,6 +97,7 @@ import {
   subscribeToFirestoreState,
   saveInvestmentsToFirestore,
   saveTransactionsToFirestore,
+  saveWalletsToFirestore,
   getCachedFirestoreState,
   updateFirestoreBridgeCache,
 } from './lib/firestoreBridge';
@@ -1724,34 +1725,74 @@ export default function App() {
 
   // Deposit Rule 3 & 4:
   // User can swap any portion of approved cash to GP to buy plans; rest stays intact
-  const handleSwapSuccess = (swapAmount: number, gpEarned?: number) => {
+  const handleSwapSuccess = (
+    swapAmount: number,
+    gpAmount: number,
+    direction: 'CASH_TO_GP' | 'GP_TO_CASH' = 'CASH_TO_GP'
+  ) => {
     if (!wallet) return;
-    if (swapAmount <= 0 || swapAmount > wallet.cashBalance) return;
-    const gpRate = rules?.gpRatePerRupee && rules?.gpRatePerRupee > 0 ? rules?.gpRatePerRupee : 1.0;
-    const finalGpAmount = typeof gpEarned === 'number' && gpEarned > 0 ? gpEarned : Math.round(swapAmount * gpRate * 100) / 100;
     
-    const updatedWallet: Wallet = {
-      ...wallet,
-      cashBalance: wallet.cashBalance - swapAmount,
-      gpBalance: (wallet.gpBalance || 0) + finalGpAmount,
-    };
-    const newTx: Transaction = {
-      id: `txn-swap-${Date.now()}`,
-      userId: currentUser?.id,
-      userLoginId: currentUser?.loginId,
-      userName: currentUser?.name || 'Investor User',
-      userPhone: currentUser?.phone || '',
-      type: 'SWAP_GP',
-      amount: swapAmount,
-      gpEarned: finalGpAmount,
-      date: new Date().toISOString(),
-      timestamp: Date.now(),
-      status: 'SUCCESS',
-      method: 'Cash to GP Swap',
-      referenceId: 'GP' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `Swapped ₹${swapAmount} to ${finalGpAmount} GP (@ ₹1 = ${gpRate} GP) for plan purchase`,
-      noteHi: `₹${swapAmount} कैश को ${finalGpAmount} GP में बदला (दर: ₹1 = ${gpRate} GP)`,
-    };
+    let updatedWallet: Wallet;
+    let newTx: Transaction;
+
+    const gpRate = rules?.gpRatePerRupee && rules?.gpRatePerRupee > 0 ? rules?.gpRatePerRupee : 1.0;
+    let finalGpAmount = 0;
+
+    if (direction === 'GP_TO_CASH') {
+      if (gpAmount <= 0 || gpAmount > (wallet.gpBalance || 0)) return;
+      finalGpAmount = gpAmount;
+      
+      updatedWallet = {
+        ...wallet,
+        gpBalance: Math.max(0, (wallet.gpBalance || 0) - gpAmount),
+        cashBalance: (wallet.cashBalance || 0) + swapAmount,
+      };
+
+      newTx = {
+        id: `txn-swap-${Date.now()}`,
+        userId: currentUser?.id,
+        userLoginId: currentUser?.loginId,
+        userName: currentUser?.name || 'Investor User',
+        userPhone: currentUser?.phone || '',
+        type: 'TRANSFER',
+        amount: swapAmount,
+        gpEarned: -gpAmount,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        status: 'SUCCESS',
+        method: 'GP to Cash Swap',
+        referenceId: 'CS' + Math.floor(10000000 + Math.random() * 90000000),
+        note: `Swapped ${gpAmount} GP to ₹${swapAmount} (@ 1 GP = ₹${gpRate})`,
+        noteHi: `${gpAmount} GP को ₹${swapAmount} कैश में बदला (दर: 1 GP = ₹${gpRate})`,
+      };
+    } else {
+      if (swapAmount <= 0 || swapAmount > wallet.cashBalance) return;
+      finalGpAmount = gpAmount > 0 ? gpAmount : Math.round(swapAmount * gpRate * 100) / 100;
+
+      updatedWallet = {
+        ...wallet,
+        cashBalance: wallet.cashBalance - swapAmount,
+        gpBalance: (wallet.gpBalance || 0) + finalGpAmount,
+      };
+
+      newTx = {
+        id: `txn-swap-${Date.now()}`,
+        userId: currentUser?.id,
+        userLoginId: currentUser?.loginId,
+        userName: currentUser?.name || 'Investor User',
+        userPhone: currentUser?.phone || '',
+        type: 'SWAP_GP',
+        amount: swapAmount,
+        gpEarned: finalGpAmount,
+        date: new Date().toISOString(),
+        timestamp: Date.now(),
+        status: 'SUCCESS',
+        method: 'Cash to GP Swap',
+        referenceId: 'GP' + Math.floor(10000000 + Math.random() * 90000000),
+        note: `Swapped ₹${swapAmount} to ${finalGpAmount} GP (@ ₹1 = ${gpRate} GP) for plan purchase`,
+        noteHi: `₹${swapAmount} कैश को ${finalGpAmount} GP में बदला (दर: ₹1 = ${gpRate} GP)`,
+      };
+    }
 
     setWallet(updatedWallet);
     setStoredWallet(updatedWallet);
@@ -1790,10 +1831,12 @@ export default function App() {
     if (!wallet) return;
     // Rule 1, 2, 3: Deduct only from the selected source (totalEarned or royaltyEarned)
     const isRoyalty = withdrawalSource === 'ROYALTY';
+    const isCash = withdrawalSource === 'CASH';
     const updatedWallet: Wallet = {
       ...wallet,
-      totalEarned: !isRoyalty ? Math.max(0, (wallet.totalEarned || 0) - amount) : wallet.totalEarned,
+      totalEarned: (withdrawalSource === 'EARNING') ? Math.max(0, (wallet.totalEarned || 0) - amount) : wallet.totalEarned,
       royaltyEarned: isRoyalty ? Math.max(0, (wallet.royaltyEarned || 0) - amount) : (wallet.royaltyEarned || 0),
+      cashBalance: isCash ? Math.max(0, (wallet.cashBalance || 0) - amount) : (wallet.cashBalance || 0),
     };
 
     const tdsPercent = voucherDetails?.tdsPercent ?? rules?.tdsPercent ?? 5.0;
@@ -1827,9 +1870,13 @@ export default function App() {
       panNumber: 'ABCDE1234F',
       note: isRoyalty
         ? `Royalty Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`
+        : isCash
+        ? `Cash Balance Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`
         : `Earning Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`,
       noteHi: isRoyalty
         ? `रॉयल्टी निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`
+        : isCash
+        ? `कैश बैलेंस निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`
         : `अर्निंग निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`,
     };
 
@@ -2061,7 +2108,7 @@ export default function App() {
       if (i.id === investmentId) {
         return {
           ...i,
-          claimedSoFar: i.claimedSoFar + claimAmt,
+          claimedSoFar: (i.claimedSoFar || 0) + claimAmt,
           unclaimedEarnings: 0,
         };
       }
@@ -2070,7 +2117,7 @@ export default function App() {
 
     const updatedWallet: Wallet = {
       ...wallet,
-      cashBalance: wallet.cashBalance + claimAmt,
+      gpBalance: (wallet.gpBalance || 0) + claimAmt,
     };
 
     const newTx: Transaction = {
@@ -2085,29 +2132,37 @@ export default function App() {
       timestamp: Date.now(),
       status: 'SUCCESS',
       referenceId: 'RET' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `Daily return claimed for ${inv.planName}`,
-      noteHi: `${inv.planName} का दैनिक रिटर्न वॉलेट में जोड़ा गया`,
+      note: `Claimed ${claimAmt} GP return for ${inv.planName} to GP Balance`,
+      noteHi: `${inv.planName} का ${claimAmt} GP रिटर्न GP बैलेंस में जोड़ा गया`,
     };
 
     setInvestments(updatedInvestments);
-    setWallet(updatedWallet);
-    setTransactions([newTx, ...transactions]);
+    setStoredInvestments(updatedInvestments);
+    saveInvestmentsToFirestore(updatedInvestments).catch(console.error);
 
+    setWallet(updatedWallet);
+    setStoredWallet(updatedWallet);
     if (currentUser?.id) {
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
-      apiCreateTransaction(newTx, currentUser.id).catch(console.error);
       const updatedInv = updatedInvestments.find((i) => i.id === investmentId);
       if (updatedInv) {
         apiUpdateInvestment(updatedInv, currentUser.id).catch(console.error);
       }
     }
 
+    const updatedTxns = [newTx, ...transactions];
+    setTransactions(updatedTxns);
+    setStoredTransactions(updatedTxns);
+    if (currentUser?.id) {
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
+    }
+
     confetti({ particleCount: 50, spread: 60 });
     showToast(
-      isHi ? 'रिटर्न वॉलेट में जोड़ा गया!' : 'Return Claimed!',
+      isHi ? 'मुनाफा क्लेम किया गया!' : 'Return Claimed!',
       isHi
-        ? `+${formatINR(claimAmt)} आपके उपलब्ध कैश बैलेंस में ट्रांसफर कर दिए गए हैं।`
-        : `+${formatINR(claimAmt)} has been transferred to your available balance.`
+        ? `+${claimAmt.toLocaleString()} GP आपके उपलब्ध GP बैलेंस में ट्रांसफर कर दिए गए हैं।`
+        : `+${claimAmt.toLocaleString()} GP has been transferred to your G-Points balance.`
     );
   };
 
@@ -2118,13 +2173,13 @@ export default function App() {
     const claimTotal = unclaimedReturnsTotal;
     const updatedInvestments = investments.map((i) => ({
       ...i,
-      claimedSoFar: i.claimedSoFar + i.unclaimedEarnings,
+      claimedSoFar: (i.claimedSoFar || 0) + i.unclaimedEarnings,
       unclaimedEarnings: 0,
     }));
 
     const updatedWallet: Wallet = {
       ...wallet,
-      cashBalance: wallet.cashBalance + claimTotal,
+      gpBalance: (wallet.gpBalance || 0) + claimTotal,
     };
 
     const newTx: Transaction = {
@@ -2139,26 +2194,33 @@ export default function App() {
       timestamp: Date.now(),
       status: 'SUCCESS',
       referenceId: 'RET' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `All accrued daily returns claimed (${formatINR(claimTotal)})`,
-      noteHi: `सभी संचित दैनिक रिटर्न वॉलेट में क्रेडिट किए गए (${formatINR(claimTotal)})`,
+      note: `All accrued returns claimed (${claimTotal.toLocaleString()} GP)`,
+      noteHi: `सभी संचित रिटर्न GP बैलेंस में क्रेडिट किए गए (${claimTotal.toLocaleString()} GP)`,
     };
 
     setInvestments(updatedInvestments);
+    setStoredInvestments(updatedInvestments);
+    saveInvestmentsToFirestore(updatedInvestments).catch(console.error);
+
     setWallet(updatedWallet);
-    setTransactions([newTx, ...transactions]);
+    setStoredWallet(updatedWallet);
+    
+    const updatedTxns = [newTx, ...transactions];
+    setTransactions(updatedTxns);
+    setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
       apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
-      apiCreateTransaction(newTx, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
       updatedInvestments.forEach((inv) => apiUpdateInvestment(inv, currentUser.id).catch(console.error));
     }
 
     confetti({ particleCount: 70, spread: 70 });
     showToast(
-      isHi ? 'सभी रिटर्न सफलतापूर्वक प्राप्त!' : 'All Returns Claimed!',
+      isHi ? 'सभी मुनाफा सफलतापूर्वक प्राप्त!' : 'All Returns Claimed!',
       isHi
-        ? `+${formatINR(claimTotal)} आपके वॉलेट में जोड़ दिए गए हैं।`
-        : `+${formatINR(claimTotal)} credited to your wallet.`
+        ? `+${claimTotal.toLocaleString()} GP आपके उपलब्ध GP बैलेंस में जोड़ दिए गए हैं।`
+        : `+${claimTotal.toLocaleString()} GP has been transferred to your G-Points balance.`
     );
   };
 
@@ -2417,11 +2479,47 @@ export default function App() {
       const updated = investments.map((inv) => {
         if (inv.status !== 'ACTIVE' || inv.userId !== currentUser.id) return inv;
 
-        // Phase 1: 24h Lock Expiry Check -> snap to nearest upcoming fixed time slab
+        // Calculate dynamic cyclePayout rate based on active rules
+        let current6hRate = 0.041;
+        if (inv.planId === 'long-term') {
+          current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+        } else {
+          current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+        }
+        const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
+
+        // Phase 1: 24h Lock Expiry Check -> calculate any elapsed fixed cycle slots since lock ended
         if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
           hasChanges = true;
+          const lockEnd = inv.lockedUntilTimestamp || (now - 24 * 3600 * 1000);
+          const elapsedCycles = Math.max(0, countElapsedFixedSlots(lockEnd, now));
+          const cyclesToAdd = elapsedCycles > 0 ? elapsedCycles : 0;
+          const earningsToAdd = cyclesToAdd * cyclePayout;
+          const nextCycleNum = (inv.completedCyclesCount || 0) + cyclesToAdd;
           const currentEnd = getNextFixedCycleTimestamp(now);
           const currentStart = currentEnd - 6 * 3600 * 1000;
+
+          if (earningsToAdd > 0) {
+            totalCycleEarningsToAdd += earningsToAdd;
+            for (let c = 1; c <= cyclesToAdd; c++) {
+              const cNum = (inv.completedCyclesCount || 0) + c;
+              newTransactions.push({
+                id: `txn-cyc-${Date.now()}-${inv.id}-${c}`,
+                userId: currentUser.id,
+                userLoginId: currentUser.loginId,
+                userName: currentUser.name,
+                userPhone: currentUser.phone,
+                type: 'RETURN_PAYOUT',
+                amount: cyclePayout,
+                date: new Date().toISOString(),
+                timestamp: now,
+                status: 'SUCCESS',
+                referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
+                note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
+                noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+              });
+            }
+          }
 
           let isAlreadyShown = !!inv.lockCongratulationsShown;
           try {
@@ -2449,6 +2547,9 @@ export default function App() {
               ...inv,
               isInitialLockCompleted: true,
               lockCongratulationsShown: true,
+              completedCyclesCount: nextCycleNum,
+              earnedSoFar: (inv.earnedSoFar || 0) + earningsToAdd,
+              unclaimedEarnings: (inv.unclaimedEarnings || 0) + earningsToAdd,
               currentCycleStartTimestamp: currentStart,
               currentCycleEndTimestamp: currentEnd,
             });
@@ -2459,6 +2560,9 @@ export default function App() {
             ...inv,
             isInitialLockCompleted: true,
             lockCongratulationsShown: true,
+            completedCyclesCount: nextCycleNum,
+            earnedSoFar: (inv.earnedSoFar || 0) + earningsToAdd,
+            unclaimedEarnings: (inv.unclaimedEarnings || 0) + earningsToAdd,
             currentCycleStartTimestamp: currentStart,
             currentCycleEndTimestamp: currentEnd,
           };
@@ -2468,41 +2572,39 @@ export default function App() {
         if (inv.isInitialLockCompleted && now >= (inv.currentCycleEndTimestamp || 0)) {
           hasChanges = true;
           
-          // Calculate dynamic cyclePayout based on active rules for both existing and new active portfolios!
-          let current6hRate = 0.041;
-          if (inv.planId === 'long-term') {
-            current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
-          } else {
-            current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
-          }
-          const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
-          
-          const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
+          const cycleStartRef = inv.currentCycleStartTimestamp || ((inv.currentCycleEndTimestamp || now) - 6 * 3600 * 1000);
+          const elapsedCycles = Math.max(1, countElapsedFixedSlots(cycleStartRef, now));
+          const earningsToAdd = elapsedCycles * cyclePayout;
+          const nextCycleNum = (inv.completedCyclesCount || 0) + elapsedCycles;
           const currentEnd = getNextFixedCycleTimestamp(now);
           const currentStart = currentEnd - 6 * 3600 * 1000;
 
-          totalCycleEarningsToAdd += cyclePayout;
+          totalCycleEarningsToAdd += earningsToAdd;
 
-          newTransactions.push({
-            id: `txn-cyc-${Date.now()}-${inv.id}`,
-            userId: currentUser.id,
-            userLoginId: currentUser.loginId,
-            userName: currentUser.name,
-            userPhone: currentUser.phone,
-            type: 'RETURN_PAYOUT',
-            amount: cyclePayout,
-            date: new Date().toISOString(),
-            timestamp: now,
-            status: 'SUCCESS',
-            referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-            note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
-            noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
-          });
+          for (let c = 1; c <= elapsedCycles; c++) {
+            const cNum = (inv.completedCyclesCount || 0) + c;
+            newTransactions.push({
+              id: `txn-cyc-${Date.now()}-${inv.id}-${c}`,
+              userId: currentUser.id,
+              userLoginId: currentUser.loginId,
+              userName: currentUser.name,
+              userPhone: currentUser.phone,
+              type: 'RETURN_PAYOUT',
+              amount: cyclePayout,
+              date: new Date().toISOString(),
+              timestamp: now,
+              status: 'SUCCESS',
+              referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
+              note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
+              noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+            });
+          }
 
           return {
             ...inv,
             completedCyclesCount: nextCycleNum,
-            earnedSoFar: (inv.earnedSoFar || 0) + cyclePayout,
+            earnedSoFar: (inv.earnedSoFar || 0) + earningsToAdd,
+            unclaimedEarnings: (inv.unclaimedEarnings || 0) + earningsToAdd,
             currentCycleStartTimestamp: currentStart,
             currentCycleEndTimestamp: currentEnd, // Next synchronized fixed time slab
           };
@@ -2583,6 +2685,11 @@ export default function App() {
               }
             }
           }
+
+          // Send each transaction to the server to record it and credit wallets
+          newTransactions.forEach((txn) => {
+            apiCreateTransaction(txn, txn.userId).catch(console.error);
+          });
 
           setTransactions((prev) => {
             const updatedTxns = [...newTransactions, ...prev];
@@ -2681,6 +2788,7 @@ export default function App() {
           isInitialLockCompleted: true,
           completedCyclesCount: nextCycleNum,
           earnedSoFar: (i.earnedSoFar || 0) + cyclePayout,
+          unclaimedEarnings: (i.unclaimedEarnings || 0) + cyclePayout,
           currentCycleStartTimestamp: currentStart,
           currentCycleEndTimestamp: currentEnd, // synchronized to next fixed slot
         };
@@ -2689,14 +2797,90 @@ export default function App() {
     });
 
     setInvestments(updated);
+    setStoredInvestments(updated);
+    saveInvestmentsToFirestore(updated).catch(console.error);
+
+    let updatedWallet: Wallet | null = null;
     setWallet((prev) => {
       if (!prev) return prev;
-      return {
+      updatedWallet = {
         ...prev,
         totalEarned: (prev.totalEarned || 0) + cyclePayout,
       };
+      setStoredWallet(updatedWallet);
+      if (currentUser) {
+        apiUpdateWallet(currentUser.id, updatedWallet).catch(console.error);
+        saveWalletsToFirestore({ [currentUser.id]: updatedWallet }).catch(console.error);
+      }
+      return updatedWallet;
     });
-    setTransactions((prev) => [cycleTx, ...prev]);
+
+    const newTxns: Transaction[] = [cycleTx];
+    
+    if (rules?.isReferralEnabled !== false && currentUser) {
+      const allUsers = getAllUsers();
+      const l1SponsorCode = currentUser.referredBy?.trim().toUpperCase();
+      if (l1SponsorCode) {
+        const l1User = allUsers.find(u => u.referralCode?.toUpperCase() === l1SponsorCode || u.loginId.toUpperCase() === l1SponsorCode);
+        if (l1User && l1User.id !== currentUser.id && (rules?.referralL1Percent || 0) > 0) {
+          const l1Bonus = Math.round(((cyclePayout * (rules?.referralL1Percent || 0)) / 100) * 100) / 100;
+          if (l1Bonus > 0) {
+            newTxns.push({
+              id: `txn-sim-ref-l1-${Date.now()}`,
+              userId: l1User.id,
+              userLoginId: l1User.loginId,
+              userName: l1User.name,
+              userPhone: l1User.phone,
+              type: 'REFERRAL_BONUS',
+              amount: l1Bonus,
+              date: new Date().toISOString(),
+              timestamp: now,
+              status: 'SUCCESS',
+              referenceId: 'REF' + Math.floor(10000000 + Math.random() * 90000000),
+              note: `Level 1 Team Earning Bonus (${rules?.referralL1Percent || 0}%) from ${currentUser.name} (Simulated)`,
+              noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 1 रेफरल बोनस (${rules?.referralL1Percent || 0}%) मिला (सिम्युलेटेड)`,
+            });
+          }
+
+          const l2SponsorCode = l1User.referredBy?.trim().toUpperCase();
+          if (l2SponsorCode) {
+            const l2User = allUsers.find(u => u.referralCode?.toUpperCase() === l2SponsorCode || u.loginId.toUpperCase() === l2SponsorCode);
+            if (l2User && l2User.id !== currentUser.id && l2User.id !== l1User.id && (rules?.referralL2Percent || 0) > 0) {
+              const l2Bonus = Math.round(((cyclePayout * (rules?.referralL2Percent || 0)) / 100) * 100) / 100;
+              if (l2Bonus > 0) {
+                newTxns.push({
+                  id: `txn-sim-ref-l2-${Date.now()}`,
+                  userId: l2User.id,
+                  userLoginId: l2User.loginId,
+                  userName: l2User.name,
+                  userPhone: l2User.phone,
+                  type: 'REFERRAL_BONUS',
+                  amount: l2Bonus,
+                  date: new Date().toISOString(),
+                  timestamp: now,
+                  status: 'SUCCESS',
+                  referenceId: 'REF' + Math.floor(10000000 + Math.random() * 90000000),
+                  note: `Level 2 Team Earning Bonus (${rules?.referralL2Percent || 0}%) from ${currentUser.name} (Simulated)`,
+                  noteHi: `टीम सदस्य ${currentUser.name} की अर्निंग पर लेवल 2 रेफरल बोनस (${rules?.referralL2Percent || 0}%) मिला (सिम्युलेटेड)`,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Call apiCreateTransaction for each transaction to persist and credit sponsor wallets on server
+    newTxns.forEach((txn) => {
+      apiCreateTransaction(txn, txn.userId).catch(console.error);
+    });
+
+    setTransactions((prev) => {
+      const updatedTxns = [...newTxns, ...prev];
+      setStoredTransactions(updatedTxns);
+      saveTransactionsToFirestore(updatedTxns).catch(console.error);
+      return updatedTxns;
+    });
 
     confetti({ particleCount: 60, spread: 70, origin: { y: 0.5 } });
     showToast(

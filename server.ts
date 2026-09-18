@@ -149,6 +149,8 @@ interface AppRules {
   supportEmail: string;
   supportPhone: string;
   lastUpdated: string;
+  shortTerm6hRate?: number;
+  longTerm6hRate?: number;
   companyUpiId?: string;
   companyBankAccountHolder?: string;
   companyBankName?: string;
@@ -371,6 +373,8 @@ const DEFAULT_RULES: AppRules = {
   isReferralEnabled: true,
   tdsPercent: 5.0,
   adminFeePercent: 2.0,
+  shortTerm6hRate: 0.041,
+  longTerm6hRate: 0.032,
   supportEmail: "support@gcap.in",
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
@@ -919,9 +923,9 @@ function ensureDb(): ServerDB {
             dailyReturnAmount: 164,
             durationDays: 641,
             daysCompleted: 0,
-            earnedSoFar: 0,
-            totalEarnedSoFar: 0,
-            unclaimedEarnings: 0,
+            earnedSoFar: 41,
+            totalEarnedSoFar: 41,
+            unclaimedEarnings: 41,
             claimedSoFar: 0,
             totalExpectedReturn: 205124,
             startDate: "2026-09-16T15:23:23.901Z",
@@ -930,8 +934,10 @@ function ensureDb(): ServerDB {
             activationTimestamp: 1789572203901,
             createdAt: 1789572203901,
             lockedUntilTimestamp: 1789658603901,
-            isInitialLockCompleted: false,
-            cyclesCompleted: 0,
+            isInitialLockCompleted: true,
+            lockCongratulationsShown: true,
+            completedCyclesCount: 1,
+            cyclesCompleted: 1,
           },
           {
             id: "inv-sandhya-7808056040-2",
@@ -1882,6 +1888,9 @@ async function startServer() {
       wallet.pendingDeposits = (wallet.pendingDeposits || 0) + Number(transaction.amount || 0);
     } else if (transaction.type === "WITHDRAWAL" && transaction.status === "PENDING") {
       wallet.pendingWithdrawals = (wallet.pendingWithdrawals || 0) + Number(transaction.amount || 0);
+    } else if (transaction.type === "REFERRAL_BONUS") {
+      wallet.cashBalance = (wallet.cashBalance || 0) + Number(transaction.amount || 0);
+      wallet.totalEarned = (wallet.totalEarned || 0) + Number(transaction.amount || 0);
     }
 
     // Persist wallet under all alias keys

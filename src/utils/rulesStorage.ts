@@ -2,6 +2,7 @@ import { AppRules } from '../types';
 import { DEFAULT_GCAP_RULES } from '../data/defaultRules';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSaveRules } from './centralSync';
+import { saveRulesToFirestore } from '../lib/firestoreBridge';
 
 const RULES_STORAGE_KEY = 'gcap_platform_rules_v1';
 
@@ -12,7 +13,12 @@ export function getStoredRules(): AppRules {
       return DEFAULT_GCAP_RULES;
     }
     const parsed = JSON.parse(raw);
-    const rules = { ...DEFAULT_GCAP_RULES, ...parsed };
+    const rules: AppRules = {
+      ...DEFAULT_GCAP_RULES,
+      ...parsed,
+      shortTerm6hRate: parsed.shortTerm6hRate !== undefined ? Number(parsed.shortTerm6hRate) : DEFAULT_GCAP_RULES.shortTerm6hRate,
+      longTerm6hRate: parsed.longTerm6hRate !== undefined ? Number(parsed.longTerm6hRate) : DEFAULT_GCAP_RULES.longTerm6hRate,
+    };
     if (rules.gpRatePerRupee === 1.0) {
       rules.gpRatePerRupee = 0.98;
     }
@@ -29,6 +35,7 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
     }
     if (syncToServer) {
       apiSaveRules(rules).catch((err) => console.warn('Background apiSaveRules error:', err));
+      saveRulesToFirestore(rules).catch((err) => console.warn('Direct saveRulesToFirestore error:', err));
     }
     if (broadcast) {
       broadcastOtaUpdate(

@@ -100,7 +100,7 @@ export type TransactionType =
   | 'REFERRAL_BONUS'
   | 'TRANSFER';
 
-export type WithdrawalSource = 'EARNING' | 'ROYALTY';
+export type WithdrawalSource = 'EARNING' | 'ROYALTY' | 'CASH';
 
 export interface Transaction {
   id: string;

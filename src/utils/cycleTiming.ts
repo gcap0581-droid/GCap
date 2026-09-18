@@ -79,33 +79,32 @@ export function alignInvestmentCycleTimestamps(inv: {
     };
   }
 
-  // If already in active cycle, align end timestamp to the next fixed slot if not aligned
+  // Preserve existing unexpired cycle timestamp
   const currentEnd = inv.currentCycleEndTimestamp || 0;
-  if (currentEnd <= now) {
-    const nextSlot = getNextFixedCycleTimestamp(now);
+  if (currentEnd > now) {
     return {
-      currentCycleStartTimestamp: nextSlot - 6 * 3600 * 1000,
-      currentCycleEndTimestamp: nextSlot,
+      currentCycleStartTimestamp: inv.currentCycleStartTimestamp || (currentEnd - 6 * 3600 * 1000),
+      currentCycleEndTimestamp: currentEnd,
     };
   }
 
-  // Validate if currentEnd is aligned to one of the fixed slots
-  const d = new Date(currentEnd);
-  const hour = d.getHours();
-  const minutes = d.getMinutes();
-  const seconds = d.getSeconds();
-
-  const isAligned = FIXED_CYCLE_HOURS.includes(hour as any) && minutes === 0 && seconds === 0;
-  if (!isAligned) {
-    const nextSlot = getNextFixedCycleTimestamp(now);
-    return {
-      currentCycleStartTimestamp: nextSlot - 6 * 3600 * 1000,
-      currentCycleEndTimestamp: nextSlot,
-    };
-  }
-
+  const nextSlot = getNextFixedCycleTimestamp(now);
   return {
-    currentCycleStartTimestamp: inv.currentCycleStartTimestamp || (currentEnd - 6 * 3600 * 1000),
-    currentCycleEndTimestamp: currentEnd,
+    currentCycleStartTimestamp: nextSlot - 6 * 3600 * 1000,
+    currentCycleEndTimestamp: nextSlot,
   };
+}
+
+/**
+ * Count how many fixed cycle slots occurred between two timestamps.
+ */
+export function countElapsedFixedSlots(fromTimestamp: number, toTimestamp: number): number {
+  if (toTimestamp <= fromTimestamp) return 0;
+  let count = 0;
+  let cur = getNextFixedCycleTimestamp(fromTimestamp);
+  while (cur <= toTimestamp) {
+    count++;
+    cur = getNextFixedCycleTimestamp(cur + 1000);
+  }
+  return count;
 }

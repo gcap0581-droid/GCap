@@ -11,6 +11,7 @@ import {
   Lock,
   Sparkles,
   Award,
+  Wallet as WalletIcon,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Language, Wallet, AppRules, WithdrawalSource, UserProfile, Transaction } from '../types';
@@ -73,6 +74,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   // Rule 3: Only Total Earning Amount and Royalty Earning Amount are shown
   const totalEarning = wallet.totalEarned || 0;
   const royaltyEarning = wallet.royaltyEarned || 0;
+  const cashEarning = wallet.cashBalance || 0;
   const hasRoyalty = (wallet.royaltyEarned !== undefined && wallet.royaltyEarned > 0) || royaltyEarning > 0;
 
   // Default active tab based on which window is active or default to EARNING
@@ -81,10 +83,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   );
 
   const activeWindowValid =
-    withdrawalSource === 'EARNING' ? isEarningWindowActive : isRoyaltyWindowActive;
+    withdrawalSource === 'CASH'
+      ? true
+      : withdrawalSource === 'EARNING'
+      ? isEarningWindowActive
+      : isRoyaltyWindowActive;
 
   const maxWithdrawable =
-    withdrawalSource === 'EARNING' ? totalEarning : royaltyEarning;
+    withdrawalSource === 'EARNING'
+      ? totalEarning
+      : withdrawalSource === 'ROYALTY'
+      ? royaltyEarning
+      : cashEarning;
 
   const [amount, setAmount] = useState<number>(Math.min(maxWithdrawable, 5000));
   const [destinationType, setDestinationType] = useState<'UPI' | 'BANK'>('UPI');
@@ -129,7 +139,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const handleSelectSource = (src: WithdrawalSource) => {
     setWithdrawalSource(src);
     setError('');
-    const newMax = src === 'EARNING' ? totalEarning : royaltyEarning;
+    const newMax = src === 'EARNING' ? totalEarning : src === 'ROYALTY' ? royaltyEarning : cashEarning;
     setAmount(Math.min(newMax, 5000));
   };
 
@@ -325,7 +335,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Option A: Total Earning Amount */}
               <div
                 onClick={() => handleSelectSource('EARNING')}
@@ -342,21 +352,21 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     </div>
                     <div>
                       <span className="text-xs font-bold text-white block">
-                        {isHi ? 'कुल अर्निंग बैलेंस' : 'Total Earning'}
+                        {isHi ? 'कुल अर्निंग' : 'Total Earning'}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono">
-                        {isHi ? 'हर महीने 1 से 5 तारीख' : 'Every Month: 1st - 5th'}
+                        {isHi ? '1 से 5 तारीख' : '1st - 5th'}
                       </span>
                     </div>
                   </div>
                   {isEarningWindowActive ? (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                      🟢 {isHi ? 'सक्रिय (Active)' : 'Active'}
+                      🟢 {isHi ? 'सक्रिय' : 'Active'}
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold flex items-center gap-1">
                       <Lock className="w-2.5 h-2.5" />
-                      <span>{isHi ? '1-5 को खुलेगा' : 'Locked'}</span>
+                      <span>{isHi ? '1-5 को' : 'Locked'}</span>
                     </span>
                   )}
                 </div>
@@ -367,8 +377,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   </span>
                   <p className="text-[10px] text-slate-400 mt-1">
                     {isHi
-                      ? 'दैनिक निवेश रिटर्न व शुद्ध मुनाफा'
-                      : 'Accrued daily ROI returns from active plans'}
+                      ? 'दैनिक निवेश रिटर्न व मुनाफा'
+                      : 'Accrued daily ROI returns'}
                   </p>
                 </div>
               </div>
@@ -390,21 +400,21 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                       </div>
                       <div>
                         <span className="text-xs font-bold text-white block">
-                          {isHi ? 'रॉयल्टी अर्निंग बैलेंस' : 'Royalty Earning'}
+                          {isHi ? 'रॉयल्टी अर्निंग' : 'Royalty Earning'}
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {isHi ? 'हर महीने 6 से 10 तारीख' : 'Every Month: 6th - 10th'}
+                          {isHi ? '6 से 10 तारीख' : '6th - 10th'}
                         </span>
                       </div>
                     </div>
                     {isRoyaltyWindowActive ? (
                       <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                        🟢 {isHi ? 'सक्रिय (Active)' : 'Active'}
+                        🟢 {isHi ? 'सक्रिय' : 'Active'}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold flex items-center gap-1">
                         <Lock className="w-2.5 h-2.5" />
-                        <span>{isHi ? '6-10 को खुलेगा' : 'Locked'}</span>
+                        <span>{isHi ? '6-10 को' : 'Locked'}</span>
                       </span>
                     )}
                   </div>
@@ -415,8 +425,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     </span>
                     <p className="text-[10px] text-slate-400 mt-1">
                       {isHi
-                        ? 'रेफरल एवं लीडरशिप रॉयल्टी रिवॉर्ड'
-                        : 'Leadership and referral royalty bonuses'}
+                        ? 'रेफरल रॉयल्टी रिवॉर्ड'
+                        : 'Leadership/referral royalty'}
                     </p>
                   </div>
                 </div>
@@ -428,11 +438,51 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   </div>
                   <p className="text-[11px] text-slate-500">
                     {isHi
-                      ? 'वर्तमान में कोई रॉयल्टी अर्निंग नहीं है। रॉयल्टी होने पर ही यह विकल्प एक्टिवेट होगा।'
-                      : 'No royalty earnings accrued yet. Appears when royalty bonuses are generated.'}
+                      ? 'वर्तमान में कोई रॉयल्टी अर्निंग नहीं है।'
+                      : 'No royalty bonuses generated.'}
                   </p>
                 </div>
               )}
+
+              {/* Option C: Wallet Cash Balance */}
+              <div
+                onClick={() => handleSelectSource('CASH')}
+                className={`p-4 rounded-xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                  withdrawalSource === 'CASH'
+                    ? 'bg-emerald-950/30 border-emerald-500 shadow-md shadow-emerald-950/30'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                      <WalletIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block">
+                        {isHi ? 'वॉलेट कैश बैलेंस' : 'Wallet Cash'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {isHi ? 'कभी भी निकासी' : 'Anytime Withdrawal'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                    🟢 {isHi ? 'सक्रिय' : 'Active'}
+                  </span>
+                </div>
+
+                <div className="mt-2">
+                  <span className="text-2xl font-extrabold font-mono text-emerald-400">
+                    {formatINR(cashEarning)}
+                  </span>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {isHi
+                      ? 'GP से परिवर्तित रुपए'
+                      : 'Rupees converted from GP'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -474,8 +524,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 {isHi
-                  ? `${withdrawalSource === 'EARNING' ? 'अर्निंग' : 'रॉयल्टी'} निकासी राशि (Amount):`
-                  : `${withdrawalSource === 'EARNING' ? 'Earning' : 'Royalty'} Withdrawal Amount:`}
+                  ? `${withdrawalSource === 'EARNING' ? 'अर्निंग' : withdrawalSource === 'ROYALTY' ? 'रॉयल्टी' : 'कैश'} निकासी राशि (Amount):`
+                  : `${withdrawalSource === 'EARNING' ? 'Earning' : withdrawalSource === 'ROYALTY' ? 'Royalty' : 'Cash'} Withdrawal Amount:`}
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
                 {isHi ? 'अधिकतम:' : 'Max:'} {formatINR(maxWithdrawable)}
