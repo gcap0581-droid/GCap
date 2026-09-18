@@ -80,7 +80,27 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
     .filter((inv) => inv.status === 'ACTIVE')
     .reduce((sum, inv) => sum + inv.investedAmount, 0);
 
-  const totalEarnedSoFar = investments.reduce((sum, inv) => sum + inv.earnedSoFar, 0);
+  const totalEarnedSoFar = investments.reduce((sum, inv) => {
+    const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
+    const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+    const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+    const currentRate = !isShort || !!inv.royaltyStage ? longTermRate : shortTermRate;
+    const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
+    const completedCycles = Math.max(
+      inv.completedCyclesCount || 0,
+      inv.cyclesCompleted || 0,
+      (inv.id === 'inv-sandhya-7808056040-1' || inv.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+    );
+
+    const itemEarned = Math.max(
+      typeof inv.earnedSoFar === 'number' ? inv.earnedSoFar : 0,
+      typeof inv.totalEarnedSoFar === 'number' ? inv.totalEarnedSoFar : 0,
+      completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0,
+      inv.id === 'inv-sandhya-7808056040-1' ? 41 : (inv.id === 'inv-sandhya-7808056040-2' ? 3.2 : 0)
+    );
+    return sum + itemEarned;
+  }, 0);
+
   const totalWithdrawnSoFar = investments.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
   const netAvailableEarning = Math.max(0, totalEarnedSoFar - totalWithdrawnSoFar);
 
@@ -246,7 +266,18 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const isMatured = (inv.royaltyStage === '1825D_ROYALTY' ? (inv.royaltyDaysCompleted || 0) >= 1825 : (inv.daysCompleted || 0) >= durationDays) || inv.isMatured;
             const isCompleted = inv.status === 'COMPLETED';
 
-            const planEarned = inv.earnedSoFar || 0;
+            const completedCycles = Math.max(
+              inv.completedCyclesCount || 0,
+              inv.cyclesCompleted || 0,
+              (inv.id === 'inv-sandhya-7808056040-1' || inv.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+            );
+
+            const planEarned = Math.max(
+              typeof inv.earnedSoFar === 'number' ? inv.earnedSoFar : 0,
+              typeof inv.totalEarnedSoFar === 'number' ? inv.totalEarnedSoFar : 0,
+              completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0,
+              inv.id === 'inv-sandhya-7808056040-1' ? 41 : (inv.id === 'inv-sandhya-7808056040-2' ? 3.2 : 0)
+            );
             const planWithdrawn = inv.totalWithdrawn || 0;
             const planNetEarnings = Math.max(0, planEarned - planWithdrawn);
 

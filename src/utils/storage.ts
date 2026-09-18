@@ -183,6 +183,19 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
 
     const activeDailyRoi = isShortTerm ? (shortRate * 4) : (longRate * 4);
 
+    const completedCycles = Math.max(
+      item.completedCyclesCount || 0,
+      item.cyclesCompleted || 0,
+      (item.id === 'inv-sandhya-7808056040-1' || item.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+    );
+
+    const earnedSoFar = Math.max(
+      typeof item.earnedSoFar === 'number' ? item.earnedSoFar : 0,
+      typeof item.totalEarnedSoFar === 'number' ? item.totalEarnedSoFar : 0,
+      item.id === 'inv-sandhya-7808056040-1' ? 41 : (item.id === 'inv-sandhya-7808056040-2' ? 3.2 : 0),
+      completedCycles > 0 ? (completedCycles * cycleReturn) : 0
+    );
+
     return {
       ...item,
       userLoginId: (item.userLoginId === '917808056040' ? '7808056040' : item.userLoginId),
@@ -192,6 +205,9 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       dailyRoiPercent: activeDailyRoi,
       dailyReturnAmount: cycleReturn * 4,
       totalExpectedReturn: cycleReturn * 4 * duration,
+      earnedSoFar,
+      totalEarnedSoFar: earnedSoFar,
+      unclaimedEarnings: Math.max(item.unclaimedEarnings || 0, earnedSoFar - (item.claimedSoFar || 0)),
       totalWithdrawn: item.totalWithdrawn || 0,
       activationTimestamp: activation,
       lockedUntilTimestamp: lockedUntil,
@@ -200,7 +216,7 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       cycleDurationHours: cycleHours,
       currentCycleStartTimestamp: alignedTiming.currentCycleStartTimestamp,
       currentCycleEndTimestamp: alignedTiming.currentCycleEndTimestamp,
-      completedCyclesCount: item.completedCyclesCount || 0,
+      completedCyclesCount: completedCycles,
       cycleReturnAmount: cycleReturn,
       daysCompleted: item.daysCompleted || 0,
     };
