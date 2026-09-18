@@ -1,6 +1,7 @@
 import { Wallet, ActiveInvestment, Transaction, BankAccountDetails, UserProfile } from '../types';
 import { INVESTMENT_PLANS } from '../data/plans';
 import { alignInvestmentCycleTimestamps } from './cycleTiming';
+import { getStoredRules } from './rulesStorage';
 
 const STORAGE_KEYS = {
   WALLET: 'inv_portal_wallet_v1',
@@ -136,10 +137,26 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
     const isShortTerm = (item.planId === 'short-term' || item.planId === 'SHORT_TERM_641D') && item.investedAmount >= 100000;
     const duration = isShortTerm ? 641 : 365;
     const investedAmount = item.investedAmount;
-    // 0.041% per 6h for short term (0.164% daily), 0.032% per 6h for long term (0.128% daily)
+
+    // Load dynamic rates from rules with safe fallbacks
+    let shortRate = 0.041;
+    let longRate = 0.032;
+    try {
+      const activeRules = getStoredRules();
+      if (activeRules && typeof activeRules.shortTerm6hRate === 'number') {
+        shortRate = activeRules.shortTerm6hRate;
+      }
+      if (activeRules && typeof activeRules.longTerm6hRate === 'number') {
+        longRate = activeRules.longTerm6hRate;
+      }
+    } catch (e) {
+      console.warn('Could not read dynamic rates inside normalizeInvestmentsList:', e);
+    }
+
+    // Dynamic rate calculation based on current Rules
     const cycleReturn = isShortTerm
-      ? Math.round((investedAmount * 0.041) / 100 * 100) / 100
-      : Math.round((investedAmount * 0.032) / 100 * 100) / 100;
+      ? Math.round((investedAmount * shortRate) / 100 * 100) / 100
+      : Math.round((investedAmount * longRate) / 100 * 100) / 100;
 
     let planUniqueId = item.planUniqueId || (isShortTerm 
       ? `STP-641D-${item.id.replace(/[^0-9]/g, '').slice(-5) || '89421'}`
@@ -160,13 +177,15 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       currentCycleEndTimestamp: item.currentCycleEndTimestamp,
     });
 
+    const activeDailyRoi = isShortTerm ? (shortRate * 4) : (longRate * 4);
+
     return {
       ...item,
       userLoginId: (item.userLoginId === '917808056040' ? '7808056040' : item.userLoginId),
       planUniqueId,
       investedAmount,
       durationDays: duration,
-      dailyRoiPercent: isShortTerm ? 0.164 : 0.128,
+      dailyRoiPercent: activeDailyRoi,
       dailyReturnAmount: cycleReturn * 4,
       totalExpectedReturn: cycleReturn * 4 * duration,
       totalWithdrawn: item.totalWithdrawn || 0,

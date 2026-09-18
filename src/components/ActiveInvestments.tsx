@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, CheckCircle, Sparkles, Lock, ArrowRight, Zap, RefreshCw, AlertCircle, ShieldCheck, Search, Award, FileText, ArrowUpRight, DollarSign } from 'lucide-react';
-import { ActiveInvestment, Language } from '../types';
+import { ActiveInvestment, Language, AppRules } from '../types';
 import { formatINR } from '../utils/storage';
 import { formatFixedSlotTime, FIXED_SLAB_LABELS } from '../utils/cycleTiming';
 
 interface ActiveInvestmentsProps {
   investments: ActiveInvestment[];
   language: Language;
+  rules?: AppRules | null;
   onClaimReturn?: (investmentId: string) => void;
   onNavigateToPlans: () => void;
   onSimulateComplete24hLock?: (investmentId: string) => void;
@@ -45,6 +46,7 @@ function formatCountdown(ms: number): { hours: string; minutes: string; seconds:
 export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
   investments,
   language,
+  rules,
   onClaimReturn,
   onNavigateToPlans,
   onSimulateComplete24hLock,
@@ -226,10 +228,13 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
             const isShortTerm = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
             const isLongTerm = !isShortTerm || !!inv.royaltyStage;
-            const cyclePercentStr = isLongTerm ? '0.032%' : '0.041%';
-            const cycleReturn = isLongTerm
-              ? (inv.investedAmount * 0.032 / 100)
-              : (inv.cycleReturnAmount || (inv.investedAmount * 0.041 / 100));
+            
+            const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+            const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+            const current6hRate = isLongTerm ? longTermRate : shortTermRate;
+            
+            const cyclePercentStr = `${current6hRate.toFixed(3)}%`;
+            const cycleReturn = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
             const durationDays = isLongTerm ? 365 : 641;
             let planUniqueCode = inv.planUniqueId || (isLongTerm ? `LTP-365D-${inv.id.slice(-5)}` : `STP-641D-${inv.id.slice(-5)}`);
             if (isLongTerm && planUniqueCode.startsWith('STP-')) {

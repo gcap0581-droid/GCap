@@ -19,7 +19,17 @@ export const LockCongratulationsModal: React.FC<LockCongratulationsModalProps> =
   if (!investment) return null;
 
   const isHi = language === 'hi';
-  const cycleReturn = investment.cycleReturnAmount || (investment.dailyReturnAmount / 4);
+  // Load current rules to show the correct live rate
+  let current6hRate = 0.041;
+  try {
+    const rules = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('gcap_platform_rules_v1') || '{}') : {};
+    if (investment.planId === 'long-term') {
+      current6hRate = rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+    } else {
+      current6hRate = rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+    }
+  } catch (e) {}
+  const cycleReturn = Math.round(((investment.investedAmount * current6hRate) / 100) * 100) / 100;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">

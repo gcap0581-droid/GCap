@@ -162,6 +162,8 @@ export interface AppRules {
   isReferralEnabled?: boolean; // Toggle referral program on/off
   tdsPercent: number; // Government TDS percent (Default 5.0%)
   adminFeePercent?: number; // Admin charge percent on earnings withdrawal (Default 0.02%)
+  shortTerm6hRate?: number; // 6-hour ROI for Short Term Plan
+  longTerm6hRate?: number;  // 6-hour ROI for Long Term Plan
   supportEmail: string;
   supportPhone: string;
   lastUpdated: string;

@@ -47,12 +47,16 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   // Sync formData and default to EDIT tab for Admin whenever modal opens
   React.useEffect(() => {
     if (isOpen) {
-      setFormData(rules);
+      setFormData({
+        ...rules,
+        shortTerm6hRate: rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041,
+        longTerm6hRate: rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032,
+      });
       if (isAdmin) {
         setActiveTab('EDIT');
       }
     }
-  }, [isOpen]);
+  }, [isOpen, rules, isAdmin]);
 
   if (!isOpen) return null;
 
@@ -201,12 +205,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                 <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                   <p className="text-[11px] text-slate-400 font-medium">
                     {isHi ? 'न्यूनतम डिपॉजिट' : 'Min Deposit'}
                   </p>
-                  <p className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
                     {formatINR(rules.minDeposit)}
                   </p>
                 </div>
@@ -214,7 +218,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   <p className="text-[11px] text-slate-400 font-medium">
                     {isHi ? 'न्यूनतम निकासी' : 'Min Withdrawal'}
                   </p>
-                  <p className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
                     {formatINR(rules.minWithdrawal)}
                   </p>
                 </div>
@@ -222,7 +226,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   <p className="text-[11px] text-slate-400 font-medium">
                     {isHi ? 'निकासी शुल्क (Fee)' : 'Withdrawal Fee'}
                   </p>
-                  <p className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
                     {rules.withdrawalFeePercent === 0 ? (isHi ? '0% (मुफ़्त)' : '0% (Free)') : `${rules.withdrawalFeePercent}%`}
                   </p>
                 </div>
@@ -230,8 +234,24 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   <p className="text-[11px] text-slate-400 font-medium">
                     {isHi ? 'रेफरल कमीशन' : 'Referral Tier'}
                   </p>
-                  <p className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
                     L1: {rules.referralL1Percent}% | L2: {rules.referralL2Percent}%
+                  </p>
+                </div>
+                <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    {isHi ? 'शॉर्ट टर्म (641D)' : 'Short Term (641D)'}
+                  </p>
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
+                    {rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041}%/6h
+                  </p>
+                </div>
+                <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    {isHi ? 'लॉन्ग टर्म (365D)' : 'Long Term (365D)'}
+                  </p>
+                  <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
+                    {rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032}%/6h
                   </p>
                 </div>
               </div>
@@ -672,6 +692,73 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   </div>
                 </div>
 
+                {/* Plans 6-Hour Cycle Rates (Dynamic ROI Control) */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 via-slate-900 to-emerald-500/5 border border-emerald-500/30 space-y-3 sm:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                      <span>⚡ {isHi ? 'निवेश योजनाएं 6h चक्र अर्निंग दर' : 'Investment Plans 6h Cycle Return Rates'}</span>
+                    </label>
+                    <span className="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
+                      {isHi ? 'तत्काल प्लेटफॉर्म-वाइड सिंक' : 'Immediate Platform-wide Sync'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {isHi
+                      ? 'शॉर्ट टर्म (641 दिन) और लॉन्ग टर्म (365 दिन) योजनाओं के लिए प्रति 6 घंटे का रिटर्न रेट। यह दर बदलने पर तुरंत पुराने व नए सभी निवेशों पर लाइव लागू हो जाएगी!'
+                      : 'Set the 6-hour cycle return percentages for Short Term & Long Term plans. Changing these instantly updates returns for both existing and new active portfolios!'}
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Short Term Plan Rate */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300">
+                          {isHi ? 'शॉर्ट टर्म (641 दिन) दर (% / 6h)' : 'Short Term (641D) Rate (%/6h)'}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.shortTerm6hRate ?? 0.041) * 4).toFixed(3)}%
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min={0.001}
+                        max={5}
+                        step={0.001}
+                        value={formData.shortTerm6hRate ?? 0.041}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setFormData({ ...formData, shortTerm6hRate: isNaN(val) ? 0.041 : val });
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Long Term Plan Rate */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300">
+                          {isHi ? 'लॉन्ग टर्म (365 दिन) दर (% / 6h)' : 'Long Term (365D) Rate (%/6h)'}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.longTerm6hRate ?? 0.032) * 4).toFixed(3)}%
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min={0.001}
+                        max={5}
+                        step={0.001}
+                        value={formData.longTerm6hRate ?? 0.032}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setFormData({ ...formData, longTerm6hRate: isNaN(val) ? 0.032 : val });
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Government Statutory TDS (Auto-Calculated by Income Tax Slabs) */}
                 <div className="sm:col-span-2 p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -707,12 +794,21 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                 </div>
 
                 {/* Referral Program Status Toggle */}
-                <div className="sm:col-span-2 p-3.5 rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-between gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-white block">
-                      {isHi ? '🎁 रेफरल प्रोग्राम चालू / बंद (Referral Program Toggle)' : '🎁 Referral Program On / Off Switch'}
-                    </label>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                <div className="sm:col-span-2 p-4 rounded-xl bg-slate-950 border border-slate-850 flex items-center justify-between gap-3 shadow-inner">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="text-xs font-bold text-white block">
+                        {isHi ? '🎁 रेफरल प्रोग्राम चालू / बंद (Referral Program Switch)' : '🎁 Referral Program On / Off Switch'}
+                      </label>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+                        formData.isReferralEnabled !== false
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      }`}>
+                        {formData.isReferralEnabled !== false ? (isHi ? '🟢 चालू (ACTIVE)' : '🟢 ACTIVE') : (isHi ? '🔴 बंद (DISABLED)' : '🔴 DISABLED')}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
                       {isHi
                         ? 'चालू करने पर यूजर शेयर करके कमीशन कमा सकते हैं। बंद करने पर रेफरल कमीशन बंद रहेगा।'
                         : 'Enable or disable referral code generation & commission distribution across the platform.'}
@@ -721,13 +817,15 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, isReferralEnabled: formData.isReferralEnabled === false ? true : false })}
-                    className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border ${
+                    className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border shadow-sm ${
                       formData.isReferralEnabled !== false
-                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
-                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 shadow-rose-500/20'
+                        : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border-emerald-400 shadow-emerald-500/20'
                     }`}
                   >
-                    {formData.isReferralEnabled !== false ? (isHi ? '🟢 चालू (Active)' : '🟢 ACTIVE') : (isHi ? '🔴 बंद (Disabled)' : '🔴 DISABLED')}
+                    {formData.isReferralEnabled !== false 
+                      ? (isHi ? '🔴 बंद करें' : '🔴 Stop Referral') 
+                      : (isHi ? '🟢 शुरू करें' : '🟢 Start Referral')}
                   </button>
                 </div>
 

@@ -643,6 +643,23 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                         <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                       </button>
                     )}
+
+                    {/* ROI Calculator mobile menu item */}
+                    <button
+                      onClick={() => {
+                        onTabChange('calculator');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
+                        activeTab === 'calculator' ? 'bg-teal-500/20 text-teal-300 font-bold border border-teal-500/40' : 'bg-slate-800/40 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Calculator className="w-3.5 h-3.5 text-teal-400" />
+                        <span>{isHi ? '• मुनाफा कैलकुलेटर (Calculator)' : '• ROI Calculator'}</span>
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    </button>
                   </div>
 
                   {/* Category 1: Plans */}

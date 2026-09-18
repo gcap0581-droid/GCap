@@ -256,6 +256,13 @@ export default function App() {
     };
   }, []);
 
+  // Synchronize plans whenever rules change to ensure new cycle rates are immediately applied
+  useEffect(() => {
+    if (rules) {
+      setPlans(getStoredPlans());
+    }
+  }, [rules]);
+
   // Immediate State Sync on App Launch & Foreground Resume:
   // Ensures: "Kuch bhi update ya change karne per admin ya GitHub me kuch bhi new ho wo sub kuch kisi dusre ke mobile me jo pahle se app install ho open hote hi sara change leker hi khule"
   useEffect(() => {
@@ -2321,12 +2328,7 @@ export default function App() {
 
   const handleSaveRules = (updatedRules: AppRules) => {
     setRules(updatedRules);
-    saveStoredRules(updatedRules);
-
-    // Persist to central database
-    apiSaveRules(updatedRules).catch((err) => {
-      console.error('Failed to persist rules to central database:', err);
-    });
+    saveStoredRules(updatedRules, true, true);
 
     // Sync bank details to company profile
     try {
@@ -2465,7 +2467,16 @@ export default function App() {
         // Phase 2: Fixed 6-Hour Cycle Completion Check (8 AM, 2 PM, 8 PM, 2 AM)
         if (inv.isInitialLockCompleted && now >= (inv.currentCycleEndTimestamp || 0)) {
           hasChanges = true;
-          const cyclePayout = inv.cycleReturnAmount || (inv.dailyReturnAmount / 4);
+          
+          // Calculate dynamic cyclePayout based on active rules for both existing and new active portfolios!
+          let current6hRate = 0.041;
+          if (inv.planId === 'long-term') {
+            current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+          } else {
+            current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+          }
+          const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
+          
           const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
           const currentEnd = getNextFixedCycleTimestamp(now);
           const currentStart = currentEnd - 6 * 3600 * 1000;
@@ -2637,7 +2648,16 @@ export default function App() {
     const inv = investments.find((i) => i.id === investmentId);
     if (!inv) return;
     const now = Date.now();
-    const cyclePayout = inv.cycleReturnAmount || (inv.dailyReturnAmount / 4);
+    
+    // Calculate dynamic cyclePayout based on active rules for simulation
+    let current6hRate = 0.041;
+    if (inv.planId === 'long-term') {
+      current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+    } else {
+      current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+    }
+    const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
+    
     const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
     const currentEnd = getNextFixedCycleTimestamp(now + 1000);
     const currentStart = currentEnd - 6 * 3600 * 1000;
@@ -3147,6 +3167,7 @@ export default function App() {
             <ActiveInvestments
               investments={investments}
               language={language}
+              rules={rules}
               onClaimReturn={handleClaimSingleReturn}
               onSimulateComplete24hLock={handleSimulateComplete24hLock}
               onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
@@ -3198,11 +3219,6 @@ export default function App() {
             searchFilter={searchQuery}
             onOpenGuides={handleOpenGuides}
           />
-          <RoiCalculator
-            language={language}
-            onSelectPlanAndAmount={(plan, amt) => handleOpenInvest(plan, amt)}
-            plans={plans}
-          />
         </div>
       )}
 
@@ -3212,6 +3228,7 @@ export default function App() {
           <ActiveInvestments
             investments={investments}
             language={language}
+            rules={rules}
             onClaimReturn={handleClaimSingleReturn}
             onSimulateComplete24hLock={handleSimulateComplete24hLock}
             onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
@@ -3769,6 +3786,11 @@ export default function App() {
                       onOpenSwap={() => setIsSwapOpen(true)}
                       onClaimAllReturns={handleClaimAllReturns}
                     />
+                  </div>
+                )}
+
+                {mobileTab === 'calculator' && (
+                  <div className="space-y-4">
                     <RoiCalculator
                       language={language}
                       onSelectPlanAndAmount={(plan, amt) => handleOpenInvest(plan, amt)}
@@ -3790,6 +3812,7 @@ export default function App() {
                   <ActiveInvestments
                     investments={investments}
                     language={language}
+                    rules={rules}
                     onClaimReturn={handleClaimSingleReturn}
                     onSimulateComplete24hLock={handleSimulateComplete24hLock}
                     onSimulateComplete6hCycle={handleSimulateComplete6hCycle}

@@ -66,17 +66,17 @@ interface ActiveInvestment {
   endDate: string;
   durationDays: number;
   daysCompleted: number;
-  lastPayoutTimestamp: number;
+  lastPayoutTimestamp?: number;
   status: "ACTIVE" | "COMPLETED";
-  autoReinvest: boolean;
-  activationTimestamp: number;
-  lockedUntilTimestamp: number;
-  isInitialLockCompleted: boolean;
-  cycleDurationHours: number;
-  currentCycleStartTimestamp: number;
-  currentCycleEndTimestamp: number;
-  completedCyclesCount: number;
-  cycleReturnAmount: number;
+  autoReinvest?: boolean;
+  activationTimestamp?: number;
+  lockedUntilTimestamp?: number;
+  isInitialLockCompleted?: boolean;
+  cycleDurationHours?: number;
+  currentCycleStartTimestamp?: number;
+  currentCycleEndTimestamp?: number;
+  completedCyclesCount?: number;
+  cycleReturnAmount?: number;
   [key: string]: any;
 }
 

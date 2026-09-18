@@ -41,14 +41,16 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const level1Team = l1Users.map(u => {
     const userInvestments = allInvestments.filter(inv => inv.userId === u.id || inv.userLoginId === u.loginId);
     const totalInvestment = userInvestments.reduce((acc, inv) => acc + inv.investedAmount, 0);
+    const totalEarnings = userInvestments.reduce((acc, inv) => acc + (inv.earnedSoFar || 0) + (inv.unclaimedEarnings || 0), 0);
     return {
       id: u.id,
       name: u.name || 'User',
       phone: u.phone.length >= 10 ? u.phone.slice(0, 2) + '****' + u.phone.slice(-4) : '***',
       date: new Date(u.joinedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       investment: totalInvestment,
+      earnings: totalEarnings,
       status: totalInvestment > 0 ? 'ACTIVE' : 'REGISTERED',
-      comm: (totalInvestment * (rules.referralL1Percent || 5)) / 100
+      comm: (totalEarnings * (rules.referralL1Percent || 5)) / 100
     };
   });
 
@@ -63,6 +65,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const level2Team = l2Users.map(u => {
     const userInvestments = allInvestments.filter(inv => inv.userId === u.id || inv.userLoginId === u.loginId);
     const totalInvestment = userInvestments.reduce((acc, inv) => acc + inv.investedAmount, 0);
+    const totalEarnings = userInvestments.reduce((acc, inv) => acc + (inv.earnedSoFar || 0) + (inv.unclaimedEarnings || 0), 0);
     const sponsor = l1Users.find(l1 => l1.id === u.referredBy || l1.referralCode === u.referredBy)?.name || 'Unknown';
     
     return {
@@ -71,8 +74,9 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
       sponsor: sponsor,
       date: new Date(u.joinedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       investment: totalInvestment,
+      earnings: totalEarnings,
       status: totalInvestment > 0 ? 'ACTIVE' : 'REGISTERED',
-      comm: (totalInvestment * (rules.referralL2Percent || 2)) / 100
+      comm: (totalEarnings * (rules.referralL2Percent || 2)) / 100
     };
   });
 
@@ -176,7 +180,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                     {rules.referralL1Percent}%
                   </p>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    {isHi ? 'प्रत्यक्ष निवेशक के हर निवेश पर' : 'On every direct referral investment'}
+                    {isHi ? 'प्रत्यक्ष सदस्य के हर चक्र मुनाफे (Earnings) पर' : 'On every direct referral cycle profit'}
                   </p>
                 </div>
 
@@ -188,7 +192,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                     {rules.referralL2Percent}%
                   </p>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    {isHi ? 'उनकी टीम द्वारा किए गए निवेश पर' : 'On secondary network investments'}
+                    {isHi ? 'टीम सदस्यों के चक्र मुनाफे (Earnings) पर' : 'On team members cycle profit'}
                   </p>
                 </div>
               </div>
@@ -235,7 +239,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🚀 GCap ऐप में शामिल हों और इंस्टेंट ${rules.referralL1Percent}% रेफरल कमीशन + दैनिक रिटर्न कमाएं!\n\nवेबसाइट ज्वाइन लिंक: ${referralLink}\n\n📱 एंड्रॉइड APK ऐप डाउनलोड लिंक: ${apkDownloadUrl}\n\nमेरा रेफरल कोड: ${referralCode}`
+                      `🚀 GCap ऐप में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% रेफरल कमीशन + दैनिक रिटर्न कमाएं!\n\nवेबसाइट ज्वाइन लिंक: ${referralLink}\n\n📱 एंड्रॉइड APK ऐप डाउनलोड लिंक: ${apkDownloadUrl}\n\nमेरा रेफरल कोड: ${referralCode}`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -250,7 +254,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                       if (navigator.share) {
                         navigator.share({
                           title: 'GCap Daily Returns App',
-                          text: `GCap में शामिल हों और इंस्टेंट ${rules.referralL1Percent}% कमीशन पाएं!\nवेबसाइट: ${referralLink}\nAndroid APK: ${apkDownloadUrl}\nकोड: ${referralCode}`,
+                          text: `GCap में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% कमीशन पाएं!\nवेबसाइट: ${referralLink}\nAndroid APK: ${apkDownloadUrl}\nकोड: ${referralCode}`,
                         }).catch(() => {});
                       } else {
                         handleCopy();
@@ -292,10 +296,10 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   {isHi
-                    ? `यदि आपका दोस्त ${formatINR(10000)} का निवेश करता है, तो आपको तुरंत ${rules.referralL1Percent}% यानी ${formatINR(
+                    ? `यदि आपका प्रत्यक्ष सदस्य (L1) चक्रों से ${formatINR(10000)} का मुनाफा (Earning) कमाता है, तो आपको तुरंत ${rules.referralL1Percent}% यानी ${formatINR(
                         (10000 * rules.referralL1Percent) / 100
-                      )} का तत्काल कमीशन सीधे आपके वॉलेट में प्राप्त होगा, जिसे आप कभी भी निकाल सकते हैं!`
-                    : `If your direct friend invests ${formatINR(10000)}, you immediately earn ${rules.referralL1Percent}% (${formatINR(
+                      )} का टीम बोनस कमीशन सीधे आपके वॉलेट में प्राप्त होगा, जिसे आप कभी भी निकाल सकते हैं!`
+                    : `If your direct friend (L1) earns ${formatINR(10000)} cycle profit, you immediately earn ${rules.referralL1Percent}% (${formatINR(
                         (10000 * rules.referralL1Percent) / 100
                       )}) credited instantly into your cash balance with instant withdrawal capability!`}
                 </p>
@@ -401,12 +405,12 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block">{isHi ? 'निवेश / कमीशन' : 'Invest / Comm.'}</span>
+                        <span className="text-[10px] text-slate-400 block">{isHi ? 'सदस्य कमाई / कमीशन' : 'Member Profit / Comm.'}</span>
                         <span className="font-bold font-mono text-white block">
-                          {formatINR(m.investment)}
+                          {formatINR(m.earnings)}
                         </span>
                         <span className="text-emerald-400 font-mono font-bold text-[11px]">
-                          +{formatINR(m.comm)} {isHi ? 'कमाई' : 'earned'}
+                          +{formatINR(m.comm)} ({rules.referralL1Percent || 5}%)
                         </span>
                       </div>
                     </div>
@@ -432,12 +436,12 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                       </div>
 
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block">{isHi ? 'निवेश / L2 कमीशन' : 'Invest / L2 Comm.'}</span>
+                        <span className="text-[10px] text-slate-400 block">{isHi ? 'सदस्य कमाई / L2 कमीशन' : 'Member Profit / L2 Comm.'}</span>
                         <span className="font-bold font-mono text-white block">
-                          {formatINR(m.investment)}
+                          {formatINR(m.earnings)}
                         </span>
                         <span className="text-blue-400 font-mono font-bold text-[11px]">
-                          +{formatINR(m.comm)} (2%)
+                          +{formatINR(m.comm)} ({rules.referralL2Percent || 2}%)
                         </span>
                       </div>
                     </div>

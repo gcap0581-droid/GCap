@@ -2,6 +2,7 @@ import { InvestmentPlan } from '../types';
 import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSavePlans } from './centralSync';
+import { getStoredRules } from './rulesStorage';
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
 
@@ -44,19 +45,55 @@ export function sanitizePlans(plans: InvestmentPlan[]): { sanitized: InvestmentP
 export function getStoredPlans(): InvestmentPlan[] {
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(PLANS_STORAGE_KEY) : null;
+    let parsed: InvestmentPlan[];
     if (!raw) {
-      return DEFAULT_PLANS;
+      parsed = [...DEFAULT_PLANS];
+    } else {
+      parsed = JSON.parse(raw);
     }
-    const parsed: InvestmentPlan[] = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return DEFAULT_PLANS;
+      parsed = [...DEFAULT_PLANS];
     }
     const { sanitized, changed } = sanitizePlans(parsed);
+    const finalPlans = changed ? sanitized : parsed;
+
     if (changed) {
       saveStoredPlans(sanitized, true, true);
-      return sanitized;
     }
-    return parsed;
+
+    // Dynamic override based on active rules set by Admin
+    try {
+      const activeRules = getStoredRules();
+      if (activeRules) {
+        return finalPlans.map((plan) => {
+          if (plan.id === 'short-term' && activeRules.shortTerm6hRate !== undefined) {
+            const shortRate = activeRules.shortTerm6hRate;
+            return {
+              ...plan,
+              dailyRoiPercent: shortRate * 4,
+              tag: `${plan.durationDays} Days • First 24h Lock • ${shortRate.toFixed(3)}%/6h GP`,
+              tagHi: `${plan.durationDays} दिन • पहले 24 घंटे का लॉक • हर 6h में ${shortRate.toFixed(3)}% GP`,
+              payoutFrequencyHi: `हर 6 घंटे में ${shortRate.toFixed(3)}% GP`,
+            };
+          }
+          if (plan.id === 'long-term' && activeRules.longTerm6hRate !== undefined) {
+            const longRate = activeRules.longTerm6hRate;
+            return {
+              ...plan,
+              dailyRoiPercent: longRate * 4,
+              tag: `${plan.durationDays} Days • First 24h Lock • ${longRate.toFixed(3)}%/6h GP + Royalty`,
+              tagHi: `${plan.durationDays} दिन • पहले 24 घंटे का लॉक • ${longRate.toFixed(3)}%/6h GP + रॉयल्टी पाथवे`,
+              payoutFrequencyHi: `हर 6 घंटे में ${longRate.toFixed(3)}% GP`,
+            };
+          }
+          return plan;
+        });
+      }
+    } catch (e) {
+      console.warn('Dynamic plans ROI override failed:', e);
+    }
+
+    return finalPlans;
   } catch (err) {
     console.error('Failed to load plans from storage:', err);
     return DEFAULT_PLANS;
