@@ -34,6 +34,8 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   bankIfsc: 'UTIB0001219',
   bankBranch: 'Axis Commercial Branch',
   bankAccountType: 'Current Account',
+  companyUpiId: '8603504808@axisbank',
+  companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
   tagline: 'Guaranteed Principal Security & Automated Asset Growth',
   taglineHi: '100% मूलधन सुरक्षा एवं स्वचालित संपत्ति विकास',
   lastUpdated: new Date().toISOString().split('T')[0],

@@ -17,6 +17,7 @@ import {
   WithdrawalSource,
   DesktopCategoryTab,
   AdminMessage,
+  CompanyProfile,
 } from './types';
 import {
   getStoredWallet,
@@ -2415,6 +2416,30 @@ export default function App() {
     );
   };
 
+  const handleSaveCompanyProfile = (updatedProfile: CompanyProfile) => {
+    saveStoredCompanyProfile(updatedProfile);
+    // Sync company bank details to rules state so all user modals update live
+    const updatedRules: AppRules = {
+      ...rules,
+      companyBankAccountHolder: updatedProfile.companyName || rules.companyBankAccountHolder,
+      companyBankName: updatedProfile.bankName || rules.companyBankName,
+      companyBankAccountNumber: updatedProfile.bankAccountNumber || rules.companyBankAccountNumber,
+      companyBankIfsc: updatedProfile.bankIfsc || rules.companyBankIfsc,
+      companyUpiId: updatedProfile.companyUpiId || rules.companyUpiId,
+      supportEmail: updatedProfile.supportEmail || rules.supportEmail,
+      supportPhone: updatedProfile.supportPhone || rules.supportPhone,
+    };
+    setRules(updatedRules);
+    saveStoredRules(updatedRules, true, true);
+
+    showToast(
+      isHi ? '🏢 कंपनी प्रोफ़ाइल व बैंक विवरण सेव हो गए' : '🏢 Company Profile & Bank Saved',
+      isHi
+        ? 'नया बैंक खाता और कंपनी नाम पूरे सिस्टम (डिपॉजिट, वाउचर, सर्टिफिकेट) में तुरंत लागू हो चुका है।'
+        : 'Company bank details and corporate master are now live across deposits, vouchers, and agreements.'
+    );
+  };
+
   const handleResetRules = () => {
     const def = resetRulesToDefault();
     setRules(def);
@@ -3861,6 +3886,7 @@ export default function App() {
               onDeleteMessage={handleDeleteAdminMessage}
               onRefreshMessages={refreshMessages}
               onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
+              onSaveCompanyProfile={handleSaveCompanyProfile}
             />
           </div>
         ) : viewMode === 'web' ? (
@@ -3944,6 +3970,7 @@ export default function App() {
                 externalActiveSubTab={adminMobileTab}
                 onExternalActiveSubTabChange={(tab) => setAdminMobileTab(tab)}
                 onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
+                onSaveCompanyProfile={handleSaveCompanyProfile}
               />
             ) : (
               <>

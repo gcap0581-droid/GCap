@@ -46,6 +46,7 @@ import {
   LiveInterfaceConfig,
   AdminMessage,
   StaffPermissions,
+  CompanyProfile,
 } from '../types';
 import { formatINR } from '../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../utils/treasuryStorage';
@@ -134,6 +135,7 @@ interface AdminPanelProps {
   externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY';
   onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
+  onSaveCompanyProfile?: (profile: CompanyProfile) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -181,6 +183,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   externalActiveSubTab,
   onExternalActiveSubTabChange,
   onConvertAdminFeeGpToRupees,
+  onSaveCompanyProfile,
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
@@ -1570,24 +1573,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
-      {/* TAB: ACTIVE INVESTMENTS & 6H CYCLES */}
-      {activeSubTab === 'INVESTMENTS' && (
-        <AdminInvestmentsTab
-          investments={investments}
-          language={language}
-          onSimulateComplete24hLock={onSimulateComplete24hLock}
-          onSimulateComplete6hCycle={onSimulateComplete6hCycle}
-          onSimulateMaturity641Days={onSimulateMaturity641Days}
-        />
-      )}
-
-      {/* TAB: COMPANY PROFILE (PVT LTD DETAILS & LIVE OUTPUT) */}
-      {activeSubTab === 'COMPANY_PROFILE' && (
-        <AdminCompanyProfileTab language={language} />
-      )}
-
-
-
       {/* TAB 2: PLANS CRUD */}
       {activeSubTab === 'PLANS' && (
         <AdminPlansTab
@@ -1705,6 +1690,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeSubTab === 'COMPANY_PROFILE' && (
         <AdminCompanyProfileTab
           language={language}
+          onSaveProfile={onSaveCompanyProfile}
         />
       )}
 

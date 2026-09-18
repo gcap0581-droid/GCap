@@ -589,6 +589,19 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
 
               <div>
                 <label className="block text-slate-300 font-bold mb-1">
+                  {isHi ? 'कंपनी यूपीआई आईडी (Company UPI ID):' : 'Company Official UPI ID:'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.companyUpiId || ''}
+                  onChange={(e) => handleChange('companyUpiId', e.target.value)}
+                  placeholder="e.g. 8603504808@axisbank"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-emerald-400 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
                   {isHi ? 'बैंक शाखा (Branch):' : 'Branch Name:'}
                 </label>
                 <input

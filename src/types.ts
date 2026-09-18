@@ -272,6 +272,8 @@ export interface CompanyProfile {
   bankIfsc?: string; // e.g. "HDFC0000240"
   bankBranch?: string; // e.g. "BKC Mumbai Branch"
   bankAccountType?: string; // e.g. "Current Account"
+  companyUpiId?: string; // e.g. "8603504808@axisbank"
+  companyBankAccountHolder?: string; // e.g. "GCap Assets & Wealth Management Private Limited"
   tagline?: string; // e.g. "Guaranteed Principal Security & Wealth Growth"
   taglineHi?: string; // e.g. "100% मूलधन सुरक्षा एवं पूंजी विकास"
   lastUpdated?: string;
