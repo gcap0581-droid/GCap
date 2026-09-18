@@ -3,6 +3,7 @@ import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSavePlans } from './centralSync';
 import { getStoredRules } from './rulesStorage';
+import { savePlansToFirestore } from '../lib/firestoreBridge';
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
 
@@ -111,6 +112,7 @@ export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, sync
     }
     if (finalSync) {
       apiSavePlans(finalPlans).catch((err) => console.warn('Background apiSavePlans error:', err));
+      savePlansToFirestore(finalPlans).catch((err) => console.warn('Background savePlansToFirestore error:', err));
     }
     if (broadcast || changed) {
       broadcastOtaUpdate(

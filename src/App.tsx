@@ -1009,9 +1009,23 @@ export default function App() {
     const updated = updatePlan(updatedPlan);
     setPlans(updated);
     apiSavePlans(updated).catch(console.error);
+
+    // Synchronize 6-hour rate to active platform rules
+    if (updatedPlan.id === 'short-term' && typeof updatedPlan.dailyRoiPercent === 'number') {
+      const short6h = Math.round((updatedPlan.dailyRoiPercent / 4) * 1000) / 1000;
+      const newRules: AppRules = { ...rules, shortTerm6hRate: short6h };
+      setRules(newRules);
+      saveStoredRules(newRules, true, true);
+    } else if (updatedPlan.id === 'long-term' && typeof updatedPlan.dailyRoiPercent === 'number') {
+      const long6h = Math.round((updatedPlan.dailyRoiPercent / 4) * 1000) / 1000;
+      const newRules: AppRules = { ...rules, longTerm6hRate: long6h };
+      setRules(newRules);
+      saveStoredRules(newRules, true, true);
+    }
+
     showToast(
       isHi ? 'प्लान अपडेट हो गया!' : 'Plan updated successfully!',
-      isHi ? `${updatedPlan.name} का डेटा अपडेट कर दिया गया है।` : `${updatedPlan.name} has been updated.`
+      isHi ? `${updatedPlan.name} का डेटा व 6h रेट पूरे सिस्टम में अपडेट हो गया है।` : `${updatedPlan.name} and 6h rate synchronized across all platforms.`
     );
   };
 
@@ -2392,6 +2406,15 @@ export default function App() {
   const handleSaveRules = (updatedRules: AppRules) => {
     setRules(updatedRules);
     saveStoredRules(updatedRules, true, true);
+
+    // Refresh and sync plans with updated 6h rate
+    try {
+      const refreshedPlans = getStoredPlans();
+      setPlans(refreshedPlans);
+      saveStoredPlans(refreshedPlans, true, true);
+    } catch (e) {
+      console.warn('Failed to sync plans on rules update:', e);
+    }
 
     // Sync bank details to company profile
     try {
