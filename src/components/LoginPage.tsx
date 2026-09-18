@@ -361,14 +361,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
               {/* LOGIN FORM */}
               {authMode === 'LOGIN' ? (
-                <form
-                  onSubmit={handleLoginSubmit}
+                <div
                   className="space-y-4"
-                  autoComplete="off"
-                  noValidate
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleLoginSubmit(e as any);
+                    }
+                  }}
                 >
                   {/* Login ID Input */}
                   <div>
@@ -380,9 +379,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <User className="w-4 h-4" />
                       </div>
                       <input
-                        type="text"
-                        name="gcap_login_id_none_autofill"
-                        autoComplete="off"
+                        type="tel"
+                        inputMode="numeric"
+                        name="auth_user_number_token"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
@@ -411,10 +411,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </div>
                       <input
                         type="text"
-                        name="gcap_login_password_none_autofill"
-                        autoComplete="off"
+                        name="auth_user_security_pin"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
                         data-1p-ignore="true"
+                        data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}
@@ -450,17 +451,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
                   {/* Submit Button */}
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleLoginSubmit}
                     id="btn-submit-login"
                     className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20"
                   >
                     <span>{isHi ? 'लॉगिन करें' : 'Sign In'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                </form>
+                </div>
               ) : (
                 /* REGISTER FORM */
-                <form onSubmit={handleRegisterSubmit} className="space-y-3.5" autoComplete="off" noValidate>
+                <div
+                  className="space-y-3.5"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRegisterSubmit(e as any);
+                    }
+                  }}
+                >
                   {/* Full Name */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -470,7 +479,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       type="text"
                       inputMode="text"
                       required
-                      autoComplete="name"
+                      autoComplete="one-time-code"
                       data-lpignore="true"
                       data-1p-ignore="true"
                       data-form-type="other"
@@ -489,9 +498,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </label>
                       <input
                         type="tel"
-                        inputMode="tel"
+                        inputMode="numeric"
                         required
-                        autoComplete="tel"
+                        autoComplete="one-time-code"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
@@ -515,9 +524,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       {isHi ? 'ईमेल (वैकल्पिक)' : 'Email (Optional)'}
                     </label>
                     <input
-                      type="email"
+                      type="text"
                       inputMode="email"
-                      autoComplete="email"
+                      autoComplete="one-time-code"
                       data-lpignore="true"
                       data-1p-ignore="true"
                       data-form-type="other"
@@ -535,10 +544,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </label>
                     <div className="relative">
                       <input
-                        type={showRegPassword ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        data-lpignore="false"
-                        data-1p-ignore="false"
+                        type="text"
+                        autoComplete="one-time-code"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}
@@ -546,6 +556,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
                         placeholder={isHi ? 'कम से कम 6 अक्षरों का पासवर्ड' : 'At least 6 characters'}
+                        style={{ WebkitTextSecurity: showRegPassword ? 'none' : 'disc' } as any}
                         className="w-full px-3.5 pr-10 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
                       />
                       <button
@@ -578,7 +589,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     <div className="relative">
                       <input
                         type="text"
-                        autoComplete="off"
+                        autoComplete="one-time-code"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                        data-form-type="other"
                         readOnly={isReferralLocked}
                         value={regReferral}
                         onChange={(e) => setRegReferral(e.target.value.toUpperCase())}
@@ -620,14 +634,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
                   {/* Submit Button */}
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleRegisterSubmit}
                     id="btn-submit-register"
                     className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
                   >
                     <span>{isHi ? 'खाता बनाएं एवं लॉगिन करें' : 'Create Account & Enter'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                </form>
+                </div>
               )}
 
               {/* Bottom Switch Hint */}
