@@ -282,26 +282,11 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             </div>
           </div>
 
+          {/* Withdrawal option removed per user request */}
           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-            {unclaimedReturnsTotal > 0 ? (
-              <button
-                id="btn-claim-all-returns"
-                onClick={onClaimAllReturns}
-                className="w-full py-2 px-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm text-center"
-              >
-                {isHi ? `मुनाफा लें (${formatINR(unclaimedReturnsTotal)})` : `Claim (${formatINR(unclaimedReturnsTotal)})`}
-              </button>
-            ) : (
-              <button
-                id="btn-card-withdraw"
-                onClick={onOpenWithdraw}
-                disabled={(wallet.totalEarned || 0) <= 0 && (wallet.royaltyEarned || 0) <= 0}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-bold text-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ArrowUpRight className="w-3.5 h-3.5 text-purple-400" />
-                <span>{isHi ? 'फंड निकालें (Withdraw)' : 'Withdraw Funds'}</span>
-              </button>
-            )}
+            <p className="text-[10px] text-slate-500 w-full text-center">
+              {isHi ? 'निकासी केवल निकासी पृष्ठ से संभव है।' : 'Withdrawals only possible from withdrawal page.'}
+            </p>
           </div>
         </div>
 
