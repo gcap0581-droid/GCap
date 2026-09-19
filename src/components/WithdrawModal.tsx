@@ -96,7 +96,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       ? royaltyEarning
       : cashEarning;
 
-  const [amount, setAmount] = useState<number>(Math.min(maxWithdrawable, 5000));
+  const [amount, setAmount] = useState<number>(maxWithdrawable > 0 ? Math.min(maxWithdrawable, 5000) : 10000);
   const [destinationType, setDestinationType] = useState<'UPI' | 'BANK'>('UPI');
   const [upiId, setUpiId] = useState<string>('investor@okhdfcbank');
   const [accountNo, setAccountNo] = useState<string>('918237465012');
@@ -140,7 +140,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setWithdrawalSource(src);
     setError('');
     const newMax = src === 'EARNING' ? totalEarning : src === 'ROYALTY' ? royaltyEarning : cashEarning;
-    setAmount(Math.min(newMax, 5000));
+    setAmount(newMax > 0 ? Math.min(newMax, 5000) : 10000);
   };
 
   const handleWithdraw = () => {
