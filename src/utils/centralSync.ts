@@ -228,6 +228,117 @@ export interface CentralStateResponse {
 
 const API_BASE = '/api';
 
+export function formatDatabaseToCentralResponse(
+  fs: any,
+  userId?: string,
+  role: UserRole = 'USER'
+): CentralStateResponse | null {
+  if (!fs) return null;
+
+  if (role === 'ADMIN') {
+    return {
+      success: true,
+      users: (fs.users || []).filter((u: any) => u && u.id),
+      transactions: fs.transactions || [],
+      investments: fs.investments || [],
+      wallets: fs.wallets || {},
+      plans: fs.plans || [],
+      rules: fs.rules || undefined,
+      liveConfig: fs.liveConfig || undefined,
+      treasury: fs.treasury || undefined,
+      treasuryLogs: fs.treasuryLogs || [],
+      bankDetails: fs.bankDetails || {},
+      messages: fs.messages || [],
+      lastUpdated: fs.lastUpdated,
+      serverTime: Date.now(),
+    };
+  } else {
+    const { user: foundUser, aliases } = userId
+      ? findUserAndAllAliases(userId, fs.users || [])
+      : { user: null, aliases: [] };
+
+    const userTxns = (fs.transactions || []).filter((t: any) => {
+      if (!t) return false;
+      const cleanReq = String(userId || '').toLowerCase().trim();
+      const reqDigitsStr = cleanReq.replace(/[^0-9]/g, "");
+      const req10 = reqDigitsStr.length >= 10 ? reqDigitsStr.slice(-10) : reqDigitsStr;
+
+      const tUserId = (t.userId || "").toLowerCase().trim();
+      const tUserLoginId = (t.userLoginId || "").toLowerCase().trim();
+      const tUserPhone = (t.userPhone || "").replace(/[^0-9]/g, "");
+      const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+      const tNote = ((t.note || "") + " " + (t.noteHi || "")).toLowerCase();
+
+      const aliasMatch = aliases.some((a) => {
+        if (!a) return false;
+        const cleanA = a.toLowerCase().trim();
+        return tUserId === cleanA || tUserLoginId === cleanA;
+      });
+
+      const isDirectMatch =
+        aliasMatch ||
+        tUserId === cleanReq ||
+        tUserLoginId === cleanReq ||
+        (req10 && tPhone10 === req10);
+
+      const isNoteMatch =
+        Boolean(cleanReq && cleanReq.length >= 4 && tNote.includes(cleanReq)) ||
+        Boolean(req10 && req10.length >= 6 && tNote.includes(req10));
+
+      return isDirectMatch || isNoteMatch;
+    });
+    const userInvestments = normalizeInvestmentsList(
+      (fs.investments || []).filter((i: any) => {
+        if (!i) return false;
+        const iUserId = (i.userId || "").toLowerCase().trim();
+        const iUserLoginId = (i.userLoginId || "").toLowerCase().trim();
+        const iPhone = (i.userPhone || "").replace(/[^0-9]/g, "");
+        const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
+
+        return aliases.some((a) => {
+          if (!a) return false;
+          const cleanA = a.toLowerCase().trim();
+          const clean10 = cleanA.replace(/[^0-9]/g, "").slice(-10);
+          return (
+            iUserId === cleanA ||
+            iUserLoginId === cleanA ||
+            (clean10 && clean10.length >= 6 && iPhone10 === clean10) ||
+            iUserId.includes(cleanA)
+          );
+        }) || !i.userId;
+      })
+    );
+    const userWallet = userId ? getWalletForUser(userId, fs.wallets || {}, fs.users || []) : {
+      cashBalance: 0,
+      gpBalance: 0,
+      totalInvested: 0,
+      totalEarned: 0,
+      royaltyEarned: 0,
+      pendingWithdrawals: 0,
+      pendingDeposits: 0,
+      totalWithdrawn: 0,
+    };
+    const userBank = (userId && fs.bankDetails && fs.bankDetails[userId]) || null;
+    const userMsgs = (fs.messages || []).filter(
+      (m: any) => m.targetUserId === 'ALL' || m.targetUserId === userId
+    );
+
+    return {
+      success: true,
+      transactions: userTxns,
+      investments: userInvestments,
+      wallet: userWallet,
+      plans: fs.plans || [],
+      rules: fs.rules || undefined,
+      liveConfig: fs.liveConfig || undefined,
+      bankDetails: userBank,
+      messages: userMsgs,
+      lastUpdated: fs.lastUpdated,
+      serverTime: Date.now(),
+    };
+  }
+}
+
 /**
  * Fetch the latest real-time central database state.
  * If user is ADMIN, receives global platform state (all txns, all investments, all users, treasury).
@@ -300,116 +411,66 @@ export async function fetchCentralState(
       }
     }
   } catch (err) {
-    console.warn('[CentralSync] API fetch failed, falling back to direct Firestore:', err);
+    console.warn('[CentralSync] API fetch failed, trying static /central-state.json fallback...', err);
+  }
+
+  // 1b. Static central-state.json fallback (guaranteed 100% same data source as AI Studio on installed app / mobile PWA)
+  try {
+    const staticRes = await fetch(`/central-state.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+    });
+    if (staticRes.ok) {
+      const dbJson = await staticRes.json().catch(() => null);
+      if (dbJson && dbJson.wallets) {
+        const converted = formatDatabaseToCentralResponse(dbJson, userId, role);
+        if (converted) {
+          if (role === 'ADMIN') {
+            updateFirestoreBridgeCache({
+              users: converted.users || [],
+              wallets: converted.wallets || {},
+              investments: converted.investments || [],
+              transactions: converted.transactions || [],
+              plans: converted.plans || [],
+              rules: converted.rules || null,
+              liveConfig: converted.liveConfig || null,
+              bankDetails: (converted.bankDetails as Record<string, BankAccountDetails>) || {},
+              treasury: converted.treasury || null,
+              treasuryLogs: converted.treasuryLogs || [],
+              messages: converted.messages || [],
+              lastUpdated: converted.lastUpdated || new Date().toISOString(),
+            });
+          } else if (userId && converted.wallet) {
+            const { aliases } = findUserAndAllAliases(userId, []);
+            const walletsMap: Record<string, Wallet> = {};
+            aliases.forEach(alias => {
+              if (alias) walletsMap[alias] = converted.wallet!;
+            });
+            updateFirestoreBridgeCache({
+              transactions: converted.transactions || [],
+              investments: converted.investments || [],
+              wallets: walletsMap,
+              bankDetails: converted.bankDetails ? { [userId]: converted.bankDetails as BankAccountDetails } : {},
+              plans: converted.plans || [],
+              rules: converted.rules || null,
+              liveConfig: converted.liveConfig || null,
+              messages: converted.messages || [],
+              lastUpdated: converted.lastUpdated || new Date().toISOString(),
+            });
+          }
+          return converted;
+        }
+      }
+    }
+  } catch (staticErr) {
+    console.warn('[CentralSync] /central-state.json fallback error:', staticErr);
   }
 
   // 2. Direct Firestore fallback (for Vercel or when Express server is unavailable)
   try {
     const fs = await fetchFullFirestoreState();
     if (!fs) return null;
-
-    if (role === 'ADMIN') {
-      return {
-        success: true,
-        users: (fs.users || []).filter((u: any) => u && u.id),
-        transactions: fs.transactions || [],
-        investments: fs.investments || [],
-        wallets: fs.wallets || {},
-        plans: fs.plans || [],
-        rules: fs.rules || undefined,
-        liveConfig: fs.liveConfig || undefined,
-        treasury: fs.treasury || undefined,
-        treasuryLogs: fs.treasuryLogs || [],
-        bankDetails: fs.bankDetails || {},
-        messages: fs.messages || [],
-        lastUpdated: fs.lastUpdated,
-        serverTime: Date.now(),
-      };
-    } else {
-      const { user: foundUser, aliases } = userId
-        ? findUserAndAllAliases(userId, fs.users || [])
-        : { user: null, aliases: [] };
-
-      const userTxns = (fs.transactions || []).filter((t) => {
-        if (!t) return false;
-        const cleanReq = String(userId || '').toLowerCase().trim();
-        const reqDigitsStr = cleanReq.replace(/[^0-9]/g, "");
-        const req10 = reqDigitsStr.length >= 10 ? reqDigitsStr.slice(-10) : reqDigitsStr;
-
-        const tUserId = (t.userId || "").toLowerCase().trim();
-        const tUserLoginId = (t.userLoginId || "").toLowerCase().trim();
-        const tUserPhone = (t.userPhone || "").replace(/[^0-9]/g, "");
-        const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
-        const tNote = ((t.note || "") + " " + (t.noteHi || "")).toLowerCase();
-
-        const aliasMatch = aliases.some((a) => {
-          if (!a) return false;
-          const cleanA = a.toLowerCase().trim();
-          return tUserId === cleanA || tUserLoginId === cleanA;
-        });
-
-        const isDirectMatch =
-          aliasMatch ||
-          tUserId === cleanReq ||
-          tUserLoginId === cleanReq ||
-          (req10 && tPhone10 === req10);
-
-        const isNoteMatch =
-          Boolean(cleanReq && cleanReq.length >= 4 && tNote.includes(cleanReq)) ||
-          Boolean(req10 && req10.length >= 6 && tNote.includes(req10));
-
-        return isDirectMatch || isNoteMatch;
-      });
-      const userInvestments = normalizeInvestmentsList(
-        (fs.investments || []).filter((i) => {
-          if (!i) return false;
-          const iUserId = (i.userId || "").toLowerCase().trim();
-          const iUserLoginId = (i.userLoginId || "").toLowerCase().trim();
-          const iPhone = (i.userPhone || "").replace(/[^0-9]/g, "");
-          const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
-
-          return aliases.some((a) => {
-            if (!a) return false;
-            const cleanA = a.toLowerCase().trim();
-            const clean10 = cleanA.replace(/[^0-9]/g, "").slice(-10);
-            return (
-              iUserId === cleanA ||
-              iUserLoginId === cleanA ||
-              (clean10 && clean10.length >= 6 && iPhone10 === clean10) ||
-              iUserId.includes(cleanA)
-            );
-          }) || !i.userId;
-        })
-      );
-      const userWallet = userId ? getWalletForUser(userId, fs.wallets || {}, fs.users || []) : {
-        cashBalance: 0,
-        gpBalance: 0,
-        totalInvested: 0,
-        totalEarned: 0,
-        royaltyEarned: 0,
-        pendingWithdrawals: 0,
-        pendingDeposits: 0,
-        totalWithdrawn: 0,
-      };
-      const userBank = (userId && fs.bankDetails && fs.bankDetails[userId]) || null;
-      const userMsgs = (fs.messages || []).filter(
-        (m) => m.targetUserId === 'ALL' || m.targetUserId === userId
-      );
-
-      return {
-        success: true,
-        transactions: userTxns,
-        investments: userInvestments,
-        wallet: userWallet,
-        plans: fs.plans || [],
-        rules: fs.rules || undefined,
-        liveConfig: fs.liveConfig || undefined,
-        bankDetails: userBank,
-        messages: userMsgs,
-        lastUpdated: fs.lastUpdated,
-        serverTime: Date.now(),
-      };
-    }
+    return formatDatabaseToCentralResponse(fs, userId, role);
   } catch (fsErr) {
     console.error('[CentralSync] Firestore fallback failed:', fsErr);
   }

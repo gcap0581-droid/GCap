@@ -1399,12 +1399,12 @@ function ensureDb(): ServerDB {
         planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
         planUniqueId: "STP-641D-89421",
         investedAmount: 100000,
-        dailyRoiPercent: 0.160,
-        dailyReturnAmount: 160,
-        totalExpectedReturn: 202560,
-        earnedSoFar: 40,
+        dailyRoiPercent: 0.164,
+        dailyReturnAmount: 164,
+        totalExpectedReturn: 105124,
+        earnedSoFar: 245,
         claimedSoFar: 0,
-        unclaimedEarnings: 40,
+        unclaimedEarnings: 245,
         durationDays: 641,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -1415,9 +1415,9 @@ function ensureDb(): ServerDB {
         lockedUntilTimestamp: 1789658603901,
         isInitialLockCompleted: true,
         lockCongratulationsShown: true,
-        completedCyclesCount: 1,
-        cyclesCompleted: 1,
-        totalEarnedSoFar: 40
+        completedCyclesCount: 6,
+        cyclesCompleted: 6,
+        totalEarnedSoFar: 245
       },
       {
         id: "inv-sandhya-7808056040-2",
@@ -1430,12 +1430,12 @@ function ensureDb(): ServerDB {
         planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
         planUniqueId: "LTP-365D-89421",
         investedAmount: 10000,
-        dailyRoiPercent: 0.132,
-        dailyReturnAmount: 13.2,
-        totalExpectedReturn: 14818,
-        earnedSoFar: 3.3,
+        dailyRoiPercent: 0.128,
+        dailyReturnAmount: 12.8,
+        totalExpectedReturn: 4672,
+        earnedSoFar: 19.3,
         claimedSoFar: 0,
-        unclaimedEarnings: 3.3,
+        unclaimedEarnings: 19.3,
         durationDays: 365,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -1446,9 +1446,9 @@ function ensureDb(): ServerDB {
         lockedUntilTimestamp: 1789667064512,
         isInitialLockCompleted: true,
         lockCongratulationsShown: true,
-        completedCyclesCount: 1,
-        cyclesCompleted: 1,
-        totalEarnedSoFar: 3.2
+        completedCyclesCount: 6,
+        cyclesCompleted: 6,
+        totalEarnedSoFar: 19.3
       }
     ];
 
@@ -1502,13 +1502,35 @@ function ensureDb(): ServerDB {
           const sandhyaInvs = (parsed.investments || []).filter((i) =>
             i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
           );
+          sandhyaInvs.forEach((inv) => {
+            if (inv.id === 'inv-sandhya-7808056040-1') {
+              if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
+                inv.cyclesCompleted = 6;
+                inv.completedCyclesCount = 6;
+                inv.earnedSoFar = 245;
+                inv.totalEarnedSoFar = 245;
+                inv.unclaimedEarnings = 245;
+                needsSave = true;
+              }
+            }
+            if (inv.id === 'inv-sandhya-7808056040-2') {
+              if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
+                inv.cyclesCompleted = 6;
+                inv.completedCyclesCount = 6;
+                inv.earnedSoFar = 19.3;
+                inv.totalEarnedSoFar = 19.3;
+                inv.unclaimedEarnings = 19.3;
+                needsSave = true;
+              }
+            }
+          });
           const dynamicEarned = sandhyaInvs.reduce((sum, inv) => {
             const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
               ? inv.earnedSoFar
               : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
             return sum + e;
           }, 0);
-          best.totalEarned = dynamicEarned > 0 ? dynamicEarned : 264.3;
+          best.totalEarned = dynamicEarned > 0 ? Math.round(dynamicEarned * 100) / 100 : 264.3;
         }
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
@@ -1601,6 +1623,18 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
     
     // Save locally instantly to ensure 100% data durability and memory match on server
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    
+    // Also persist static central-state.json so installed PWAs and browsers on any domain have 100% parity
+    try {
+      const publicPath = path.join(process.cwd(), "public", "central-state.json");
+      fs.writeFileSync(publicPath, JSON.stringify(db, null, 2), "utf-8");
+      const distDir = path.join(process.cwd(), "dist");
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.join(distDir, "central-state.json"), JSON.stringify(db, null, 2), "utf-8");
+      }
+    } catch (e) {
+      console.warn("Could not mirror central-state.json:", e);
+    }
     
     // Set local tracking timestamp to avoid redundant self-loading triggers
     lastSyncedTimestamp = db.lastUpdated;
@@ -1758,8 +1792,23 @@ async function startServer() {
           localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
 
           const invMap = new Map<string, any>();
-          (remoteDb.investments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
-          localInvestments.forEach((i: any) => { if (i?.id && !invMap.has(i.id)) invMap.set(i.id, i); });
+          (localInvestments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
+          (remoteDb.investments || []).forEach((iRemote: any) => {
+            if (!iRemote?.id) return;
+            const iLocal = invMap.get(iRemote.id);
+            if (!iLocal) {
+              invMap.set(iRemote.id, iRemote);
+            } else {
+              // Prefer whichever record has higher cyclesCompleted or higher earnedSoFar
+              const localCycles = (iLocal.cyclesCompleted || 0);
+              const remoteCycles = (iRemote.cyclesCompleted || 0);
+              const localEarned = (iLocal.earnedSoFar || iLocal.totalEarnedSoFar || 0);
+              const remoteEarned = (iRemote.earnedSoFar || iRemote.totalEarnedSoFar || 0);
+              if (remoteCycles > localCycles || (remoteCycles === localCycles && remoteEarned > localEarned)) {
+                invMap.set(iRemote.id, iRemote);
+              }
+            }
+          });
 
           remoteDb.users = Array.from(userMap.values());
           const mergedWallets: Record<string, any> = {};
@@ -1770,7 +1819,10 @@ async function startServer() {
             if (wRemote && wLocal) {
               const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
               const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
-              mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
+              const maxEarned = Math.max(wRemote.totalEarned || 0, wLocal.totalEarned || 0);
+              const chosen = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
+              chosen.totalEarned = maxEarned;
+              mergedWallets[k] = chosen;
             } else {
               mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
             }
@@ -1919,11 +1971,18 @@ async function startServer() {
   });
 
   // GET: Central real-time state for any user or admin across the world
-  app.get("/api/central/state", (req, res) => {
+  app.get(["/api/central/state", "/central-state.json"], (req, res) => {
     const db = ensureDb();
     const { userId, role } = req.query;
 
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.path === "/central-state.json" && !userId && !role) {
+      return res.json(db);
+    }
 
     if (role === "ADMIN") {
       // Admin gets global visibility across all users, transactions, and investments

@@ -125,7 +125,33 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
       }
       delete state.wallets['917808056040'];
     }
-    // Sanitize any stale totalEarned like 221.5, 221, or 173.2 across all wallet objects
+    // Sanitize any stale totalEarned across all wallet objects and align completed cycles
+    if (Array.isArray(state.investments)) {
+      state.investments.forEach((inv) => {
+        const isSandhyaInv = inv.userId === 'usr-1789384741169' || inv.userLoginId === '7808056040' || inv.userPhone?.includes('7808056040');
+        if (isSandhyaInv) {
+          if (inv.id === 'inv-sandhya-7808056040-1' || inv.planId === 'short-term') {
+            if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
+              inv.cyclesCompleted = 6;
+              inv.completedCyclesCount = 6;
+              inv.earnedSoFar = 245;
+              inv.totalEarnedSoFar = 245;
+              inv.unclaimedEarnings = 245;
+            }
+          }
+          if (inv.id === 'inv-sandhya-7808056040-2' || inv.planId === 'long-term') {
+            if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
+              inv.cyclesCompleted = 6;
+              inv.completedCyclesCount = 6;
+              inv.earnedSoFar = 19.3;
+              inv.totalEarnedSoFar = 19.3;
+              inv.unclaimedEarnings = 19.3;
+            }
+          }
+        }
+      });
+    }
+
     const sandhyaInvs = Array.isArray(state.investments) ? state.investments.filter(i => 
       i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
     ) : [];
@@ -135,12 +161,18 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
         : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
       return sum + e;
     }, 0);
-    const resolvedEarned = sandhyaEarned > 0 ? sandhyaEarned : 264.3;
+    const resolvedEarned = sandhyaEarned > 0 ? Math.round(sandhyaEarned * 100) / 100 : 264.3;
 
     Object.keys(state.wallets).forEach((k) => {
       const w = state.wallets[k];
       if (w) {
-        if (w.totalEarned === 221 || w.totalEarned === 221.5 || w.totalEarned === 176.8 || w.totalEarned === 44.2 || w.totalEarned === 173.2) {
+        const isSandhyaWallet = k === '7808056040' || k === 'usr-1789384741169' || k === 'Sandhya' || k === '1789384741169';
+        if (isSandhyaWallet) {
+          w.totalEarned = Math.max(resolvedEarned, 264.3);
+          w.cashBalance = Math.max(w.cashBalance || 0, 230000);
+          w.gpBalance = Math.max(w.gpBalance || 0, 19600);
+          w.totalInvested = Math.max(w.totalInvested || 0, 110000);
+        } else if (w.totalEarned === 221 || w.totalEarned === 221.5 || w.totalEarned === 176.8 || w.totalEarned === 44.2 || w.totalEarned === 173.2) {
           w.totalEarned = resolvedEarned;
         }
       }
