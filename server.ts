@@ -1241,6 +1241,15 @@ function ensureDb(): ServerDB {
       parsed.rules = {
         ...DEFAULT_RULES,
         ...parsed.rules,
+        minDeposit: 10000,
+        maxDeposit: 5000000,
+        companyBankName: "Axis Bank",
+        companyBankAccountNumber: "924010002662307",
+        companyBankIfsc: "UTIB0001219",
+        companyUpiId: "8603504808@axisbank",
+        companyBankAccountHolder: "GCap Assets & Wealth Management Private Limited",
+        shortTerm6hRate: 0.040,
+        longTerm6hRate: 0.033,
       };
     }
     // Force set user's specific company details if legacy defaults are present

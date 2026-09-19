@@ -20,6 +20,7 @@ import {
   UserProfile,
   AdminMessage,
 } from '../types';
+import { DEFAULT_GCAP_RULES } from '../data/defaultRules';
 
 export interface FirestoreDatabaseState {
   users: UserProfile[];
@@ -163,6 +164,24 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
         i.userLoginId = '7808056040';
       }
     });
+  }
+  // 5. Rules: Enforce correct rules (Axis Bank, minDeposit 10000, etc.)
+  if (!state.rules || typeof state.rules !== 'object') {
+    state.rules = DEFAULT_GCAP_RULES;
+  } else {
+    state.rules = {
+      ...DEFAULT_GCAP_RULES,
+      ...state.rules,
+      minDeposit: 10000,
+      maxDeposit: 5000000,
+      companyBankName: 'Axis Bank',
+      companyBankAccountNumber: '924010002662307',
+      companyBankIfsc: 'UTIB0001219',
+      companyUpiId: '8603504808@axisbank',
+      companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
+      shortTerm6hRate: 0.040,
+      longTerm6hRate: 0.033,
+    };
   }
   return state;
 }
