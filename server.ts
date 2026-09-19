@@ -1554,11 +1554,6 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
     
     // Set local tracking timestamp to avoid redundant self-loading triggers
     lastSyncedTimestamp = db.lastUpdated;
-
-    // Broadcast instant real-time event to all connected clients worldwide (web & installed mobile PWA)
-    try {
-      broadcastRealtimeEvent("state_changed", { timestamp: Date.now(), lastUpdated: db.lastUpdated });
-    } catch (_) {}
     
     // Write quickly to Firebase Firestore for instant multi-device & install app sync
     if (firestore) {
@@ -1688,117 +1683,64 @@ async function startServer() {
   // Real-time Event Stream (Server-Sent Events) for instant automatic updates worldwide
   // (sseClients and broadcastRealtimeEvent are defined at module scope)
 
-  // Perform initial database synchronization from Firestore at startup
+  // Perform initial database synchronization from Firestore asynchronously (non-blocking)
   if (firestore) {
-    try {
-      console.log("[Firebase] Performing initial startup database synchronization...");
-      const remoteDb = await loadFromFirestore();
-      if (remoteDb) {
-        // Merge any users and investments in local DB_FILE with remote Firestore data
-        let localUsers: StoredAccount[] = [];
-        let localWallets: Record<string, any> = {};
-        let localInvestments: any[] = [];
-        try {
-          if (fs.existsSync(DB_FILE)) {
-            const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-            if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
-            if (localRaw.wallets) localWallets = localRaw.wallets;
-            if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
-          }
-        } catch (_) {}
+    (async () => {
+      try {
+        console.log("[Firebase] Performing initial startup database synchronization...");
+        const remoteDb = await loadFromFirestore();
+        if (remoteDb) {
+          // Merge any users and investments in local DB_FILE with remote Firestore data
+          let localUsers: StoredAccount[] = [];
+          let localWallets: Record<string, any> = {};
+          let localInvestments: any[] = [];
+          try {
+            if (fs.existsSync(DB_FILE)) {
+              const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+              if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
+              if (localRaw.wallets) localWallets = localRaw.wallets;
+              if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
+            }
+          } catch (_) {}
 
-        const userMap = new Map<string, StoredAccount>();
-        (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
-        localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
+          const userMap = new Map<string, StoredAccount>();
+          (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
+          localUsers.forEach((u: StoredAccount) => { if (u?.id && !userMap.has(u.id)) userMap.set(u.id, u); });
 
-        const invMap = new Map<string, any>();
-        (remoteDb.investments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
-        localInvestments.forEach((i: any) => { if (i?.id && !invMap.has(i.id)) invMap.set(i.id, i); });
+          const invMap = new Map<string, any>();
+          (remoteDb.investments || []).forEach((i: any) => { if (i?.id) invMap.set(i.id, i); });
+          localInvestments.forEach((i: any) => { if (i?.id && !invMap.has(i.id)) invMap.set(i.id, i); });
 
-        remoteDb.users = Array.from(userMap.values());
-        const mergedWallets: Record<string, any> = {};
-        const allKeys = new Set([...Object.keys(remoteDb.wallets || {}), ...Object.keys(localWallets || {})]);
-        for (const k of allKeys) {
-          const wRemote = (remoteDb.wallets || {})[k];
-          const wLocal = (localWallets || {})[k];
-          if (wRemote && wLocal) {
-            const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
-            const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
-            mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
-          } else {
-            mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
-          }
-        }
-        remoteDb.wallets = mergedWallets;
-        remoteDb.investments = Array.from(invMap.values());
-
-        fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
-        const cleanedDb = ensureDb();
-        lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
-        fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
-        saveToFirestore(cleanedDb).catch(err => {
-          console.error("[Firebase] Initial saveToFirestore caught:", err);
-        });
-        console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
-      }
-
-      // Setup real-time listener to keep everything synchronized 100% in real-time worldwide
-      console.log("[Firebase] Setting up worldwide real-time snapshot listener...");
-      clientOnSnapshot(clientDoc(firestore, "gcap_database", "metadata"), async (docSnap: any) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const firestoreLastUpdated = data?.lastUpdated;
-          if (firestoreLastUpdated && firestoreLastUpdated !== lastSyncedTimestamp) {
-            console.log(`[Firebase Realtime] Remote database update detected (${firestoreLastUpdated}). Syncing...`);
-            const updatedDb = await loadFromFirestore();
-            if (updatedDb) {
-              let localWallets: Record<string, any> = {};
-              if (!Array.isArray(updatedDb.investments) || updatedDb.investments.length === 0) {
-                try {
-                  const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-                  if (Array.isArray(localRaw.investments) && localRaw.investments.length > 0) {
-                    updatedDb.investments = localRaw.investments;
-                  }
-                  if (localRaw.wallets) localWallets = localRaw.wallets;
-                } catch (_) {}
-              } else {
-                try {
-                  const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-                  if (localRaw.wallets) localWallets = localRaw.wallets;
-                } catch (_) {}
-              }
-
-              const mergedWallets: Record<string, any> = {};
-              const allKeys = new Set([...Object.keys(updatedDb.wallets || {}), ...Object.keys(localWallets || {})]);
-              for (const k of allKeys) {
-                const wRemote = (updatedDb.wallets || {})[k];
-                const wLocal = (localWallets || {})[k];
-                if (wRemote && wLocal) {
-                  const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
-                  const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
-                  mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
-                } else {
-                  mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
-                }
-              }
-              updatedDb.wallets = mergedWallets;
-              fs.writeFileSync(DB_FILE, JSON.stringify(updatedDb, null, 2), "utf-8");
-              const cleaned = ensureDb();
-              lastSyncedTimestamp = cleaned.lastUpdated;
-              fs.writeFileSync(DB_FILE, JSON.stringify(cleaned, null, 2), "utf-8");
-              console.log("[Firebase Realtime] Synchronized database successfully in real-time.");
-              
-              // Broadcast change to all connected SSE clients so they refresh instantly!
-              broadcastRealtimeEvent("state_changed", { type: "FIRESTORE_SYNC", timestamp: Date.now() });
+          remoteDb.users = Array.from(userMap.values());
+          const mergedWallets: Record<string, any> = {};
+          const allKeys = new Set([...Object.keys(remoteDb.wallets || {}), ...Object.keys(localWallets || {})]);
+          for (const k of allKeys) {
+            const wRemote = (remoteDb.wallets || {})[k];
+            const wLocal = (localWallets || {})[k];
+            if (wRemote && wLocal) {
+              const scoreRemote = (wRemote.cashBalance || 0) + (wRemote.gpBalance || 0) + (wRemote.totalInvested || 0);
+              const scoreLocal = (wLocal.cashBalance || 0) + (wLocal.gpBalance || 0) + (wLocal.totalInvested || 0);
+              mergedWallets[k] = scoreRemote >= scoreLocal ? { ...wRemote } : { ...wLocal };
+            } else {
+              mergedWallets[k] = wRemote ? { ...wRemote } : { ...wLocal };
             }
           }
+          remoteDb.wallets = mergedWallets;
+          remoteDb.investments = Array.from(invMap.values());
+
+          fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
+          const cleanedDb = ensureDb();
+          lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
+          fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
+          saveToFirestore(cleanedDb).catch(err => {
+            console.error("[Firebase] Initial saveToFirestore caught:", err);
+          });
+          console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
         }
-      }, (err: any) => {
-        console.error("[Firebase Realtime] Snapshot listener error:", err);
-      });
-    } catch (err) {
-      console.error("[Firebase] Error during initial database sync:", err);
-    }
+      } catch (err) {
+        console.error("[Firebase] Startup sync error:", err);
+      }
+    })();
   }
 
   // SSE Real-time stream endpoint
