@@ -51,8 +51,8 @@ export const RulesModal: React.FC<RulesModalProps> = ({
     if (isOpen && !prevIsOpenRef.current) {
       setFormData({
         ...rules,
-        shortTerm6hRate: rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041,
-        longTerm6hRate: rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032,
+        shortTerm6hRate: rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040,
+        longTerm6hRate: rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033,
       });
       if (isAdmin) {
         setActiveTab('EDIT');
@@ -246,7 +246,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                     {isHi ? 'शॉर्ट टर्म (641D)' : 'Short Term (641D)'}
                   </p>
                   <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
-                    {rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041}%/6h
+                    {rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040}%/6h
                   </p>
                 </div>
                 <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
@@ -254,7 +254,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                     {isHi ? 'लॉन्ग टर्म (365D)' : 'Long Term (365D)'}
                   </p>
                   <p className="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">
-                    {rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032}%/6h
+                    {rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033}%/6h
                   </p>
                 </div>
               </div>
@@ -719,7 +719,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                           {isHi ? 'शॉर्ट टर्म (641 दिन) दर (% / 6h)' : 'Short Term (641D) Rate (%/6h)'}
                         </span>
                         <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.shortTerm6hRate ?? 0.041) * 4).toFixed(3)}%
+                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.shortTerm6hRate ?? 0.040) * 4).toFixed(3)}%
                         </span>
                       </div>
                       <input
@@ -727,10 +727,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                         min={0.001}
                         max={5}
                         step={0.001}
-                        value={formData.shortTerm6hRate ?? 0.041}
+                        value={formData.shortTerm6hRate ?? 0.040}
                         onChange={(e) => {
                           const val = parseFloat(e.target.value);
-                          setFormData({ ...formData, shortTerm6hRate: isNaN(val) ? 0.041 : val });
+                          setFormData({ ...formData, shortTerm6hRate: isNaN(val) ? 0.040 : val });
                         }}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                       />
@@ -743,7 +743,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                           {isHi ? 'लॉन्ग टर्म (365 दिन) दर (% / 6h)' : 'Long Term (365D) Rate (%/6h)'}
                         </span>
                         <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.longTerm6hRate ?? 0.032) * 4).toFixed(3)}%
+                          {isHi ? 'दैनिक:' : 'Daily:'} {((formData.longTerm6hRate ?? 0.033) * 4).toFixed(3)}%
                         </span>
                       </div>
                       <input
@@ -751,10 +751,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                         min={0.001}
                         max={5}
                         step={0.001}
-                        value={formData.longTerm6hRate ?? 0.032}
+                        value={formData.longTerm6hRate ?? 0.033}
                         onChange={(e) => {
                           const val = parseFloat(e.target.value);
-                          setFormData({ ...formData, longTerm6hRate: isNaN(val) ? 0.032 : val });
+                          setFormData({ ...formData, longTerm6hRate: isNaN(val) ? 0.033 : val });
                         }}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm focus:border-emerald-500 focus:outline-none"
                       />

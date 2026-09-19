@@ -2522,19 +2522,21 @@ export default function App() {
       const now = Date.now();
       let hasChanges = false;
       let totalCycleEarningsToAdd = 0;
+      let totalRoyaltyCycleEarningsToAdd = 0;
       const newTransactions: Transaction[] = [];
 
       const updated = investments.map((inv) => {
         if (inv.status !== 'ACTIVE' || inv.userId !== currentUser.id) return inv;
 
         // Calculate dynamic cyclePayout rate based on active rules
-        let current6hRate = 0.041;
+        let current6hRate = 0.040;
         if (inv.planId === 'long-term') {
-          current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+          current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
         } else {
-          current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+          current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
         }
         const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
+        const isRoyaltyInv = inv.royaltyStage === '1825D_ROYALTY';
 
         // Phase 1: 24h Lock Expiry Check -> calculate any elapsed fixed cycle slots since lock ended
         if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
@@ -2548,7 +2550,11 @@ export default function App() {
           const currentStart = currentEnd - 6 * 3600 * 1000;
 
           if (earningsToAdd > 0) {
-            totalCycleEarningsToAdd += earningsToAdd;
+            if (isRoyaltyInv) {
+              totalRoyaltyCycleEarningsToAdd += earningsToAdd;
+            } else {
+              totalCycleEarningsToAdd += earningsToAdd;
+            }
             for (let c = 1; c <= cyclesToAdd; c++) {
               const cNum = (inv.completedCyclesCount || 0) + c;
               newTransactions.push({
@@ -2563,8 +2569,12 @@ export default function App() {
                 timestamp: now,
                 status: 'SUCCESS',
                 referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-                note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
-                noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+                note: isRoyaltyInv
+                  ? `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Royalty Earning (${inv.planName})`
+                  : `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
+                noteHi: isRoyaltyInv
+                  ? `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल रॉयल्टी अर्निंग में जमा हुआ (${inv.planName})`
+                  : `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
               });
             }
           }
@@ -2628,7 +2638,11 @@ export default function App() {
           const currentEnd = getNextFixedCycleTimestamp(now);
           const currentStart = currentEnd - 6 * 3600 * 1000;
 
-          totalCycleEarningsToAdd += earningsToAdd;
+          if (isRoyaltyInv) {
+            totalRoyaltyCycleEarningsToAdd += earningsToAdd;
+          } else {
+            totalCycleEarningsToAdd += earningsToAdd;
+          }
 
           for (let c = 1; c <= elapsedCycles; c++) {
             const cNum = (inv.completedCyclesCount || 0) + c;
@@ -2644,8 +2658,12 @@ export default function App() {
               timestamp: now,
               status: 'SUCCESS',
               referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-              note: `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
-              noteHi: `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+              note: isRoyaltyInv
+                ? `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Royalty Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`
+                : `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
+              noteHi: isRoyaltyInv
+                ? `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल रॉयल्टी अर्निंग में जमा हुआ (${inv.planName})`
+                : `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
             });
           }
 
@@ -2667,12 +2685,13 @@ export default function App() {
         setStoredInvestments(updated);
         saveInvestmentsToFirestore(updated).catch(console.error);
 
-        if (totalCycleEarningsToAdd > 0) {
+        if (totalCycleEarningsToAdd > 0 || totalRoyaltyCycleEarningsToAdd > 0) {
           setWallet((prev) => {
             if (!prev) return prev;
             const updatedWallet = {
               ...prev,
               totalEarned: (prev.totalEarned || 0) + totalCycleEarningsToAdd,
+              royaltyEarned: (prev.royaltyEarned || 0) + totalRoyaltyCycleEarningsToAdd,
             };
             setStoredWallet(updatedWallet);
             if (currentUser) {
@@ -2806,14 +2825,15 @@ export default function App() {
     const now = Date.now();
     
     // Calculate dynamic cyclePayout based on active rules for simulation
-    let current6hRate = 0.041;
+    let current6hRate = 0.040;
     if (inv.planId === 'long-term') {
-      current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+      current6hRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
     } else {
-      current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+      current6hRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
     }
     const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
     
+    const isRoyaltyInv = inv.royaltyStage === '1825D_ROYALTY';
     const nextCycleNum = (inv.completedCyclesCount || 0) + 1;
     const currentEnd = getNextFixedCycleTimestamp(now + 1000);
     const currentStart = currentEnd - 6 * 3600 * 1000;
@@ -2826,8 +2846,12 @@ export default function App() {
       timestamp: now,
       status: 'SUCCESS',
       referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
-      note: `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at fixed slot ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
-      noteHi: `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
+      note: isRoyaltyInv
+        ? `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Royalty Earning (${inv.planName}) at fixed slot ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`
+        : `6-Hour Cycle #${nextCycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName}) at fixed slot ${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)}`,
+      noteHi: isRoyaltyInv
+        ? `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल रॉयल्टी अर्निंग में जमा हुआ (${inv.planName})`
+        : `6 घंटे के चक्र #${nextCycleNum} का रिटर्न ₹${cyclePayout} (${formatFixedSlotTime(inv.currentCycleEndTimestamp || now)} स्लॉट) स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
     };
 
     const updated = investments.map((i) => {
@@ -2854,7 +2878,8 @@ export default function App() {
       if (!prev) return prev;
       updatedWallet = {
         ...prev,
-        totalEarned: (prev.totalEarned || 0) + cyclePayout,
+        totalEarned: isRoyaltyInv ? (prev.totalEarned || 0) : (prev.totalEarned || 0) + cyclePayout,
+        royaltyEarned: isRoyaltyInv ? (prev.royaltyEarned || 0) + cyclePayout : (prev.royaltyEarned || 0),
       };
       setStoredWallet(updatedWallet);
       if (currentUser) {
@@ -3117,8 +3142,8 @@ export default function App() {
     showToast(
       isHi ? '👑 1461-दिवसीय रॉयल्टी लॉक सक्रिय!' : '👑 1461-Day Royalty Lock Activated!',
       isHi
-        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.032% GP प्राप्त होता रहेगा।`
-        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.032% GP credited every 6 hours.`
+        ? `आपका प्लान (${inv.planUniqueId || inv.id}) 1461 दिनों के लिए लॉक हो गया है। हर 6 घंटे में 0.033% GP प्राप्त होता रहेगा।`
+        : `Plan (${inv.planUniqueId || inv.id}) locked for 1461 days with 0.033% GP credited every 6 hours.`
     );
   };
 
@@ -3175,7 +3200,7 @@ export default function App() {
       isHi ? '👑 मूलधन वापस प्राप्त & 1825-दिवसीय रॉयल्टी रिवॉर्ड प्रारंभ!' : '👑 Principal Returned & 1825-Day Royalty Started!',
       isHi
         ? `+${formatINR(payoutAmount)} (मूलधन + अर्निंग) आपके वॉलेट में ट्रांसफर कर दिए गए हैं! मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार अर्निंग मिलती रहेगी।`
-        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.032% GP every 6 hours for 1825 days.`
+        : `+${formatINR(payoutAmount)} credited to wallet! Even after principal return, you will receive 0.033% GP every 6 hours for 1825 days.`
     );
   };
 
@@ -3741,6 +3766,7 @@ export default function App() {
         <Navbar
           wallet={wallet}
           treasury={treasury || undefined}
+          investments={investments}
           language={language}
           onLanguageChange={setLanguage}
           viewMode={viewMode}
@@ -3934,6 +3960,7 @@ export default function App() {
             }}
             wallet={wallet}
             treasury={treasury || undefined}
+            investments={investments}
             onOpenDeposit={() => setIsDepositOpen(true)}
             onOpenWithdraw={() => setIsWithdrawOpen(true)}
             onOpenSwap={() => setIsSwapOpen(true)}

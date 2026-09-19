@@ -32,12 +32,12 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
     planUniqueId: "STP-641D-89421",
     investedAmount: 100000,
-    dailyRoiPercent: 0.164,
-    dailyReturnAmount: 164,
-    totalExpectedReturn: 205124,
-    earnedSoFar: 41,
+    dailyRoiPercent: 0.160,
+    dailyReturnAmount: 160,
+    totalExpectedReturn: 202560,
+    earnedSoFar: 40,
     claimedSoFar: 0,
-    unclaimedEarnings: 41,
+    unclaimedEarnings: 40,
     durationDays: 641,
     daysCompleted: 0,
     status: "ACTIVE",
@@ -49,7 +49,7 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     lockCongratulationsShown: true,
     completedCyclesCount: 1,
     cyclesCompleted: 1,
-    totalEarnedSoFar: 41
+    totalEarnedSoFar: 40
   },
   {
     id: "inv-sandhya-7808056040-2",
@@ -62,12 +62,12 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
     planUniqueId: "LTP-365D-89421",
     investedAmount: 10000,
-    dailyRoiPercent: 0.128,
-    dailyReturnAmount: 12.8,
-    totalExpectedReturn: 14680,
-    earnedSoFar: 3.2,
+    dailyRoiPercent: 0.132,
+    dailyReturnAmount: 13.2,
+    totalExpectedReturn: 14818,
+    earnedSoFar: 3.3,
     claimedSoFar: 0,
-    unclaimedEarnings: 3.2,
+    unclaimedEarnings: 3.3,
     durationDays: 365,
     daysCompleted: 0,
     status: "ACTIVE",
@@ -79,7 +79,7 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     lockCongratulationsShown: true,
     completedCyclesCount: 1,
     cyclesCompleted: 1,
-    totalEarnedSoFar: 3.2
+    totalEarnedSoFar: 3.3
   }
 ];
 
@@ -128,9 +128,9 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       item.planNameHi = "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान";
       item.planUniqueId = `LTP-365D-${shortCode}`;
       item.durationDays = 365;
-      item.dailyRoiPercent = 0.128;
-      item.dailyReturnAmount = item.investedAmount * 0.128 / 100;
-      item.totalExpectedReturn = (item.investedAmount * 0.128 / 100) * 365;
+      item.dailyRoiPercent = 0.132;
+      item.dailyReturnAmount = item.investedAmount * 0.132 / 100;
+      item.totalExpectedReturn = (item.investedAmount * 0.132 / 100) * 365;
     }
 
     const activation = item.activationTimestamp || (item.startDate ? new Date(item.startDate).getTime() : Date.now());
@@ -143,8 +143,8 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
     const investedAmount = item.investedAmount;
 
     // Load dynamic rates from rules with safe fallbacks
-    let shortRate = 0.041;
-    let longRate = 0.032;
+    let shortRate = 0.040;
+    let longRate = 0.033;
     try {
       const activeRules = getStoredRules();
       if (activeRules && typeof activeRules.shortTerm6hRate === 'number') {

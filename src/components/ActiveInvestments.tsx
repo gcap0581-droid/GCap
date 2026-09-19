@@ -82,8 +82,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
   const totalEarnedSoFar = investments.reduce((sum, inv) => {
     const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
-    const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
-    const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+    const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
+    const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
     const currentRate = !isShort || !!inv.royaltyStage ? longTermRate : shortTermRate;
     const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
     const completedCycles = Math.max(
@@ -125,8 +125,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
         </h3>
         <p className="text-xs text-slate-400 max-w-sm mx-auto mb-5">
           {isHi
-            ? '641-दिनों के शॉर्ट टर्म प्लान में निवेश करें। पहले 24 घंटे का लॉक रहेगा और उसके बाद हर 6 घंटे में 0.041% GP अर्निंग स्वतः Total Earning में जमा होगी।'
-            : 'Invest in 641-Day Short Term Plan. Locked for first 24 hours, followed by recurring 6-hour 0.041% GP earnings added to Total Earning.'}
+            ? '641-दिनों के शॉर्ट टर्म प्लान में निवेश करें। पहले 24 घंटे का लॉक रहेगा और उसके बाद हर 6 घंटे में 0.040% GP अर्निंग स्वतः Total Earning में जमा होगी।'
+            : 'Invest in 641-Day Short Term Plan. Locked for first 24 hours, followed by recurring 6-hour 0.040% GP earnings added to Total Earning.'}
         </p>
         <button
           id="btn-empty-invest-start"
@@ -249,8 +249,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const isShortTerm = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
             const isLongTerm = !isShortTerm || !!inv.royaltyStage;
             
-            const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
-            const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+            const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
+            const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
             const current6hRate = isLongTerm ? longTermRate : shortTermRate;
             
             const cyclePercentStr = `${current6hRate.toFixed(3)}%`;
@@ -734,8 +734,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                   {/* USER FUTURE RETURN SCENARIO CALCULATOR (Req #8) */}
                   {(() => {
                     const dailyRet = isLongTerm
-                      ? (inv.investedAmount * 0.128 / 100)
-                      : (inv.dailyReturnAmount || (inv.investedAmount * 0.164 / 100));
+                      ? (inv.investedAmount * 0.132 / 100)
+                      : (inv.dailyReturnAmount || (inv.investedAmount * 0.160 / 100));
                     const proj30d = dailyRet * 30;
                     const proj90d = dailyRet * 90;
                     const proj180d = dailyRet * 180;

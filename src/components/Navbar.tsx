@@ -22,12 +22,14 @@ import {
   LiveInterfaceConfig,
   DesktopCategoryTab,
   CompanyTreasury,
+  ActiveInvestment,
 } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface NavbarProps {
   wallet?: Wallet | null;
   treasury?: CompanyTreasury;
+  investments?: ActiveInvestment[];
   language: Language;
   onLanguageChange: (lang: Language) => void;
   viewMode: ViewMode;
@@ -56,6 +58,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   wallet,
   treasury,
+  investments,
   language,
   onLanguageChange,
   viewMode,
@@ -82,6 +85,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
   const [searchVal, setSearchVal] = useState('');
+
+  const hasRoyaltyStarted = !isAdmin && (
+    (wallet?.royaltyEarned !== undefined && wallet.royaltyEarned > 0) ||
+    (investments && investments.some(i => i.status === 'ACTIVE' && i.royaltyStage === '1825D_ROYALTY'))
+  );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Actions: Wallet Pill, Deposit, View Switcher */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
-            {/* Compact Wallet Pill */}
+            {/* Compact Wallet Pill (Total Royalty Earning or Total Earning) */}
             {currentUser && (
               <div
                 onClick={() => {
@@ -153,16 +161,40 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onDesktopTabChange('wallet');
                   }
                 }}
-                className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors"
-                title={isAdmin ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance') : (isHi ? 'वॉलेट बैलेंस' : 'Wallet Balance')}
+                className={`flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border ${
+                  hasRoyaltyStarted
+                    ? 'border-amber-500/50 bg-amber-950/25 hover:border-amber-500/70'
+                    : 'border-slate-800 hover:border-emerald-500/40'
+                } rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors`}
+                title={
+                  isAdmin
+                    ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance')
+                    : hasRoyaltyStarted
+                    ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty Earnings')
+                    : (isHi ? 'कुल कमाई' : 'Total Earnings')
+                }
               >
-                <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                {hasRoyaltyStarted && !isAdmin ? (
+                  <span className="text-sm shrink-0 leading-none">👑</span>
+                ) : (
+                  <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                )}
                 <div className="leading-none">
                   <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
-                    {isAdmin ? (isHi ? 'कुल कमाई' : 'कुल कमाई') : (isHi ? 'कुल कमाई' : 'कुल कमाई')}
+                    {isAdmin
+                      ? (isHi ? 'कंपनी बैलेंस' : 'Company Balance')
+                      : hasRoyaltyStarted
+                      ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty')
+                      : (isHi ? 'कुल कमाई' : 'Total Earnings')}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
-                    {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0)) : (wallet?.totalEarned || 0))}
+                  <span className={`text-xs sm:text-sm font-bold font-mono ${hasRoyaltyStarted && !isAdmin ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {formatINR(
+                      isAdmin
+                        ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0))
+                        : hasRoyaltyStarted
+                        ? (wallet?.royaltyEarned || 0)
+                        : (wallet?.totalEarned || 0)
+                    )}
                   </span>
                 </div>
               </div>

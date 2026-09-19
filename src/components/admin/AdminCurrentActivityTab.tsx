@@ -767,7 +767,7 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                       <td className="p-3 text-slate-300 font-sans">{inv.userName || inv.userId}</td>
                       <td className="p-3 font-bold text-cyan-400">{formatINR(inv.investedAmount)}</td>
                       <td className="p-3 text-emerald-400 font-bold">
-                        +{formatINR(inv.dailyReturnAmount || (inv.investedAmount * 0.164) / 100)} /day
+                        +{formatINR(inv.dailyReturnAmount || (inv.investedAmount * (inv.dailyRoiPercent || 0.160)) / 100)} /day
                       </td>
                       <td className="p-3 text-emerald-400 font-black">
                         +{formatINR(inv.earnedSoFar || inv.totalEarnedSoFar || 0)}

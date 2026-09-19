@@ -20,8 +20,8 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   isReferralEnabled: true, // Referral program enabled by default
   tdsPercent: 5.0, // 5% Govt TDS (Sec 194 / 194J)
   adminFeePercent: 2.0, // 2.0% Admin Charge on earnings withdrawal
-  shortTerm6hRate: 0.041, // 0.041% every 6 hours
-  longTerm6hRate: 0.032,  // 0.032% every 6 hours
+  shortTerm6hRate: 0.040, // 0.040% every 6 hours
+  longTerm6hRate: 0.033,  // 0.033% every 6 hours
   supportEmail: 'support@gcap.in',
   supportPhone: '+91 98000 12345',
   lastUpdated: '2026-09-07',

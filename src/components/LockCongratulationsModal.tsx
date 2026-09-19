@@ -20,13 +20,13 @@ export const LockCongratulationsModal: React.FC<LockCongratulationsModalProps> =
 
   const isHi = language === 'hi';
   // Load current rules to show the correct live rate
-  let current6hRate = 0.041;
+  let current6hRate = 0.040;
   try {
     const rules = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('gcap_platform_rules_v1') || '{}') : {};
     if (investment.planId === 'long-term') {
-      current6hRate = rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.032;
+      current6hRate = rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
     } else {
-      current6hRate = rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.041;
+      current6hRate = rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
     }
   } catch (e) {}
   const cycleReturn = Math.round(((investment.investedAmount * current6hRate) / 100) * 100) / 100;

@@ -29,7 +29,7 @@ import {
   Globe,
   User,
 } from 'lucide-react';
-import { Language, UserProfile, Wallet, DesktopCategoryTab, CompanyTreasury } from '../types';
+import { Language, UserProfile, Wallet, DesktopCategoryTab, CompanyTreasury, ActiveInvestment } from '../types';
 import { formatINR } from '../utils/storage';
 
 interface AndroidFrameProps {
@@ -43,6 +43,7 @@ interface AndroidFrameProps {
   onSearchQuery?: (query: string) => void;
   wallet?: Wallet | null;
   treasury?: CompanyTreasury | null;
+  investments?: ActiveInvestment[];
   onOpenDeposit?: () => void;
   onOpenWithdraw?: () => void;
   onOpenSwap?: () => void;
@@ -67,6 +68,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onSearchQuery,
   wallet,
   treasury,
+  investments,
   onOpenDeposit,
   onOpenWithdraw,
   onOpenSwap,
@@ -83,6 +85,11 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const hasRoyaltyStarted = !isAdmin && (
+    (wallet?.royaltyEarned !== undefined && wallet.royaltyEarned > 0) ||
+    (investments && investments.some(i => i.status === 'ACTIVE' && i.royaltyStage === '1825D_ROYALTY'))
+  );
 
   const handleMobileSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,7 +163,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Balance (Total Earnings), Notification Bell & Exit Mobile Mode */}
+        {/* Right: Quick Balance (Total Royalty Earnings or Total Earnings), Notification Bell & Exit Mobile Mode */}
         <div className="flex items-center gap-1.5">
           {currentUser && (
             <div
@@ -167,12 +174,32 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                   onTabChange('wallet');
                 }
               }}
-              className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 cursor-pointer"
-              title={isAdmin ? (isHi ? 'कुल कमाई' : 'Total Earnings') : (wallet?.royaltyEarned && wallet.royaltyEarned > 0 ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty Earnings') : (isHi ? 'कुल कमाई' : 'Total Earnings'))}
+              className={`flex items-center gap-1 bg-slate-950/80 border ${
+                hasRoyaltyStarted
+                  ? 'border-amber-500/50 bg-amber-950/30'
+                  : 'border-slate-800'
+              } rounded-lg px-2 py-1 cursor-pointer transition-colors`}
+              title={
+                isAdmin
+                  ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Treasury Balance')
+                  : hasRoyaltyStarted
+                  ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty Earnings')
+                  : (isHi ? 'कुल कमाई' : 'Total Earnings')
+              }
             >
-              <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs font-mono font-bold text-emerald-400">
-                {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0)) : (wallet?.royaltyEarned && wallet.royaltyEarned > 0 ? (wallet.royaltyEarned || 0) : (wallet?.totalEarned || 0)))}
+              {hasRoyaltyStarted && !isAdmin ? (
+                <span className="text-xs leading-none">👑</span>
+              ) : (
+                <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
+              )}
+              <span className={`text-xs font-mono font-bold ${hasRoyaltyStarted && !isAdmin ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {formatINR(
+                  isAdmin
+                    ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0))
+                    : hasRoyaltyStarted
+                    ? (wallet?.royaltyEarned || 0)
+                    : (wallet?.totalEarned || 0)
+                )}
               </span>
             </div>
           )}
