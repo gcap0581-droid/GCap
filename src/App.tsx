@@ -221,28 +221,27 @@ export default function App() {
     const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
     const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
 
-    const portfolioEarned = activeInvs.reduce((sum, inv) => {
+    const portfolioEarned = Math.round(activeInvs.reduce((sum, inv) => {
+      const invEarned = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+        ? inv.earnedSoFar
+        : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
+        ? inv.totalEarnedSoFar
+        : 0;
+      if (invEarned > 0) return sum + invEarned;
       const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
       const currentRate = !isShort || !!inv.royaltyStage ? longTermRate : shortTermRate;
       const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
       const completedCycles = Math.max(
         inv.completedCyclesCount || 0,
-        inv.cyclesCompleted || 0,
-        (inv.id === 'inv-sandhya-7808056040-1' || inv.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+        inv.cyclesCompleted || 0
       );
-
-      let itemEarned = Math.max(
-        completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0,
-        inv.id === 'inv-sandhya-7808056040-1' ? 40 : (inv.id === 'inv-sandhya-7808056040-2' ? 3.3 : 0)
-      );
-      if (inv.id === 'inv-sandhya-7808056040-1' && (inv.earnedSoFar === 246 || inv.earnedSoFar === 200 || inv.earnedSoFar === 205)) itemEarned = 205;
-      if (inv.id === 'inv-sandhya-7808056040-2' && (inv.earnedSoFar === 19.2 || inv.earnedSoFar === 16 || inv.earnedSoFar === 16.5)) itemEarned = 16.5;
-      return sum + itemEarned;
-    }, 0);
+      const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
+      return sum + calcEarned;
+    }, 0) * 100) / 100;
 
     const calcEarned = portfolioEarned > 0 ? portfolioEarned : (wallet.totalEarned || 0);
 
-    if (calcEarned !== wallet.totalEarned) {
+    if (Math.abs(calcEarned - (wallet.totalEarned || 0)) > 0.001) {
       return {
         ...wallet,
         totalEarned: calcEarned,
@@ -252,6 +251,13 @@ export default function App() {
   }, [wallet, investments, rules]);
 
   const displayWallet = effectiveWallet || wallet;
+
+  useEffect(() => {
+    if (effectiveWallet && wallet && effectiveWallet.totalEarned !== wallet.totalEarned) {
+      setWallet(effectiveWallet);
+      setStoredWallet(effectiveWallet);
+    }
+  }, [effectiveWallet, wallet]);
 
   // Midnight Auto-Backup Lifecycle
   useEffect(() => {
@@ -3999,7 +4005,7 @@ export default function App() {
                 setMobileTab('plans');
               }
             }}
-            wallet={wallet}
+            wallet={displayWallet}
             treasury={treasury || undefined}
             investments={investments}
             onOpenDeposit={() => setIsDepositOpen(true)}
@@ -4018,7 +4024,7 @@ export default function App() {
                 adminUser={currentUser}
                 language={language}
                 rules={rules}
-                wallet={wallet}
+                wallet={displayWallet}
                 transactions={transactions}
                 plans={plans}
                 investments={investments}
@@ -4405,7 +4411,7 @@ export default function App() {
           isOpen={isGpTransferOpen}
           onClose={() => setIsGpTransferOpen(false)}
           currentUser={currentUser}
-          wallet={wallet}
+          wallet={displayWallet}
           language={language}
           usersList={getAllUsers()}
           onExecuteGpTransfer={handleExecuteGpTransfer}

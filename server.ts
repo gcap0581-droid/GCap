@@ -632,9 +632,9 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         dailyRoiPercent: 0.160,
         dailyReturnAmount: 160,
         totalExpectedReturn: 202560,
-        earnedSoFar: 40,
+        earnedSoFar: 245,
         claimedSoFar: 0,
-        unclaimedEarnings: 40,
+        unclaimedEarnings: 245,
         durationDays: 641,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -645,9 +645,9 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         lockedUntilTimestamp: 1789658603901,
         isInitialLockCompleted: true,
         lockCongratulationsShown: true,
-        completedCyclesCount: 1,
-        cyclesCompleted: 1,
-        totalEarnedSoFar: 40
+        completedCyclesCount: 6,
+        cyclesCompleted: 6,
+        totalEarnedSoFar: 245
       },
       {
         id: "inv-sandhya-7808056040-2",
@@ -663,9 +663,9 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         dailyRoiPercent: 0.132,
         dailyReturnAmount: 13.2,
         totalExpectedReturn: 14818,
-        earnedSoFar: 3.3,
+        earnedSoFar: 19.3,
         claimedSoFar: 0,
-        unclaimedEarnings: 3.3,
+        unclaimedEarnings: 19.3,
         durationDays: 365,
         daysCompleted: 0,
         status: "ACTIVE",
@@ -676,9 +676,10 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         lockedUntilTimestamp: 1789667064512,
         isInitialLockCompleted: true,
         lockCongratulationsShown: true,
-        completedCyclesCount: 1,
-        cyclesCompleted: 1,
-        totalEarnedSoFar: 3.3
+        completedCyclesCount: 6,
+        cyclesCompleted: 6,
+        cycleReturnAmount: 3.2,
+        totalEarnedSoFar: 19.3
       }
     ];
 
@@ -693,13 +694,24 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
     }
 
     if (!loadedDb.wallets) loadedDb.wallets = {};
-    const sandhyaWalletKeys = ["usr-1789384741169", "1789384741169", "7808056040", "9384741169"];
+    const sandhyaWalletKeys = ["usr-1789384741169", "1789384741169", "7808056040", "9384741169", "Sandhya"];
+    const sandhyaInvs = (loadedDb.investments || []).filter((i) =>
+      i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
+    );
+    const sandhyaEarned = sandhyaInvs.reduce((sum, inv) => {
+      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+        ? inv.earnedSoFar
+        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
+      return sum + e;
+    }, 0);
+    const resolvedEarned = sandhyaEarned > 0 ? sandhyaEarned : 264.3;
+
     sandhyaWalletKeys.forEach((k) => {
       loadedDb.wallets[k] = {
         cashBalance: 230000,
         gpBalance: 19600,
         totalInvested: 110000,
-        totalEarned: 221.5,
+        totalEarned: resolvedEarned,
         royaltyEarned: 0,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
@@ -812,6 +824,19 @@ function getAllUserWalletKeys(db: any, queryId: string, foundUser?: any): string
     });
   }
 
+  if (user && user.name) {
+    keys.add(user.name);
+  }
+
+  const isSandhyaUser = clean.includes("7808056040") || clean.includes("1789384741169") || (user && (user.loginId === "7808056040" || (user.phone && user.phone.includes("7808056040"))));
+  if (isSandhyaUser) {
+    keys.add("Sandhya");
+    keys.add("7808056040");
+    keys.add("usr-1789384741169");
+    keys.add("1789384741169");
+    keys.add("9384741169");
+  }
+
   keys.delete('917808056040');
   return Array.from(keys).filter(k => Boolean(k) && k !== '917808056040');
 }
@@ -862,7 +887,16 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     bestWallet.cashBalance = 230000;
     bestWallet.gpBalance = 19600;
     bestWallet.totalInvested = 110000;
-    bestWallet.totalEarned = 221.5;
+    const sandhyaInvs = (db.investments || []).filter((i) =>
+      i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
+    );
+    const dynamicEarned = sandhyaInvs.reduce((sum, inv) => {
+      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+        ? inv.earnedSoFar
+        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
+      return sum + e;
+    }, 0);
+    bestWallet.totalEarned = dynamicEarned > 0 ? dynamicEarned : 264.3;
   }
 
   // Synchronize all alias keys so EVERY single key has the exact same unified balance
@@ -1465,9 +1499,16 @@ function ensureDb(): ServerDB {
           best.cashBalance = Math.max(best.cashBalance || 0, 230000);
           best.gpBalance = Math.max(best.gpBalance || 0, 19600);
           best.totalInvested = Math.max(best.totalInvested || 0, 110000);
-          if (best.totalEarned === 221 || best.totalEarned === 176.8 || best.totalEarned === 44.2 || !best.totalEarned) {
-            best.totalEarned = 173.2;
-          }
+          const sandhyaInvs = (parsed.investments || []).filter((i) =>
+            i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
+          );
+          const dynamicEarned = sandhyaInvs.reduce((sum, inv) => {
+            const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+              ? inv.earnedSoFar
+              : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
+            return sum + e;
+          }, 0);
+          best.totalEarned = dynamicEarned > 0 ? dynamicEarned : 264.3;
         }
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
@@ -1483,7 +1524,7 @@ function ensureDb(): ServerDB {
               cashBalance: 230000,
               gpBalance: 19600,
               totalInvested: 110000,
-              totalEarned: 173.2,
+              totalEarned: 264.3,
               royaltyEarned: 0,
               pendingWithdrawals: 0,
               pendingDeposits: 0,
@@ -1517,7 +1558,7 @@ function ensureDb(): ServerDB {
     }
 
     return parsed as ServerDB;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error reading server DB:", err);
     return {
       users: DEFAULT_ACCOUNTS,

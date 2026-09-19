@@ -35,9 +35,9 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     dailyRoiPercent: 0.160,
     dailyReturnAmount: 160,
     totalExpectedReturn: 202560,
-    earnedSoFar: 40,
+    earnedSoFar: 245,
     claimedSoFar: 0,
-    unclaimedEarnings: 40,
+    unclaimedEarnings: 245,
     durationDays: 641,
     daysCompleted: 0,
     status: "ACTIVE",
@@ -47,9 +47,9 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     lockedUntilTimestamp: 1789658603901,
     isInitialLockCompleted: true,
     lockCongratulationsShown: true,
-    completedCyclesCount: 1,
-    cyclesCompleted: 1,
-    totalEarnedSoFar: 40
+    completedCyclesCount: 6,
+    cyclesCompleted: 6,
+    totalEarnedSoFar: 245
   },
   {
     id: "inv-sandhya-7808056040-2",
@@ -65,9 +65,9 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     dailyRoiPercent: 0.132,
     dailyReturnAmount: 13.2,
     totalExpectedReturn: 14818,
-    earnedSoFar: 3.3,
+    earnedSoFar: 19.3,
     claimedSoFar: 0,
-    unclaimedEarnings: 3.3,
+    unclaimedEarnings: 19.3,
     durationDays: 365,
     daysCompleted: 0,
     status: "ACTIVE",
@@ -77,9 +77,10 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     lockedUntilTimestamp: 1789667064512,
     isInitialLockCompleted: true,
     lockCongratulationsShown: true,
-    completedCyclesCount: 1,
-    cyclesCompleted: 1,
-    totalEarnedSoFar: 3.3
+    completedCyclesCount: 6,
+    cyclesCompleted: 6,
+    cycleReturnAmount: 3.2,
+    totalEarnedSoFar: 19.3
   }
 ];
 
@@ -88,16 +89,16 @@ const INITIAL_TRANSACTIONS: Transaction[] = [];
 export function getStoredWallet(): Wallet {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.WALLET);
+    const invs = getStoredInvestments();
+    const dynamicEarned = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
+
     if (!raw) {
-      setStoredWallet(INITIAL_WALLET);
-      return INITIAL_WALLET;
+      const w = { ...INITIAL_WALLET, totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned };
+      setStoredWallet(w);
+      return w;
     }
     const parsed = JSON.parse(raw);
-    let totalEarned = typeof parsed.totalEarned === 'number' ? parsed.totalEarned : INITIAL_WALLET.totalEarned;
-    // Auto-fix stale values like 173.2 or 176.8 or 44.2 for Sandhya across all client devices to match Portfolio calculation (221)
-    if (totalEarned === 173.2 || totalEarned === 176.8 || totalEarned === 44.2 || totalEarned === 217.4 || totalEarned === 265.2 || totalEarned === 221) {
-      totalEarned = 221.5;
-    }
+    let totalEarned = dynamicEarned > 0 ? dynamicEarned : (typeof parsed.totalEarned === 'number' ? parsed.totalEarned : INITIAL_WALLET.totalEarned);
     return {
       cashBalance: typeof parsed.cashBalance === 'number' ? parsed.cashBalance : INITIAL_WALLET.cashBalance,
       gpBalance: typeof parsed.gpBalance === 'number' ? parsed.gpBalance : INITIAL_WALLET.gpBalance,
@@ -190,16 +191,22 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
 
     const completedCycles = Math.max(
       item.completedCyclesCount || 0,
-      item.cyclesCompleted || 0,
-      (item.id === 'inv-sandhya-7808056040-1' || item.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+      item.cyclesCompleted || 0
     );
 
-    const earnedSoFar = Math.max(
-      typeof item.earnedSoFar === 'number' && item.earnedSoFar !== 41 && item.earnedSoFar !== 3.2 ? item.earnedSoFar : 0,
-      typeof item.totalEarnedSoFar === 'number' && item.totalEarnedSoFar !== 41 && item.totalEarnedSoFar !== 3.2 ? item.totalEarnedSoFar : 0,
-      item.id === 'inv-sandhya-7808056040-1' ? 40 : (item.id === 'inv-sandhya-7808056040-2' ? 3.3 : 0),
-      completedCycles > 0 ? (completedCycles * cycleReturn) : 0
-    );
+    // Single Authoritative Source of Truth:
+    // If an authoritative earned amount is already saved on item (from Central Database), preserve it exactly.
+    // Do not overwrite it with completedCycles * cycleReturn which can distort manual additions / exact amounts.
+    const dbEarned = (typeof item.earnedSoFar === 'number' && item.earnedSoFar > 0)
+      ? item.earnedSoFar
+      : (typeof item.totalEarnedSoFar === 'number' && item.totalEarnedSoFar > 0)
+      ? item.totalEarnedSoFar
+      : (completedCycles > 0 ? (completedCycles * cycleReturn) : 0);
+    const earnedSoFar = Math.round(dbEarned * 100) / 100;
+
+    const unclaimedEarnings = (typeof item.unclaimedEarnings === 'number' && item.unclaimedEarnings > 0)
+      ? Math.round(item.unclaimedEarnings * 100) / 100
+      : Math.max(0, Math.round((earnedSoFar - (item.claimedSoFar || 0)) * 100) / 100);
 
     return {
       ...item,
@@ -212,7 +219,7 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       totalExpectedReturn: cycleReturn * 4 * duration,
       earnedSoFar,
       totalEarnedSoFar: earnedSoFar,
-      unclaimedEarnings: Math.max(item.unclaimedEarnings || 0, earnedSoFar - (item.claimedSoFar || 0)),
+      unclaimedEarnings,
       totalWithdrawn: item.totalWithdrawn || 0,
       activationTimestamp: activation,
       lockedUntilTimestamp: lockedUntil,
@@ -222,7 +229,7 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
       currentCycleStartTimestamp: alignedTiming.currentCycleStartTimestamp,
       currentCycleEndTimestamp: alignedTiming.currentCycleEndTimestamp,
       completedCyclesCount: completedCycles,
-      cycleReturnAmount: cycleReturn,
+      cycleReturnAmount: item.cycleReturnAmount || cycleReturn,
       daysCompleted: item.daysCompleted || 0,
     };
   });
@@ -358,7 +365,7 @@ export function formatINR(amount: number): string {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
   }).format(amount);
 }
 

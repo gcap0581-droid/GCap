@@ -80,7 +80,13 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
     .filter((inv) => inv.status === 'ACTIVE')
     .reduce((sum, inv) => sum + inv.investedAmount, 0);
 
-  const totalEarnedSoFar = investments.reduce((sum, inv) => {
+  const totalEarnedSoFar = Math.round(investments.reduce((sum, inv) => {
+    const invEarned = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+      ? inv.earnedSoFar
+      : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
+      ? inv.totalEarnedSoFar
+      : 0;
+    if (invEarned > 0) return sum + invEarned;
     const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
     const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
     const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
@@ -88,18 +94,11 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
     const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
     const completedCycles = Math.max(
       inv.completedCyclesCount || 0,
-      inv.cyclesCompleted || 0,
-      (inv.id === 'inv-sandhya-7808056040-1' || inv.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+      inv.cyclesCompleted || 0
     );
-
-    let itemEarned = Math.max(
-      completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0,
-      inv.id === 'inv-sandhya-7808056040-1' ? 40 : (inv.id === 'inv-sandhya-7808056040-2' ? 3.3 : 0)
-    );
-    if (inv.id === 'inv-sandhya-7808056040-1' && (inv.earnedSoFar === 246 || inv.earnedSoFar === 200 || inv.earnedSoFar === 205)) itemEarned = 205;
-    if (inv.id === 'inv-sandhya-7808056040-2' && (inv.earnedSoFar === 19.2 || inv.earnedSoFar === 16 || inv.earnedSoFar === 16.5)) itemEarned = 16.5;
-    return sum + itemEarned;
-  }, 0);
+    const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
+    return sum + calcEarned;
+  }, 0) * 100) / 100;
 
   const totalWithdrawnSoFar = investments.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
   const netAvailableEarning = Math.max(0, totalEarnedSoFar - totalWithdrawnSoFar);
@@ -268,16 +267,17 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
             const completedCycles = Math.max(
               inv.completedCyclesCount || 0,
-              inv.cyclesCompleted || 0,
-              (inv.id === 'inv-sandhya-7808056040-1' || inv.id === 'inv-sandhya-7808056040-2') ? 1 : 0
+              inv.cyclesCompleted || 0
             );
 
-            let planEarned = Math.max(
-              completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0,
-              inv.id === 'inv-sandhya-7808056040-1' ? 40 : (inv.id === 'inv-sandhya-7808056040-2' ? 3.3 : 0)
-            );
-            if (inv.id === 'inv-sandhya-7808056040-1' && (inv.earnedSoFar === 246 || inv.earnedSoFar === 200 || inv.earnedSoFar === 205)) planEarned = 205;
-            if (inv.id === 'inv-sandhya-7808056040-2' && (inv.earnedSoFar === 19.2 || inv.earnedSoFar === 16 || inv.earnedSoFar === 16.5)) planEarned = 16.5;
+            const invEarned = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+              ? inv.earnedSoFar
+              : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
+              ? inv.totalEarnedSoFar
+              : 0;
+
+            const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
+            const planEarned = Math.round((invEarned > 0 ? invEarned : calcEarned) * 100) / 100;
             const planWithdrawn = inv.totalWithdrawn || 0;
             const planNetEarnings = Math.max(0, planEarned - planWithdrawn);
 
@@ -690,28 +690,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                     </div>
                   </div>
 
-                  {/* UNCLAIMED CYCLES RETURN CREDIT (GP) */}
-                  {inv.unclaimedEarnings !== undefined && inv.unclaimedEarnings > 0 && (
-                    <div className="mb-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between gap-2.5 animate-pulse">
-                      <div>
-                        <span className="text-[10px] text-amber-300 block font-bold">
-                          {isHi ? '⏳ बिना क्लेम की गई कमाई (GP):' : '⏳ Unclaimed Earning (GP):'}
-                        </span>
-                        <span className="text-sm font-extrabold text-white font-mono">
-                          {inv.unclaimedEarnings.toLocaleString('en-IN')} GP
-                        </span>
-                      </div>
-                      {onClaimReturn && (
-                        <button
-                          id={`btn-claim-single-return-${inv.id}`}
-                          onClick={() => onClaimReturn(inv.id)}
-                          className="py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] transition-all cursor-pointer shadow-sm shrink-0"
-                        >
-                          {isHi ? 'क्लेम करें' : 'Claim'}
-                        </button>
-                      )}
-                    </div>
-                  )}
+
 
                   {/* Term Progress Bar */}
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
