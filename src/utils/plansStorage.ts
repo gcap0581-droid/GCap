@@ -5,7 +5,7 @@ import { apiSavePlans } from './centralSync';
 import { getStoredRules } from './rulesStorage';
 import { savePlansToFirestore } from '../lib/firestoreBridge';
 
-const PLANS_STORAGE_KEY = 'gcap_investment_plans_v4_roi041_031';
+const PLANS_STORAGE_KEY = 'gcap_investment_plans_v5_roi040_033';
 
 export function sanitizePlans(plans: InvestmentPlan[]): { sanitized: InvestmentPlan[]; changed: boolean } {
   let changed = false;
@@ -19,6 +19,23 @@ export function sanitizePlans(plans: InvestmentPlan[]): { sanitized: InvestmentP
       changed = true;
       const defaultShortTerm = DEFAULT_PLANS.find((p) => p.id === 'short-term') || plan;
       return { ...defaultShortTerm };
+    }
+    // Check if description or features still contain stale 0.041% or 0.032%
+    if (
+      plan.id === 'short-term' &&
+      (plan.description?.includes('0.041%') || plan.featuresHi?.some((f) => f.includes('0.041%')))
+    ) {
+      changed = true;
+      const defaultShort = DEFAULT_PLANS.find((p) => p.id === 'short-term') || plan;
+      return { ...defaultShort };
+    }
+    if (
+      plan.id === 'long-term' &&
+      (plan.description?.includes('0.032%') || plan.featuresHi?.some((f) => f.includes('0.032%')))
+    ) {
+      changed = true;
+      const defaultLong = DEFAULT_PLANS.find((p) => p.id === 'long-term') || plan;
+      return { ...defaultLong };
     }
     return plan;
   });

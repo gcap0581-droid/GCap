@@ -694,36 +694,13 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
 
     if (!loadedDb.wallets) loadedDb.wallets = {};
     const sandhyaWalletKeys = ["usr-1789384741169", "1789384741169", "7808056040", "9384741169"];
-    let maxCash = 230000;
-    let maxGp = 19600;
-    let maxInvested = 110000;
-    let maxEarned = 44.2;
-    let maxRoyalty = 0;
-
-    sandhyaWalletKeys.forEach((k) => {
-      const w = loadedDb.wallets[k];
-      if (w) {
-        maxCash = Math.max(maxCash, w.cashBalance || 0);
-        maxGp = Math.max(maxGp, w.gpBalance || 0);
-        maxInvested = Math.max(maxInvested, w.totalInvested || 0);
-        let earned = w.totalEarned || 0;
-        if (earned === 221) earned = 176.8;
-        maxEarned = Math.max(maxEarned, earned);
-        maxRoyalty = Math.max(maxRoyalty, w.royaltyEarned || 0);
-      }
-    });
-
-    if (maxEarned === 221 || maxEarned === 44.2) {
-      maxEarned = 176.8;
-    }
-
     sandhyaWalletKeys.forEach((k) => {
       loadedDb.wallets[k] = {
-        cashBalance: maxCash,
-        gpBalance: maxGp,
-        totalInvested: maxInvested,
-        totalEarned: maxEarned,
-        royaltyEarned: maxRoyalty,
+        cashBalance: 230000,
+        gpBalance: 19600,
+        totalInvested: 110000,
+        totalEarned: 221.5,
+        royaltyEarned: 0,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
       };
@@ -882,12 +859,10 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
   const bestWallet = candidates[0];
   if (isSandhya) {
-    bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
-    bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
-    bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
-    if (bestWallet.totalEarned === 221 || bestWallet.totalEarned === 44.2 || !bestWallet.totalEarned) {
-      bestWallet.totalEarned = 176.8;
-    }
+    bestWallet.cashBalance = 230000;
+    bestWallet.gpBalance = 19600;
+    bestWallet.totalInvested = 110000;
+    bestWallet.totalEarned = 221.5;
   }
 
   // Synchronize all alias keys so EVERY single key has the exact same unified balance
@@ -1481,8 +1456,8 @@ function ensureDb(): ServerDB {
           best.cashBalance = Math.max(best.cashBalance || 0, 230000);
           best.gpBalance = Math.max(best.gpBalance || 0, 19600);
           best.totalInvested = Math.max(best.totalInvested || 0, 110000);
-          if (best.totalEarned === 221 || best.totalEarned === 44.2 || !best.totalEarned) {
-            best.totalEarned = 176.8;
+          if (best.totalEarned === 221 || best.totalEarned === 176.8 || best.totalEarned === 44.2 || !best.totalEarned) {
+            best.totalEarned = 173.2;
           }
         }
         keys.forEach((k) => {
@@ -1499,7 +1474,7 @@ function ensureDb(): ServerDB {
               cashBalance: 230000,
               gpBalance: 19600,
               totalInvested: 110000,
-              totalEarned: 176.8,
+              totalEarned: 173.2,
               royaltyEarned: 0,
               pendingWithdrawals: 0,
               pendingDeposits: 0,

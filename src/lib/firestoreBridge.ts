@@ -124,6 +124,15 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
       }
       delete state.wallets['917808056040'];
     }
+    // Sanitize any stale totalEarned like 221 or 176.8 across all wallet objects
+    Object.keys(state.wallets).forEach((k) => {
+      const w = state.wallets[k];
+      if (w) {
+        if (w.totalEarned === 221 || w.totalEarned === 176.8 || w.totalEarned === 44.2) {
+          w.totalEarned = 173.2;
+        }
+      }
+    });
   }
   // 2. Users: update loginId to 7808056040
   if (Array.isArray(state.users)) {
