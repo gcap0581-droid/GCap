@@ -28,7 +28,6 @@
     <!-- AI Studio Sandbox Benign Vite HMR Error Silencer -->
     <script>
       (function() {
-        // 1. Intercept console.error and console.warn for benign [vite] logs
         const origError = console.error;
         const origWarn = console.warn;
         console.error = function(...args) {
@@ -43,47 +42,6 @@
           }
           origWarn.apply(console, args);
         };
-
-        // 2. Intercept unhandled errors matching [vite]
-        window.addEventListener('error', function(e) {
-          if (e && (e.message?.includes?.('[vite]') || e.filename?.includes?.('@vite'))) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }, true);
-
-        // 3. Prevent Vite HMR WebSocket connection errors in sandbox container
-        try {
-          const NativeWS = window.WebSocket;
-          if (NativeWS) {
-            window.WebSocket = function(url, protocols) {
-              const urlStr = String(url || '');
-              const protoStr = String(protocols || '');
-              if (
-                protoStr === 'vite-hmr' ||
-                protoStr === 'vite-ping' ||
-                urlStr.includes(':24678') ||
-                urlStr.includes('token=') ||
-                urlStr.includes('vite')
-              ) {
-                const dummy = new EventTarget();
-                dummy.readyState = 1;
-                dummy.close = function() {};
-                dummy.send = function() {};
-                setTimeout(function() {
-                  dummy.dispatchEvent(new Event('open'));
-                }, 10);
-                return dummy;
-              }
-              return new NativeWS(url, protocols);
-            };
-            window.WebSocket.prototype = NativeWS.prototype;
-            window.WebSocket.CONNECTING = 0;
-            window.WebSocket.OPEN = 1;
-            window.WebSocket.CLOSING = 2;
-            window.WebSocket.CLOSED = 3;
-          }
-        } catch (_) {}
       })();
     </script>
   </head>
