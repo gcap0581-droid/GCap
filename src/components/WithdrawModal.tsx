@@ -72,7 +72,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const isRoyaltyWindowActive = currentDay >= 6 && currentDay <= 10;
 
   // Rule 3: Only Total Earning Amount and Royalty Earning Amount are shown
-  const totalEarning = 88.49;
+  const totalEarning = wallet.totalEarned || 0;
   const royaltyEarning = wallet.royaltyEarned || 0;
   const cashEarning = wallet.cashBalance || 0;
   const hasRoyalty = (wallet.royaltyEarned !== undefined && wallet.royaltyEarned > 0) || royaltyEarning > 0;
@@ -373,7 +373,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
                 <div className="mt-2">
                   <span className="text-2xl font-extrabold font-mono text-purple-400">
-                    ₹88.40
+                    {formatINR(totalEarning)}
                   </span>
                   <p className="text-[10px] text-slate-400 mt-1">
                     {isHi

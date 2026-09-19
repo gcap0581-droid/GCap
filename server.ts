@@ -999,7 +999,7 @@ function processServerSideCycles(db: ServerDB): boolean {
     } else if (inv.isInitialLockCompleted) {
       // Phase 2: Fixed 6-Hour Cycle Completion Check
       const currentEnd = inv.currentCycleEndTimestamp || 0;
-      if (currentEnd > 0 && now >= currentEnd) {
+      if (currentEnd > 0 && now > currentEnd) {
         hasChanges = true;
         const cycleStartRef = inv.currentCycleStartTimestamp || (currentEnd - 6 * 3600 * 1000);
         const elapsedCycles = Math.max(1, countElapsedFixedSlots(cycleStartRef, now));

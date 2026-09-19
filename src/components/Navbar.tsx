@@ -137,37 +137,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Center Search Bar (Hidden on very small screens, responsive) */}
-          {currentUser && (
-            <form
-              onSubmit={handleSearch}
-              className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"
-            >
-              <div className="relative w-full flex items-center">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchVal}
-                  onChange={(e) => {
-                    setSearchVal(e.target.value);
-                    if (onSearchQuery) onSearchQuery(e.target.value);
-                  }}
-                  placeholder={
-                    isHi
-                      ? 'प्लान्स, रिटर्न खोजें (641D, 365D)...'
-                      : 'Search plans, daily ROI (641D, 365D)...'
-                  }
-                  className="w-full pl-8 pr-16 py-1.5 bg-slate-950/80 border border-slate-800 hover:border-slate-700 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs cursor-pointer"
-                >
-                  {isHi ? 'सर्च' : 'Find'}
-                </button>
-              </div>
-            </form>
-          )}
+          {/* Center Search Bar Removed */}
+          <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"></div>
 
           {/* Right Actions: Wallet Pill, Deposit, View Switcher */}
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -188,10 +159,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <div className="leading-none">
                   <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
-                    {isAdmin ? (isHi ? 'मुख्य बैलेंस' : 'Main Balance') : (isHi ? 'वॉलेट बैलेंस' : 'Wallet Balance')}
+                    {isAdmin ? (isHi ? 'कुल कमाई' : 'कुल कमाई') : (isHi ? 'कुल कमाई' : 'कुल कमाई')}
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
-                    {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0)) : (wallet?.cashBalance || 0))}
+                    {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0)) : (wallet?.totalEarned || 0))}
                   </span>
                 </div>
               </div>

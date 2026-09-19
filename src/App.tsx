@@ -2617,7 +2617,8 @@ export default function App() {
         }
 
         // Phase 2: Fixed 6-Hour Cycle Completion Check (8 AM, 2 PM, 8 PM, 2 AM)
-        if (inv.isInitialLockCompleted && now >= (inv.currentCycleEndTimestamp || 0)) {
+        // Ensure the current time is strictly greater than the end time of the cycle
+        if (inv.isInitialLockCompleted && now > (inv.currentCycleEndTimestamp || 0)) {
           hasChanges = true;
           
           const cycleStartRef = inv.currentCycleStartTimestamp || ((inv.currentCycleEndTimestamp || now) - 6 * 3600 * 1000);

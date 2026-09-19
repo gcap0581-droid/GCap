@@ -156,7 +156,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Balance, Notification Bell & Exit Mobile Mode */}
+        {/* Right: Quick Balance (Total Earnings), Notification Bell & Exit Mobile Mode */}
         <div className="flex items-center gap-1.5">
           {currentUser && (
             <div
@@ -168,11 +168,11 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                 }
               }}
               className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-lg px-2 py-1 cursor-pointer"
-              title={isAdmin ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Main Reserve') : (isHi ? 'वॉलेट बैलेंस' : 'Wallet Balance')}
+              title={isAdmin ? (isHi ? 'कुल कमाई' : 'Total Earnings') : (wallet?.royaltyEarned && wallet.royaltyEarned > 0 ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty Earnings') : (isHi ? 'कुल कमाई' : 'Total Earnings'))}
             >
               <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-xs font-mono font-bold text-emerald-400">
-                {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0)) : (wallet?.cashBalance || 0))}
+                {formatINR(isAdmin ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.totalEarned || 0)) : (wallet?.royaltyEarned && wallet.royaltyEarned > 0 ? (wallet.royaltyEarned || 0) : (wallet?.totalEarned || 0)))}
               </span>
             </div>
           )}
@@ -215,30 +215,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
         </div>
       </header>
 
-      {/* 2. Compact Search Strip */}
-      {currentUser && (
-        <div className="bg-slate-900/80 px-3.5 py-2 border-b border-slate-800/80 shrink-0">
-          <form onSubmit={handleMobileSearch} className="relative w-full">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={mobileSearch}
-              onChange={(e) => {
-                setMobileSearch(e.target.value);
-                if (onSearchQuery) onSearchQuery(e.target.value);
-              }}
-              placeholder={isHi ? 'प्लान्स या रिटर्न खोजें (उदा. 641D)...' : 'Search schemes, daily returns...'}
-              className="w-full pl-8 pr-14 py-1.5 bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-0.5 rounded-lg bg-amber-500 text-[11px] font-bold text-slate-950 cursor-pointer"
-            >
-              {isHi ? 'सर्च' : 'Find'}
-            </button>
-          </form>
-        </div>
-      )}
+      {/* 2. Search Strip Removed */}
 
       {/* Sub-Header Back Navigation Bar for Mobile Sub-Screens */}
       {!isAdminHubActive && activeTab !== 'dashboard' && (
