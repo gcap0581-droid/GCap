@@ -16,6 +16,15 @@ export function getStoredRules(): AppRules {
       return DEFAULT_GCAP_RULES;
     }
     const parsed = JSON.parse(raw);
+
+    // If stale cached rules found (e.g. minDeposit 100 or HDFC bank), force override with DEFAULT_GCAP_RULES
+    if (parsed.minDeposit === 100 || (parsed.companyBankName && parsed.companyBankName.includes('HDFC'))) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(DEFAULT_GCAP_RULES));
+      }
+      return DEFAULT_GCAP_RULES;
+    }
+
     let shortRate = parsed.shortTerm6hRate !== undefined ? Number(parsed.shortTerm6hRate) : DEFAULT_GCAP_RULES.shortTerm6hRate;
     let longRate = parsed.longTerm6hRate !== undefined ? Number(parsed.longTerm6hRate) : DEFAULT_GCAP_RULES.longTerm6hRate;
 
