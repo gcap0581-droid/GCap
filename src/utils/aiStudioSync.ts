@@ -6,6 +6,7 @@
 // on any user's installed mobile PWA or browser immediately upon launch without requiring reinstallation.
 
 import { subscribeToRealtimeEvents } from './realtimeSync';
+import { apiFetch } from './apiConfig';
 
 export interface BuildVersionInfo {
   buildId: string;
@@ -112,8 +113,7 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
   isChecking = true;
 
   try {
-    const response = await fetch(`/version.json?_nocache=${Date.now()}`, {
-      cache: 'no-store',
+    const response = await apiFetch(`/version.json?_nocache=${Date.now()}`, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',

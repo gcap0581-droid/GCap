@@ -1,48 +1,138 @@
 {
   "users": [
     {
-      "status": "ACTIVE",
-      "loginId": "Admin",
-      "name": "GCap System Admin",
       "phone": "+91 98000 12345",
-      "passwordHash": "ad123",
-      "role": "ADMIN",
-      "id": "usr-admin-01",
       "email": "admin@gcap.in",
-      "joinedDate": "2026-01-01"
+      "joinedDate": "2026-01-01",
+      "id": "usr-admin-01",
+      "loginId": "Admin",
+      "status": "ACTIVE",
+      "role": "ADMIN",
+      "passwordHash": "ad123",
+      "name": "GCap System Admin"
     },
     {
+      "phone": "+91 7808056040",
       "email": "gcap0581@gmail.com",
-      "joinedDate": "2026-09-16",
-      "role": "USER",
+      "passwordHash": "1111",
+      "loginId": "7808056040",
       "status": "ACTIVE",
       "password": "1111",
-      "loginId": "7808056040",
-      "phone": "+91 7808056040",
-      "name": "Sandhya",
+      "role": "USER",
       "id": "usr-1789384741169",
-      "passwordHash": "1111"
+      "joinedDate": "2026-09-16",
+      "name": "Sandhya"
     },
     {
-      "id": "usr-1789457522655",
-      "passwordHash": "12345",
-      "email": "puja@gmail.com",
       "role": "USER",
       "status": "ACTIVE",
-      "phone": "+91 9661670322",
-      "joinedDate": "2026-09-16",
       "loginId": "9661670322",
-      "name": "Puja kumari"
+      "joinedDate": "2026-09-16",
+      "phone": "+91 9661670322",
+      "email": "puja@gmail.com",
+      "name": "Puja kumari",
+      "passwordHash": "12345",
+      "id": "usr-1789457522655"
     }
   ],
   "wallets": {
-    "1789384741169": {
+    "7808056040": {
       "cashBalance": 230000,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 264.3,
       "royaltyEarned": 0,
       "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    },
+    "01": {
+      "pendingWithdrawals": 0,
+      "cashBalance": 600000,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "gpBalance": 0,
+      "pendingDeposits": 0
+    },
+    "admin": {
+      "totalEarned": 0,
+      "cashBalance": 600000,
+      "pendingDeposits": 0,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "gpBalance": 0
+    },
+    "Sandhya": {
+      "cashBalance": 230000,
+      "gpBalance": 19600,
+      "totalInvested": 110000,
+      "totalEarned": 264.3,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0
+    },
+    "919661670322": {
+      "gpBalance": 0,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 0,
+      "pendingDeposits": 0,
+      "totalEarned": 0
+    },
+    "9661670322": {
+      "gpBalance": 0,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 0,
+      "pendingDeposits": 0,
+      "totalEarned": 0
+    },
+    "9457522655": {
+      "gpBalance": 0,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 0,
+      "pendingDeposits": 0,
+      "totalEarned": 0
+    },
+    "1789457522655": {
+      "gpBalance": 0,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 0,
+      "pendingDeposits": 0,
+      "totalEarned": 0
+    },
+    "9800012345": {
+      "pendingWithdrawals": 0,
+      "cashBalance": 600000,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "gpBalance": 0,
+      "pendingDeposits": 0
+    },
+    "919800012345": {
+      "pendingWithdrawals": 0,
+      "cashBalance": 600000,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "gpBalance": 0,
+      "pendingDeposits": 0
+    },
+    "usr-admin-01": {
+      "pendingWithdrawals": 0,
+      "cashBalance": 600000,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "totalEarned": 0,
+      "gpBalance": 0,
       "pendingDeposits": 0
     },
     "usr-1789384741169": {
@@ -54,43 +144,25 @@
       "pendingWithdrawals": 0,
       "pendingDeposits": 0
     },
-    "admin": {
-      "cashBalance": 600000,
+    "usr-1789457522655": {
       "gpBalance": 0,
+      "royaltyEarned": 0,
       "totalInvested": 0,
-      "pendingDeposits": 0,
-      "royaltyEarned": 0,
-      "totalEarned": 0,
-      "pendingWithdrawals": 0
-    },
-    "9661670322": {
-      "cashBalance": 0,
-      "royaltyEarned": 0,
       "pendingWithdrawals": 0,
+      "cashBalance": 0,
       "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalEarned": 0,
-      "totalInvested": 0
+      "totalEarned": 0
     },
-    "9800012345": {
+    "admin-01": {
+      "pendingWithdrawals": 0,
       "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
-      "pendingWithdrawals": 0,
-      "totalEarned": 0,
-      "royaltyEarned": 0
-    },
-    "919661670322": {
-      "cashBalance": 0,
       "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
+      "totalInvested": 0,
       "totalEarned": 0,
-      "totalInvested": 0
+      "gpBalance": 0,
+      "pendingDeposits": 0
     },
-    "7808056040": {
+    "1789384741169": {
       "cashBalance": 230000,
       "gpBalance": 19600,
       "totalInvested": 110000,
@@ -98,42 +170,6 @@
       "royaltyEarned": 0,
       "pendingWithdrawals": 0,
       "pendingDeposits": 0
-    },
-    "919800012345": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
-      "pendingWithdrawals": 0,
-      "totalEarned": 0,
-      "royaltyEarned": 0
-    },
-    "Sandhya": {
-      "cashBalance": 230000,
-      "gpBalance": 19600,
-      "totalInvested": 110000,
-      "totalEarned": 264.3,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0
-    },
-    "usr-admin-01": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
-      "pendingWithdrawals": 0,
-      "totalEarned": 0,
-      "royaltyEarned": 0
-    },
-    "1789457522655": {
-      "cashBalance": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalEarned": 0,
-      "totalInvested": 0
     },
     "9384741169": {
       "cashBalance": 230000,
@@ -144,68 +180,32 @@
       "pendingWithdrawals": 0,
       "pendingDeposits": 0
     },
-    "9457522655": {
-      "cashBalance": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalEarned": 0,
-      "totalInvested": 0
-    },
-    "01": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
-      "pendingWithdrawals": 0,
-      "totalEarned": 0,
-      "royaltyEarned": 0
-    },
     "Admin": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
       "pendingWithdrawals": 0,
-      "totalEarned": 0,
-      "royaltyEarned": 0
-    },
-    "usr-1789457522655": {
-      "cashBalance": 0,
+      "cashBalance": 600000,
       "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalEarned": 0,
-      "totalInvested": 0
-    },
-    "admin-01": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
       "totalInvested": 0,
-      "pendingDeposits": 0,
-      "pendingWithdrawals": 0,
       "totalEarned": 0,
-      "royaltyEarned": 0
+      "gpBalance": 0,
+      "pendingDeposits": 0
     },
     "GCap System Admin": {
-      "cashBalance": 600000,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingDeposits": 0,
       "pendingWithdrawals": 0,
+      "cashBalance": 600000,
+      "royaltyEarned": 0,
+      "totalInvested": 0,
       "totalEarned": 0,
-      "royaltyEarned": 0
+      "gpBalance": 0,
+      "pendingDeposits": 0
     },
     "Puja kumari": {
-      "cashBalance": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0,
-      "pendingDeposits": 0,
       "gpBalance": 0,
-      "totalEarned": 0,
-      "totalInvested": 0
+      "royaltyEarned": 0,
+      "totalInvested": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 0,
+      "pendingDeposits": 0,
+      "totalEarned": 0
     }
   },
   "investments": [
@@ -284,168 +284,172 @@
   ],
   "transactions": [
     {
-      "type": "RETURN_PAYOUT",
-      "referenceId": "CYC36233738",
-      "userName": "Sandhya",
-      "userLoginId": "7808056040",
-      "note": "6-Hour Cycle #5 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
-      "amount": 3.2,
-      "userId": "usr-1789384741169",
-      "status": "SUCCESS",
       "date": "2026-09-19T03:08:45.379Z",
-      "id": "txn-cyc-1789787325378-inv-sandhya-7808056040-2-1",
-      "userPhone": "+91 7808056040",
+      "type": "RETURN_PAYOUT",
       "timestamp": 1789787325378,
-      "noteHi": "6 घंटे के चक्र #5 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)"
+      "userPhone": "+91 7808056040",
+      "userName": "Sandhya",
+      "status": "SUCCESS",
+      "userLoginId": "7808056040",
+      "amount": 3.2,
+      "referenceId": "CYC36233738",
+      "noteHi": "6 घंटे के चक्र #5 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
+      "userId": "usr-1789384741169",
+      "id": "txn-cyc-1789787325378-inv-sandhya-7808056040-2-1",
+      "note": "6-Hour Cycle #5 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)"
     },
     {
-      "id": "txn-cyc-1789787325378-inv-sandhya-7808056040-1-1",
-      "userName": "Sandhya",
-      "referenceId": "CYC98292253",
       "userLoginId": "7808056040",
-      "date": "2026-09-19T03:08:45.379Z",
-      "userPhone": "+91 7808056040",
-      "noteHi": "6 घंटे के चक्र #5 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
-      "timestamp": 1789787325378,
-      "note": "6-Hour Cycle #5 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
-      "status": "SUCCESS",
-      "userId": "usr-1789384741169",
+      "referenceId": "CYC98292253",
+      "id": "txn-cyc-1789787325378-inv-sandhya-7808056040-1-1",
       "amount": 41,
+      "userId": "usr-1789384741169",
+      "noteHi": "6 घंटे के चक्र #5 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
+      "note": "6-Hour Cycle #5 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
+      "userName": "Sandhya",
+      "date": "2026-09-19T03:08:45.379Z",
+      "status": "SUCCESS",
+      "timestamp": 1789787325378,
+      "userPhone": "+91 7808056040",
       "type": "RETURN_PAYOUT"
     },
     {
-      "userPhone": "+91 7808056040",
       "timestamp": 1789779922400,
-      "noteHi": "6 घंटे के चक्र #4 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
+      "userPhone": "+91 7808056040",
+      "type": "RETURN_PAYOUT",
+      "date": "2026-09-19T01:05:22.401Z",
       "userLoginId": "7808056040",
-      "userId": "usr-1789384741169",
-      "amount": 3.2,
+      "status": "SUCCESS",
       "referenceId": "CYC35992781",
-      "date": "2026-09-19T01:05:22.401Z",
-      "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-2-2",
-      "status": "SUCCESS",
-      "note": "6-Hour Cycle #4 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
-      "type": "RETURN_PAYOUT",
-      "userName": "Sandhya"
-    },
-    {
-      "referenceId": "CYC37528874",
-      "noteHi": "6 घंटे के चक्र #3 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
-      "userId": "usr-1789384741169",
-      "amount": 3.2,
       "userName": "Sandhya",
-      "date": "2026-09-19T01:05:22.401Z",
-      "status": "SUCCESS",
-      "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-2-1",
-      "userLoginId": "7808056040",
-      "note": "6-Hour Cycle #3 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
-      "type": "RETURN_PAYOUT",
-      "userPhone": "+91 7808056040",
-      "timestamp": 1789779922400
+      "amount": 3.2,
+      "userId": "usr-1789384741169",
+      "noteHi": "6 घंटे के चक्र #4 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
+      "note": "6-Hour Cycle #4 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+      "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-2-2"
     },
     {
-      "amount": 41,
       "userId": "usr-1789384741169",
+      "noteHi": "6 घंटे के चक्र #3 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
       "date": "2026-09-19T01:05:22.401Z",
+      "userPhone": "+91 7808056040",
+      "timestamp": 1789779922400,
+      "amount": 3.2,
+      "type": "RETURN_PAYOUT",
+      "userName": "Sandhya",
+      "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-2-1",
+      "referenceId": "CYC37528874",
       "status": "SUCCESS",
+      "note": "6-Hour Cycle #3 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+      "userLoginId": "7808056040"
+    },
+    {
+      "userLoginId": "7808056040",
+      "referenceId": "CYC85078705",
+      "amount": 41,
       "noteHi": "6 घंटे के चक्र #4 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
+      "userId": "usr-1789384741169",
+      "note": "6-Hour Cycle #4 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
       "timestamp": 1789779922400,
       "userPhone": "+91 7808056040",
+      "date": "2026-09-19T01:05:22.401Z",
       "userName": "Sandhya",
+      "status": "SUCCESS",
       "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-1-2",
-      "type": "RETURN_PAYOUT",
-      "referenceId": "CYC85078705",
-      "userLoginId": "7808056040",
-      "note": "6-Hour Cycle #4 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)"
+      "type": "RETURN_PAYOUT"
     },
     {
-      "note": "6-Hour Cycle #3 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
+      "userId": "usr-1789384741169",
+      "noteHi": "6 घंटे के चक्र #3 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
+      "date": "2026-09-19T01:05:22.401Z",
+      "userLoginId": "7808056040",
       "referenceId": "CYC56673424",
       "id": "txn-cyc-1789779922400-inv-sandhya-7808056040-1-1",
-      "userLoginId": "7808056040",
-      "type": "RETURN_PAYOUT",
-      "userName": "Sandhya",
-      "status": "SUCCESS",
-      "userId": "usr-1789384741169",
       "amount": 41,
+      "userName": "Sandhya",
       "timestamp": 1789779922400,
       "userPhone": "+91 7808056040",
-      "noteHi": "6 घंटे के चक्र #3 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
-      "date": "2026-09-19T01:05:22.401Z"
+      "type": "RETURN_PAYOUT",
+      "status": "SUCCESS",
+      "note": "6-Hour Cycle #3 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)"
     },
     {
-      "id": "txn-cyc-1789720205776-inv-sandhya-7808056040-2-1",
-      "date": "2026-09-18T08:30:05.778Z",
-      "userName": "Sandhya",
-      "timestamp": 1789720205776,
+      "amount": 3.2,
       "noteHi": "6 घंटे के चक्र #2 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
-      "userPhone": "+91 7808056040",
-      "type": "RETURN_PAYOUT",
-      "userLoginId": "7808056040",
+      "userId": "usr-1789384741169",
       "note": "6-Hour Cycle #2 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
-      "referenceId": "CYC67644026",
-      "status": "SUCCESS",
-      "amount": 3.2,
-      "userId": "usr-1789384741169"
-    },
-    {
-      "type": "RETURN_PAYOUT",
-      "noteHi": "6 घंटे के चक्र #2 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
-      "userLoginId": "7808056040",
+      "date": "2026-09-18T08:30:05.778Z",
+      "id": "txn-cyc-1789720205776-inv-sandhya-7808056040-2-1",
+      "userName": "Sandhya",
       "userPhone": "+91 7808056040",
-      "note": "6-Hour Cycle #2 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
       "timestamp": 1789720205776,
-      "referenceId": "CYC42263476",
+      "referenceId": "CYC67644026",
+      "type": "RETURN_PAYOUT",
       "status": "SUCCESS",
-      "amount": 41,
-      "userId": "usr-1789384741169",
+      "userLoginId": "7808056040"
+    },
+    {
+      "status": "SUCCESS",
+      "id": "txn-cyc-1789720205776-inv-sandhya-7808056040-1-1",
+      "userName": "Sandhya",
+      "note": "6-Hour Cycle #2 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
       "date": "2026-09-18T08:30:05.777Z",
-      "userName": "Sandhya",
-      "id": "txn-cyc-1789720205776-inv-sandhya-7808056040-1-1"
+      "userLoginId": "7808056040",
+      "referenceId": "CYC42263476",
+      "userId": "usr-1789384741169",
+      "noteHi": "6 घंटे के चक्र #2 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
+      "userPhone": "+91 7808056040",
+      "timestamp": 1789720205776,
+      "type": "RETURN_PAYOUT",
+      "amount": 41
     },
     {
-      "note": "6-Hour Cycle #1 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+      "status": "SUCCESS",
+      "date": "2026-09-18T04:57:37.058Z",
+      "timestamp": 1789707457056,
+      "userPhone": "+91 7808056040",
+      "type": "RETURN_PAYOUT",
+      "userName": "Sandhya",
       "referenceId": "CYC58432795",
-      "userLoginId": "7808056040",
-      "timestamp": 1789707457056,
-      "userName": "Sandhya",
-      "userPhone": "+91 7808056040",
-      "type": "RETURN_PAYOUT",
-      "status": "SUCCESS",
       "userId": "usr-1789384741169",
-      "amount": 3.2,
       "noteHi": "6 घंटे के चक्र #1 का रिटर्न ₹3.2 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)",
-      "id": "txn-cyc-1789707457056-inv-sandhya-7808056040-2-1",
-      "date": "2026-09-18T04:57:37.058Z"
+      "note": "6-Hour Cycle #1 return of ₹3.2 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+      "amount": 3.2,
+      "userLoginId": "7808056040",
+      "id": "txn-cyc-1789707457056-inv-sandhya-7808056040-2-1"
     },
     {
-      "userLoginId": "7808056040",
-      "userName": "Sandhya",
       "referenceId": "CYC16721013",
-      "date": "2026-09-18T04:57:37.057Z",
-      "userId": "usr-1789384741169",
-      "amount": 41,
       "status": "SUCCESS",
-      "note": "6-Hour Cycle #1 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
       "userPhone": "+91 7808056040",
       "timestamp": 1789707457056,
-      "type": "RETURN_PAYOUT",
+      "userLoginId": "7808056040",
+      "note": "6-Hour Cycle #1 return of ₹41 credited to Total Earning (641-Day High Yield Growth Plan)",
+      "id": "txn-cyc-1789707457056-inv-sandhya-7808056040-1-1",
+      "date": "2026-09-18T04:57:37.057Z",
       "noteHi": "6 घंटे के चक्र #1 का रिटर्न ₹41 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)",
-      "id": "txn-cyc-1789707457056-inv-sandhya-7808056040-1-1"
+      "userId": "usr-1789384741169",
+      "userName": "Sandhya",
+      "type": "RETURN_PAYOUT",
+      "amount": 41
     }
   ],
   "plans": [
     {
-      "badge": "⚡ 641-Day Short Term Plan (Min ₹1 Lakh)",
-      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning.",
-      "dailyRoiPercent": 0.16,
-      "tagHi": "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP",
       "payoutFrequency": "Daily",
-      "id": "short-term",
-      "name": "Short Term Plan (641-Day Plan)",
-      "risk": "Low",
-      "tag": "641 Days • First 24h Lock • 0.040%/6h GP",
       "features": [
+        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
+        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
+        "हर 6 घंटे में निवेश राशि का 0.040% GP लाभ (1 GP = ₹1)",
+        "प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा",
+        "कंपनी के नियमों के तहत निकासी (महीने की 1 से 5 तारीख)",
+        "एक यूजर एक से अधिक प्लान ले सकता है",
+        "641 दिन पूर्ण होने पर पूरा मूलधन व शेष अर्निंग निकासी अथवा उसी ID से रिन्यूअल",
+        "प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र"
+      ],
+      "badge": "⚡ 641-Day Short Term Plan (Min ₹1 Lakh)",
+      "durationDays": 641,
+      "featuresHi": [
         "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
         "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
         "हर 6 घंटे में निवेश राशि का 0.040% GP लाभ (1 GP = ₹1)",
@@ -456,46 +460,19 @@
         "प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र"
       ],
       "nameHi": "शॉर्ट टर्म प्लान (641-Day Plan)",
-      "minAmount": 100000,
-      "maxAmount": 1000000000,
-      "payoutFrequencyHi": "हर 6 घंटे में 0.040% GP",
-      "durationDays": 641,
+      "description": "Special 641-day Short Term investment plan. Minimum deposit ₹1,00,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited to Total Earning.",
       "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। न्यूनतम निवेश ₹1,00,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.040% GP (1 GP = ₹1) स्वतः Total Earning में जमा होता रहेगा।",
-      "featuresHi": [
-        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
-        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
-        "हर 6 घंटे में निवेश राशि का 0.040% GP लाभ (1 GP = ₹1)",
-        "प्रत्येक 6 घंटे में अर्निंग स्वतः Total Earning बैलेंस में जमा",
-        "कंपनी के नियमों के तहत निकासी (महीने की 1 से 5 तारीख)",
-        "एक यूजर एक से अधिक प्लान ले सकता है",
-        "641 दिन पूर्ण होने पर पूरा मूलधन व शेष अर्निंग निकासी अथवा उसी ID से रिन्यूअल",
-        "प्लान क्लोज होने पर प्रिंट करने योग्य शानदार आधिकारिक परिपक्वता प्रमाण पत्र"
-      ]
+      "maxAmount": 1000000000,
+      "dailyRoiPercent": 0.16,
+      "name": "Short Term Plan (641-Day Plan)",
+      "risk": "Low",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.040% GP",
+      "minAmount": 100000,
+      "id": "short-term",
+      "tagHi": "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP",
+      "tag": "641 Days • First 24h Lock • 0.040%/6h GP"
     },
     {
-      "featuresHi": [
-        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-        "अवधि 365 दिन (पहले 24 घंटे का लॉक)",
-        "हर 6 घंटे में निवेश राशि का 0.033% GP (1 GP = ₹1) स्वतः जमा",
-        "कंपनी के निकासी नियमों (1 से 5 तारीख) के अनुसार लाभ निकासी",
-        "365 दिन पूर्ण होने पर मूलधन निकासी + सर्टिफिकेट अथवा रॉयल्टी प्लान में जाने का विकल्प",
-        "रॉयल्टी प्लान (1461 दिन) चुनने पर 1461 दिन बाद मूलधन वापसी",
-        "मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार रॉयल्टी अर्निंग + रॉयल मास्टर सर्टिफिकेट"
-      ],
-      "dailyRoiPercent": 0.132,
-      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹1,00,000. First 24 hours lock. Earn 0.033% of your invested amount every 6 hours as GP (1 GP = ₹1) credited automatically to Total Earning.",
-      "payoutFrequencyHi": "हर 6 घंटे में 0.033% GP",
-      "maxAmount": 100000,
-      "minAmount": 10000,
-      "name": "Long Term Plan (365-Day & Royalty Plan)",
-      "payoutFrequency": "Daily",
-      "id": "long-term",
-      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
-      "badge": "👑 365-Day Long Term & Royalty Plan",
-      "risk": "Low",
-      "tagHi": "365 दिन • पहले 24 घंटे का लॉक • 0.033%/6h GP + रॉयल्टी पाथवे",
-      "durationDays": 365,
-      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश सीमा ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.033% GP (1 GP = ₹1) स्वतः Total Earning में जमा होगा + रॉयल्टी पाथवे।",
       "features": [
         "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
         "अवधि 365 दिन (पहले 24 घंटे का लॉक)",
@@ -505,7 +482,30 @@
         "रॉयल्टी प्लान (1461 दिन) चुनने पर 1461 दिन बाद मूलधन वापसी",
         "मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार रॉयल्टी अर्निंग + रॉयल मास्टर सर्टिफिकेट"
       ],
-      "tag": "365 Days • First 24h Lock • 0.033%/6h GP + Royalty"
+      "name": "Long Term Plan (365-Day & Royalty Plan)",
+      "dailyRoiPercent": 0.132,
+      "minAmount": 10000,
+      "payoutFrequency": "Daily",
+      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹1,00,000. First 24 hours lock. Earn 0.033% of your invested amount every 6 hours as GP (1 GP = ₹1) credited automatically to Total Earning.",
+      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश सीमा ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में निवेश राशि का 0.033% GP (1 GP = ₹1) स्वतः Total Earning में जमा होगा + रॉयल्टी पाथवे।",
+      "badge": "👑 365-Day Long Term & Royalty Plan",
+      "tag": "365 Days • First 24h Lock • 0.033%/6h GP + Royalty",
+      "tagHi": "365 दिन • पहले 24 घंटे का लॉक • 0.033%/6h GP + रॉयल्टी पाथवे",
+      "id": "long-term",
+      "durationDays": 365,
+      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
+      "maxAmount": 100000,
+      "risk": "Low",
+      "payoutFrequencyHi": "हर 6 घंटे में 0.033% GP",
+      "featuresHi": [
+        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
+        "अवधि 365 दिन (पहले 24 घंटे का लॉक)",
+        "हर 6 घंटे में निवेश राशि का 0.033% GP (1 GP = ₹1) स्वतः जमा",
+        "कंपनी के निकासी नियमों (1 से 5 तारीख) के अनुसार लाभ निकासी",
+        "365 दिन पूर्ण होने पर मूलधन निकासी + सर्टिफिकेट अथवा रॉयल्टी प्लान में जाने का विकल्प",
+        "रॉयल्टी प्लान (1461 दिन) चुनने पर 1461 दिन बाद मूलधन वापसी",
+        "मूलधन वापसी के बाद भी अगले 1825 दिनों (5 वर्ष) तक लगातार रॉयल्टी अर्निंग + रॉयल मास्टर सर्टिफिकेट"
+      ]
     }
   ],
   "rules": {
@@ -540,51 +540,51 @@
     "companyBankIfsc": "UTIB0001219"
   },
   "liveConfig": {
-    "maintenanceMessage": "System routine maintenance in progress.",
-    "bannerType": "success",
-    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
-    "autoSyncIntervalSec": 3,
-    "themeAccent": "emerald",
-    "heroHeadline": "Smart Daily Returns & Automated Growth",
-    "lastUpdated": "2026-09-17 01:02",
-    "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
-    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
-    "appVersion": "v2.5.2-MAIN-DB",
-    "bannerEnabled": true,
-    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
-    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
-    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
-    "liveBadgeText": "⚡ Live Main DB Connected",
     "maintenanceMode": false,
-    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।"
+    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
+    "lastUpdated": "2026-09-17 01:02",
+    "appVersion": "v2.5.2-MAIN-DB",
+    "bannerType": "success",
+    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
+    "autoSyncIntervalSec": 3,
+    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
+    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
+    "maintenanceMessage": "System routine maintenance in progress.",
+    "liveBadgeText": "⚡ Live Main DB Connected",
+    "heroHeadline": "Smart Daily Returns & Automated Growth",
+    "themeAccent": "emerald",
+    "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
+    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
+    "bannerEnabled": true,
+    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।"
   },
   "bankDetails": {},
   "treasury": {
-    "balance": 600000,
-    "lastUpdated": "2026-09-17T15:41:56.634Z",
-    "totalFeeGpConverted": 0,
-    "minAlertThreshold": 500000,
     "totalDeducted": 0,
-    "totalTransferredToUsers": 0,
+    "lastUpdated": "2026-09-17T15:41:56.634Z",
+    "minAlertThreshold": 500000,
+    "totalFeeGpConverted": 0,
+    "balance": 600000,
+    "totalInjected": 600000,
     "collectedFeeGpBalance": 0,
-    "totalInjected": 600000
+    "totalTransferredToUsers": 0
   },
   "treasuryLogs": [
     {
       "referenceId": "INJ-600000",
-      "type": "ADMIN_ADD",
-      "reasonHi": "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
-      "date": "2026-09-17T15:48:13.467Z",
+      "timestamp": 1789660093467,
       "balanceAfter": 600000,
-      "balanceBefore": 0,
-      "id": "tr-log-1",
-      "reason": "Initial Company Liquidity Injection into Main Reserve",
+      "type": "ADMIN_ADD",
+      "date": "2026-09-17T15:48:13.467Z",
+      "reasonHi": "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
       "amount": 600000,
+      "reason": "Initial Company Liquidity Injection into Main Reserve",
       "actor": "Super Admin (admin)",
-      "timestamp": 1789660093467
+      "id": "tr-log-1",
+      "balanceBefore": 0
     }
   ],
   "messages": [],
   "deletedUserIds": [],
-  "lastUpdated": "2026-09-19T10:41:33.118Z"
+  "lastUpdated": "2026-09-19T10:57:37.295Z"
 }
