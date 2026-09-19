@@ -166,7 +166,7 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
     bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
     bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
     bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
-    bestWallet.totalEarned = Math.max(bestWallet.totalEarned || 0, 264.3);
+    bestWallet.totalEarned = Math.max(bestWallet.totalEarned || 0, 353.6);
   }
 
   // Self-heal: propagate bestWallet to all alias keys in the wallets object

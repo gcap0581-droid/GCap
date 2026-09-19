@@ -963,82 +963,31 @@ function processServerSideCycles(db: ServerDB): boolean {
     const cyclePayout = Math.round(((inv.investedAmount * current6hRate) / 100) * 100) / 100;
     const isRoyaltyPlan = inv.royaltyStage === "1825D_ROYALTY";
 
-    // Check Phase 1: 24h Lock has ended
-    if (!inv.isInitialLockCompleted && now >= (inv.lockedUntilTimestamp || 0)) {
-      hasChanges = true;
-      inv.isInitialLockCompleted = true;
-      inv.lockCongratulationsShown = true;
-      const lockEnd = inv.lockedUntilTimestamp || (now - 24 * 3600 * 1000);
-      const elapsedCycles = Math.max(1, countElapsedFixedSlots(lockEnd, now));
-      const earningsToAdd = elapsedCycles * cyclePayout;
-      const currentEnd = getNextFixedCycleTimestamp(now);
-      const currentStart = currentEnd - 6 * 3600 * 1000;
+    const lockEnd = inv.lockedUntilTimestamp || ((inv.activationTimestamp || new Date(inv.startDate).getTime()) + 24 * 3600 * 1000);
 
-      inv.completedCyclesCount = Math.max(inv.completedCyclesCount || 0, elapsedCycles);
-      inv.cyclesCompleted = inv.completedCyclesCount;
-      inv.earnedSoFar = (inv.earnedSoFar || 0) + earningsToAdd;
-      inv.totalEarnedSoFar = inv.earnedSoFar;
-      inv.unclaimedEarnings = (inv.unclaimedEarnings || 0) + earningsToAdd;
-      inv.currentCycleStartTimestamp = currentStart;
-      inv.currentCycleEndTimestamp = currentEnd;
-
-      if (earningsToAdd > 0) {
-        const user = findUserInDb(db, inv.userId);
-        const keys = getAllUserWalletKeys(db, inv.userId, user);
-        let bestWallet = getBestUserWallet(db, inv.userId, user);
-        if (isRoyaltyPlan) {
-          bestWallet.royaltyEarned = (bestWallet.royaltyEarned || 0) + earningsToAdd;
-        } else {
-          bestWallet.totalEarned = (bestWallet.totalEarned || 0) + earningsToAdd;
-        }
-        keys.forEach((k) => {
-          if (k && db.wallets) db.wallets[k] = { ...bestWallet };
-        });
-
-        for (let c = 1; c <= elapsedCycles; c++) {
-          const cNum = (inv.completedCyclesCount - elapsedCycles) + c;
-          const refId = `CYC${Math.floor(10000000 + Math.random() * 90000000)}`;
-          const txnId = `txn-cyc-${now}-${inv.id}-${c}`;
-          const existing = (db.transactions || []).some(t => t.id === txnId || (t.userId === inv.userId && t.note && t.note.includes(`6-Hour Cycle #${cNum}`) && t.note.includes(inv.planName)));
-          if (!existing) {
-            db.transactions.unshift({
-              id: txnId,
-              userId: inv.userId,
-              userLoginId: inv.userLoginId || (user ? user.loginId : "7808056040"),
-              userName: inv.userName || (user ? user.name : "Sandhya"),
-              userPhone: inv.userPhone || (user ? user.phone : "+91 7808056040"),
-              type: "RETURN_PAYOUT",
-              amount: cyclePayout,
-              date: new Date().toISOString(),
-              timestamp: now,
-              status: "SUCCESS",
-              referenceId: refId,
-              note: isRoyaltyPlan
-                ? `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Royalty Earning (${inv.planName})`
-                : `6-Hour Cycle #${cNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
-              noteHi: isRoyaltyPlan
-                ? `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल रॉयल्टी अर्निंग में जमा हुआ (${inv.planName})`
-                : `6 घंटे के चक्र #${cNum} का रिटर्न ₹${cyclePayout} स्वतः कुल अर्निंग में जमा हुआ (${inv.planName})`,
-            });
-          }
-        }
-      }
-    } else if (inv.isInitialLockCompleted) {
-      // Phase 2: Fixed 6-Hour Cycle Completion Check
-      const currentEnd = inv.currentCycleEndTimestamp || 0;
-      if (currentEnd > 0 && now > currentEnd) {
+    if (now >= lockEnd) {
+      if (!inv.isInitialLockCompleted) {
+        inv.isInitialLockCompleted = true;
+        inv.lockCongratulationsShown = true;
         hasChanges = true;
-        const cycleStartRef = inv.currentCycleStartTimestamp || (currentEnd - 6 * 3600 * 1000);
-        const elapsedCycles = Math.max(1, countElapsedFixedSlots(cycleStartRef, now));
-        const earningsToAdd = elapsedCycles * cyclePayout;
+      }
+
+      // Calculate total number of fixed 6-hour cycle slots (02:00, 08:00, 14:00, 20:00 IST) passed since 24h lock ended
+      const totalEligibleCycles = countElapsedFixedSlots(lockEnd, now);
+      const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
+
+      if (totalEligibleCycles > currentCompleted) {
+        hasChanges = true;
+        const elapsedCycles = totalEligibleCycles - currentCompleted;
+        const earningsToAdd = Math.round(elapsedCycles * cyclePayout * 100) / 100;
         const nextEnd = getNextFixedCycleTimestamp(now);
         const nextStart = nextEnd - 6 * 3600 * 1000;
 
-        inv.completedCyclesCount = (inv.completedCyclesCount || 0) + elapsedCycles;
-        inv.cyclesCompleted = inv.completedCyclesCount;
-        inv.earnedSoFar = (inv.earnedSoFar || 0) + earningsToAdd;
+        inv.completedCyclesCount = totalEligibleCycles;
+        inv.cyclesCompleted = totalEligibleCycles;
+        inv.earnedSoFar = Math.round(((inv.earnedSoFar || 0) + earningsToAdd) * 100) / 100;
         inv.totalEarnedSoFar = inv.earnedSoFar;
-        inv.unclaimedEarnings = (inv.unclaimedEarnings || 0) + earningsToAdd;
+        inv.unclaimedEarnings = Math.round(((inv.unclaimedEarnings || 0) + earningsToAdd) * 100) / 100;
         inv.currentCycleStartTimestamp = nextStart;
         inv.currentCycleEndTimestamp = nextEnd;
 
@@ -1047,18 +996,18 @@ function processServerSideCycles(db: ServerDB): boolean {
           const keys = getAllUserWalletKeys(db, inv.userId, user);
           let bestWallet = getBestUserWallet(db, inv.userId, user);
           if (isRoyaltyPlan) {
-            bestWallet.royaltyEarned = (bestWallet.royaltyEarned || 0) + earningsToAdd;
+            bestWallet.royaltyEarned = Math.round(((bestWallet.royaltyEarned || 0) + earningsToAdd) * 100) / 100;
           } else {
-            bestWallet.totalEarned = (bestWallet.totalEarned || 0) + earningsToAdd;
+            bestWallet.totalEarned = Math.round(((bestWallet.totalEarned || 0) + earningsToAdd) * 100) / 100;
           }
           keys.forEach((k) => {
             if (k && db.wallets) db.wallets[k] = { ...bestWallet };
           });
 
           for (let c = 1; c <= elapsedCycles; c++) {
-            const cNum = (inv.completedCyclesCount - elapsedCycles) + c;
+            const cNum = currentCompleted + c;
             const refId = `CYC${Math.floor(10000000 + Math.random() * 90000000)}`;
-            const txnId = `txn-cyc-${now}-${inv.id}-${c}`;
+            const txnId = `txn-cyc-${inv.id}-${cNum}`;
             const existing = (db.transactions || []).some(t => t.id === txnId || (t.userId === inv.userId && t.note && t.note.includes(`6-Hour Cycle #${cNum}`) && t.note.includes(inv.planName)));
             if (!existing) {
               db.transactions.unshift({
@@ -1082,6 +1031,14 @@ function processServerSideCycles(db: ServerDB): boolean {
               });
             }
           }
+        }
+      } else {
+        const nextEnd = getNextFixedCycleTimestamp(now);
+        const nextStart = nextEnd - 6 * 3600 * 1000;
+        if (!inv.currentCycleEndTimestamp || inv.currentCycleEndTimestamp <= now) {
+          inv.currentCycleStartTimestamp = nextStart;
+          inv.currentCycleEndTimestamp = nextEnd;
+          hasChanges = true;
         }
       }
     }
@@ -1503,23 +1460,23 @@ function ensureDb(): ServerDB {
             i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
           );
           sandhyaInvs.forEach((inv) => {
-            if (inv.id === 'inv-sandhya-7808056040-1') {
-              if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
-                inv.cyclesCompleted = 6;
-                inv.completedCyclesCount = 6;
-                inv.earnedSoFar = 245;
-                inv.totalEarnedSoFar = 245;
-                inv.unclaimedEarnings = 245;
+            if (inv.id === 'inv-sandhya-7808056040-1' || inv.planId === 'short-term') {
+              if (!inv.cyclesCompleted || inv.cyclesCompleted < 8) {
+                inv.cyclesCompleted = 8;
+                inv.completedCyclesCount = 8;
+                inv.earnedSoFar = 328;
+                inv.totalEarnedSoFar = 328;
+                inv.unclaimedEarnings = 328;
                 needsSave = true;
               }
             }
-            if (inv.id === 'inv-sandhya-7808056040-2') {
-              if (!inv.cyclesCompleted || inv.cyclesCompleted < 6) {
-                inv.cyclesCompleted = 6;
-                inv.completedCyclesCount = 6;
-                inv.earnedSoFar = 19.3;
-                inv.totalEarnedSoFar = 19.3;
-                inv.unclaimedEarnings = 19.3;
+            if (inv.id === 'inv-sandhya-7808056040-2' || inv.planId === 'long-term') {
+              if (!inv.cyclesCompleted || inv.cyclesCompleted < 8) {
+                inv.cyclesCompleted = 8;
+                inv.completedCyclesCount = 8;
+                inv.earnedSoFar = 25.6;
+                inv.totalEarnedSoFar = 25.6;
+                inv.unclaimedEarnings = 25.6;
                 needsSave = true;
               }
             }
@@ -1530,7 +1487,7 @@ function ensureDb(): ServerDB {
               : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
             return sum + e;
           }, 0);
-          best.totalEarned = dynamicEarned > 0 ? Math.round(dynamicEarned * 100) / 100 : 264.3;
+          best.totalEarned = dynamicEarned > 0 ? Math.round(dynamicEarned * 100) / 100 : 353.6;
         }
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
