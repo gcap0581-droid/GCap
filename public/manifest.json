@@ -4,13 +4,25 @@
   "description": "GCap - Smart Investment & Daily Returns Platform with Daily Returns and Auto-Accrual",
   "icons": [
     {
-      "src": "/icon-192.svg",
-      "type": "image/svg+xml",
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any"

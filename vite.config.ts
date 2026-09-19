@@ -22,26 +22,39 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'icon.svg', 'icon-192.svg', 'icon-512.svg'],
+        includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
         manifest: {
           id: '/',
           name: 'GCap - Investment & Daily Returns Platform',
           short_name: 'GCap',
-          description: 'GCap - Smart Investment & Daily Returns Platform with Live AI Studio Auto-Update',
+          description: 'GCap - Smart Investment & Daily Returns Platform with Live Auto-Accrual',
           theme_color: '#064e3b',
           background_color: '#020617',
           display: 'standalone',
+          orientation: 'portrait',
           start_url: '/',
           scope: '/',
           icons: [
             {
-              src: '/icon-192.svg',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon-512.svg',
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/pwa-maskable-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+            {
+              src: '/icon.svg',
               sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any',
@@ -90,13 +103,25 @@ export default defineConfig(() => {
                   description: 'GCap - Smart Investment & Daily Returns Platform with Daily Returns and Auto-Accrual',
                   icons: [
                     {
-                      src: '/icon-192.svg',
-                      type: 'image/svg+xml',
+                      src: '/pwa-192x192.png',
+                      type: 'image/png',
                       sizes: '192x192',
                       purpose: 'any'
                     },
                     {
-                      src: '/icon-512.svg',
+                      src: '/pwa-512x512.png',
+                      type: 'image/png',
+                      sizes: '512x512',
+                      purpose: 'any'
+                    },
+                    {
+                      src: '/pwa-maskable-512x512.png',
+                      type: 'image/png',
+                      sizes: '512x512',
+                      purpose: 'maskable'
+                    },
+                    {
+                      src: '/icon.svg',
                       type: 'image/svg+xml',
                       sizes: '512x512',
                       purpose: 'any'
