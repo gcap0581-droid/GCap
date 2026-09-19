@@ -356,8 +356,8 @@ const DEFAULT_PLANS: InvestmentPlan[] = [
 const DEFAULT_RULES: AppRules = {
   platformName: "GCap",
   gpRatePerRupee: 0.98,
-  minDeposit: 100,
-  maxDeposit: 500000,
+  minDeposit: 10000,
+  maxDeposit: 5000000,
   minWithdrawal: 200,
   maxWithdrawalPerDay: 100000,
   withdrawalFeePercent: 0,
@@ -380,9 +380,9 @@ const DEFAULT_RULES: AppRules = {
   lastUpdated: new Date().toISOString().split("T")[0],
   companyUpiId: "8603504808@axisbank",
   companyBankAccountHolder: "GCap Assets & Wealth Management Private Limited",
-  companyBankName: "HDFC Bank Ltd.",
-  companyBankAccountNumber: "50200084920194",
-  companyBankIfsc: "HDFC0000240",
+  companyBankName: "Axis Bank",
+  companyBankAccountNumber: "924010002662307",
+  companyBankIfsc: "UTIB0001219",
 };
 
 const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {

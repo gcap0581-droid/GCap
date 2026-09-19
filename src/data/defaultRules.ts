@@ -3,8 +3,8 @@ import { AppRules } from '../types';
 export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCap',
   gpRatePerRupee: 0.98, // 1 INR = 0.98 GP (Adjustable by Admin anytime)
-  minDeposit: 100,
-  maxDeposit: Number.MAX_SAFE_INTEGER, // Unlimited upper deposit limit
+  minDeposit: 10000,
+  maxDeposit: 5000000,
   minWithdrawal: 200,
   maxWithdrawalPerDay: Number.MAX_SAFE_INTEGER,
   withdrawalFeePercent: 0, // 0% fee (100% payout)
@@ -24,10 +24,10 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   longTerm6hRate: 0.033,  // 0.033% every 6 hours
   supportEmail: 'support@gcap.in',
   supportPhone: '+91 98000 12345',
-  lastUpdated: '2026-09-07',
+  lastUpdated: '2026-09-19',
   companyUpiId: '8603504808@axisbank',
   companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
-  companyBankName: 'Axis Bank Ltd.',
-  companyBankAccountNumber: '924010008662307',
+  companyBankName: 'Axis Bank',
+  companyBankAccountNumber: '924010002662307',
   companyBankIfsc: 'UTIB0001219',
 };
