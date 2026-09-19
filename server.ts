@@ -1526,6 +1526,19 @@ function ensureDb(): ServerDB {
   }
 }
 
+const sseClients = new Set<express.Response>();
+
+function broadcastRealtimeEvent(event: string, data: any) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(payload);
+    } catch (_) {
+      sseClients.delete(client);
+    }
+  }
+}
+
 let firestoreSaveTimeout: NodeJS.Timeout | null = null;
 let pendingDbToSave: ServerDB | null = null;
 
@@ -1541,6 +1554,11 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
     
     // Set local tracking timestamp to avoid redundant self-loading triggers
     lastSyncedTimestamp = db.lastUpdated;
+
+    // Broadcast instant real-time event to all connected clients worldwide (web & installed mobile PWA)
+    try {
+      broadcastRealtimeEvent("state_changed", { timestamp: Date.now(), lastUpdated: db.lastUpdated });
+    } catch (_) {}
     
     // Write quickly to Firebase Firestore for instant multi-device & install app sync
     if (firestore) {
@@ -1668,18 +1686,7 @@ async function startServer() {
   });
 
   // Real-time Event Stream (Server-Sent Events) for instant automatic updates worldwide
-  const sseClients = new Set<express.Response>();
-
-  function broadcastRealtimeEvent(event: string, data: any) {
-    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const client of sseClients) {
-      try {
-        client.write(payload);
-      } catch (_) {
-        sseClients.delete(client);
-      }
-    }
-  }
+  // (sseClients and broadcastRealtimeEvent are defined at module scope)
 
   // Perform initial database synchronization from Firestore at startup
   if (firestore) {
