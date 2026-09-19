@@ -19,16 +19,32 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
   const availablePlans = plans && plans.length > 0 ? plans : INVESTMENT_PLANS;
   const [selectedPlanId, setSelectedPlanId] = useState<string>(availablePlans[0]?.id || 'short-term');
   const [amount, setAmount] = useState<number>(availablePlans[0]?.minAmount || 100000);
+  const [customDays, setCustomDays] = useState<number>(availablePlans[0]?.durationDays || 365);
+  const [royaltyDays, setRoyaltyDays] = useState<number>(365);
 
   const currentPlan = availablePlans.find(p => p.id === selectedPlanId) || availablePlans[0] || INVESTMENT_PLANS[0];
+
+  const isShortTerm = currentPlan.id === 'short-term';
+  const minDays = 30;
+  const maxDays = isShortTerm ? 641 : 1825; // Long term upper slider maxes out at 5 years (1825 days)
+
+  // Ensure customDays stays within bounds when plan changes
+  const safeCustomDays = Math.max(minDays, Math.min(customDays, maxDays));
+
+  // Royalty calculations (appears when upper slider is at 5 years / 1825 days, allowing extension beyond 5 years)
+  const showRoyalty = !isShortTerm && safeCustomDays >= 1825;
+  const safeRoyaltyDays = showRoyalty ? Math.max(30, Math.min(royaltyDays, 1825)) : 0;
 
   // Calculations
   const safeAmount = Math.max(currentPlan.minAmount, Math.min(amount, currentPlan.maxAmount));
   const dailyReturn = (safeAmount * currentPlan.dailyRoiPercent) / 100;
   const cycleReturn = dailyReturn / 4;
-  const totalProfit = dailyReturn * currentPlan.durationDays;
+  const totalDays = safeCustomDays + safeRoyaltyDays;
+  const totalProfit = dailyReturn * totalDays;
   const totalMaturity = safeAmount + totalProfit;
-  const totalRoiPercent = currentPlan.dailyRoiPercent * currentPlan.durationDays;
+  const totalRoiPercent = currentPlan.dailyRoiPercent * totalDays;
+
+  const royaltyProfit = dailyReturn * safeRoyaltyDays;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl">
@@ -69,6 +85,7 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
                     id={`btn-calc-plan-${plan.id}`}
                     onClick={() => {
                       setSelectedPlanId(plan.id);
+                      setCustomDays(plan.durationDays);
                       if (amount < plan.minAmount) setAmount(plan.minAmount);
                       if (amount > plan.maxAmount) setAmount(plan.maxAmount);
                     }}
@@ -141,6 +158,105 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
             </div>
           </div>
 
+          {/* Time / Duration Slider & Presets */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                {isHi ? '3. समय / अवधि चुनें (दिन):' : '3. Select Duration (Days):'}
+              </label>
+              <div className="text-sm font-extrabold text-emerald-400 font-mono bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
+                {safeCustomDays} {isHi ? 'दिन' : 'Days'} {safeCustomDays > 1825 ? `(${(safeCustomDays/365).toFixed(1)} वर्ष)` : ''}
+              </div>
+            </div>
+
+            <input
+              type="range"
+              min={minDays}
+              max={maxDays}
+              step={1}
+              value={safeCustomDays}
+              onChange={(e) => setCustomDays(Number(e.target.value))}
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
+            />
+
+            <div className="flex justify-between text-[11px] text-slate-500 font-mono mt-1.5">
+              <span>{minDays} {isHi ? 'दिन' : 'Days'}</span>
+              <span>{maxDays} {isHi ? `दिन (${maxDays/365} साल)` : `Days (${maxDays/365}Y)`}</span>
+            </div>
+
+            {/* Quick Duration Presets */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {(isShortTerm ? [30, 90, 180, 365, 641] : [30, 90, 180, 365, 730, 1461, 1825]).map((days) => {
+                if (isShortTerm && days > 641) return null;
+                return (
+                  <button
+                    key={days}
+                    id={`btn-calc-days-${days}`}
+                    onClick={() => setCustomDays(days)}
+                    className={`px-2.5 py-1 text-xs rounded-lg font-mono transition-all cursor-pointer ${
+                      safeCustomDays === days
+                        ? 'bg-teal-600 text-white font-bold'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                    }`}
+                  >
+                    {days === 30 ? (isHi ? '30 दिन' : '30D') :
+                     days === 365 ? (isHi ? '1 साल' : '1Y') :
+                     days === 730 ? (isHi ? '2 साल' : '2Y') :
+                     days === 1461 ? (isHi ? '4 साल' : '4Y') :
+                     days === 1825 ? (isHi ? '5 साल (मैक्स)' : '5Y (Max)') :
+                     (isHi ? `${days} दिन` : `${days}D`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Conditional Royalty Program Slider (Appears automatically when upper slider > 5 years / 1825 days) */}
+          {showRoyalty && (
+            <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>👑</span> {isHi ? 'रॉयल्टी प्रोग्राम अवधि (30 दिन - 5 साल):' : 'Royalty Program Duration (30D - 5Y):'}
+                </label>
+                <div className="text-xs font-extrabold text-amber-400 font-mono bg-amber-900/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                  {safeRoyaltyDays} {isHi ? 'दिन' : 'Days'} (~{(safeRoyaltyDays/365).toFixed(1)} {isHi ? 'वर्ष' : 'Yr'})
+                </div>
+              </div>
+
+              <input
+                type="range"
+                min={30}
+                max={1825}
+                step={1}
+                value={safeRoyaltyDays}
+                onChange={(e) => setRoyaltyDays(Number(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+
+              <div className="flex justify-between text-[10px] text-amber-400/70 font-mono">
+                <span>30 {isHi ? 'दिन' : 'Days'}</span>
+                <span>1825 {isHi ? 'दिन (5 साल)' : 'Days (5Y)'}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[90, 180, 365, 730, 1095, 1461, 1825].map((rd) => (
+                  <button
+                    key={rd}
+                    id={`btn-royalty-days-${rd}`}
+                    onClick={() => setRoyaltyDays(rd)}
+                    className={`px-2 py-0.5 text-[11px] rounded font-mono transition-all cursor-pointer ${
+                      safeRoyaltyDays === rd
+                        ? 'bg-amber-600 text-white font-bold'
+                        : 'bg-slate-800 hover:bg-slate-700 text-amber-200/80 border border-amber-500/20'
+                    }`}
+                  >
+                    {rd === 365 ? '1Y' : rd === 730 ? '2Y' : rd === 1095 ? '3Y' : rd === 1461 ? '4Y' : rd === 1825 ? '5Y' : `${rd}D`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Right column: Result Output Card */}
@@ -173,7 +289,7 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">{isHi ? 'निवेश अवधि:' : 'Duration Term:'}</span>
                 <span className="font-mono font-medium text-slate-200">
-                  {currentPlan.durationDays} {isHi ? 'दिन' : 'Days'}
+                  {safeCustomDays} {isHi ? 'दिन' : 'Days'} {safeCustomDays > 1825 ? `(${(safeCustomDays/365).toFixed(1)} Yrs)` : ''}
                 </span>
               </div>
 
@@ -183,6 +299,17 @@ export const RoiCalculator: React.FC<RoiCalculatorProps> = ({
                   +{formatINR(totalProfit)} ({totalRoiPercent.toFixed(1)}%)
                 </span>
               </div>
+
+              {showRoyalty && (
+                <div className="flex items-center justify-between text-xs bg-amber-950/30 p-2.5 rounded-lg border border-amber-500/30">
+                  <span className="text-amber-300 font-semibold flex items-center gap-1">
+                    <span>👑</span> {isHi ? `रॉयल्टी (${safeRoyaltyDays} दिन) मुनाफ़ा:` : `Royalty (${safeRoyaltyDays}D) Profit:`}
+                  </span>
+                  <span className="font-mono font-bold text-amber-400 text-sm">
+                    +{formatINR(royaltyProfit)}
+                  </span>
+                </div>
+              )}
 
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
                 <div>
