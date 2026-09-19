@@ -1614,6 +1614,24 @@ async function startServer() {
   // Express API Middleware
 
 
+  const SERVER_BOOT_TIMESTAMP = Date.now().toString();
+
+  app.get(["/version.json", "/api/version"], (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    const currentDb = ensureDb();
+    res.json({
+      buildId: SERVER_BOOT_TIMESTAMP,
+      buildTime: new Date(Number(SERVER_BOOT_TIMESTAMP)).toISOString(),
+      appVersion: "2.7.7",
+      source: "Google AI Studio Live Server",
+      message: "GCap Real-Time Sync & Fresh Wallet Updates",
+      autoReloadEnabled: true,
+      lastDbUpdate: currentDb.lastUpdated || new Date().toISOString()
+    });
+  });
+
   // Health check
   app.get("/api/health", (_req, res) => {
     res.json({
