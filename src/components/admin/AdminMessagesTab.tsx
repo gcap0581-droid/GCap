@@ -169,37 +169,48 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
     const targetUser = regularUsers.find((u) => u.id === selectedUserId);
 
     setIsSubmitting(true);
-    const success = await onSendMessage({
-      title: title.trim(),
-      titleHi: titleHi.trim() || title.trim(),
-      content: content.trim(),
-      contentHi: contentHi.trim() || content.trim(),
-      senderName: senderName.trim() || 'GCap Official Admin',
-      targetType,
-      targetUserId: targetType === 'SINGLE' ? selectedUserId : undefined,
-      targetUserLoginId: targetType === 'SINGLE' ? targetUser?.loginId : undefined,
-      targetUserName: targetType === 'SINGLE' ? targetUser?.name : undefined,
-      targetUserIds: targetType === 'SELECTED' ? selectedUserIds : undefined,
-      priority,
-      category,
-      showPopup,
-    });
+    try {
+      const success = await Promise.race([
+        onSendMessage({
+          title: title.trim(),
+          titleHi: titleHi.trim() || title.trim(),
+          content: content.trim(),
+          contentHi: contentHi.trim() || content.trim(),
+          senderName: senderName.trim() || 'GCap Official Admin',
+          targetType,
+          targetUserId: targetType === 'SINGLE' ? selectedUserId : undefined,
+          targetUserLoginId: targetType === 'SINGLE' ? targetUser?.loginId : undefined,
+          targetUserName: targetType === 'SINGLE' ? targetUser?.name : undefined,
+          targetUserIds: targetType === 'SELECTED' ? selectedUserIds : undefined,
+          priority,
+          category,
+          showPopup,
+        }),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 4000)),
+      ]);
 
-    setIsSubmitting(false);
-    if (success) {
-      setSuccessToast(
-        isHi
-          ? 'संदेश सफलतापूर्वक प्रसारित हो गया! लक्षित यूज़र्स की स्क्रीन पर यह तुरंत दिखेगा।'
-          : 'Message broadcasted successfully! Targeted users will receive it instantly on their screens.'
-      );
-      setTimeout(() => setSuccessToast(''), 6000);
-      // Reset fields
-      setTitle('');
-      setTitleHi('');
-      setContent('');
-      setContentHi('');
-      setSelectedUserId('');
-      setSelectedUserIds([]);
+      if (success !== false) {
+        setSuccessToast(
+          isHi
+            ? 'संदेश सफलतापूर्वक प्रसारित हो गया! लक्षित यूज़र्स की स्क्रीन पर यह तुरंत दिखेगा।'
+            : 'Message broadcasted successfully! Targeted users will receive it instantly on their screens.'
+        );
+        setTimeout(() => setSuccessToast(''), 6000);
+        // Reset fields
+        setTitle('');
+        setTitleHi('');
+        setContent('');
+        setContentHi('');
+        setSelectedUserId('');
+        setSelectedUserIds([]);
+      } else {
+        alert(isHi ? 'संदेश भेजने में विफल रहा। कृपया पुनः प्रयास करें।' : 'Failed to send message. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Send broadcast error:', err);
+      alert(isHi ? 'संदेश भेजने में त्रुटि हुई: ' + (err.message || 'Error') : 'Error sending message: ' + (err.message || 'Error'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

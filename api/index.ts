@@ -13,7 +13,11 @@ export default async function handler(req: any, res: any) {
 
   try {
     const rawUrl = req.url || '';
-    const cleanUrl = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`;
+    let cleanUrl = rawUrl.startsWith('/') ? rawUrl : `/${rawUrl}`;
+    // Ensure the path always targets /api/* on the Cloud Run backend
+    if (!cleanUrl.startsWith('/api/') && cleanUrl !== '/api') {
+      cleanUrl = `/api${cleanUrl}`;
+    }
     const targetUrl = `${CLOUD_RUN_CENTRAL_URL}${cleanUrl}`;
 
     const headers: Record<string, string> = {};

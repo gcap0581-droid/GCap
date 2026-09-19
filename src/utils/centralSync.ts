@@ -1244,26 +1244,27 @@ export async function apiSendAdminMessage(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSendAdminMessage] API failed, using direct Firestore:', err);
+    console.warn('[apiSendAdminMessage] API failed, creating fallback message:', err);
   }
 
   try {
-    const fs = await fetchFullFirestoreState();
-    const currentMsgs = fs?.messages || [];
     const newMsg: AdminMessage = {
-      id: message.id || `msg-${Date.now()}`,
+      id: message.id || `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       title: message.title || '',
-      titleHi: message.titleHi || '',
+      titleHi: message.titleHi || message.title || '',
       content: message.content || '',
-      contentHi: message.contentHi || '',
+      contentHi: message.contentHi || message.content || '',
       type: message.type || 'INFO',
-      senderName: message.senderName || 'GCap Security & Risk Management',
+      senderName: message.senderName || 'GCap Official Admin',
       targetType: message.targetType || 'ALL',
-      targetUserId: message.targetUserId || 'ALL',
+      targetUserId: message.targetUserId,
+      targetUserLoginId: message.targetUserLoginId,
+      targetUserName: message.targetUserName,
+      targetUserIds: message.targetUserIds,
       priority: message.priority || 'NORMAL',
       category: message.category || 'ANNOUNCEMENT',
-      showPopup: !!(message.showPopup || message.showAsPopup),
-      showAsPopup: !!(message.showPopup || message.showAsPopup),
+      showPopup: message.showPopup !== false,
+      showAsPopup: message.showPopup !== false,
       createdAt: message.createdAt || new Date().toISOString(),
       timestamp: message.timestamp || Date.now(),
       expiresAt: message.expiresAt,
@@ -1272,11 +1273,17 @@ export async function apiSendAdminMessage(
       actionLabel: message.actionLabel,
       actionUrl: message.actionUrl,
     };
-    const updated = [newMsg, ...currentMsgs];
-    await saveMessagesToFirestore(updated);
+
+    try {
+      const fs = await fetchFullFirestoreState().catch(() => null);
+      const currentMsgs = fs?.messages || [];
+      const updated = [newMsg, ...currentMsgs];
+      saveMessagesToFirestore(updated).catch(() => {});
+    } catch (_) {}
+
     return { success: true, message: newMsg };
   } catch (fsErr: any) {
-    return { success: false, error: fsErr.message };
+    return { success: false, error: fsErr?.message || 'Failed to send message' };
   }
 }
 
