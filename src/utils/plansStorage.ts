@@ -1,9 +1,71 @@
 import { InvestmentPlan } from '../types';
-import { INVESTMENT_PLANS as DEFAULT_PLANS } from '../data/plans';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSavePlans } from './centralSync';
 import { getStoredRules } from './rulesStorage';
 import { savePlansToFirestore } from '../lib/firestoreBridge';
+
+export const FALLBACK_INVESTMENT_PLANS: InvestmentPlan[] = [
+  {
+    id: 'short-term',
+    name: 'Short Term Plan (641-Day Plan)',
+    nameHi: 'शॉर्ट टर्म प्लान (641-Day Plan)',
+    dailyRoiPercent: 0.160,
+    durationDays: 641,
+    minAmount: 100000,
+    maxAmount: 1000000000,
+    payoutFrequency: 'Daily',
+    payoutFrequencyHi: 'हर 6 घंटे में 0.040% GP',
+    risk: 'Low',
+    tag: '641 Days • First 24h Lock • 0.040%/6h GP',
+    tagHi: '641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP',
+    badge: '⚡ 641-Day Short Term Plan (Min ₹1 Lakh)',
+    description: 'Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.',
+    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।',
+    features: [
+      'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
+      'परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)',
+      'हर 6 घंटे में 0.040% GP लाभ',
+      'महीने की 1 से 5 तारीख तक निकासी',
+    ],
+    featuresHi: [
+      'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
+      'परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)',
+      'हर 6 घंटे में 0.040% GP लाभ',
+      'महीने की 1 से 5 तारीख तक निकासी',
+    ],
+  },
+  {
+    id: 'long-term',
+    name: 'Long Term Plan (365-Day & Royalty Plan)',
+    nameHi: 'लॉन्ग टर्म प्लान (365-Day & Royalty Plan)',
+    dailyRoiPercent: 0.132,
+    durationDays: 365,
+    minAmount: 10000,
+    maxAmount: 100000,
+    payoutFrequency: 'Daily',
+    payoutFrequencyHi: 'हर 6 घंटे में 0.033% GP',
+    risk: 'Low',
+    tag: '365 Days • First 24h Lock • 0.033%/6h GP + Royalty',
+    tagHi: '365 दिन • पहले 24 घंटे का लॉक • 0.033%/6h GP + रॉयल्टी पाथवे',
+    badge: '👑 365-Day Long Term & Royalty Plan',
+    description: 'Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.033% every 6 hours.',
+    descriptionHi: 'प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.033% GP लाभ + रॉयल्टी पाथवे।',
+    features: [
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
+      'अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प',
+      'हर 6 घंटे में 0.033% GP लाभ',
+      'महीने की 1 से 5 तारीख तक निकासी',
+    ],
+    featuresHi: [
+      'न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000',
+      'अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प',
+      'हर 6 घंटे में 0.033% GP लाभ',
+      'महीने की 1 से 5 तारीख तक निकासी',
+    ],
+  }
+];
+
+const DEFAULT_PLANS = FALLBACK_INVESTMENT_PLANS;
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v5_roi040_033';
 

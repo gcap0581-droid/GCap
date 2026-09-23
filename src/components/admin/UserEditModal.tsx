@@ -301,47 +301,51 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         }
       }
 
-      await onSave({
-        userId: user?.id,
-        name: name.trim(),
-        loginId: loginId.trim() || undefined,
-        phone: phone.trim(),
-        email: (() => {
-          let clean = (email || '').trim().replace(/\s+/g, '');
-          if (!clean || clean.includes('@gcap.user')) {
-            const digits = phone.replace(/[^0-9]/g, '').slice(-10);
-            clean = `${digits || 'user'}@gcap.user`;
-          }
-          return clean;
-        })(),
-        password: password ? password.trim() : undefined,
-        role,
-        status,
-        joinedDate: joinedDate.trim(),
-        referralCode: referralCode.trim() || undefined,
-        referredBy: referredBy.trim() || undefined,
-        bankDetails: (accountNumber.trim() || upiId.trim()) ? {
-          accountHolder: accountHolder.trim() || name.trim(),
-          accountNumber: accountNumber.trim(),
-          ifscCode: ifscCode.trim().toUpperCase(),
-          bankName: bankName.trim(),
-          upiId: upiId.trim(),
-        } : undefined,
-        walletUpdates: Object.keys(walletUpdates).length > 0 ? walletUpdates : undefined,
-        walletAdjustment: resolvedAdjustment,
-        isPasswordChanged: isPasswordDirty && Boolean(password && password.trim() && (!user?.password || password.trim() !== user.password.trim())),
-        backdatedPlanId: backdatedPlanId || undefined,
-        backdatedAmount: Number(backdatedAmount) || 0,
-        backdatedWithdrawal: Number(backdatedWithdrawal) || 0,
-        permissions: role === 'STAFF' ? {
-          manageUsers: permManageUsers,
-          manageWallet: permManageWallet,
-          manageTransactions: permManageTransactions,
-          manageSchemes: permManageSchemes,
-          manageTreasury: permManageTreasury,
-          manageBroadcast: permManageBroadcast,
-        } : undefined,
-      });
+      // Execute onSave with a safety timeout so the spinner never hangs
+      await Promise.race([
+        Promise.resolve(onSave({
+          userId: user?.id,
+          name: name.trim(),
+          loginId: loginId.trim() || undefined,
+          phone: phone.trim(),
+          email: (() => {
+            let clean = (email || '').trim().replace(/\s+/g, '');
+            if (!clean || clean.includes('@gcap.user')) {
+              const digits = phone.replace(/[^0-9]/g, '').slice(-10);
+              clean = `${digits || 'user'}@gcap.user`;
+            }
+            return clean;
+          })(),
+          password: password ? password.trim() : undefined,
+          role,
+          status,
+          joinedDate: joinedDate.trim(),
+          referralCode: referralCode.trim() || undefined,
+          referredBy: referredBy.trim() || undefined,
+          bankDetails: (accountNumber.trim() || upiId.trim()) ? {
+            accountHolder: accountHolder.trim() || name.trim(),
+            accountNumber: accountNumber.trim(),
+            ifscCode: ifscCode.trim().toUpperCase(),
+            bankName: bankName.trim(),
+            upiId: upiId.trim(),
+          } : undefined,
+          walletUpdates: Object.keys(walletUpdates).length > 0 ? walletUpdates : undefined,
+          walletAdjustment: resolvedAdjustment,
+          isPasswordChanged: isPasswordDirty && Boolean(password && password.trim() && (!user?.password || password.trim() !== user.password.trim())),
+          backdatedPlanId: backdatedPlanId || undefined,
+          backdatedAmount: Number(backdatedAmount) || 0,
+          backdatedWithdrawal: Number(backdatedWithdrawal) || 0,
+          permissions: role === 'STAFF' ? {
+            manageUsers: permManageUsers,
+            manageWallet: permManageWallet,
+            manageTransactions: permManageTransactions,
+            manageSchemes: permManageSchemes,
+            manageTreasury: permManageTreasury,
+            manageBroadcast: permManageBroadcast,
+          } : undefined,
+        })),
+        new Promise((_, reject) => setTimeout(() => reject(new Error(isHi ? 'सर्वर से संपर्क में देरी हुई, कृपया पुनः प्रयास करें।' : 'Request timed out, please try again.')), 10000))
+      ]);
 
       onClose();
     } catch (err: any) {

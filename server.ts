@@ -489,21 +489,24 @@ try {
               const docData = docSnap.data()?.data;
               if (docId === "deletedUserIds" && Array.isArray(docData)) {
                 if (!db.deletedUserIds) db.deletedUserIds = [];
-                const activePhones = new Set((db.users || []).map((u: any) => String(u.phone || '').replace(/[^0-9]/g, '').slice(-10)));
-                const activeLogins = new Set((db.users || []).map((u: any) => String(u.loginId || '').toLowerCase()));
-                const activeIds = new Set((db.users || []).map((u: any) => String(u.id || '').toLowerCase()));
+                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345']);
+                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181']);
+                const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789457522655', 'usr-1789962044130']);
 
                 const cleanedIncoming = docData.filter((id: string) => {
                   if (!id) return false;
                   const c = String(id).toLowerCase().trim();
                   const p10 = c.replace(/[^0-9]/g, '').slice(-10);
-                  if (activeIds.has(c)) return false;
-                  if (activeLogins.has(c)) return false;
-                  if (p10 && activePhones.has(p10)) return false;
+                  if (PROTECTED_IDS.has(c)) return false;
+                  if (PROTECTED_LOGINS.has(c)) return false;
+                  if (p10 && PROTECTED_PHONES.has(p10)) return false;
                   return true;
                 });
 
-                db.deletedUserIds = cleanedIncoming;
+                // Merge incoming deleted IDs with local deleted IDs
+                const currentLocalDeleted = new Set((db.deletedUserIds || []).map((x: string) => String(x).toLowerCase().trim()));
+                cleanedIncoming.forEach((id: string) => currentLocalDeleted.add(String(id).toLowerCase().trim()));
+                db.deletedUserIds = Array.from(currentLocalDeleted);
                 changed = true;
               }
             });
@@ -1874,7 +1877,7 @@ process.on("SIGINT", flushPendingFirestoreSave);
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
 
   app.use(express.json({ limit: "15mb" }));
 

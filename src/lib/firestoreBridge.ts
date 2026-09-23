@@ -56,6 +56,28 @@ let activeFirestoreListenersCount = 0;
 let unsubscribeFirestoreSnapshot: (() => void) | null = null;
 const stateChangeListeners: Set<(state: FirestoreDatabaseState) => void> = new Set();
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 2000, fallbackVal?: T): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (fallbackVal !== undefined) {
+        resolve(fallbackVal);
+      } else {
+        reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+      }
+    }, timeoutMs);
+
+    promise
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 /**
  * Save current Firestore DB state to localStorage for offline / quota fallback
  */
@@ -413,12 +435,14 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       'metadata',
     ];
 
-    const promises = docKeys.map((key) => getDoc(doc(db, 'gcap_database', key)));
+    const promises = docKeys.map((key) =>
+      withTimeout(getDoc(doc(db, 'gcap_database', key)), 1500, { exists: () => false, data: () => ({}) } as any)
+    );
     const snaps = await Promise.all(promises);
 
     const docMap: Record<string, any> = {};
     docKeys.forEach((key, index) => {
-      if (snaps[index].exists()) {
+      if (snaps[index] && typeof snaps[index].exists === 'function' && snaps[index].exists()) {
         docMap[key] = snaps[index].data()?.data;
       }
     });
@@ -533,11 +557,13 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
 
   try {
     const ref = doc(db, 'gcap_database', docId);
-    await setDoc(ref, { data: cleanForFirestore(data) });
+    withTimeout(setDoc(ref, { data: cleanForFirestore(data) }), 1500).catch((e) => {
+      console.warn(`[FirestoreBridge] Background setDoc warn for ${docId}:`, e);
+    });
 
-    // Update metadata timestamp
+    // Update metadata timestamp in background
     const metaRef = doc(db, 'gcap_database', 'metadata');
-    await setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true });
+    withTimeout(setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true }), 1500).catch(() => {});
 
     return true;
   } catch (err) {

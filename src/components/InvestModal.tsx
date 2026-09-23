@@ -80,41 +80,21 @@ export const InvestModal: React.FC<InvestModalProps> = ({
   const handleConfirmInvestment = (shouldAutoSwap: boolean = false) => {
     setError('');
 
-    // Specific plan range validations requested by user
-    const isShortTerm = plan.id === 'short-term' || plan.durationDays === 641;
-    const isLongTerm = plan.id === 'long-term' || plan.durationDays === 365;
-
-    if (isShortTerm && amount < 100000) {
-      setError(
-        isHi
-          ? 'आप इतने का प्लान नहीं ले सकते, कम से कम ₹1,00,000 का लेना होगा।'
-          : 'You cannot take this plan for this amount. Minimum investment for Short Term plan is ₹1,00,000.'
-      );
-      return;
-    }
-
-    if (isLongTerm && (amount < 10000 || amount > 100000)) {
-      setError(
-        isHi
-          ? 'लॉन्ग टर्म प्लान के लिए न्यूनतम निवेश ₹10,000 और अधिकतम ₹1,00,000 होना चाहिए।'
-          : 'Long term plan investment must be between ₹10,000 and ₹1,00,000.'
-      );
-      return;
-    }
-
     if (amount < plan.minAmount) {
+      const shortfall = plan.minAmount - amount;
       setError(
         isHi
-          ? `इस योजना के लिए न्यूनतम निवेश ${formatINR(plan.minAmount)} है।`
-          : `Minimum investment for this plan is ${formatINR(plan.minAmount)}.`
+          ? `न्यूनतम निवेश ${formatINR(plan.minAmount)} होना चाहिए। कृपया ${formatINR(shortfall)} और जोड़ें।`
+          : `Minimum investment for this plan is ${formatINR(plan.minAmount)}. Please add ${formatINR(shortfall)} more.`
       );
       return;
     }
     if (amount > plan.maxAmount) {
+      const excess = amount - plan.maxAmount;
       setError(
         isHi
-          ? `अधिकतम स्वीकार्य निवेश ${formatINR(plan.maxAmount)} है।`
-          : `Maximum allowed investment is ${formatINR(plan.maxAmount)}.`
+          ? `अधिकतम निवेश ${formatINR(plan.maxAmount)} हो सकता है। कृपया ${formatINR(excess)} कम करें।`
+          : `Maximum allowed investment for this plan is ${formatINR(plan.maxAmount)}. Please reduce by ${formatINR(excess)}.`
       );
       return;
     }

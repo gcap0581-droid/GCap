@@ -768,14 +768,14 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       }
 
       return { success: true, user: created };
-    } else if (res.status === 400 && result && result.error) {
+    } else if (result && result.error) {
       return { success: false, error: result.error };
     }
   } catch (err) {
     console.warn('Admin add user API error, using direct Firestore:', err);
   }
 
-  // Direct Firestore fallback for Vercel
+  // Direct Firestore fallback for Vercel / offline mode
   try {
     const firestoreState = await fetchFullFirestoreState();
     const currentUsers = firestoreState?.users || cachedUsers;
@@ -804,7 +804,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
 
     cachedUsers = mergeUsers(cachedUsers, [newUser]);
 
-    await saveUsersToFirestore(cachedUsers);
+    saveUsersToFirestore(cachedUsers).catch(() => {});
 
     // Initialize wallet under all alias keys
     const currentWallets = firestoreState?.wallets || {};
@@ -837,7 +837,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
         currentWallets[alias] = initialWallet;
       });
       
-      await saveWalletsToFirestore(currentWallets);
+      saveWalletsToFirestore(currentWallets).catch(() => {});
     }
 
     if (typeof window !== 'undefined') {

@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile in GCap system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/gcap_database/{docId}": {
+      "schema": "User",
+      "description": "Central database storage documents for GCap"
+    }
+  }
+}

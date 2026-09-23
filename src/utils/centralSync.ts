@@ -1072,23 +1072,23 @@ export async function apiAdminAdjustUserWallet(
       const result = await res.json().catch(() => null);
       if (result && result.success) {
         if (result.wallet) {
-          try {
-            const fs = await fetchFullFirestoreState();
-            const currentWallets = fs?.wallets || {};
-            const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], result.wallet);
-            await saveWalletsToFirestore(updatedWallets);
-            if (result.treasury) {
-              await saveTreasuryToFirestore(result.treasury, result.treasuryLogs);
-            }
-          } catch (fsSyncErr) {
-            console.warn('[apiAdminAdjustUserWallet] Direct Firestore sync warn:', fsSyncErr);
-          }
-
           updateFirestoreBridgeCache({
             wallets: {
               [userId]: result.wallet
             },
             ...(result.treasury ? { treasury: result.treasury } : {})
+          });
+
+          // Non-blocking background Firestore sync
+          fetchFullFirestoreState().then((fs) => {
+            const currentWallets = fs?.wallets || {};
+            const updatedWallets = updateWalletForUserInMap(userId, currentWallets, fs?.users || [], result.wallet);
+            saveWalletsToFirestore(updatedWallets).catch(() => {});
+            if (result.treasury) {
+              saveTreasuryToFirestore(result.treasury, result.treasuryLogs).catch(() => {});
+            }
+          }).catch((fsSyncErr) => {
+            console.warn('[apiAdminAdjustUserWallet] Direct Firestore sync warn:', fsSyncErr);
           });
         }
         return result;
