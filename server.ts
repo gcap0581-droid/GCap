@@ -256,13 +256,51 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
   {
     id: "usr-admin-01",
     loginId: "Admin",
-    name: "GCap System Admin",
+    name: "GCap System Administrator",
     role: "ADMIN",
     phone: "+91 98000 12345",
     email: "admin@gcap.in",
     joinedDate: "2026-01-01",
     status: "ACTIVE",
     passwordHash: "ad123",
+    password: "ad123",
+  },
+  {
+    id: "usr-1789384741169",
+    loginId: "7808056040",
+    name: "Sandhya",
+    role: "USER",
+    phone: "+91 7808056040",
+    email: "gcap0581@gmail.com",
+    joinedDate: "2026-09-16",
+    status: "ACTIVE",
+    passwordHash: "1111",
+    password: "1111",
+  },
+  {
+    id: "usr-1789457522655",
+    loginId: "9661670322",
+    name: "Puja kumari",
+    role: "USER",
+    phone: "+91 9661670322",
+    email: "puja@gmail.com",
+    joinedDate: "2026-09-16",
+    status: "ACTIVE",
+    passwordHash: "12345",
+    password: "12345",
+  },
+  {
+    id: "usr-1789962044130",
+    loginId: "8409803181",
+    name: "Rahul",
+    role: "USER",
+    phone: "+91 8409803181",
+    email: "8409803181@gcap.user",
+    referralCode: "GCAP-03181",
+    joinedDate: "2026-09-21",
+    status: "ACTIVE",
+    passwordHash: "1111",
+    password: "1111",
   },
 ];
 
@@ -1390,6 +1428,28 @@ function ensureDb(): ServerDB {
     }
 
     const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
+
+    // Ensure core non-deleted system accounts (Sandhya, Puja, Rahul) are preserved
+    DEFAULT_ACCOUNTS.forEach((defAcc) => {
+      const defId = String(defAcc.id).toLowerCase();
+      const defLogin = String(defAcc.loginId).toLowerCase();
+      const defP10 = String(defAcc.phone || "").replace(/[^0-9]/g, "").slice(-10);
+      if (delSet.has(defId) || delSet.has(defLogin) || (defP10 && delSet.has(defP10))) {
+        return; // specifically deleted by admin
+      }
+      const existing = parsed.users.find((u: StoredAccount) => {
+        if (!u) return false;
+        if (u.id === defAcc.id) return true;
+        if (u.loginId && u.loginId.toLowerCase() === defLogin) return true;
+        const uP10 = String(u.phone || "").replace(/[^0-9]/g, "").slice(-10);
+        if (defP10 && uP10 === defP10) return true;
+        return false;
+      });
+      if (!existing) {
+        parsed.users.push({ ...defAcc });
+        needsSave = true;
+      }
+    });
     const initialUserCount = parsed.users.length;
     parsed.users = parsed.users.filter((u: StoredAccount) => {
       if (!u || !u.id) return false;
@@ -1814,7 +1874,7 @@ process.on("SIGINT", flushPendingFirestoreSave);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({ limit: "15mb" }));
 

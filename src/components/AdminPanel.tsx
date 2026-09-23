@@ -64,6 +64,7 @@ import {
   enrichUsersWithPresence,
   recordLivePresence,
   recordDeletedUserId,
+  isUserDeleted,
 } from '../utils/authStorage';
 import { subscribeToRealtimeEvents } from '../utils/realtimeSync';
 import { subscribeToFirestoreState } from '../lib/firestoreBridge';
