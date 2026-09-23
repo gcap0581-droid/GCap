@@ -158,12 +158,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         referralCode: regReferral,
       });
 
-      // Synchronize with server immediately
-      await syncUsersWithServer().catch(() => {});
-
       setIsLoading(false);
 
       if (res.success && res.user) {
+        // Sync with server in background without blocking login
+        syncUsersWithServer().catch(() => {});
         audioAnnouncer.announceRegistration({
           userName: res.user.name,
           language: isHi ? 'hi' : 'en',

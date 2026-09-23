@@ -477,19 +477,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const cleanDigits = (data.phone || '').replace(/[^0-9]/g, '');
         const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
         
-        // Check duplicate phone/loginId in local list first
+        // Check duplicate phone/loginId in active non-deleted list only
         const duplicate = usersList.find(u => 
-          (clean10 && u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === clean10) ||
-          (data.loginId && u.loginId && u.loginId.toLowerCase() === data.loginId.toLowerCase())
+          !isUserDeleted(u) && (
+            (clean10 && u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === clean10) ||
+            (data.loginId && u.loginId && u.loginId.toLowerCase() === data.loginId.toLowerCase())
+          )
         );
 
         if (duplicate) {
-          alert(language === 'hi' 
-            ? `त्रुटि: यह मोबाइल नंबर / लॉगिन आईडी (${duplicate.phone || duplicate.loginId}) पहले से यूज़र "${duplicate.name}" के लिए रजिस्टर्ड है।` 
-            : `Error: Phone/Login ID already registered for user "${duplicate.name}".`
-          );
           setIsSyncingUsers(false);
-          return;
+          throw new Error(language === 'hi' 
+            ? `यह मोबाइल नंबर / लॉगिन आईडी (${duplicate.phone || duplicate.loginId}) पहले से यूज़र "${duplicate.name}" के लिए रजिस्टर्ड है।` 
+            : `Phone/Login ID already registered for user "${duplicate.name}".`
+          );
         }
 
         const res = await adminAddUserAsync({
@@ -520,8 +521,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             language: language === 'hi' ? 'hi' : 'en',
           });
         } else {
-          alert(res.error || (language === 'hi' ? 'नया यूज़र जोड़ने में विफलता' : 'Failed to add new user'));
           console.warn('User add error:', res.error);
+          setIsSyncingUsers(false);
+          throw new Error(res.error || (language === 'hi' ? 'नया यूज़र जोड़ने में विफलता' : 'Failed to add new user'));
         }
       }
 

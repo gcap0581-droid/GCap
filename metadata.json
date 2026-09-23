@@ -1,0 +1,6 @@
+{
+  "name": "GCap Capital",
+  "description": "GCap Capital - India's Premier High-Yield Fixed Growth & Investment Platform",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

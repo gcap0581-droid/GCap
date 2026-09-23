@@ -628,6 +628,28 @@ export async function saveDeletedUserIdsToFirestore(deletedIds: string[]): Promi
   return await saveDocToFirestore('deletedUserIds', deletedIds);
 }
 
+export async function removeDeletedUserIdFromFirestore(target: string): Promise<void> {
+  if (!target) return;
+  const cleanTarget = String(target).toLowerCase().trim();
+  const digits = cleanTarget.replace(/[^0-9]/g, '');
+  const phone10 = digits.length >= 10 ? digits.slice(-10) : '';
+
+  if (cachedFirestoreDb && Array.isArray(cachedFirestoreDb.deletedUserIds)) {
+    const originalLen = cachedFirestoreDb.deletedUserIds.length;
+    cachedFirestoreDb.deletedUserIds = cachedFirestoreDb.deletedUserIds.filter(id => {
+      const c = String(id).toLowerCase().trim();
+      const d = c.replace(/[^0-9]/g, '');
+      const p10 = d.length >= 10 ? d.slice(-10) : '';
+      if (c === cleanTarget) return false;
+      if (phone10 && (c === phone10 || p10 === phone10)) return false;
+      return true;
+    });
+    if (cachedFirestoreDb.deletedUserIds.length !== originalLen) {
+      await saveDeletedUserIdsToFirestore(cachedFirestoreDb.deletedUserIds).catch(() => {});
+    }
+  }
+}
+
 export async function savePresenceToFirestore(presence: Record<string, UserPresenceRecord>): Promise<boolean> {
   return await saveDocToFirestore('presence', presence);
 }

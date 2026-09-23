@@ -451,15 +451,22 @@ try {
               const docData = docSnap.data()?.data;
               if (docId === "deletedUserIds" && Array.isArray(docData)) {
                 if (!db.deletedUserIds) db.deletedUserIds = [];
-                const prevCount = db.deletedUserIds.length;
-                docData.forEach((id: string) => {
-                  if (id && !db.deletedUserIds.includes(id)) {
-                    db.deletedUserIds.push(id);
-                  }
+                const activePhones = new Set((db.users || []).map((u: any) => String(u.phone || '').replace(/[^0-9]/g, '').slice(-10)));
+                const activeLogins = new Set((db.users || []).map((u: any) => String(u.loginId || '').toLowerCase()));
+                const activeIds = new Set((db.users || []).map((u: any) => String(u.id || '').toLowerCase()));
+
+                const cleanedIncoming = docData.filter((id: string) => {
+                  if (!id) return false;
+                  const c = String(id).toLowerCase().trim();
+                  const p10 = c.replace(/[^0-9]/g, '').slice(-10);
+                  if (activeIds.has(c)) return false;
+                  if (activeLogins.has(c)) return false;
+                  if (p10 && activePhones.has(p10)) return false;
+                  return true;
                 });
-                if (db.deletedUserIds.length !== prevCount) {
-                  changed = true;
-                }
+
+                db.deletedUserIds = cleanedIncoming;
+                changed = true;
               }
             });
 
@@ -3864,12 +3871,14 @@ async function startServer() {
 
     // Remove from deletedUserIds if it was deleted before
     if (Array.isArray(db.deletedUserIds)) {
-      db.deletedUserIds = db.deletedUserIds.filter(
-        (id) =>
-          id !== newUserId &&
-          id !== cleanPhone10 &&
-          id !== cleanLoginId.toLowerCase()
-      );
+      db.deletedUserIds = db.deletedUserIds.filter((id) => {
+        const c = String(id).toLowerCase().trim();
+        const p10 = c.replace(/[^0-9]/g, '').slice(-10);
+        if (c === newUserId.toLowerCase()) return false;
+        if (cleanPhone10 && (c === cleanPhone10 || p10 === cleanPhone10)) return false;
+        if (cleanLoginId && c === cleanLoginId.toLowerCase()) return false;
+        return true;
+      });
     }
 
     db.users.push(newAccount);

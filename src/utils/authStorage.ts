@@ -6,6 +6,7 @@ import {
   saveUsersToFirestore,
   saveWalletsToFirestore,
   saveDeletedUserIdsToFirestore,
+  removeDeletedUserIdFromFirestore,
   subscribeToFirestoreState,
   getCachedFirestoreState,
   updatePresenceInFirestore,
@@ -81,8 +82,14 @@ export function unrecordDeletedUserId(id: string) {
   const digits = clean.replace(/[^0-9]/g, '');
   if (digits.length >= 10) {
     deletedUserIdsSet.delete(digits.slice(-10));
+    deletedUserIdsSet.delete(`+91 ${digits.slice(-10)}`.toLowerCase());
+    deletedUserIdsSet.delete(`+91${digits.slice(-10)}`.toLowerCase());
   }
   saveDeletedUserIdsToLocal();
+  removeDeletedUserIdFromFirestore(clean).catch(() => {});
+  if (digits.length >= 10) {
+    removeDeletedUserIdFromFirestore(digits.slice(-10)).catch(() => {});
+  }
 }
 
 export function isUserDeleted(u: UserProfile | string): boolean {
@@ -424,6 +431,10 @@ export async function registerUserAsync(data: {
     return { success: false, error: 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए' };
   }
 
+  // Clear any tombstone for this user so they are immediately active
+  if (cleanPhone) unrecordDeletedUserId(cleanPhone);
+  if (data.loginId) unrecordDeletedUserId(data.loginId);
+
   try {
     const response = await apiFetch('/api/register', {
       method: 'POST',
@@ -446,6 +457,11 @@ export async function registerUserAsync(data: {
       const createdUser = result.user as UserProfile;
       if (!createdUser.passwordHash) createdUser.passwordHash = cleanPassword;
       if (!createdUser.password) createdUser.password = cleanPassword;
+
+      if (createdUser.id) unrecordDeletedUserId(createdUser.id);
+      if (createdUser.phone) unrecordDeletedUserId(createdUser.phone);
+      if (createdUser.loginId) unrecordDeletedUserId(createdUser.loginId);
+      if (cleanPhone) unrecordDeletedUserId(cleanPhone);
 
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(createdUser));
 
@@ -737,6 +753,11 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       if (!created.password) created.password = data.password || data.passwordHash || 'demo123';
 
       if (created.id) unrecordDeletedUserId(created.id);
+      if (created.phone) unrecordDeletedUserId(created.phone);
+      if (created.loginId) unrecordDeletedUserId(created.loginId);
+      if (data.phone) unrecordDeletedUserId(data.phone);
+      if (data.loginId) unrecordDeletedUserId(data.loginId);
+
       cachedUsers = mergeUsers(cachedUsers, [created]);
 
       // Sync user to Firestore
