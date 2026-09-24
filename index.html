@@ -13,6 +13,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+      window.addEventListener('error', function(e) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding: 20px; color: #f87171; background: #0b0f19; border: 1px solid rgba(239, 68, 68, 0.3); margin: 20px; border-radius: 8px; font-family: monospace; text-align: left;"><h3>🚨 Runtime Error Captured</h3><p style="font-weight: bold;">' + e.message + '</p><p>Source: ' + e.filename + ':' + e.lineno + '</p><p style="color: #9ca3af; font-size: 11px;">Please try clearing your browser cache or check Vercel deployment status.</p></div>';
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding: 20px; color: #f87171; background: #0b0f19; border: 1px solid rgba(239, 68, 68, 0.3); margin: 20px; border-radius: 8px; font-family: monospace; text-align: left;"><h3>🚨 Unhandled Promise Rejection</h3><p style="font-weight: bold;">' + (e.reason ? e.reason.message || e.reason : 'Unknown rejection') + '</p><p style="color: #9ca3af; font-size: 11px;">Please try clearing your browser cache or check Vercel deployment status.</p></div>';
+        }
+      });
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased select-none font-sans overflow-x-hidden min-h-screen">
     <div id="root"></div>
