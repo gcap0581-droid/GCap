@@ -63,6 +63,19 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     passwordHash: '1111',
     password: '1111',
     referralCode: 'GCAP-03181'
+  },
+  {
+    id: 'usr-1790000000555',
+    loginId: '9123456789',
+    name: 'Amit Kumar',
+    role: 'USER',
+    phone: '+91 9123456789',
+    email: 'amit@gcap.user',
+    joinedDate: '2026-09-22',
+    status: 'ACTIVE',
+    passwordHash: '1111',
+    password: '1111',
+    referralCode: 'GCAP-45678'
   }
 ];
 
@@ -70,7 +83,8 @@ const PROTECTED_CORE_KEYS = new Set([
   'usr-admin-01', 'admin', '9800012345',
   'usr-1789384741169', '7808056040',
   'usr-1789457522655', '9661670322',
-  'usr-1789962044130', '8409803181'
+  'usr-1789962044130', '8409803181',
+  'usr-1790000000555', '9123456789'
 ]);
 
 const DELETED_USER_IDS_KEY = 'gcap_deleted_user_ids_v1';

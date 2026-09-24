@@ -1361,7 +1361,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
               </div>
               <p className="text-2xl font-bold font-mono text-emerald-400">
-                {formatINR(totalDeposits + 500000)}
+                {formatINR(totalDeposits)}
               </p>
               <p className="text-[11px] text-slate-400">{isHi ? '100% वेरिफाइड फंड्स' : '100% Verified Bank/UPI'}</p>
             </div>
@@ -1372,7 +1372,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <TrendingUp className="w-4 h-4 text-purple-400" />
               </div>
               <p className="text-2xl font-bold font-mono text-purple-300">
-                {formatINR(totalRoiPaid + 42350)}
+                {formatINR(totalRoiPaid)}
               </p>
               <p className="text-[11px] text-slate-400">{isHi ? 'दैनिक ऑटोमेटेड पेआउट' : 'Daily Automated Cycles'}</p>
             </div>
@@ -1383,7 +1383,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <ArrowUpRight className="w-4 h-4 text-rose-400" />
               </div>
               <p className="text-2xl font-bold font-mono text-rose-300">
-                {formatINR(totalWithdrawals + 18500)}
+                {formatINR(totalWithdrawals)}
               </p>
               <p className="text-[11px] text-slate-400">{isHi ? '24x7 तत्काल UPI/IMPS' : 'Instant 24x7 Cleared'}</p>
             </div>

@@ -304,6 +304,19 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     passwordHash: "1111",
     password: "1111",
   },
+  {
+    id: "usr-1790000000555",
+    loginId: "9123456789",
+    name: "Amit Kumar",
+    role: "USER",
+    phone: "+91 9123456789",
+    email: "amit@gcap.user",
+    referralCode: "GCAP-45678",
+    joinedDate: "2026-09-22",
+    status: "ACTIVE",
+    passwordHash: "1111",
+    password: "1111",
+  }
 ];
 
 const DEFAULT_WALLET: Wallet = {
