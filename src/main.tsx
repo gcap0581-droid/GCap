@@ -6,16 +6,31 @@ import { setupServiceWorker } from './registerPwa.ts';
 import { initAiStudioLiveSync } from './utils/aiStudioSync.ts';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
-// Initialize PWA auto-updating service worker
-setupServiceWorker();
+// 1. Mount React UI immediately so page renders with zero delay or blocking
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </StrictMode>
+  );
+}
 
-// Initialize continuous background AI Studio build detector
-initAiStudioLiveSync();
+// 2. Safely initialize background PWA Service Worker & Live Sync non-blockingly
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    try {
+      setupServiceWorker();
+    } catch (err) {
+      console.warn('[PWA Init Warning]:', err);
+    }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </StrictMode>
-);
+    try {
+      initAiStudioLiveSync();
+    } catch (err) {
+      console.warn('[LiveSync Init Warning]:', err);
+    }
+  }, 100);
+}
