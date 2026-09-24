@@ -45,6 +45,7 @@ export interface FirestoreDatabaseState {
   treasuryLogs: TreasuryLog[];
   messages: AdminMessage[];
   deletedUserIds: string[];
+  companyLedger?: any[];
   presence?: Record<string, UserPresenceRecord>;
   lastUpdated: string;
 }
@@ -312,6 +313,7 @@ function parseSnapshotDocs(docs: any[]): FirestoreDatabaseState {
     treasuryLogs: Array.isArray(map['treasuryLogs']) ? map['treasuryLogs'] : [],
     messages: Array.isArray(map['messages']) ? map['messages'] : [],
     deletedUserIds: Array.isArray(map['deletedUserIds']) ? map['deletedUserIds'] : [],
+    companyLedger: Array.isArray(map['companyLedger']) ? map['companyLedger'] : [],
     presence: Object.keys(presenceMap).length > 0 ? presenceMap : ((typeof map['presence'] === 'object' && map['presence']) ? map['presence'] : {}),
     lastUpdated: (map['metadata'] && map['metadata'].lastUpdated) || new Date().toISOString(),
   };
@@ -454,6 +456,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       'treasuryLogs',
       'messages',
       'deletedUserIds',
+      'companyLedger',
       'presence',
       'metadata',
     ];

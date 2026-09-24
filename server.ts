@@ -750,6 +750,7 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
       { id: "treasuryLogs", data: db.treasuryLogs || [] },
       { id: "messages", data: db.messages || [] },
       { id: "deletedUserIds", data: db.deletedUserIds || [] },
+      { id: "companyLedger", data: (db as any).companyLedger || [] },
       { id: "presence", data: presenceMap }
     ];
 
@@ -784,7 +785,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
     const docs = [
       "users", "wallets", "investments", "transactions", "plans", "rules", 
       "liveConfig", "bankDetails", "treasury", "treasuryLogs", "messages", 
-      "deletedUserIds", "metadata"
+      "deletedUserIds", "companyLedger", "metadata"
     ];
     
     const snaps = await Promise.all(docs.map(docId => getClientDoc(clientDoc(firestore, "gcap_database", docId))));
@@ -811,6 +812,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
       treasuryLogs: snapMap["treasuryLogs"].data()?.data || [],
       messages: snapMap["messages"].data()?.data || [],
       deletedUserIds: snapMap["deletedUserIds"].data()?.data || [],
+      companyLedger: snapMap["companyLedger"]?.data()?.data || [],
       lastUpdated: snapMap["metadata"].data()?.lastUpdated || new Date().toISOString()
     };
 
