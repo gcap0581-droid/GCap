@@ -17,5 +17,32 @@
   <body class="bg-slate-950 text-slate-100 antialiased select-none font-sans overflow-x-hidden min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Self-Healing Anti-Blank Page Engine
+      // Automatically clears stale service worker caches and reloads fresh code if the app doesn't mount in 2 seconds
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          var rootEl = document.getElementById('root');
+          if (rootEl && rootEl.children.length === 0) {
+            console.warn('[Self-Healing] App root empty after 2s. Clearing stale caches...');
+            try {
+              if ('caches' in window) {
+                caches.keys().then(function(keys) {
+                  keys.forEach(function(key) { caches.delete(key); });
+                });
+              }
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                  regs.forEach(function(reg) { reg.unregister(); });
+                });
+              }
+            } catch (e) {}
+            setTimeout(function() {
+              window.location.reload(true);
+            }, 300);
+          }
+        }, 2000);
+      });
+    </script>
   </body>
 </html>
