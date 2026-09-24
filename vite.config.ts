@@ -46,33 +46,7 @@ export default defineConfig({
   ],
   build: {
     target: 'esnext',
-    cssMinify: true,
-    minify: 'esbuild',
-    chunkSizeWarningLimit: 2000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('firebase')) {
-              return 'vendor-firebase';
-            }
-            if (id.includes('jspdf')) {
-              return 'vendor-jspdf';
-            }
-            if (id.includes('xlsx')) {
-              return 'vendor-xlsx';
-            }
-            if (id.includes('lucide-react') || id.includes('lucide')) {
-              return 'vendor-icons';
-            }
-            if (id.includes('react') || id.includes('scheduler')) {
-              return 'vendor-react';
-            }
-            return 'vendor-others';
-          }
-        }
-      }
-    }
+    chunkSizeWarningLimit: 3000,
   },
   server: {
     host: '0.0.0.0',
