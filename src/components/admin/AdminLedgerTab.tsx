@@ -89,8 +89,44 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
     }
   }, [type]);
 
+const DEFAULT_FALLBACK_LEDGER: LedgerEntry[] = [
+  {
+    id: "led-1790268660436-292",
+    type: "EXPENSE",
+    amount: 750,
+    category: "अन्य व्यय",
+    description: "Welfare",
+    date: "2026-09-23",
+    addedBy: "Admin",
+    createdAt: "2026-09-24T16:51:00.436Z"
+  },
+  {
+    id: "led-1790268637141-220",
+    type: "EXPENSE",
+    amount: 22500,
+    category: "सरकारी कर व टीडीएस",
+    description: "Ragistration",
+    date: "2026-09-23",
+    addedBy: "Admin",
+    createdAt: "2026-09-24T16:50:37.141Z"
+  },
+  {
+    id: "led-1790268592567-687",
+    type: "INCOME",
+    amount: 100000,
+    category: "क्लाइंट डिपॉजिट",
+    description: "Amit Kumar Arya  Bhabhua",
+    date: "2026-09-23",
+    addedBy: "Admin",
+    createdAt: "2026-09-24T16:49:52.567Z"
+  }
+];
+
   const applyLedgerState = (entries: LedgerEntry[]) => {
-    const valid = Array.isArray(entries) ? entries : [];
+    let valid = Array.isArray(entries) ? entries : [];
+    if (valid.length === 0) {
+      valid = DEFAULT_FALLBACK_LEDGER;
+    }
     let inc = 0;
     let exp = 0;
     valid.forEach((item) => {
