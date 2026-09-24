@@ -184,13 +184,39 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
       }
     });
   }
-  // 0. Filter deleted users using deletedUserIds
+  // 0. Filter deleted users using deletedUserIds with active user protection
   if (Array.isArray(state.deletedUserIds) && Array.isArray(state.users)) {
+    const activeIds = new Set<string>();
+    state.users.forEach(u => {
+      if (u && u.id) activeIds.add(String(u.id).toLowerCase().trim());
+      if (u && u.loginId) activeIds.add(String(u.loginId).toLowerCase().trim());
+      if (u && u.phone) {
+        const p = String(u.phone).replace(/[^0-9]/g, '');
+        if (p) activeIds.add(p);
+        if (p.length >= 10) activeIds.add(p.slice(-10));
+      }
+    });
+
+    state.deletedUserIds = state.deletedUserIds.filter(id => {
+      const c = String(id).toLowerCase().trim();
+      const p = c.replace(/[^0-9]/g, '');
+      const p10 = p.length >= 10 ? p.slice(-10) : p;
+      if (activeIds.has(c) || (p10 && activeIds.has(p10))) return false;
+      return true;
+    });
+
     const delSet = new Set(state.deletedUserIds.map((x: any) => String(x).toLowerCase().trim()));
     state.users = state.users.filter((u: any) => {
       if (!u || !u.id) return false;
       const uId = String(u.id).toLowerCase().trim();
+      const uLogin = String(u.loginId || '').toLowerCase().trim();
+      const uPhone = String(u.phone || '').replace(/[^0-9]/g, '');
+      const uPhone10 = uPhone.slice(-10);
+
+      if (activeIds.has(uId)) return true;
       if (delSet.has(uId)) return false;
+      if (uLogin && delSet.has(uLogin)) return false;
+      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
   }

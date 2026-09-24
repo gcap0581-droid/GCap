@@ -1437,6 +1437,25 @@ function ensureDb(): ServerDB {
       parsed.deletedUserIds = [];
     }
 
+    const activeUserIds = new Set<string>();
+    (parsed.users || []).forEach((u: StoredAccount) => {
+      if (u && u.id) activeUserIds.add(String(u.id).toLowerCase().trim());
+      if (u && u.loginId) activeUserIds.add(String(u.loginId).toLowerCase().trim());
+      if (u && u.phone) {
+        const p = String(u.phone).replace(/[^0-9]/g, '');
+        if (p) activeUserIds.add(p);
+        if (p.length >= 10) activeUserIds.add(p.slice(-10));
+      }
+    });
+
+    parsed.deletedUserIds = parsed.deletedUserIds.filter((id: string) => {
+      const c = String(id).toLowerCase().trim();
+      const p = c.replace(/[^0-9]/g, '');
+      const p10 = p.length >= 10 ? p.slice(-10) : p;
+      if (activeUserIds.has(c) || (p10 && activeUserIds.has(p10))) return false;
+      return true;
+    });
+
     const delSet = new Set(parsed.deletedUserIds.map((x: string) => String(x).toLowerCase().trim()));
 
     // Ensure core non-deleted system accounts (Sandhya, Puja, Rahul) are preserved
@@ -1463,9 +1482,15 @@ function ensureDb(): ServerDB {
     const initialUserCount = parsed.users.length;
     parsed.users = parsed.users.filter((u: StoredAccount) => {
       if (!u || !u.id) return false;
-      if (delSet.has(String(u.id).toLowerCase())) return false;
-      if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-      if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
+      const uId = String(u.id).toLowerCase().trim();
+      const uLogin = String(u.loginId || "").toLowerCase().trim();
+      const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
+      const uPhone10 = uPhone.slice(-10);
+
+      if (activeUserIds.has(uId)) return true;
+      if (delSet.has(uId)) return false;
+      if (uLogin && delSet.has(uLogin)) return false;
+      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
 
