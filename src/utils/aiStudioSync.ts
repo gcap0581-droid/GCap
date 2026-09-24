@@ -150,8 +150,14 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
       updateAvailable = remoteInfo;
       updateListeners.forEach((fn) => fn(remoteInfo));
 
-      // ONLY auto-apply if explicitly requested (e.g. Admin force refresh broadcast)
-      if (autoApplyOnDetect && sessionStorage.getItem('gcap_last_auto_reload_build') !== remoteInfo.buildId) {
+      // ONLY auto-apply if explicitly requested AND not in development preview iframe
+      const isDevPreview = typeof window !== 'undefined' && (
+        window.location.hostname.includes('run.app') || 
+        window.location.hostname.includes('localhost') || 
+        window.location.hostname.includes('127.0.0.1')
+      );
+
+      if (autoApplyOnDetect && !isDevPreview && sessionStorage.getItem('gcap_last_auto_reload_build') !== remoteInfo.buildId) {
         sessionStorage.setItem('gcap_session_build_id', remoteInfo.buildId);
         await applyAiStudioUpdateNow(remoteInfo.buildId);
       }

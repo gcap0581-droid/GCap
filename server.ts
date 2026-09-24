@@ -2,6 +2,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot, setLogLevel, collection as clientCollection } from "firebase/firestore";
 
@@ -458,6 +460,7 @@ const DB_FILE = path.join(DATA_DIR, "server-db.json");
 // Firebase Firestore Integration Setup
 let firestore: any = null;
 let lastSyncedTimestamp: string = "";
+let writeDebounceTimer: NodeJS.Timeout | null = null;
 
 try {
   const configPath = path.join(process.cwd(), "firebase-applet-config.json");
@@ -479,6 +482,9 @@ try {
       try {
         const colRef = clientCollection(firestore, "gcap_database");
         clientOnSnapshot(colRef, (snapshot: any) => {
+          if (snapshot?.metadata?.hasPendingWrites) {
+            return; // Ignore local write echoes from server's own saveToFirestore calls
+          }
           if (!snapshot.empty) {
             const db = ensureDb();
             let changed = false;
@@ -604,12 +610,20 @@ try {
               }
             });
             if (changed) {
-              fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-              broadcastRealtimeEvent("users_updated", {
-                users: db.users.map(({ passwordHash: _, ...p }: any) => p),
-                timestamp: Date.now(),
-              });
-              console.log("[Firebase Server Listener] Synced server DB with incoming Firestore changes from other device/client!");
+              if (writeDebounceTimer) {
+                clearTimeout(writeDebounceTimer);
+              }
+              writeDebounceTimer = setTimeout(() => {
+                try {
+                  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+                  broadcastRealtimeEvent("users_updated", {
+                    users: db.users.map(({ passwordHash: _, ...p }: any) => p),
+                    timestamp: Date.now(),
+                  });
+                } catch (wErr) {
+                  console.warn("[Firebase Listener Sync Warning]:", wErr);
+                }
+              }, 1000);
             }
           }
         });
@@ -1759,6 +1773,10 @@ function ensureDb(): ServerDB {
       needsSave = true;
     }
 
+    if (!(parsed as any).companyLedger || !Array.isArray((parsed as any).companyLedger)) {
+      (parsed as any).companyLedger = [];
+    }
+
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
       saveDb(parsed, true);
     }
@@ -2084,6 +2102,98 @@ async function startServer() {
     });
   });
 
+  // GET: Company ledger entries
+  app.get("/api/admin/ledger", (req, res) => {
+    const db = ensureDb();
+    const ledger = (db as any).companyLedger || [];
+    
+    // Calculate summaries
+    let totalIncome = 0;
+    let totalExpense = 0;
+    ledger.forEach((item: any) => {
+      const amt = Number(item.amount) || 0;
+      if (item.type === "INCOME") {
+        totalIncome += amt;
+      } else if (item.type === "EXPENSE") {
+        totalExpense += amt;
+      }
+    });
+
+    res.json({
+      success: true,
+      ledger,
+      totalIncome,
+      totalExpense,
+      balance: totalIncome - totalExpense
+    });
+  });
+
+  // POST: Add new ledger entry
+  app.post("/api/admin/ledger", (req, res) => {
+    const { type, amount, category, description, date, addedBy } = req.body || {};
+    
+    if (!type || !["INCOME", "EXPENSE"].includes(type)) {
+      return res.status(400).json({ success: false, error: "Type must be INCOME or EXPENSE" });
+    }
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ success: false, error: "Amount must be a valid positive number" });
+    }
+    if (!category || !category.trim()) {
+      return res.status(400).json({ success: false, error: "Category is required" });
+    }
+
+    const db = ensureDb();
+    if (!(db as any).companyLedger) {
+      (db as any).companyLedger = [];
+    }
+
+    const newEntry = {
+      id: `led-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type,
+      amount: numAmount,
+      category: category.trim(),
+      description: (description || "").trim(),
+      date: date || new Date().toISOString().split("T")[0],
+      addedBy: addedBy || "Admin",
+      createdAt: new Date().toISOString()
+    };
+
+    (db as any).companyLedger.unshift(newEntry);
+    saveDb(db, true);
+
+    broadcastRealtimeEvent("state_changed", {
+      type: "LEDGER_UPDATED",
+      timestamp: Date.now()
+    });
+
+    res.json({ success: true, entry: newEntry });
+  });
+
+  // DELETE: Delete ledger entry
+  app.delete("/api/admin/ledger/:id", (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, error: "Entry ID is required" });
+    }
+
+    const db = ensureDb();
+    const ledger = (db as any).companyLedger || [];
+    const initialLen = ledger.length;
+    (db as any).companyLedger = ledger.filter((entry: any) => entry.id !== id);
+
+    if ((db as any).companyLedger.length !== initialLen) {
+      saveDb(db, true);
+      broadcastRealtimeEvent("state_changed", {
+        type: "LEDGER_UPDATED",
+        timestamp: Date.now()
+      });
+      return res.json({ success: true, message: "Ledger entry deleted successfully" });
+    } else {
+      return res.status(404).json({ success: false, error: "Ledger entry not found" });
+    }
+  });
+
   // Admin Force System Update Endpoint: Forces all installed PWAs and open mobile apps to update immediately
   app.post("/api/admin/force-refresh", (_req, res) => {
     SERVER_BUILD_ID = `${Date.now()}`;
@@ -2196,7 +2306,7 @@ async function startServer() {
     if (reqRole === "ADMIN") {
       // Admin gets global visibility across all users, transactions, investments, AND broadcast messages
       const now = Date.now();
-      const ONLINE_THRESHOLD_MS = 45 * 1000;
+      const ONLINE_THRESHOLD_MS = 180 * 1000;
       const publicUsers = validUsers.map(({ passwordHash: _, ...p }) => {
         let isOnline = false;
         if (p.isOnline === true) {
@@ -4161,13 +4271,31 @@ async function startServer() {
   // Vite middleware for development vs static production serve
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
+      configFile: false,
+      plugins: [react(), tailwindcss()],
       server: {
         middlewareMode: true,
         hmr: false,
       },
-      appType: "spa",
+      appType: "custom",
     });
     app.use(vite.middlewares);
+
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith("/api/")) {
+        return next();
+      }
+      try {
+        const templatePath = path.resolve(process.cwd(), "index.html");
+        let template = fs.readFileSync(templatePath, "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(
@@ -4207,9 +4335,9 @@ async function startServer() {
         broadcastRealtimeEvent("transactions_updated", { transactions: db.transactions, timestamp: Date.now() });
       }
 
-      // Presence Reaper: Check for users who haven't sent a heartbeat in > 45 seconds
+      // Presence Reaper: Check for users who haven't sent a heartbeat in > 3 minutes
       const nowTs = Date.now();
-      const ONLINE_THRESHOLD_MS = 45 * 1000;
+      const ONLINE_THRESHOLD_MS = 180 * 1000;
       let presenceChanged = false;
       if (Array.isArray(db.users)) {
         for (const u of db.users) {

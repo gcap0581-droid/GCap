@@ -30,6 +30,10 @@ import {
   Receipt,
   BookOpen,
   ShieldAlert,
+  Trash2,
+  Filter,
+  Plus,
+  Download,
 } from 'lucide-react';
 import {
   AppRules,
@@ -80,6 +84,7 @@ import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
+import { AdminLedgerTab } from './admin/AdminLedgerTab';
 import { AdminCurrentActivityTab } from './admin/AdminCurrentActivityTab';
 import { CompanyBalanceCard } from './admin/CompanyBalanceCard';
 import { CompanyBalanceModal } from './admin/CompanyBalanceModal';
@@ -192,7 +197,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -242,6 +247,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isSyncingUsers, setIsSyncingUsers] = useState(false);
   const [usersStatusFilter, setUsersStatusFilter] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN'>('ALL');
 
+  const updateUsersSafely = (incoming: UserProfile[]) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    setUsersList(prev => {
+      const map = new Map<string, UserProfile>();
+      // 1. Existing state
+      (prev || []).forEach(u => {
+        if (u && u.id) map.set(u.id, u);
+      });
+      // 2. Overlay incoming
+      incoming.forEach(u => {
+        if (u && u.id) {
+          const old = map.get(u.id);
+          map.set(u.id, { ...old, ...u });
+        }
+      });
+      const merged = Array.from(map.values()).filter(u => u && !isUserDeleted(u));
+      return enrichUsersWithPresence(merged);
+    });
+  };
+
   const onlineUsersCount = usersList.filter((u) => u && Boolean(u.isOnline)).length;
   const offlineUsersCount = usersList.length - onlineUsersCount;
 
@@ -277,13 +302,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         fetchCentralState(undefined, 'ADMIN'),
       ]);
       if (Array.isArray(updated) && updated.length > 0) {
-        setUsersList(enrichUsersWithPresence(updated));
+        updateUsersSafely(updated);
       }
       if (centralState?.wallets) {
         setWalletsMap(centralState.wallets);
       }
     } catch {
-      setUsersList(enrichUsersWithPresence(getAllUsers()));
+      updateUsersSafely(getAllUsers());
     } finally {
       setIsSyncingUsers(false);
     }
@@ -299,7 +324,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // 2. Subscribe to custom event & cross-tab storage changes
     const unsubscribeStorage = subscribeToUsersUpdates((updated) => {
       if (Array.isArray(updated) && updated.length > 0) {
-        setUsersList(enrichUsersWithPresence(updated));
+        updateUsersSafely(updated);
       }
     });
 
@@ -345,7 +370,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ) {
         console.log(`[AdminPanel] Triggering refresh for event: ${event.type}`);
         if ((event as any).users && Array.isArray((event as any).users)) {
-          setUsersList(enrichUsersWithPresence((event as any).users));
+          updateUsersSafely((event as any).users);
         }
         refreshUsers();
       }
@@ -364,7 +389,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
             return true;
           });
-        setUsersList(enrichUsersWithPresence(clean));
+        updateUsersSafely(clean);
       }
       if (fs.wallets) {
         setWalletsMap(fs.wallets);
@@ -375,7 +400,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const interval = setInterval(() => {
       syncUsersWithServer().then((updated) => {
         if (Array.isArray(updated) && updated.length > 0) {
-          setUsersList(enrichUsersWithPresence(updated));
+          updateUsersSafely(updated);
         }
       }).catch(() => {});
     }, 2500);
@@ -1133,6 +1158,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </button>
                 )}
 
+                {/* COMPANY LEDGER (HISAB KITAB) */}
+                <button
+                  id="tab-admin-ledger"
+                  onClick={() => setActiveSubTab('LEDGER')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'LEDGER'
+                      ? 'bg-amber-500/10 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'LEDGER' ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-slate-800 border-slate-700 text-amber-400'}`}>
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'LEDGER' ? 'bg-amber-500/30 text-amber-200' : 'bg-slate-800 text-slate-400'}`}>
+                      LEDGER
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'कंपनी हिसाब-किताब' : 'Company Ledger'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'आय और ख़र्च का हिसाब' : 'Income & Expenses'}</p>
+                  </div>
+                </button>
+
                 {/* USER_MANUAL */}
                 <button
                   id="tab-admin-usermanual"
@@ -1866,7 +1915,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
-      {/* TAB 13: ADMIN CURRENT ACTIVITY & MASTER SUMMARY */}
+      {/* TAB 13: COMPANY INCOME & EXPENSE LEDGER */}
+      {activeSubTab === 'LEDGER' && (
+        <AdminLedgerTab
+          language={language}
+        />
+      )}
+
+      {/* TAB 14: ADMIN CURRENT ACTIVITY & MASTER SUMMARY */}
       {activeSubTab === 'CURRENT_ACTIVITY' && (
         <AdminCurrentActivityTab
           language={language}

@@ -18,15 +18,60 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
   {
     id: 'usr-admin-01',
     loginId: 'admin',
-    name: 'GCap System Admin',
+    name: 'GCap System Administrator',
     role: 'ADMIN',
-    phone: '9800012345',
+    phone: '+91 98000 12345',
     email: 'admin@gcap.in',
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
-    passwordHash: 'ad123'
+    passwordHash: 'ad123',
+    password: 'ad123'
+  },
+  {
+    id: 'usr-1789384741169',
+    loginId: '7808056040',
+    name: 'Sandhya',
+    role: 'USER',
+    phone: '+91 7808056040',
+    email: 'gcap0581@gmail.com',
+    joinedDate: '2026-09-16',
+    status: 'ACTIVE',
+    passwordHash: '1111',
+    password: '1111'
+  },
+  {
+    id: 'usr-1789457522655',
+    loginId: '9661670322',
+    name: 'Puja kumari',
+    role: 'USER',
+    phone: '+91 9661670322',
+    email: 'puja@gmail.com',
+    joinedDate: '2026-09-16',
+    status: 'ACTIVE',
+    passwordHash: '12345',
+    password: '12345'
+  },
+  {
+    id: 'usr-1789962044130',
+    loginId: '8409803181',
+    name: 'Rahul',
+    role: 'USER',
+    phone: '+91 8409803181',
+    email: '8409803181@gcap.user',
+    joinedDate: '2026-09-21',
+    status: 'ACTIVE',
+    passwordHash: '1111',
+    password: '1111',
+    referralCode: 'GCAP-03181'
   }
 ];
+
+const PROTECTED_CORE_KEYS = new Set([
+  'usr-admin-01', 'admin', '9800012345',
+  'usr-1789384741169', '7808056040',
+  'usr-1789457522655', '9661670322',
+  'usr-1789962044130', '8409803181'
+]);
 
 const DELETED_USER_IDS_KEY = 'gcap_deleted_user_ids_v1';
 
@@ -41,9 +86,12 @@ function loadInitialDeletedUserIds(): Set<string> {
           arr.forEach((id: string) => {
             if (id) {
               const clean = String(id).trim().toLowerCase();
-              set.add(clean);
               const digits = clean.replace(/[^0-9]/g, '');
-              if (digits.length >= 10) set.add(digits.slice(-10));
+              const p10 = digits.slice(-10);
+              if (!PROTECTED_CORE_KEYS.has(clean) && (!p10 || !PROTECTED_CORE_KEYS.has(p10))) {
+                set.add(clean);
+                if (p10) set.add(p10);
+              }
             }
           });
         }
@@ -67,8 +115,11 @@ function saveDeletedUserIdsToLocal() {
 export function recordDeletedUserId(id: string) {
   if (!id) return;
   const clean = String(id).trim().toLowerCase();
-  deletedUserIdsSet.add(clean);
   const digits = clean.replace(/[^0-9]/g, '');
+  const p10 = digits.slice(-10);
+  if (PROTECTED_CORE_KEYS.has(clean) || (p10 && PROTECTED_CORE_KEYS.has(p10))) return;
+
+  deletedUserIdsSet.add(clean);
   if (digits.length >= 10) {
     deletedUserIdsSet.add(digits.slice(-10));
   }
@@ -181,7 +232,18 @@ export function recordLivePresence(
   const activeTs = lastActiveAt ? (typeof lastActiveAt === 'number' ? lastActiveAt : new Date(lastActiveAt).getTime()) : (isOnline ? Date.now() : 0);
   const logoutTs = lastLogoutAt ? (typeof lastLogoutAt === 'number' ? lastLogoutAt : new Date(lastLogoutAt).getTime()) : (!isOnline ? Date.now() : undefined);
 
-  const entry = { isOnline, lastActiveAt: activeTs, lastLogoutAt: logoutTs };
+  // Guarantee current active session on this device is ALWAYS online
+  const current = getCurrentUser();
+  if (current) {
+    const cId = String(current.id || '').trim().toLowerCase();
+    const cLogin = String(current.loginId || '').trim().toLowerCase();
+    const cPhone10 = String(current.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    if (cleanId === cId || (cLogin && cleanId === cLogin) || (cPhone10 && digits && digits.endsWith(cPhone10))) {
+      isOnline = true;
+    }
+  }
+
+  const entry = { isOnline, lastActiveAt: isOnline ? Math.max(activeTs, Date.now()) : activeTs, lastLogoutAt: logoutTs };
   livePresenceCache.set(cleanId, entry);
   if (digits && digits.length >= 10) {
     livePresenceCache.set(digits.slice(-10), entry);
@@ -192,12 +254,21 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
   if (!Array.isArray(users)) return [];
   const presenceMap = getCachedFirestoreState()?.presence || {};
   const now = Date.now();
-  const ONLINE_THRESHOLD_MS = 120 * 1000;
+  const ONLINE_THRESHOLD_MS = 180 * 1000; // Generous 3 minutes to avoid micro-flicker
+
+  const currentUser = getCurrentUser();
 
   return users.filter(u => u && u.id && !isUserDeleted(u)).map((u) => {
     const uId = String(u.id || '').trim().toLowerCase();
     const uLoginId = String(u.loginId || '').trim().toLowerCase();
     const uPhone10 = String(u.phone || '').replace(/[^0-9]/g, '').slice(-10);
+
+    const isCurrentLoggedInUser = Boolean(
+      currentUser &&
+      (uId === String(currentUser.id || '').trim().toLowerCase() ||
+       (uLoginId && uLoginId === String(currentUser.loginId || '').trim().toLowerCase()) ||
+       (uPhone10 && uPhone10 === String(currentUser.phone || '').replace(/[^0-9]/g, '').slice(-10)))
+    );
 
     const liveEntry =
       livePresenceCache.get(uId) ||
@@ -215,21 +286,17 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
 
     let isOnline = false;
 
-    if (liveEntry) {
-      if (liveEntry.isOnline) {
-        if (!liveEntry.lastActiveAt || (now - liveEntry.lastActiveAt) < ONLINE_THRESHOLD_MS) {
-          isOnline = true;
-        }
-      } else {
-        isOnline = false;
+    if (isCurrentLoggedInUser) {
+      isOnline = true;
+    } else if (liveEntry && liveEntry.isOnline) {
+      if (!liveEntry.lastActiveAt || (now - liveEntry.lastActiveAt) < ONLINE_THRESHOLD_MS) {
+        isOnline = true;
       }
-    } else if (logoutTs > activeTs && logoutTs > precTs) {
-      isOnline = false;
     } else if (u.isOnline === true && (!activeTs || (now - activeTs) < ONLINE_THRESHOLD_MS)) {
       isOnline = true;
     } else if (prec && prec.isOnline === true && (!precTs || (now - precTs) < ONLINE_THRESHOLD_MS)) {
       isOnline = true;
-    } else if (activeTs && (now - activeTs) < ONLINE_THRESHOLD_MS && !logoutTs) {
+    } else if (activeTs && (now - activeTs) < ONLINE_THRESHOLD_MS && (!logoutTs || activeTs > logoutTs)) {
       isOnline = true;
     }
 
