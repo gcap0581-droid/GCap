@@ -1,23 +1,22 @@
 export function setupServiceWorker(): void {
   if (typeof window === 'undefined') return;
 
+  // In development, Service Worker is not generated or needed
+  if (import.meta.env.DEV) {
+    return;
+  }
+
   if ('serviceWorker' in navigator) {
-    // In production or when service worker script is available
-    if ('serviceWorker' in navigator && typeof window !== 'undefined') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker
-          .register('/sw.js')
-          .then((registration) => {
-            console.log('[PWA] ServiceWorker registered with scope:', registration.scope);
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          registration.update().catch(() => {});
+          setInterval(() => {
             registration.update().catch(() => {});
-            setInterval(() => {
-              registration.update().catch(() => {});
-            }, 60000);
-          })
-          .catch((err) => {
-            console.warn('[PWA] Registration notice:', err);
-          });
-      });
-    }
+          }, 60000);
+        })
+        .catch(() => {});
+    });
   }
 }

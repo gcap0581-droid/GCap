@@ -1,7 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, setLogLevel } from 'firebase/firestore';
-
-setLogLevel('silent');
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCPC8BiUQGE-rMYSe6icy8F9UBt7mp_uaQ",
@@ -12,5 +10,46 @@ const firebaseConfig = {
   appId: "1:860344681027:web:0ed1d7850cc0bdf53f4af6"
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, "ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91");
+let cachedApp: FirebaseApp | null = null;
+let cachedDb: Firestore | null = null;
+
+export function getFirebaseApp(): FirebaseApp | null {
+  try {
+    if (!cachedApp) {
+      cachedApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    }
+    return cachedApp;
+  } catch (err) {
+    console.warn('[Firebase] App initialization error:', err);
+    return null;
+  }
+}
+
+export function getFirestoreDb(): Firestore | null {
+  if (cachedDb) return cachedDb;
+  try {
+    const app = getFirebaseApp();
+    if (!app) return null;
+    
+    // Safely try with specific database ID first
+    try {
+      cachedDb = getFirestore(app, "ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91");
+    } catch {
+      cachedDb = getFirestore(app);
+    }
+    return cachedDb;
+  } catch (err) {
+    console.warn('[Firebase] Firestore unavailable, graceful fallback active:', err);
+    return null;
+  }
+}
+
+// Backwards compatibility getter - evaluates lazily on property access, NEVER crashes on import
+export const db = new Proxy({} as Firestore, {
+  get(_target, prop) {
+    const instance = getFirestoreDb();
+    if (!instance) return undefined;
+    const val = (instance as any)[prop];
+    return typeof val === 'function' ? val.bind(instance) : val;
+  }
+});

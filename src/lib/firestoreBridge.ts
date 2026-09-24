@@ -4,9 +4,8 @@ import {
   setDoc,
   collection,
   onSnapshot,
-  writeBatch,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, getFirestoreDb } from './firebase';
 import {
   Wallet,
   ActiveInvestment,
@@ -316,7 +315,12 @@ export function initFirestoreRealtimeListener(): () => void {
 
   if (!unsubscribeFirestoreSnapshot) {
     try {
-      const colRef = collection(db, 'gcap_database');
+      const firestore = getFirestoreDb();
+      if (!firestore) {
+        console.warn('[FirestoreBridge] Firestore unavailable, real-time sync in offline mode');
+        return () => {};
+      }
+      const colRef = collection(firestore, 'gcap_database');
       unsubscribeFirestoreSnapshot = onSnapshot(
         colRef,
         (snapshot) => {
@@ -435,8 +439,14 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       'metadata',
     ];
 
+    const firestore = getFirestoreDb();
+    if (!firestore) {
+      console.warn('[FirestoreBridge] Firestore unavailable, using offline local database state');
+      return loadOfflineDbFromLocalStorage();
+    }
+
     const promises = docKeys.map((key) =>
-      withTimeout(getDoc(doc(db, 'gcap_database', key)), 1500, { exists: () => false, data: () => ({}) } as any)
+      withTimeout(getDoc(doc(firestore, 'gcap_database', key)), 1500, { exists: () => false, data: () => ({}) } as any)
     );
     const snaps = await Promise.all(promises);
 
@@ -556,13 +566,15 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
   }
 
   try {
-    const ref = doc(db, 'gcap_database', docId);
+    const firestore = getFirestoreDb();
+    if (!firestore) return true;
+    const ref = doc(firestore, 'gcap_database', docId);
     withTimeout(setDoc(ref, { data: cleanForFirestore(data) }), 1500).catch((e) => {
       console.warn(`[FirestoreBridge] Background setDoc warn for ${docId}:`, e);
     });
 
     // Update metadata timestamp in background
-    const metaRef = doc(db, 'gcap_database', 'metadata');
+    const metaRef = doc(firestore, 'gcap_database', 'metadata');
     withTimeout(setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true }), 1500).catch(() => {});
 
     return true;
@@ -742,7 +754,9 @@ export async function updatePresenceInFirestore(
 
   // 2. Persist to Firestore presence document for global real-time propagation
   try {
-    const presenceRef = doc(db, 'gcap_database', 'presence');
+    const firestore = getFirestoreDb();
+    if (!firestore) return;
+    const presenceRef = doc(firestore, 'gcap_database', 'presence');
     const updateObj: Record<string, any> = {
       [`data.${uId}`]: record,
     };
@@ -755,7 +769,9 @@ export async function updatePresenceInFirestore(
     await setDoc(presenceRef, updateObj, { merge: true });
   } catch (err) {
     try {
-      const presenceRef = doc(db, 'gcap_database', 'presence');
+      const firestore = getFirestoreDb();
+      if (!firestore) return;
+      const presenceRef = doc(firestore, 'gcap_database', 'presence');
       const allPresence = cachedFirestoreDb?.presence || {};
       allPresence[uId] = record;
       await setDoc(presenceRef, { data: cleanForFirestore(allPresence) }, { merge: true });
