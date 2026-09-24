@@ -4,7 +4,7 @@ import { apiSavePlans } from './centralSync';
 import { getStoredRules } from './rulesStorage';
 import { savePlansToFirestore } from '../lib/firestoreBridge';
 
-export const FALLBACK_INVESTMENT_PLANS: InvestmentPlan[] = [
+export const INVESTMENT_PLANS: InvestmentPlan[] = [
   {
     id: 'short-term',
     name: 'Short Term Plan (641-Day Plan)',
@@ -19,8 +19,8 @@ export const FALLBACK_INVESTMENT_PLANS: InvestmentPlan[] = [
     tag: '641 Days • First 24h Lock • 0.040%/6h GP',
     tagHi: '641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP',
     badge: '⚡ 641-Day Short Term Plan (Min ₹1 Lakh)',
-    description: 'Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.',
-    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।',
+    description: 'Special 641-day Short Term investment plan. Deposit ₹100,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.',
+    descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹1,00,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।',
     features: [
       'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
       'परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)',
@@ -65,7 +65,9 @@ export const FALLBACK_INVESTMENT_PLANS: InvestmentPlan[] = [
   }
 ];
 
-const DEFAULT_PLANS = FALLBACK_INVESTMENT_PLANS;
+export const DEFAULT_PLANS = INVESTMENT_PLANS;
+export const FALLBACK_INVESTMENT_PLANS = INVESTMENT_PLANS;
+
 
 const PLANS_STORAGE_KEY = 'gcap_investment_plans_v5_roi040_033';
 

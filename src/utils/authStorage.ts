@@ -665,7 +665,36 @@ function filterBlacklisted(users: UserProfile[]): UserProfile[] {
 }
 
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
-  // 1. Try Express Central API
+  // 1. Prioritize Direct Firebase Firestore (Single Source of Truth across all domains, Vercel, AI Studio & PWA)
+  try {
+    const firestoreState = await fetchFullFirestoreState();
+    if (firestoreState && Array.isArray(firestoreState.users)) {
+      if (Array.isArray(firestoreState.deletedUserIds)) {
+        firestoreState.deletedUserIds.forEach((id: string) => recordDeletedUserId(id));
+      }
+      const delSet = new Set((firestoreState.deletedUserIds || []).map(x => String(x).toLowerCase().trim()));
+      const raw = firestoreState.users.filter(u => {
+        if (!u || !u.id) return false;
+        if (delSet.has(String(u.id).toLowerCase())) return false;
+        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
+        if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
+        return true;
+      });
+      raw.forEach((u: any) => {
+        if (u && u.id) {
+          recordLivePresence(u.id, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
+          if (u.loginId) recordLivePresence(u.loginId, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
+          if (u.phone) recordLivePresence(u.phone, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
+        }
+      });
+      cachedUsers = enrichUsersWithPresence(raw);
+      return cachedUsers;
+    }
+  } catch (fsErr) {
+    console.warn('[getAllUsersAsync] Direct Firestore fetch failed, trying API fallback:', fsErr);
+  }
+
+  // 2. Fallback to Express Central API
   try {
     const res = await apiFetch('/api/users');
     if (res.ok) {
@@ -687,26 +716,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
       }
     }
   } catch (e) {
-    console.warn('[getAllUsersAsync] API fetch failed, falling back to direct Firestore:', e);
-  }
-
-  // 2. Direct Firestore fallback (for Vercel or when server is unavailable)
-  try {
-    const firestoreState = await fetchFullFirestoreState();
-    if (firestoreState && Array.isArray(firestoreState.users)) {
-      const delSet = new Set((firestoreState.deletedUserIds || []).map(x => String(x).toLowerCase().trim()));
-      const raw = firestoreState.users.filter(u => {
-        if (!u || !u.id) return false;
-        if (delSet.has(String(u.id).toLowerCase())) return false;
-        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-        if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
-        return true;
-      });
-      cachedUsers = enrichUsersWithPresence(raw);
-      return cachedUsers;
-    }
-  } catch (fsErr) {
-    console.warn('[getAllUsersAsync] Firestore fetch failed:', fsErr);
+    console.warn('[getAllUsersAsync] API fallback failed:', e);
   }
 
   return filterBlacklisted(enrichUsersWithPresence(cachedUsers));

@@ -1,10 +1,43 @@
 import { AppRules } from '../types';
-import { DEFAULT_GCAP_RULES } from '../data/defaultRules';
 import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSaveRules } from './centralSync';
 import { saveRulesToFirestore } from '../lib/firestoreBridge';
 
+export const DEFAULT_GCAP_RULES: AppRules = {
+  platformName: 'GCAP GLOBAL ASSET PORTAL',
+  gpRatePerRupee: 1.0,
+  minDeposit: 10000,
+  maxDeposit: 1000000000,
+  minWithdrawal: 500,
+  maxWithdrawalPerDay: 5000000,
+  withdrawalFeePercent: 0,
+  withdrawalTiming: '1st to 5th of every month (9:00 AM - 6:00 PM IST)',
+  withdrawalTimingHi: 'प्रत्येक माह की 1 से 5 तारीख तक (सुबह 9:00 से शाम 6:00 बजे तक)',
+  dailyPayoutCycle: 'Every 6 Hours (0.040% STP / 0.033% LTP)',
+  dailyPayoutCycleHi: 'हर 6 घंटे में (0.040% STP / 0.033% LTP)',
+  capitalReturnPolicy: '100%_AT_MATURITY',
+  capitalReturnPolicyLabel: '100% Capital Refund At Plan Maturity',
+  capitalReturnPolicyLabelHi: 'योजना परिपक्वता पर 100% मूलधन सुरक्षित वापसी',
+  referralL1Percent: 5.0,
+  referralL2Percent: 2.0,
+  referralL3Percent: 1.0,
+  isReferralEnabled: true,
+  tdsPercent: 5.0,
+  adminFeePercent: 0.02,
+  shortTerm6hRate: 0.040,
+  longTerm6hRate: 0.033,
+  supportEmail: 'support@gcap.com',
+  supportPhone: '+91 9876543210',
+  lastUpdated: '2026-03-24',
+  companyUpiId: 'gcap@upi',
+  companyBankAccountHolder: 'GCAP GLOBAL ASSET HOLDINGS',
+  companyBankName: 'State Bank of India',
+  companyBankAccountNumber: '39482910482',
+  companyBankIfsc: 'SBIN0001234',
+};
+
 const RULES_STORAGE_KEY = 'gcap_platform_rules_v2';
+
 
 export function getStoredRules(): AppRules {
   try {

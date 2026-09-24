@@ -20,7 +20,7 @@ import {
   UserProfile,
   AdminMessage,
 } from '../types';
-import { DEFAULT_GCAP_RULES } from '../data/defaultRules';
+import { DEFAULT_GCAP_RULES } from '../utils/rulesStorage';
 
 export interface UserPresenceRecord {
   userId: string;

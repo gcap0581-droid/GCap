@@ -15,7 +15,7 @@ import {
   Check,
 } from 'lucide-react';
 import { InvestmentPlan, Language } from '../types';
-import { INVESTMENT_PLANS } from '../data/plans';
+import { INVESTMENT_PLANS } from '../utils/plansStorage';
 import { formatINR } from '../utils/storage';
 import { getStoredRules } from '../utils/rulesStorage';
 

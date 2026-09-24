@@ -291,8 +291,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Live subscription and heartbeat polling so any new registration appears immediately
   useEffect(() => {
-    // 1. Initial sync on mount
-    refreshUsers();
+    // 1. Initial sync on mount (deferred to avoid render phase updates)
+    const tInit = setTimeout(() => {
+      refreshUsers();
+    }, 0);
 
     // 2. Subscribe to custom event & cross-tab storage changes
     const unsubscribeStorage = subscribeToUsersUpdates((updated) => {

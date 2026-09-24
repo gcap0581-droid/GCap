@@ -108,7 +108,7 @@ import {
 } from './lib/firestoreBridge';
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
-import { INVESTMENT_PLANS } from './data/plans';
+import { INVESTMENT_PLANS } from './utils/plansStorage';
 import { Navbar } from './components/Navbar';
 import { WalletCard } from './components/WalletCard';
 import { RoiCalculator } from './components/RoiCalculator';

@@ -1,5 +1,5 @@
 import { Wallet, ActiveInvestment, Transaction, BankAccountDetails, UserProfile } from '../types';
-import { INVESTMENT_PLANS } from '../data/plans';
+import { INVESTMENT_PLANS } from './plansStorage';
 import { alignInvestmentCycleTimestamps } from './cycleTiming';
 import { getStoredRules } from './rulesStorage';
 
