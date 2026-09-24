@@ -1,15 +1,23 @@
 export function setupServiceWorker(): void {
   if (typeof window === 'undefined') return;
 
-  // In development, Service Worker is not generated or needed
-  if (import.meta.env.DEV) {
+  // In development or when embedded in AI Studio preview iframe, Service Worker is not needed
+  const isIframe = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
+
+  if (import.meta.env.DEV || isIframe) {
     return;
   }
 
   if ('serviceWorker' in navigator) {
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
+      if (!refreshing && !isIframe) {
         refreshing = true;
         window.location.reload();
       }

@@ -115,14 +115,9 @@ function saveDeletedUserIdsToLocal() {
 export function recordDeletedUserId(id: string) {
   if (!id) return;
   const clean = String(id).trim().toLowerCase();
-  const digits = clean.replace(/[^0-9]/g, '');
-  const p10 = digits.slice(-10);
-  if (PROTECTED_CORE_KEYS.has(clean) || (p10 && PROTECTED_CORE_KEYS.has(p10))) return;
+  if (PROTECTED_CORE_KEYS.has(clean)) return;
 
   deletedUserIdsSet.add(clean);
-  if (digits.length >= 10) {
-    deletedUserIdsSet.add(digits.slice(-10));
-  }
   saveDeletedUserIdsToLocal();
 }
 
@@ -147,18 +142,17 @@ export function isUserDeleted(u: UserProfile | string): boolean {
   if (!u) return false;
   if (typeof u === 'string') {
     const clean = u.trim().toLowerCase();
-    const digits = clean.replace(/[^0-9]/g, '');
-    return deletedUserIdsSet.has(clean) || (digits.length >= 10 && deletedUserIdsSet.has(digits.slice(-10)));
+    return deletedUserIdsSet.has(clean);
   }
   const uId = String(u.id || '').trim().toLowerCase();
   const uLoginId = String(u.loginId || '').trim().toLowerCase();
   const uPhone = String(u.phone || '').replace(/[^0-9]/g, '');
   const uPhone10 = uPhone.slice(-10);
 
+  if (PROTECTED_CORE_KEYS.has(uId) || (uPhone10 && PROTECTED_CORE_KEYS.has(uPhone10))) return false;
+
   return deletedUserIdsSet.has(uId) ||
-         (uLoginId && deletedUserIdsSet.has(uLoginId)) ||
-         (uPhone && deletedUserIdsSet.has(uPhone)) ||
-         (uPhone10 && deletedUserIdsSet.has(uPhone10));
+         (uLoginId && deletedUserIdsSet.has(uLoginId));
 }
 
 export function mergeUsers(existingUsers: UserProfile[], incomingUsers: UserProfile[]): UserProfile[] {
@@ -316,11 +310,9 @@ if (typeof window !== 'undefined') {
       const raw = state.users.filter(u => {
         if (!u || !u.id) return false;
         if (delSet.has(String(u.id).toLowerCase())) return false;
-        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-        if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
         return true;
       });
-      cachedUsers = enrichUsersWithPresence(raw);
+      cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, raw));
       window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
     }
   });
@@ -366,11 +358,9 @@ export function subscribeToUsersUpdates(callback: (users: UserProfile[]) => void
       const raw = state.users.filter(u => {
         if (!u || !u.id) return false;
         if (delSet.has(String(u.id).toLowerCase())) return false;
-        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-        if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
         return true;
       });
-      cachedUsers = enrichUsersWithPresence(raw);
+      cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, raw));
       callback(cachedUsers);
     }
   });
@@ -779,8 +769,6 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
       const raw = firestoreState.users.filter(u => {
         if (!u || !u.id) return false;
         if (delSet.has(String(u.id).toLowerCase())) return false;
-        if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-        if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
         return true;
       });
       raw.forEach((u: any) => {
@@ -790,7 +778,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
           if (u.phone) recordLivePresence(u.phone, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
         }
       });
-      cachedUsers = enrichUsersWithPresence(raw);
+      cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, raw));
       return cachedUsers;
     }
   } catch (fsErr) {
@@ -814,7 +802,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
             if (u.phone) recordLivePresence(u.phone, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
           }
         });
-        cachedUsers = enrichUsersWithPresence(validUsers);
+        cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, validUsers));
         return cachedUsers;
       }
     }

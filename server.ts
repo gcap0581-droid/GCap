@@ -720,14 +720,7 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
     const validUsersForFs = (db.users || []).filter((u: any) => {
       if (!u || !u.id) return false;
       const uId = String(u.id).toLowerCase().trim();
-      const uLogin = String(u.loginId || "").toLowerCase().trim();
-      const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
-      const uPhone10 = uPhone.slice(-10);
-
       if (delSet.has(uId)) return false;
-      if (uLogin && delSet.has(uLogin)) return false;
-      if (uPhone && delSet.has(uPhone)) return false;
-      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
 
@@ -2297,14 +2290,7 @@ async function startServer() {
     const validUsers = db.users.filter((u: any) => {
       if (!u || !u.id) return false;
       const uId = String(u.id).toLowerCase().trim();
-      const uLogin = String(u.loginId || "").toLowerCase().trim();
-      const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
-      const uPhone10 = uPhone.slice(-10);
-
       if (delSet.has(uId)) return false;
-      if (uLogin && delSet.has(uLogin)) return false;
-      if (uPhone && delSet.has(uPhone)) return false;
-      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
 
@@ -3889,6 +3875,18 @@ async function startServer() {
       status: "ACTIVE",
       passwordHash: cleanPassword,
     };
+
+    // Remove from deletedUserIds if it was previously registered/deleted
+    if (Array.isArray(db.deletedUserIds)) {
+      db.deletedUserIds = db.deletedUserIds.filter((id) => {
+        const c = String(id).toLowerCase().trim();
+        const p10 = c.replace(/[^0-9]/g, '').slice(-10);
+        if (c === newAccount.id.toLowerCase()) return false;
+        if (cleanPhone && (c === cleanPhone || p10 === cleanPhone)) return false;
+        if (cleanLoginId && c === cleanLoginId.toLowerCase()) return false;
+        return true;
+      });
+    }
 
     db.users.push(newAccount);
     db.wallets[newAccount.id] = { ...DEFAULT_WALLET };

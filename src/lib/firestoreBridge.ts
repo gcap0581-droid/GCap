@@ -190,14 +190,7 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
     state.users = state.users.filter((u: any) => {
       if (!u || !u.id) return false;
       const uId = String(u.id).toLowerCase().trim();
-      const uLogin = String(u.loginId || "").toLowerCase().trim();
-      const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
-      const uPhone10 = uPhone.slice(-10);
-
       if (delSet.has(uId)) return false;
-      if (uLogin && delSet.has(uLogin)) return false;
-      if (uPhone && delSet.has(uPhone)) return false;
-      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
   }
@@ -586,35 +579,27 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
 }
 
 export async function saveUsersToFirestore(users: UserProfile[]): Promise<boolean> {
-  const currentDeleted = cachedFirestoreDb?.deletedUserIds || [];
-  const delSet = new Set(currentDeleted.map((x: any) => String(x).toLowerCase().trim()));
-  if (typeof window !== 'undefined') {
-    try {
-      const localDel = localStorage.getItem('gcap_deleted_user_ids_v1');
-      if (localDel) {
-        const arr = JSON.parse(localDel);
-        if (Array.isArray(arr)) {
-          arr.forEach(id => delSet.add(String(id).toLowerCase().trim()));
-        }
+  const validUsers = (users || []).filter((u) => u && u.id);
+
+  // Automatically un-blacklist any active users currently being saved
+  if (cachedFirestoreDb && Array.isArray(cachedFirestoreDb.deletedUserIds)) {
+    const activeIds = new Set<string>();
+    validUsers.forEach((u) => {
+      if (u.id) activeIds.add(String(u.id).toLowerCase().trim());
+      if (u.loginId) activeIds.add(String(u.loginId).toLowerCase().trim());
+      if (u.phone) {
+        const p = String(u.phone).replace(/[^0-9]/g, '');
+        if (p) activeIds.add(p);
+        if (p.length >= 10) activeIds.add(p.slice(-10));
       }
-    } catch (_) {}
+    });
+
+    cachedFirestoreDb.deletedUserIds = cachedFirestoreDb.deletedUserIds.filter(
+      (id) => !activeIds.has(String(id).toLowerCase().trim())
+    );
   }
 
-  const filtered = (users || []).filter((u) => {
-    if (!u || !u.id) return false;
-    const uId = String(u.id).toLowerCase().trim();
-    const uLogin = String(u.loginId || "").toLowerCase().trim();
-    const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
-    const uPhone10 = uPhone.slice(-10);
-
-    if (delSet.has(uId)) return false;
-    if (uLogin && delSet.has(uLogin)) return false;
-    if (uPhone && delSet.has(uPhone)) return false;
-    if (uPhone10 && delSet.has(uPhone10)) return false;
-    return true;
-  });
-
-  return await saveDocToFirestore('users', filtered);
+  return await saveDocToFirestore('users', validUsers);
 }
 
 export async function saveWalletsToFirestore(wallets: Record<string, Wallet>): Promise<boolean> {

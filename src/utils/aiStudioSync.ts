@@ -52,12 +52,21 @@ export function subscribeToAiStudioUpdates(callback: UpdateCallback): () => void
   };
 }
 
+export function isIframeContext(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Flushes all outdated service worker caches and performs a clean reload
  * preserving all user localStorage (wallet, session, tokens, settings).
  */
 export async function applyAiStudioUpdateNow(targetBuildId?: string): Promise<void> {
-  if (isUpdatingNow) return;
+  if (isUpdatingNow || isIframeContext()) return;
   isUpdatingNow = true;
 
   try {
