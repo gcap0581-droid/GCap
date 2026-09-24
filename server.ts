@@ -2084,6 +2084,16 @@ async function startServer() {
     });
   });
 
+  // Favicon handler
+  app.get("/favicon.ico", (_req, res) => {
+    const iconPath = path.join(process.cwd(), "public", "icon.svg");
+    if (fs.existsSync(iconPath)) {
+      res.setHeader("Content-Type", "image/svg+xml");
+      return res.sendFile(iconPath);
+    }
+    res.status(204).end();
+  });
+
   // Version for OTA Auto-Sync - Crucial for mobile apps already installed to instantly detect changes
   app.get("/version.json", (_req, res) => {
     const db = ensureDb();

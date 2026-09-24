@@ -284,8 +284,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 w-full p-3 sm:p-6 lg:p-8 flex flex-col items-center justify-center">
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+      <main className="flex-1 w-full px-3.5 pt-2 sm:pt-6 pb-6 sm:p-6 lg:p-8 flex flex-col items-center justify-start sm:justify-center">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start lg:items-center">
           
           {/* Left Hero & Features Banner (Visible on Desktop/Tablet) */}
           <div className="lg:col-span-6 space-y-6 hidden lg:block">
