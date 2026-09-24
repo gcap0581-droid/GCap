@@ -1806,8 +1806,40 @@ function ensureDb(): ServerDB {
       needsSave = true;
     }
 
-    if (!(parsed as any).companyLedger || !Array.isArray((parsed as any).companyLedger)) {
-      (parsed as any).companyLedger = [];
+    if (!(parsed as any).companyLedger || !Array.isArray((parsed as any).companyLedger) || (parsed as any).companyLedger.length === 0) {
+      (parsed as any).companyLedger = [
+        {
+          id: "led-1790268660436-292",
+          type: "EXPENSE",
+          amount: 750,
+          category: "अन्य व्यय",
+          description: "Welfare",
+          date: "2026-09-23",
+          addedBy: "Admin",
+          createdAt: "2026-09-24T16:51:00.436Z"
+        },
+        {
+          id: "led-1790268637141-220",
+          type: "EXPENSE",
+          amount: 22500,
+          category: "सरकारी कर व टीडीएस",
+          description: "Ragistration",
+          date: "2026-09-23",
+          addedBy: "Admin",
+          createdAt: "2026-09-24T16:50:37.141Z"
+        },
+        {
+          id: "led-1790268592567-687",
+          type: "INCOME",
+          amount: 100000,
+          category: "क्लाइंट डिपॉजिट",
+          description: "Amit Kumar Arya  Bhabhua",
+          date: "2026-09-23",
+          addedBy: "Admin",
+          createdAt: "2026-09-24T16:49:52.567Z"
+        }
+      ];
+      needsSave = true;
     }
 
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
@@ -2013,12 +2045,14 @@ async function startServer() {
           let localUsers: StoredAccount[] = [];
           let localWallets: Record<string, any> = {};
           let localInvestments: any[] = [];
+          let localLedger: any[] = [];
           try {
             if (fs.existsSync(DB_FILE)) {
               const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
               if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
               if (localRaw.wallets) localWallets = localRaw.wallets;
               if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
+              if (Array.isArray(localRaw.companyLedger)) localLedger = localRaw.companyLedger;
             }
           } catch (_) {}
 
@@ -2052,6 +2086,11 @@ async function startServer() {
               }
             }
           });
+
+          const ledgerMap = new Map<string, any>();
+          (localLedger || []).forEach((item: any) => { if (item?.id) ledgerMap.set(item.id, item); });
+          (remoteDb.companyLedger || []).forEach((item: any) => { if (item?.id) ledgerMap.set(item.id, item); });
+          remoteDb.companyLedger = Array.from(ledgerMap.values());
 
           remoteDb.users = Array.from(userMap.values());
           const mergedWallets: Record<string, any> = {};
