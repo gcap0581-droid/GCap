@@ -3503,8 +3503,33 @@ async function startServer() {
   });
 
   // GET: Users list with real-time online status, last login, and logout times
-  app.get("/api/users", (req, res) => {
+  app.get("/api/users", async (req, res) => {
     const db = ensureDb();
+
+    // Try syncing users from Firestore if available
+    if (firestore) {
+      try {
+        const remoteUsersSnap = await getClientDoc(clientDoc(firestore, "gcap_database", "users"));
+        if (remoteUsersSnap.exists()) {
+          const remoteUsers = remoteUsersSnap.data()?.data;
+          if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+            const userMap = new Map<string, any>();
+            db.users.forEach(u => { if (u?.id) userMap.set(u.id, u); });
+            remoteUsers.forEach((ru: any) => {
+              if (ru?.id) {
+                const existing = userMap.get(ru.id);
+                userMap.set(ru.id, existing ? { ...existing, ...ru } : ru);
+              }
+            });
+            db.users = Array.from(userMap.values());
+            fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+          }
+        }
+      } catch (e) {
+        console.warn("[API Users] Firestore sync warning:", e);
+      }
+    }
+
     const nowTs = Date.now();
     const ONLINE_THRESHOLD_MS = 60 * 1000;
 
