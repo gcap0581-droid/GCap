@@ -1,13 +1,12 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/api/:path*",
+      "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
