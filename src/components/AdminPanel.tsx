@@ -56,6 +56,7 @@ import { formatINR } from '../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../utils/treasuryStorage';
 import {
   getAllUsers,
+  getAllUsersAsync,
   adminAddUser,
   adminUpdateUser,
   adminDeleteUser,
@@ -284,7 +285,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsSyncingUsers(true);
     try {
       const [updated, centralState] = await Promise.all([
-        syncUsersWithServer(),
+        getAllUsersAsync(),
         fetchCentralState(undefined, 'ADMIN'),
       ]);
       if (Array.isArray(updated) && updated.length > 0) {
@@ -299,6 +300,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setIsSyncingUsers(false);
     }
   };
+
+  // Auto-refresh users whenever switching to the USERS tab
+  useEffect(() => {
+    if (activeSubTab === 'USERS') {
+      refreshUsers();
+    }
+  }, [activeSubTab]);
 
   // Live subscription and heartbeat polling so any new registration appears immediately
   useEffect(() => {
