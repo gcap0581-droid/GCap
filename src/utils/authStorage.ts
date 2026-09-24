@@ -791,7 +791,10 @@ export function sendUserHeartbeat(userId?: string): void {
 }
 
 export function getAllUsers(): UserProfile[] {
-  return enrichUsersWithPresence(cachedUsers);
+  if (!Array.isArray(cachedUsers) || cachedUsers.length < 4) {
+    cachedUsers = mergeUsers(DEFAULT_SEED_USERS, cachedUsers || []);
+  }
+  return filterBlacklisted(enrichUsersWithPresence(cachedUsers));
 }
 
 function filterBlacklisted(users: UserProfile[]): UserProfile[] {
@@ -819,7 +822,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
           if (u.phone) recordLivePresence(u.phone, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
         }
       });
-      cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, raw));
+      cachedUsers = enrichUsersWithPresence(mergeUsers(DEFAULT_SEED_USERS, mergeUsers(cachedUsers, raw)));
       saveUsersToLocalCache(cachedUsers);
       return cachedUsers;
     }
