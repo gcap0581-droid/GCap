@@ -248,23 +248,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [usersStatusFilter, setUsersStatusFilter] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN'>('ALL');
 
   const updateUsersSafely = (incoming: UserProfile[]) => {
-    if (!Array.isArray(incoming) || incoming.length === 0) return;
-    setUsersList(prev => {
-      const map = new Map<string, UserProfile>();
-      // 1. Existing state
-      (prev || []).forEach(u => {
-        if (u && u.id) map.set(u.id, u);
-      });
-      // 2. Overlay incoming
-      incoming.forEach(u => {
-        if (u && u.id) {
-          const old = map.get(u.id);
-          map.set(u.id, { ...old, ...u });
-        }
-      });
-      const merged = Array.from(map.values()).filter(u => u && !isUserDeleted(u));
-      return enrichUsersWithPresence(merged);
-    });
+    if (!Array.isArray(incoming)) return;
+    const clean = incoming.filter(u => u && u.id && !isUserDeleted(u));
+    setUsersList(enrichUsersWithPresence(clean));
   };
 
   const onlineUsersCount = usersList.filter((u) => u && Boolean(u.isOnline)).length;
@@ -543,6 +529,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             const filtered = prev.filter(u => u.id !== createdUser.id && u.phone !== createdUser.phone);
             return [createdUser, ...filtered];
           });
+          refreshUsers();
           // Announce new user created
           audioAnnouncer.announceRegistration({
             userName: data.name,

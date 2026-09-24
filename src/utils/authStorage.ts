@@ -412,7 +412,6 @@ export async function loginUserAsync(
     cachedUsers = mergeUsers(cachedUsers, [adminUser]);
     try {
       updatePresenceInFirestore(adminUser, true).catch(() => {});
-      saveUsersToFirestore(cachedUsers).catch(() => {});
     } catch {}
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
@@ -566,8 +565,13 @@ export async function registerUserAsync(data: {
 
       cachedUsers = mergeUsers(cachedUsers, [createdUser]);
 
-      // Sync to Firestore for multi-device & offline consistency
-      saveUsersToFirestore(cachedUsers).catch(e => console.warn('[registerUserAsync] Firestore save error:', e));
+      // Sync to Firestore for multi-device & offline consistency (merge with remote state)
+      fetchFullFirestoreState().then(fsState => {
+        const remoteUsers = (fsState && Array.isArray(fsState.users)) ? fsState.users : [];
+        const fullMerged = mergeUsers(remoteUsers, cachedUsers);
+        cachedUsers = fullMerged;
+        return saveUsersToFirestore(fullMerged);
+      }).catch(e => console.warn('[registerUserAsync] Firestore save error:', e));
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
@@ -869,8 +873,13 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
 
       cachedUsers = mergeUsers(cachedUsers, [created]);
 
-      // Sync user to Firestore
-      saveUsersToFirestore(cachedUsers).catch(e => console.warn('[adminAddUserAsync] Firestore save error:', e));
+      // Sync user to Firestore merging with remote state
+      fetchFullFirestoreState().then(fsState => {
+        const remoteUsers = (fsState && Array.isArray(fsState.users)) ? fsState.users : [];
+        const fullMerged = mergeUsers(remoteUsers, cachedUsers);
+        cachedUsers = fullMerged;
+        return saveUsersToFirestore(fullMerged);
+      }).catch(e => console.warn('[adminAddUserAsync] Firestore save error:', e));
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));

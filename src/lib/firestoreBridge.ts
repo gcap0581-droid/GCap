@@ -55,7 +55,7 @@ let activeFirestoreListenersCount = 0;
 let unsubscribeFirestoreSnapshot: (() => void) | null = null;
 const stateChangeListeners: Set<(state: FirestoreDatabaseState) => void> = new Set();
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 2000, fallbackVal?: T): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000, fallbackVal?: T): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       if (fallbackVal !== undefined) {
@@ -446,7 +446,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
     }
 
     const promises = docKeys.map((key) =>
-      withTimeout(getDoc(doc(firestore, 'gcap_database', key)), 1500, { exists: () => false, data: () => ({}) } as any)
+      withTimeout(getDoc(doc(firestore, 'gcap_database', key)), 10000, { exists: () => false, data: () => ({}) } as any)
     );
     const snaps = await Promise.all(promises);
 
@@ -569,13 +569,13 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
     const firestore = getFirestoreDb();
     if (!firestore) return true;
     const ref = doc(firestore, 'gcap_database', docId);
-    withTimeout(setDoc(ref, { data: cleanForFirestore(data) }), 1500).catch((e) => {
+    withTimeout(setDoc(ref, { data: cleanForFirestore(data) }), 10000).catch((e) => {
       console.warn(`[FirestoreBridge] Background setDoc warn for ${docId}:`, e);
     });
 
     // Update metadata timestamp in background
     const metaRef = doc(firestore, 'gcap_database', 'metadata');
-    withTimeout(setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true }), 1500).catch(() => {});
+    withTimeout(setDoc(metaRef, { lastUpdated: new Date().toISOString() }, { merge: true }), 10000).catch(() => {});
 
     return true;
   } catch (err) {
