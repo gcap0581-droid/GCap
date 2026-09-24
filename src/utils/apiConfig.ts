@@ -51,15 +51,17 @@ function createSyntheticErrorResponse(errorMessage = 'सर्वर से स
 
 /**
  * Fast Resilient API Fetcher: In local/preview dev server, calls Express backend.
- * On static hosts (like Vercel, Android app, PWA), tries all active live origins.
+ * On static hosts (like Vercel, Android app, PWA), tries active live origins with low latency.
  */
 export async function apiFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const isDirect = isDirectServerHost();
+  const timeoutMs = isDirect ? 5000 : 2500; // 2.5s timeout on Vercel to prevent long hanging
 
   // 1. Try local or current origin
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     const res = await fetch(cleanEndpoint, {
       ...options,
@@ -68,13 +70,13 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
     clearTimeout(timeoutId);
     const contentType = res.headers.get('content-type') || '';
 
-    // If local server gave valid JSON or successful API response, return it immediately
+    // If server gave valid JSON or successful API response, return it immediately
     if ((res.ok || contentType.includes('application/json')) && !contentType.includes('text/html')) {
       return res;
     }
   } catch (_) {}
 
-  // 2. Try primary Cloud Run endpoints
+  // 2. On static hosts (like Vercel), try Cloud Run endpoints fast
   const fallbackUrls = [
     `${CLOUD_RUN_DEV_URL}${cleanEndpoint}`,
     `${CLOUD_RUN_PRE_URL}${cleanEndpoint}`,
@@ -86,7 +88,7 @@ export async function apiFetch(endpoint: string, options?: RequestInit): Promise
     }
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s fast check
 
       const res = await fetch(url, {
         ...options,

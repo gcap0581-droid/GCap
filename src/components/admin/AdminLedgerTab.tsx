@@ -14,6 +14,12 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../utils/apiConfig';
 import { formatINR } from '../../utils/storage';
+import {
+  getCachedFirestoreState,
+  fetchFullFirestoreState,
+  saveCompanyLedgerToFirestore,
+  subscribeToFirestoreState,
+} from '../../lib/firestoreBridge';
 
 interface LedgerEntry {
   id: string;
@@ -83,26 +89,54 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
     }
   }, [type]);
 
+  const applyLedgerState = (entries: LedgerEntry[]) => {
+    const valid = Array.isArray(entries) ? entries : [];
+    let inc = 0;
+    let exp = 0;
+    valid.forEach((item) => {
+      const amt = Number(item.amount) || 0;
+      if (item.type === 'INCOME') inc += amt;
+      else if (item.type === 'EXPENSE') exp += amt;
+    });
+    setLedger(valid);
+    setTotalIncome(inc);
+    setTotalExpense(exp);
+    setBalance(inc - exp);
+  };
+
   const fetchLedgerData = async () => {
     setIsLoading(true);
     setError(null);
+
+    // 1. Check local/memory cache first
+    const cached = getCachedFirestoreState();
+    if (cached && Array.isArray(cached.companyLedger) && cached.companyLedger.length > 0) {
+      applyLedgerState(cached.companyLedger);
+      setIsLoading(false);
+    }
+
     try {
       const res = await apiFetch('/api/admin/ledger');
-      if (!res.ok) {
-        throw new Error(isHi ? 'खाता डेटा लोड करने में असमर्थ' : 'Failed to fetch ledger data');
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.success && Array.isArray(data.ledger)) {
+          applyLedgerState(data.ledger);
+          saveCompanyLedgerToFirestore(data.ledger).catch(() => {});
+          setIsLoading(false);
+          return;
+        }
       }
-      const data = await res.json();
-      if (data.success) {
-        setLedger(data.ledger || []);
-        setTotalIncome(data.totalIncome || 0);
-        setTotalExpense(data.totalExpense || 0);
-        setBalance(data.balance || 0);
-      } else {
-        throw new Error(data.error || 'Server returned unsuccessful');
+    } catch (_) {}
+
+    // Fallback: Direct Firestore Read
+    try {
+      const fsState = await fetchFullFirestoreState();
+      if (fsState && Array.isArray(fsState.companyLedger)) {
+        applyLedgerState(fsState.companyLedger);
       }
     } catch (err: any) {
-      console.error('[AdminLedgerTab] Error:', err);
-      setError(err.message || 'Something went wrong');
+      console.error('[AdminLedgerTab] Error loading ledger:', err);
+      setError(err.message || 'Error loading ledger');
     } finally {
       setIsLoading(false);
     }
@@ -111,13 +145,15 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
   useEffect(() => {
     fetchLedgerData();
 
-    // Subscribe to updates if any
-    const handleSync = () => {
-      fetchLedgerData();
-    };
-    window.addEventListener('app_users_updated', handleSync);
+    // Subscribe to real-time Firestore changes for live sync on Vercel
+    const unsub = subscribeToFirestoreState((fsState) => {
+      if (fsState && Array.isArray(fsState.companyLedger)) {
+        applyLedgerState(fsState.companyLedger);
+      }
+    });
+
     return () => {
-      window.removeEventListener('app_users_updated', handleSync);
+      unsub();
     };
   }, []);
 
@@ -136,8 +172,27 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
 
     setIsSubmitting(true);
     setSuccessMsg(null);
+
+    const newEntry: LedgerEntry = {
+      id: `led-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      type,
+      amount: Number(amount),
+      category: finalCategory,
+      description: description.trim(),
+      date,
+      addedBy: 'Admin',
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedLedger = [newEntry, ...ledger];
+    applyLedgerState(updatedLedger);
+
     try {
-      const res = await apiFetch('/api/admin/ledger', {
+      // Save directly to Firestore for 100% real-time persistence across Vercel and AI Studio
+      await saveCompanyLedgerToFirestore(updatedLedger);
+
+      // Background sync to server API
+      apiFetch('/api/admin/ledger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,21 +203,13 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
           date,
           addedBy: 'Admin'
         })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || (isHi ? 'प्रविष्टि जोड़ने में विफल' : 'Failed to add ledger entry'));
-      }
+      }).catch(() => {});
 
       setAmount('');
       setDescription('');
       setCustomCategory('');
       setSuccessMsg(isHi ? 'खाता प्रविष्टि सफलतापूर्वक जोड़ी गई!' : 'Ledger entry added successfully!');
       setTimeout(() => setSuccessMsg(null), 3000);
-      
-      // Refresh
-      await fetchLedgerData();
     } catch (err: any) {
       alert(err.message || 'Error saving entry');
     } finally {
@@ -175,16 +222,15 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
       return;
     }
 
+    const updatedLedger = ledger.filter(item => item.id !== id);
+    applyLedgerState(updatedLedger);
+
     try {
-      const res = await apiFetch(`/api/admin/ledger/${id}`, {
+      await saveCompanyLedgerToFirestore(updatedLedger);
+
+      apiFetch(`/api/admin/ledger/${id}`, {
         method: 'DELETE'
-      });
-      if (res.ok) {
-        await fetchLedgerData();
-      } else {
-        const errData = await res.json().catch(() => null);
-        alert(errData?.error || 'Failed to delete');
-      }
+      }).catch(() => {});
     } catch (err: any) {
       alert(err.message || 'Error deleting entry');
     }

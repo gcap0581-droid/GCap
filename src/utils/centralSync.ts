@@ -13,10 +13,11 @@ import {
   UserRole,
 } from '../types';
 import { normalizeInvestmentsList } from './storage';
-import { apiFetch } from './apiConfig';
+import { apiFetch, isDirectServerHost } from './apiConfig';
 import { recordDeletedUserId, isUserDeleted } from './authStorage';
 import {
   fetchFullFirestoreState,
+  getCachedFirestoreState,
   saveTransactionsToFirestore,
   saveInvestmentsToFirestore,
   saveWalletsToFirestore,
@@ -381,7 +382,10 @@ export async function fetchCentralState(
   userId?: string,
   role: UserRole = 'USER'
 ): Promise<CentralStateResponse | null> {
-  // 1. Try Express Central API
+  // 0. Instant Cache Check for Sub-second UI Load on Vercel
+  const cached = getCachedFirestoreState();
+
+  // 1. Try Express Central API (with fast timeout)
   try {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -447,65 +451,18 @@ export async function fetchCentralState(
       }
     }
   } catch (err) {
-    console.warn('[CentralSync] API fetch failed, trying static /central-state.json fallback...', err);
+    console.warn('[CentralSync] API fetch failed, trying Firestore fallback...', err);
   }
 
-  // 1b. Static central-state.json fallback (guaranteed 100% same data source as AI Studio on installed app / mobile PWA)
-  try {
-    const staticRes = await apiFetch(`/central-state.json?t=${Date.now()}`, {
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
-    });
-    if (staticRes.ok) {
-      const dbJson = await staticRes.json().catch(() => null);
-      if (dbJson && dbJson.wallets) {
-        const converted = formatDatabaseToCentralResponse(dbJson, userId, role);
-        if (converted) {
-          if (role === 'ADMIN') {
-            updateFirestoreBridgeCache({
-              users: converted.users || [],
-              wallets: converted.wallets || {},
-              investments: converted.investments || [],
-              transactions: converted.transactions || [],
-              plans: converted.plans || [],
-              rules: converted.rules || null,
-              liveConfig: converted.liveConfig || null,
-              bankDetails: (converted.bankDetails as Record<string, BankAccountDetails>) || {},
-              treasury: converted.treasury || null,
-              treasuryLogs: converted.treasuryLogs || [],
-              messages: converted.messages || [],
-              lastUpdated: converted.lastUpdated || new Date().toISOString(),
-            });
-          } else if (userId && converted.wallet) {
-            const { aliases } = findUserAndAllAliases(userId, []);
-            const walletsMap: Record<string, Wallet> = {};
-            aliases.forEach(alias => {
-              if (alias) walletsMap[alias] = converted.wallet!;
-            });
-            updateFirestoreBridgeCache({
-              transactions: converted.transactions || [],
-              investments: converted.investments || [],
-              wallets: walletsMap,
-              bankDetails: converted.bankDetails ? { [userId]: converted.bankDetails as BankAccountDetails } : {},
-              plans: converted.plans || [],
-              rules: converted.rules || null,
-              liveConfig: converted.liveConfig || null,
-              messages: converted.messages || [],
-              lastUpdated: converted.lastUpdated || new Date().toISOString(),
-            });
-          }
-          return converted;
-        }
-      }
-    }
-  } catch (staticErr) {
-    console.warn('[CentralSync] /central-state.json fallback error:', staticErr);
+  // 2. Direct Firestore State (Instant fallback for Vercel)
+  if (cached) {
+    const formatted = formatDatabaseToCentralResponse(cached, userId, role);
+    if (formatted) return formatted;
   }
 
-  // 2. Direct Firestore fallback (for Vercel or when Express server is unavailable)
   try {
     const fs = await fetchFullFirestoreState();
-    if (!fs) return null;
-    return formatDatabaseToCentralResponse(fs, userId, role);
+    if (fs) return formatDatabaseToCentralResponse(fs, userId, role);
   } catch (fsErr) {
     console.error('[CentralSync] Firestore fallback failed:', fsErr);
   }
