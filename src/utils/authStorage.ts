@@ -101,7 +101,30 @@ function loadInitialDeletedUserIds(): Set<string> {
   return set;
 }
 
-let cachedUsers: UserProfile[] = [...DEFAULT_SEED_USERS];
+function loadInitialUsers(): UserProfile[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('gcap_all_users_cache_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return mergeUsers(DEFAULT_SEED_USERS, parsed);
+        }
+      }
+    } catch {}
+  }
+  return [...DEFAULT_SEED_USERS];
+}
+
+let cachedUsers: UserProfile[] = loadInitialUsers();
+
+export function saveUsersToLocalCache(users: UserProfile[]) {
+  if (typeof window !== 'undefined' && Array.isArray(users)) {
+    try {
+      localStorage.setItem('gcap_all_users_cache_v1', JSON.stringify(users));
+    } catch {}
+  }
+}
 const deletedUserIdsSet = loadInitialDeletedUserIds();
 
 function saveDeletedUserIdsToLocal() {
