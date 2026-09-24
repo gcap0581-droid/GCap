@@ -6,7 +6,7 @@
       "destination": "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
