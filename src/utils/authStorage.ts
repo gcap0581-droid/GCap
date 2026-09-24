@@ -140,6 +140,10 @@ export function saveUsersToLocalCache(users: UserProfile[]) {
   }
 }
 const deletedUserIdsSet = loadInitialDeletedUserIds();
+PROTECTED_CORE_KEYS.forEach((key) => {
+  deletedUserIdsSet.delete(key);
+});
+saveDeletedUserIdsToLocal();
 
 function saveDeletedUserIdsToLocal() {
   if (typeof window !== 'undefined') {

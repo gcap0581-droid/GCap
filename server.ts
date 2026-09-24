@@ -508,9 +508,9 @@ try {
               const docData = docSnap.data()?.data;
               if (docId === "deletedUserIds" && Array.isArray(docData)) {
                 if (!db.deletedUserIds) db.deletedUserIds = [];
-                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345']);
-                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181']);
-                const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789457522655', 'usr-1789962044130']);
+                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345', '9123456789']);
+                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181', '9123456789']);
+                const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789457522655', 'usr-1789962044130', 'usr-1790000000555']);
 
                 const cleanedIncoming = docData.filter((id: string) => {
                   if (!id) return false;
