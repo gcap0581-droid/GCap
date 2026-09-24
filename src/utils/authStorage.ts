@@ -781,33 +781,7 @@ function filterBlacklisted(users: UserProfile[]): UserProfile[] {
 }
 
 export async function getAllUsersAsync(): Promise<UserProfile[]> {
-  // 1. Prioritize Express Central API (/api/users) as primary source of truth for instant server-db.json sync
-  try {
-    const res = await apiFetch('/api/users');
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      if (data && data.success && Array.isArray(data.users)) {
-        if (Array.isArray(data.deletedUserIds)) {
-          data.deletedUserIds.forEach((id: string) => recordDeletedUserId(id));
-        }
-        const validUsers = data.users.filter((u: any) => u && u.id && !isUserDeleted(u));
-        validUsers.forEach((u: any) => {
-          if (u && u.id) {
-            recordLivePresence(u.id, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
-            if (u.loginId) recordLivePresence(u.loginId, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
-            if (u.phone) recordLivePresence(u.phone, Boolean(u.isOnline), u.lastActiveAt, u.lastLogoutAt);
-          }
-        });
-        cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, validUsers));
-        saveUsersToLocalCache(cachedUsers);
-        return cachedUsers;
-      }
-    }
-  } catch (e) {
-    console.warn('[getAllUsersAsync] API fetch failed, trying Firestore fallback:', e);
-  }
-
-  // 2. Fallback to Direct Firebase Firestore
+  // 1. Prioritize Direct Firebase Firestore (Single Source of Truth across Vercel & AI Studio)
   try {
     const firestoreState = await fetchFullFirestoreState();
     if (firestoreState && Array.isArray(firestoreState.users)) {
@@ -832,7 +806,26 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
       return cachedUsers;
     }
   } catch (fsErr) {
-    console.warn('[getAllUsersAsync] Direct Firestore fetch failed:', fsErr);
+    console.warn('[getAllUsersAsync] Direct Firestore fetch failed, trying API fallback:', fsErr);
+  }
+
+  // 2. Fallback to Express Central API
+  try {
+    const res = await apiFetch('/api/users');
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data && data.success && Array.isArray(data.users)) {
+        if (Array.isArray(data.deletedUserIds)) {
+          data.deletedUserIds.forEach((id: string) => recordDeletedUserId(id));
+        }
+        const validUsers = data.users.filter((u: any) => u && u.id && !isUserDeleted(u));
+        cachedUsers = enrichUsersWithPresence(mergeUsers(cachedUsers, validUsers));
+        saveUsersToLocalCache(cachedUsers);
+        return cachedUsers;
+      }
+    }
+  } catch (e) {
+    console.warn('[getAllUsersAsync] API fallback failed:', e);
   }
 
   return filterBlacklisted(enrichUsersWithPresence(cachedUsers));
