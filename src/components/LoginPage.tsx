@@ -178,77 +178,71 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   return (
-    <div className={`w-full text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white ${
-      viewMode === 'android' ? 'min-h-0 bg-transparent' : 'min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 justify-start'
-    }`}>
+    <div className="w-full min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col justify-start selection:bg-emerald-500 selection:text-white">
       {/* Top Header */}
-      {viewMode !== 'android' ? (
-        <header className="border-b border-slate-800 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-emerald-400" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center">
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
-                  GCap
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 tracking-wider uppercase">
-                {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
-              </p>
+      <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
           </div>
-
-          {/* Header Right Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* View Mode Toggle */}
-            <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
-              <button
-                onClick={() => onViewModeChange('web')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  viewMode === 'web'
-                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                <span>Web</span>
-              </button>
-              <button
-                onClick={() => onViewModeChange('android')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  (viewMode as string) === 'android'
-                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Android</span>
-              </button>
+          <div>
+            <div className="flex items-center">
+              <span className="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
+                GCap
+              </span>
             </div>
+            <p className="text-[10px] text-slate-400 tracking-wider uppercase">
+              {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
+            </p>
+          </div>
+        </div>
 
-            {/* Language Toggle */}
+        {/* Header Right Controls */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* View Mode Toggle */}
+          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
             <button
-              onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer"
+              onClick={() => onViewModeChange('web')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                viewMode === 'web'
+                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isHi ? 'English' : 'हिंदी'}</span>
+              <Monitor className="w-3.5 h-3.5" />
+              <span>Web</span>
+            </button>
+            <button
+              onClick={() => onViewModeChange('android')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                (viewMode as string) === 'android'
+                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Mobile</span>
             </button>
           </div>
-        </header>
-      ) : null}
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
+          >
+            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isHi ? 'English' : 'हिंदी'}</span>
+          </button>
+        </div>
+      </header>
 
       {/* Main Container */}
-      <main className={`flex items-start justify-center ${
-        viewMode === 'android' ? 'p-1 mt-1' : 'flex-1 p-4 pt-10 sm:p-6 sm:pt-14 lg:p-8 lg:pt-16'
-      }`}>
-        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <main className="flex-1 w-full p-3 sm:p-6 lg:p-8 flex flex-col items-center justify-center">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
           
-          {/* Left Hero & Features Banner (Hidden on mobile or compact) */}
+          {/* Left Hero & Features Banner (Visible on Desktop/Tablet) */}
           <div className="lg:col-span-6 space-y-6 hidden lg:block">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
               <ShieldCheck className="w-4 h-4" />
@@ -319,24 +313,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </div>
           </div>
 
-          {/* Right Login / Register Card */}
+          {/* Right Login / Register Card (Full-width responsive on mobile) */}
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/80 backdrop-blur-md relative overflow-hidden">
+            <div className="bg-slate-900/90 sm:bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-7 shadow-2xl shadow-black/80 backdrop-blur-md relative overflow-hidden">
               
               {/* Decorative top accent line */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-400"></div>
 
               {/* Login vs Register Switcher */}
-              <div className="flex rounded-xl bg-slate-950 p-1 mb-6 border border-slate-800">
+              <div className="flex rounded-xl bg-slate-950 p-1 mb-5 border border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('LOGIN');
                     setErrorMessage('');
                   }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     authMode === 'LOGIN'
-                      ? 'bg-slate-800 text-white shadow-sm'
+                      ? 'bg-slate-800 text-white shadow-sm border border-slate-700/50'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -355,9 +349,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     setRegPassword('');
                     setRegReferral('');
                   }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     authMode === 'REGISTER'
-                      ? 'bg-slate-800 text-white shadow-sm'
+                      ? 'bg-slate-800 text-white shadow-sm border border-slate-700/50'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -407,7 +401,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         value={loginId}
                         onChange={(e) => handleLoginIdChange(e.target.value)}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर या admin' : '10-digit mobile number or admin'}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
                     </div>
                   </div>
@@ -438,7 +432,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={isHi ? 'पासवर्ड दर्ज करें' : 'Enter password'}
                         style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' } as any}
-                        className="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                       />
                       <button
                         type="button"
@@ -451,7 +445,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   </div>
 
                   {/* Remember Me Checkbox */}
-                  <div className="pt-1">
+                  <div className="pt-0.5">
                     <label className="flex items-center gap-2 cursor-pointer select-none text-slate-400 hover:text-slate-300 text-xs">
                       <input
                         type="checkbox"
@@ -470,7 +464,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       onClick={handleLoginSubmit}
                       id="btn-submit-login"
                       disabled={isLoading}
-                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.99]"
+                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.99]"
                     >
                       {isLoading ? (
                         <span>{isHi ? 'सत्यापित हो रहा है...' : 'Verifying...'}</span>
@@ -510,7 +504,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
                       placeholder={isHi ? 'अपना पूरा नाम दर्ज करें (उदा. अमित कुमार)' : 'Enter your full name (e.g. Amit Kumar)'}
-                      className="w-full px-3.5 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
                     />
                   </div>
 
@@ -534,7 +528,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                           setRegPhone(val);
                         }}
                         placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
-                        className="w-full px-3.5 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
+                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
                       />
                       <span className="text-[10px] text-slate-400 mt-0.5 block">
                         {isHi ? '✓ मोबाइल नंबर ही यूजर आईडी रहेगा' : '✓ Mobile number is your User ID'}
@@ -557,7 +551,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       placeholder={isHi ? 'ईमेल पता (यदि हो तो दर्ज करें)' : 'Email address (optional)'}
-                      className="w-full px-3.5 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500"
                     />
                   </div>
 
@@ -581,7 +575,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         onChange={(e) => setRegPassword(e.target.value)}
                         placeholder={isHi ? 'कम से कम 6 अक्षरों का पासवर्ड' : 'At least 6 characters'}
                         style={{ WebkitTextSecurity: showRegPassword ? 'none' : 'disc' } as any}
-                        className="w-full px-3.5 pr-10 py-2 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
+                        className="w-full px-3.5 pr-10 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
                       />
                       <button
                         type="button"
@@ -621,7 +615,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         value={regReferral}
                         onChange={(e) => setRegReferral(e.target.value.toUpperCase())}
                         placeholder="GCAP-DIRECT"
-                        className={`w-full px-3.5 py-2 bg-slate-900/90 border rounded-xl font-mono text-sm uppercase font-bold pr-9 focus:outline-none ${
+                        className={`w-full px-3.5 py-2.5 bg-slate-900/90 border rounded-xl font-mono text-sm uppercase font-bold pr-9 focus:outline-none ${
                           isReferralLocked
                             ? 'border-amber-500/40 text-amber-300 cursor-not-allowed select-none'
                             : 'border-slate-700 text-white focus:border-emerald-500'
@@ -661,7 +655,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     type="button"
                     onClick={handleRegisterSubmit}
                     id="btn-submit-register"
-                    className="w-full py-3 px-4 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2"
+                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2 active:scale-[0.99]"
                   >
                     <span>{isHi ? 'खाता बनाएं एवं लॉगिन करें' : 'Create Account & Enter'}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -670,7 +664,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               )}
 
               {/* Bottom Switch Hint */}
-              <div className="mt-6 pt-4 border-t border-slate-800/80 text-center text-xs text-slate-400">
+              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center text-xs text-slate-400">
                 {authMode === 'LOGIN' ? (
                   <p>
                     {isHi ? 'क्या आपका खाता नहीं है? ' : "Don't have an account? "}

@@ -4020,7 +4020,7 @@ export default function App() {
 
   // Check if user is logged in. If not, project starts from Login Page!
   if (!currentUser) {
-    const loginComponent = (
+    return (
       <LoginPage
         onLoginSuccess={handleLoginSuccess}
         language={language}
@@ -4029,22 +4029,6 @@ export default function App() {
         onViewModeChange={setViewMode}
       />
     );
-
-    if (viewMode === 'android') {
-      return (
-        <AndroidFrame
-          activeTab="dashboard"
-          onTabChange={() => {}}
-          language={language}
-          onLanguageChange={setLanguage}
-          onExitMobile={() => setViewMode('web')}
-          currentUser={null}
-        >
-          {loginComponent}
-        </AndroidFrame>
-      );
-    }
-    return loginComponent;
   }
 
   return (

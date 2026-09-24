@@ -4290,7 +4290,12 @@ async function startServer() {
         const templatePath = path.resolve(process.cwd(), "index.html");
         let template = fs.readFileSync(templatePath, "utf-8");
         template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).end(template);
+        res.status(200).set({
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
         next(e);
