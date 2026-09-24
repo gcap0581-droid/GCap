@@ -251,6 +251,7 @@ interface ServerDB {
   treasury: CompanyTreasury;
   treasuryLogs: TreasuryLog[];
   messages?: AdminMessage[];
+  companyLedger?: any[];
   lastUpdated: string;
 }
 
