@@ -36,7 +36,7 @@ import {
 import { getNextFixedCycleTimestamp, formatFixedSlotTime, countElapsedFixedSlots, reconcileAllInvestmentsWithTime } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
 import { getStoredCompanyProfile, saveStoredCompanyProfile } from './utils/companyStorage';
-import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers, adminUpdateUserAsync, sendUserHeartbeat } from './utils/authStorage';
+import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers, adminUpdateUserAsync, sendUserHeartbeat, AUTH_USER_KEY } from './utils/authStorage';
 import {
   getStoredPlans,
   saveStoredPlans,
@@ -428,7 +428,7 @@ export default function App() {
                 if (!prev) return prev;
                 const isDifferent = JSON.stringify(prev) !== JSON.stringify(state.user);
                 if (isDifferent) {
-                  localStorage.setItem('gcap_current_user', JSON.stringify(state.user));
+                  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(state.user));
                   return state.user;
                 }
                 return prev;
@@ -585,17 +585,17 @@ export default function App() {
           setStoredInvestments(fs.investments);
         }
         if (fs.treasury) {
-          // SELF-HEALING PATCH: Force 600,000 to 500,000 if detected from Firestore
-          if (fs.treasury.balance === 600000) {
-            fs.treasury.balance = 500000;
-            fs.treasury.totalDeducted = (fs.treasury.totalDeducted || 0) + 100000;
-            fs.treasury.totalTransferredToUsers = (fs.treasury.totalTransferredToUsers || 0) + 100000;
-            if (fs.treasuryLogs && !fs.treasuryLogs.some((l: any) => l.id === 'tr-log-amit-100k')) {
-              fs.treasuryLogs.unshift(INITIAL_LOGS[0]);
+          setTreasury((prev) => {
+            // Only update if Firestore has newer data (or if we have no local data)
+            const fsTs = fs.treasury?.lastUpdated ? new Date(fs.treasury.lastUpdated).getTime() : 0;
+            const prevTs = prev?.lastUpdated ? new Date(prev.lastUpdated).getTime() : 0;
+            
+            if (!prev || fsTs > prevTs) {
+              setStoredTreasury(fs.treasury);
+              return fs.treasury;
             }
-          }
-          setTreasury((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasury) ? fs.treasury : prev));
-          setStoredTreasury(fs.treasury);
+            return prev;
+          });
         }
         if (fs.treasuryLogs) {
           setTreasuryLogs((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasuryLogs) ? fs.treasuryLogs : prev));
@@ -1280,7 +1280,6 @@ export default function App() {
     );
     setTreasury(newTreasury);
     setTreasuryLogs((prev) => [log, ...prev]);
-    apiUpdateTreasury(newTreasury, log).catch(console.error);
     showToast(
       isHi ? 'कंपनी मुख्य बैलेंस बढ़ाया गया!' : 'Company Treasury Credited!',
       isHi
@@ -1304,7 +1303,6 @@ export default function App() {
     );
     setTreasury(newTreasury);
     setTreasuryLogs((prev) => [log, ...prev]);
-    apiUpdateTreasury(newTreasury, log).catch(console.error);
 
     if (newTreasury.balance <= DEFAULT_ALERT_THRESHOLD) {
       showToast(
@@ -1336,7 +1334,6 @@ export default function App() {
     const { treasury: def } = resetTreasuryToDefault();
     setTreasury(def);
     setTreasuryLogs(getStoredTreasuryLogs());
-    apiUpdateTreasury(def).catch(console.error);
     showToast(
       isHi ? 'कंपनी ट्रेजरी रीसेट हुई' : 'Treasury Reset',
       isHi ? 'कंपनी मुख्य बैलेंस ₹50,00,000 पर बहाल कर दिया गया है।' : 'Company balance reset to ₹5,000,000.'

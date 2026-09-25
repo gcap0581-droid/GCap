@@ -12,7 +12,7 @@ import {
   updatePresenceInFirestore,
 } from '../lib/firestoreBridge';
 
-const AUTH_USER_KEY = 'gcap_active_session_v1';
+export const AUTH_USER_KEY = 'gcap_active_session_v1';
 
 export const DEFAULT_SEED_USERS: UserProfile[] = [
   {

@@ -19,7 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
-import { loginUserAsync, registerUserAsync, syncUsersWithServer } from '../utils/authStorage';
+import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY } from '../utils/authStorage';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 
 interface LoginPageProps {
@@ -140,8 +140,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       };
 
       try {
-        localStorage.setItem('gcap_authenticated_user', JSON.stringify(adminUser));
-        sessionStorage.setItem('gcap_authenticated_user', JSON.stringify(adminUser));
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(adminUser));
+        sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(adminUser));
       } catch (_) {}
 
       // Inform parent and enter dashboard
