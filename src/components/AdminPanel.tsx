@@ -34,6 +34,7 @@ import {
   Filter,
   Plus,
   Download,
+  BarChart3,
 } from 'lucide-react';
 import {
   AppRules,
@@ -1216,12 +1217,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <Activity className="w-4 h-4" />
                     </div>
                     <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${(activeSubTab as string) === 'CURRENT_ACTIVITY' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
-                      LEDGER
+                      MASTER
                     </span>
                   </div>
                   <div className="leading-tight pt-1">
-                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'करंट एक्टिविटी' : 'Activity'}</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी मास्टर समरी' : 'Master Summary'}</p>
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'मास्टर समरी' : 'Activity'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'सिस्टम स्टेटस' : 'Master Summary'}</p>
+                  </div>
+                </button>
+
+                {/* COMPANY_PROFILE */}
+                <button
+                  id="tab-admin-company-profile"
+                  onClick={() => setActiveSubTab('COMPANY_PROFILE')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'COMPANY_PROFILE'
+                      ? 'bg-amber-500/10 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'COMPANY_PROFILE' ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-slate-800 border-slate-700 text-amber-400'}`}>
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'COMPANY_PROFILE' ? 'bg-amber-500/30 text-amber-200' : 'bg-slate-800 text-slate-400'}`}>
+                      MASTER
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'कंपनी प्रोफाइल' : 'Company Profile'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'DIN, PAN, TAN' : 'Statutory Data'}</p>
+                  </div>
+                </button>
+
+                {/* INVESTMENTS */}
+                <button
+                  id="tab-admin-investments"
+                  onClick={() => setActiveSubTab('INVESTMENTS')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'INVESTMENTS'
+                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'INVESTMENTS' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-emerald-400'}`}>
+                      <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'INVESTMENTS' ? 'bg-emerald-500/30 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                      ASSETS
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'कुल निवेश' : 'Investments'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'सभी यूज़र पोर्टफोलियो' : 'All Portfolios'}</p>
                   </div>
                 </button>
 
