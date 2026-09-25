@@ -306,7 +306,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
                   <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-amber-950/40" />
                   
                   <img 
-                    src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                    src="/assets/images/logo.jpg" 
                     alt="GCap Premium Logo" 
                     className="absolute inset-0 w-full h-full object-cover scale-110 opacity-90"
                   />

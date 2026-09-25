@@ -230,7 +230,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
             <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
               <img 
-                src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                src="/assets/images/logo.jpg" 
                 alt="GCap Logo" 
                 className="w-full h-full object-cover scale-110"
               />

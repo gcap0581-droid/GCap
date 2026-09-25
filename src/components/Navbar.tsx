@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div className="w-8 h-8 rounded-lg bg-emerald-500/20 p-0.5 flex items-center justify-center overflow-hidden border border-emerald-500/30">
                 <img 
-                  src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                  src="/assets/images/logo.jpg" 
                   alt="GCap Logo" 
                   className="w-full h-full object-cover scale-110"
                 />
