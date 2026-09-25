@@ -316,12 +316,14 @@ export function subscribeToFirestoreState(
  * Direct fetch of all documents from Firestore 'gcap_database' collection
  */
 export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState | null> {
-  // If we have cached state and either snapshot listener is active or cache is fresh (less than 3s old), return cached state directly!
+  // Ultra-Fast Zero-Latency Response: Return cached or local offline backup state immediately!
   if (cachedFirestoreDb) {
-    const isCacheFresh = (cachedFirestoreDb as any)._cacheTime && (Date.now() - (cachedFirestoreDb as any)._cacheTime < 3000);
-    if (activeFirestoreListenersCount > 0 || isCacheFresh) {
-      return cachedFirestoreDb;
-    }
+    return cachedFirestoreDb;
+  }
+  const offlineBackup = loadOfflineDbFromLocalStorage();
+  if (offlineBackup) {
+    cachedFirestoreDb = offlineBackup;
+    return offlineBackup;
   }
   try {
     const docKeys = [

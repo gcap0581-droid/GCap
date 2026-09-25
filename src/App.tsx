@@ -90,6 +90,7 @@ import {
   apiSaveLiveConfig,
   apiUpdateTreasury,
   apiUpdateWallet,
+  apiAdminAdjustUserWallet,
   apiFetchMessages,
   apiSendAdminMessage,
   apiMarkMessageRead,
@@ -1490,8 +1491,7 @@ export default function App() {
       })
       .catch(console.error);
 
-    // Rule 2: Admin Approval moves deposit funds to wallet cash balance
-    // MANDATORY RULE: Koi bhi user jub fund add karega to uske balance company ke main balance wallet se deduct hoker hi melega aur uska record admin ke pass rahna chaiye.
+    // Rule: Admin Approval moves deposit funds to wallet cash balance
     if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
       // 1. Deduct from Company Main Balance and create audit record in treasury logs
       const deductRes = deductForUserDepositApproval(
@@ -1501,11 +1501,25 @@ export default function App() {
       );
       setTreasury(deductRes.treasury);
       setTreasuryLogs(getStoredTreasuryLogs());
+      apiUpdateTreasury(deductRes.treasury).catch(console.error);
 
-      // 2. If the current active session is this user, update local wallet state
-      if (currentUser && (currentUser.id === updatedTxn.userId || (currentUser.phone && updatedTxn.userPhone && currentUser.phone.includes(updatedTxn.userPhone.slice(-10))))) {
+      // 2. Update target user's wallet in central database
+      apiAdminAdjustUserWallet(
+        updatedTxn.userId,
+        {},
+        {
+          type: 'ADD',
+          targetWallet: 'cashBalance',
+          amount: updatedTxn.amount,
+          reason: `Deposit Approval: ${updatedTxn.referenceId || updatedTxn.id}`,
+        },
+        currentUser?.name || 'Super Admin'
+      ).catch(console.error);
+
+      // 3. If the current active session is this user, update local wallet state
+      if (currentUser && (currentUser.id === updatedTxn.userId)) {
         const updatedWallet: Wallet = {
-          ...wallet,
+          ...wallet!,
           cashBalance: (wallet?.cashBalance || 0) + updatedTxn.amount,
           pendingDeposits: Math.max(0, (wallet?.pendingDeposits || 0) - updatedTxn.amount),
         };
@@ -1523,29 +1537,103 @@ export default function App() {
       showToast(
         isHi ? '✅ डिपॉजिट अप्रूव हुआ (कंपनी बैलेंस से डिडक्ट)!' : '✅ Deposit Approved (Deducted from Company Balance)!',
         isHi
-          ? `कंपनी मुख्य बैलेंस से ₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र वॉलेट में ₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ (कंपनी शेष: ₹${(deductRes.treasury?.balance || 0).toLocaleString('en-IN')})। अब यूज़र इसका GP बनाकर प्लान ले सकते हैं।`
-          : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet (Company Balance: ₹${(deductRes.treasury?.balance || 0).toLocaleString('en-IN')}).`
+          ? `कंपनी मुख्य बैलेंस से ₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र वॉलेट में ₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ।`
+          : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet.`
       );
       return;
-    } else if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && updatedTxn.type === 'WITHDRAWAL') {
-      // Voice announcement for withdrawal approval / completed payout
+    } 
+    
+    // Rule: Withdrawal Approval deducts from Company Main Balance
+    else if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && updatedTxn.type === 'WITHDRAWAL') {
+      const amount = updatedTxn.grossAmount || updatedTxn.amount;
+      const payoutResult = deductForUserPayout(
+        amount,
+        `Withdrawal Approval: ₹${amount.toLocaleString('en-IN')} -> ${updatedTxn.method} (Txn: ${updatedTxn.id})`,
+        `निकासी अप्रूवल: ₹${amount.toLocaleString('en-IN')} -> ${updatedTxn.method} (Txn: ${updatedTxn.id})`,
+        updatedTxn.userName || 'Investor'
+      );
+      setTreasury(payoutResult.treasury);
+      setTreasuryLogs(getStoredTreasuryLogs());
+      apiUpdateTreasury(payoutResult.treasury).catch(console.error);
+
+      // Voice announcement for withdrawal approval
       audioAnnouncer.announceWithdrawalApproved({
         userName: updatedTxn.userName,
         amount: updatedTxn.amount,
         language: isHi ? 'hi' : 'en',
       });
-    } else if (prevTxn && prevTxn.type === 'DEPOSIT' && prevTxn.status === 'PENDING' && updatedTxn.status === 'REJECTED') {
-      const updatedWallet: Wallet = {
-        ...wallet,
-        pendingDeposits: Math.max(0, (wallet.pendingDeposits || 0) - updatedTxn.amount),
-      };
-      setWallet(updatedWallet);
-      setStoredWallet(updatedWallet);
+
       showToast(
-        isHi ? '❌ डिपॉजिट अस्वीकृत' : '❌ Deposit Rejected',
-        isHi ? 'डिपॉजिट अनुरोध अस्वीकृत किया गया।' : 'Deposit request has been marked rejected.',
-        'info'
+        isHi ? '✅ निकासी अप्रूव हुई (कंपनी बैलेंस से डिडक्ट)!' : '✅ Withdrawal Approved (Deducted from Company Balance)!',
+        isHi
+          ? `यूज़र ${updatedTxn.userName} की ₹${amount.toLocaleString('en-IN')} की निकासी अप्रूव हुई।`
+          : `Withdrawal for ₹${amount.toLocaleString('en-IN')} approved and deducted from Company Main Balance.`
       );
+      return;
+    } 
+    
+    // Rule: Rejection Handling
+    else if (prevTxn && prevTxn.status === 'PENDING' && updatedTxn.status === 'REJECTED') {
+      if (updatedTxn.type === 'WITHDRAWAL') {
+        const refundAmount = updatedTxn.grossAmount || updatedTxn.amount;
+        const source = updatedTxn.withdrawalSource || 'EARNING';
+        const targetWallet = source === 'CASH' ? 'cashBalance' : source === 'ROYALTY' ? 'royaltyEarned' : 'totalEarned';
+
+        apiAdminAdjustUserWallet(
+          updatedTxn.userId,
+          {},
+          {
+            type: 'ADD',
+            targetWallet,
+            amount: refundAmount,
+            reason: `Withdrawal Rejected (Refund): ${updatedTxn.id}`,
+          },
+          currentUser?.name || 'Super Admin'
+        ).catch(console.error);
+
+        if (currentUser && (currentUser.id === updatedTxn.userId)) {
+          const updatedWallet = { ...wallet! };
+          if (source === 'CASH') updatedWallet.cashBalance = (wallet?.cashBalance || 0) + refundAmount;
+          else if (source === 'ROYALTY') updatedWallet.royaltyEarned = (wallet?.royaltyEarned || 0) + refundAmount;
+          else updatedWallet.totalEarned = (wallet?.totalEarned || 0) + refundAmount;
+          
+          setWallet(updatedWallet);
+          setStoredWallet(updatedWallet);
+        }
+        
+        showToast(
+          isHi ? '❌ निकासी अस्वीकृत (रिफंड)' : '❌ Withdrawal Rejected (Refunded)',
+          isHi ? 'निकासी अनुरोध अस्वीकृत किया गया और राशि वापस यूज़र वॉलेट में जोड़ दी गई।' : 'Withdrawal request rejected and amount refunded to user wallet.',
+          'info'
+        );
+      } else if (updatedTxn.type === 'DEPOSIT') {
+        // If a deposit was rejected, clear pending status in central database
+        apiAdminAdjustUserWallet(
+          updatedTxn.userId,
+          {},
+          {
+            type: 'DEDUCT',
+            targetWallet: 'pendingDeposits',
+            amount: updatedTxn.amount,
+            reason: `Deposit Rejected: ${updatedTxn.id}`,
+          },
+          currentUser?.name || 'Super Admin'
+        ).catch(console.error);
+
+        if (currentUser && (currentUser.id === updatedTxn.userId)) {
+          const updatedWallet = {
+            ...wallet!,
+            pendingDeposits: Math.max(0, (wallet?.pendingDeposits || 0) - updatedTxn.amount),
+          };
+          setWallet(updatedWallet);
+          setStoredWallet(updatedWallet);
+        }
+        showToast(
+          isHi ? '❌ डिपॉजिट अस्वीकृत' : '❌ Deposit Rejected',
+          isHi ? 'डिपॉजिट अनुरोध अस्वीकृत किया गया।' : 'Deposit request has been marked rejected.',
+          'info'
+        );
+      }
       return;
     }
 
@@ -2320,38 +2408,23 @@ export default function App() {
       netAmount,
       date: new Date().toISOString(),
       timestamp: Date.now(),
-      status: 'SUCCESS',
+      status: 'PENDING',
       method: destination,
       referenceId,
       withdrawalSource,
       destinationDetails: destination,
       panNumber: 'ABCDE1234F',
       note: isRoyalty
-        ? `Royalty Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`
+        ? `Royalty Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)}) [Wait for approval]`
         : isCash
-        ? `Cash Balance Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`
-        : `Earning Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)})`,
+        ? `Cash Balance Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)}) [Wait for approval]`
+        : `Earning Withdrawal (Net: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, Admin: -${formatINR(adminFeeAmount)}) [Wait for approval]`,
       noteHi: isRoyalty
-        ? `रॉयल्टी निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`
+        ? `रॉयल्टी निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)}) [एडमिन अप्रूवल की प्रतीक्षा]`
         : isCash
-        ? `कैश बैलेंस निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`
-        : `अर्निंग निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)})`,
+        ? `कैश बैलेंस निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)}) [एडमिन अप्रूवल की प्रतीक्षा]`
+        : `अर्निंग निकासी (शुद्ध: ${formatINR(netAmount)}, TDS: -${formatINR(tdsAmount)}, एडमिन: -${formatINR(adminFeeAmount)}) [एडमिन अप्रूवल की प्रतीक्षा]`,
     };
-
-    // Deduct from Company Treasury and update audit log
-    const payoutResult = deductForUserPayout(
-      amount,
-      isRoyalty
-        ? `User Royalty Withdrawal: ₹${amount.toLocaleString('en-IN')} -> ${destination} (Ref: ${referenceId})`
-        : `User Earning Withdrawal: ₹${amount.toLocaleString('en-IN')} -> ${destination} (Ref: ${referenceId})`,
-      isRoyalty
-        ? `यूज़र रॉयल्टी निकासी: ₹${amount.toLocaleString('en-IN')} -> ${destination} (Ref: ${referenceId})`
-        : `यूज़र अर्निंग निकासी: ₹${amount.toLocaleString('en-IN')} -> ${destination} (Ref: ${referenceId})`,
-      currentUser?.name || 'Investor User'
-    );
-    setTreasury(payoutResult.treasury);
-    setTreasuryLogs(getStoredTreasuryLogs());
-    apiUpdateTreasury(payoutResult.treasury).catch(console.error);
 
     setWallet(updatedWallet);
     setStoredWallet(updatedWallet);
@@ -2367,20 +2440,15 @@ export default function App() {
     // Trigger Personalized Audio Voice Announcement
     audioAnnouncer.announceWithdrawal({
       userName: currentUser?.name || 'Investor',
-      amount: netAmount,
-      method: destination,
+      amount: amount, // Announce gross amount requested
       language: isHi ? 'hi' : 'en',
     });
 
-    // Trigger Payment Voucher view
-    setSelectedVoucherTxn(newTx);
-    setIsVoucherModalOpen(true);
-
     showToast(
-      isHi ? '🧾 निकासी भुगतान वाउचर जारी!' : '🧾 Payment Voucher Generated!',
+      isHi ? '⏳ निकासी अनुरोध दर्ज (Wait for approval)' : '⏳ Withdrawal Submitted for Approval',
       isHi
-        ? `TDS (${tdsPercent}%) एवं एडमिन चार्ज (${adminFeePercent}%) काटकर ${formatINR(netAmount)} का वाउचर जारी हुआ। आप इसे प्रिंट भी कर सकते हैं।`
-        : `Net ${formatINR(netAmount)} disbursed after TDS (${tdsPercent}%) & Admin charge (${adminFeePercent}%). Voucher issued.`
+        ? `आपका ₹${amount.toLocaleString('en-IN')} की निकासी का अनुरोध एडमिन के पास भेज दिया गया है। सत्यापन के बाद यह आपके ${destination} पर भेज दिया जाएगा। स्टेटस: "Wait for approval"`
+        : `Your withdrawal request for ₹${amount.toLocaleString('en-IN')} has been submitted to admin. Status: "Wait for approval".`
     );
   };
 

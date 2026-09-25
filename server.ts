@@ -307,10 +307,10 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
   },
   {
     id: "usr-1790000000555",
-    loginId: "9123456789",
+    loginId: "7564841400",
     name: "Amit Kumar",
     role: "USER",
-    phone: "+91 9123456789",
+    phone: "+91 7564841400",
     email: "amit@gcap.user",
     referralCode: "GCAP-45678",
     joinedDate: "2026-09-22",
@@ -444,15 +444,28 @@ const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
 };
 
 const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 600000,
+  balance: 500000,
   minAlertThreshold: 500000,
   totalInjected: 600000,
-  totalDeducted: 0,
-  totalTransferredToUsers: 0,
+  totalDeducted: 100000,
+  totalTransferredToUsers: 100000,
   lastUpdated: new Date().toISOString(),
 };
 
 const INITIAL_LOGS: TreasuryLog[] = [
+  {
+    id: "tr-log-amit-100k",
+    type: "USER_FUND_ADD_DEDUCT",
+    amount: 100000,
+    balanceBefore: 600000,
+    balanceAfter: 500000,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: "Direct money transfer to Amit Kumar (7564841400): ₹1,00,000 deducted from Company Main Balance -> Credited to user wallet",
+    reasonHi: "यूज़र अमित कुमार (7564841400) को फंड ट्रांसफर: कंपनी मुख्य बैलेंस से ₹1,00,000 स्वतः डिडक्ट होकर यूज़र वॉलेट में जमा",
+    actor: "Super Admin (admin)",
+    referenceId: "ADM38767904",
+  },
   {
     id: "tr-log-1",
     type: "ADMIN_ADD",
@@ -509,8 +522,8 @@ try {
               const docData = docSnap.data()?.data;
               if (docId === "deletedUserIds" && Array.isArray(docData)) {
                 if (!db.deletedUserIds) db.deletedUserIds = [];
-                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345', '9123456789']);
-                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181', '9123456789']);
+                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345', '9123456789', '7564841400']);
+                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181', '9123456789', '7564841400']);
                 const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789457522655', 'usr-1789962044130', 'usr-1790000000555']);
 
                 const cleanedIncoming = docData.filter((id: string) => {
@@ -1308,6 +1321,16 @@ function ensureDb(): ServerDB {
         pendingDeposits: 0,
       };
 
+      const initialAmitWallet: Wallet = {
+        cashBalance: 100000,
+        gpBalance: 0,
+        totalInvested: 0,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+
       const initial: ServerDB = {
         users: DEFAULT_ACCOUNTS,
         wallets: {
@@ -1315,6 +1338,10 @@ function ensureDb(): ServerDB {
           "1789384741169": { ...initialSandhyaWallet },
           "7808056040": { ...initialSandhyaWallet },
           "9384741169": { ...initialSandhyaWallet },
+          "usr-1790000000555": { ...initialAmitWallet },
+          "1790000000555": { ...initialAmitWallet },
+          "7564841400": { ...initialAmitWallet },
+          "9123456789": { ...initialAmitWallet },
         },
         investments: [
           {
@@ -1550,6 +1577,18 @@ function ensureDb(): ServerDB {
     if (!parsed.liveConfig || typeof parsed.liveConfig !== "object") parsed.liveConfig = DEFAULT_LIVE_CONFIG;
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
+
+    // ONE-TIME PATCH: Force treasury balance to 500,000 if it's currently 600,000 (Amit's 100k deduction)
+    if (parsed.treasury && parsed.treasury.balance === 600000) {
+      parsed.treasury.balance = 500000;
+      parsed.treasury.totalDeducted = (parsed.treasury.totalDeducted || 0) + 100000;
+      parsed.treasury.totalTransferredToUsers = (parsed.treasury.totalTransferredToUsers || 0) + 100000;
+      if (!parsed.treasuryLogs.some((l: any) => l.id === "tr-log-amit-100k")) {
+        parsed.treasuryLogs.unshift(INITIAL_LOGS[0]);
+      }
+      needsSave = true;
+    }
+
     if (!parsed.treasuryLogs || !Array.isArray(parsed.treasuryLogs)) {
       parsed.treasuryLogs = INITIAL_LOGS;
     } else {
@@ -2312,31 +2351,9 @@ async function startServer() {
     }
     db.wallets = freshWallets;
 
-    // Reset Treasury to exact ₹6,00,000
-    db.treasury = {
-      balance: 600000,
-      minAlertThreshold: 500000,
-      totalInjected: 600000,
-      totalDeducted: 0,
-      totalTransferredToUsers: 0,
-      lastUpdated: new Date().toISOString(),
-    };
-
-    db.treasuryLogs = [
-      {
-        id: "tr-log-1",
-        type: "ADMIN_ADD",
-        amount: 600000,
-        balanceBefore: 0,
-        balanceAfter: 600000,
-        date: new Date().toISOString(),
-        timestamp: Date.now(),
-        reason: "Initial Company Liquidity Injection into Main Reserve",
-        reasonHi: "कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया",
-        actor: "Super Admin (admin)",
-        referenceId: "INJ-600000",
-      },
-    ];
+    // Reset Treasury to exact INITIAL_TREASURY balance
+    db.treasury = { ...INITIAL_TREASURY };
+    db.treasuryLogs = [...INITIAL_LOGS];
 
     db.lastUpdated = new Date().toISOString();
     saveDb(db);

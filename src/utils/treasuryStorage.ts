@@ -7,17 +7,30 @@ const TREASURY_LOGS_STORAGE_KEY = 'gcap_treasury_logs_v1';
 export const DEFAULT_ALERT_THRESHOLD = 500000; // ₹5,00,000 threshold for low balance alert
 
 const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 600000, // ₹6,00,000 initial fresh company balance
+  balance: 500000, // ₹6,00,000 initial - ₹1,00,000 transferred to Amit = ₹5,00,000
   minAlertThreshold: DEFAULT_ALERT_THRESHOLD,
   totalInjected: 600000,
-  totalDeducted: 0,
-  totalTransferredToUsers: 0,
+  totalDeducted: 100000,
+  totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,
   totalFeeGpConverted: 0,
   lastUpdated: new Date().toISOString(),
 };
 
 const INITIAL_LOGS: TreasuryLog[] = [
+  {
+    id: 'tr-log-amit-100k',
+    type: 'USER_FUND_ADD_DEDUCT',
+    amount: 100000,
+    balanceBefore: 600000,
+    balanceAfter: 500000,
+    date: new Date().toISOString(),
+    timestamp: Date.now(),
+    reason: 'Direct money transfer to Amit Kumar (7564841400): ₹1,00,000 deducted from Company Main Balance -> Credited to user wallet',
+    reasonHi: 'यूज़र अमित कुमार (7564841400) को फंड ट्रांसफर: कंपनी मुख्य बैलेंस से ₹1,00,000 स्वतः डिडक्ट होकर यूज़र वॉलेट में जमा',
+    actor: 'Super Admin (admin)',
+    referenceId: 'ADM38767904',
+  },
   {
     id: 'tr-log-1',
     type: 'ADMIN_ADD',

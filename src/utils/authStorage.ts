@@ -66,10 +66,10 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
   },
   {
     id: 'usr-1790000000555',
-    loginId: '9123456789',
+    loginId: '7564841400',
     name: 'Amit Kumar',
     role: 'USER',
-    phone: '+91 9123456789',
+    phone: '+91 7564841400',
     email: 'amit@gcap.user',
     joinedDate: '2026-09-22',
     status: 'ACTIVE',
@@ -84,7 +84,7 @@ const PROTECTED_CORE_KEYS = new Set([
   'usr-1789384741169', '7808056040',
   'usr-1789457522655', '9661670322',
   'usr-1789962044130', '8409803181',
-  'usr-1790000000555', '9123456789'
+  'usr-1790000000555', '9123456789', '7564841400'
 ]);
 
 const DELETED_USER_IDS_KEY = 'gcap_deleted_user_ids_v1';

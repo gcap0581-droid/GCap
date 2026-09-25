@@ -10,6 +10,8 @@ const firebaseConfig = {
   appId: "1:860344681027:web:0ed1d7850cc0bdf53f4af6"
 };
 
+const DB_ID = "ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91";
+
 let cachedApp: FirebaseApp | null = null;
 let cachedDb: Firestore | null = null;
 
@@ -17,10 +19,11 @@ export function getFirebaseApp(): FirebaseApp | null {
   try {
     if (!cachedApp) {
       cachedApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+      console.log('[Firebase] App initialized successfully');
     }
     return cachedApp;
   } catch (err) {
-    console.warn('[Firebase] App initialization error:', err);
+    console.error('[Firebase] App initialization error:', err);
     return null;
   }
 }
@@ -31,15 +34,11 @@ export function getFirestoreDb(): Firestore | null {
     const app = getFirebaseApp();
     if (!app) return null;
     
-    // Safely try with specific database ID first
-    try {
-      cachedDb = getFirestore(app, "ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91");
-    } catch {
-      cachedDb = getFirestore(app);
-    }
+    cachedDb = getFirestore(app, DB_ID);
+    console.log('[Firebase] Firestore initialized with DB:', DB_ID);
     return cachedDb;
   } catch (err) {
-    console.warn('[Firebase] Firestore unavailable, graceful fallback active:', err);
+    console.error('[Firebase] Firestore initialization error:', err);
     return null;
   }
 }
@@ -48,7 +47,10 @@ export function getFirestoreDb(): Firestore | null {
 export const db = new Proxy({} as Firestore, {
   get(_target, prop) {
     const instance = getFirestoreDb();
-    if (!instance) return undefined;
+    if (!instance) {
+      console.error('[Firebase] Accessing DB instance that failed to initialize');
+      return undefined;
+    }
     const val = (instance as any)[prop];
     return typeof val === 'function' ? val.bind(instance) : val;
   }
