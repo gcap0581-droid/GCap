@@ -2737,21 +2737,20 @@ async function startServer() {
         wallet.pendingDeposits = Math.max(0, (wallet.pendingDeposits || 0) - amount);
         wallet.cashBalance = (wallet.cashBalance || 0) + amount;
         
-        // Deduct from Company Main Balance & update admin wallet as mandated
+        // Increase Company Main Balance & update admin wallet
         const prevBal = db.treasury.balance || 0;
-        db.treasury.balance = Math.max(0, prevBal - amount);
-        db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
-        db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+        db.treasury.balance = prevBal + amount;
+        db.treasury.totalInjected = (db.treasury.totalInjected || 0) + amount;
         const treasuryLog = {
           id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
           timestamp: Date.now(),
           date: new Date().toISOString(),
-          type: 'USER_FUND_ADD_DEDUCT',
+          type: 'ADMIN_ADD',
           amount: amount,
           balanceBefore: prevBal,
           balanceAfter: db.treasury.balance,
-          reason: `Deposit approved: ₹${amount} deducted from Company Main Balance -> Credited to user ${effectiveUserId} (Ref: ${transaction.referenceId || transaction.id})`,
-          reasonHi: `डिपॉजिट स्वीकृत: कंपनी मुख्य बैलेंस से ₹${amount} डिडक्ट होकर यूज़र ${effectiveUserId} वॉलेट में क्रेडिट (Ref: ${transaction.referenceId || transaction.id})`,
+          reason: `Deposit approved: ₹${amount} received from user ${effectiveUserId} -> Added to Company Main Balance (Ref: ${transaction.referenceId || transaction.id})`,
+          reasonHi: `डिपॉजिट स्वीकृत: यूज़र ${effectiveUserId} से ₹${amount} प्राप्त हुए -> कंपनी मुख्य बैलेंस में जमा (Ref: ${transaction.referenceId || transaction.id})`,
           actor: 'Super Admin (admin)',
           referenceId: transaction.referenceId || transaction.id,
         };
@@ -2809,23 +2808,22 @@ async function startServer() {
     const db = ensureDb();
     db.transactions.unshift(transaction);
 
-    // If transaction is SUCCESS and credits funds (DEPOSIT or ADMIN_ADD), deduct from Company Treasury Balance
+    // If transaction is SUCCESS and credits funds (DEPOSIT or ADMIN_ADD), increase Company Treasury Balance
     const amount = Number(transaction.amount || 0);
     if (transaction.status === "SUCCESS" && (transaction.type === "DEPOSIT" || transaction.type === "ADMIN_ADD") && amount > 0) {
       const prevBal = db.treasury.balance || 0;
-      db.treasury.balance = Math.max(0, prevBal - amount);
-      db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
-      db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+      db.treasury.balance = prevBal + amount;
+      db.treasury.totalInjected = (db.treasury.totalInjected || 0) + amount;
       const treasuryLog = {
         id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         timestamp: Date.now(),
         date: new Date().toISOString(),
-        type: 'ADMIN_DEDUCT',
+        type: 'ADMIN_ADD',
         amount: amount,
         balanceBefore: prevBal,
         balanceAfter: db.treasury.balance,
-        reason: `Direct Balance Credit to user ${transaction.userName || transaction.userId || 'User'}: ₹${amount} deducted from Company Treasury (Ref: ${transaction.referenceId || transaction.id})`,
-        reasonHi: `यूज़र ${transaction.userName || transaction.userId || 'User'} को डायरेक्ट बैलेंस: कंपनी ट्रेजरी से ₹${amount} डिडक्ट (Ref: ${transaction.referenceId || transaction.id})`,
+        reason: `Direct Balance Credit to user ${transaction.userName || transaction.userId || 'User'}: ₹${amount} added to Company Treasury (Ref: ${transaction.referenceId || transaction.id})`,
+        reasonHi: `यूज़र ${transaction.userName || transaction.userId || 'User'} को डायरेक्ट बैलेंस: कंपनी ट्रेजरी में ₹${amount} जमा (Ref: ${transaction.referenceId || transaction.id})`,
         actor: 'Super Admin (admin)',
         referenceId: transaction.referenceId || transaction.id,
       };
@@ -2927,17 +2925,43 @@ async function startServer() {
     });
 
     db.investments.unshift(investment);
+
+    // Deduct from Company Treasury as mandated: "User job hi invest kare wo campany ke main balance se deduct hoker hi user ko transfer ho"
+    const prevTreasuryBal = db.treasury.balance || 0;
+    db.treasury.balance = Math.max(0, prevTreasuryBal - amount);
+    db.treasury.totalTransferredToUsers = (db.treasury.totalTransferredToUsers || 0) + amount;
+    db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + amount;
+    
+    const treasuryLog = {
+      id: `tlog-inv-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      timestamp: Date.now(),
+      date: new Date().toISOString(),
+      type: 'ADMIN_DEDUCT',
+      amount: amount,
+      balanceBefore: prevTreasuryBal,
+      balanceAfter: db.treasury.balance,
+      reason: `Investment: ${investment.planName} by user ${user?.name || effectiveUserId}: ₹${amount} deducted from Company Treasury`,
+      reasonHi: `निवेश: यूज़र ${user?.name || effectiveUserId} द्वारा ${investment.planName}: कंपनी ट्रेजरी से ₹${amount} डिडक्ट`,
+      actor: 'System (Investment)',
+      referenceId: investment.id,
+    };
+    db.treasuryLogs.unshift(treasuryLog);
+    syncAdminWalletWithTreasury(db);
+
     saveDb(db);
 
-    console.log(`[GCap DB] Investment created: ${investment.planName} (${amount} GP) by ${effectiveUserId}`);
+    console.log(`[GCap DB] Investment created: ${investment.planName} (${amount} GP) by ${effectiveUserId}. Treasury updated.`);
 
     broadcastRealtimeEvent("investment_created", {
       investment,
       userId: effectiveUserId,
       wallet,
+      treasury: db.treasury,
+      logs: db.treasuryLogs,
       timestamp: Date.now(),
       message: `New investment: ${investment.planName} (${amount} GP) by ${effectiveUserId}`,
     });
+    broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
     keysToSave.forEach((k) => {
       if (k) {
         broadcastRealtimeEvent("wallet_updated", { userId: k, wallet, timestamp: Date.now() });
