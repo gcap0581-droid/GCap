@@ -489,8 +489,8 @@ try {
       }
       firestore = clientInitializeFirestore(clientApp, {
         experimentalForceLongPolling: true,
-      }, config.firestoreDatabaseId || "(default)");
-      console.log("[Firebase] Successfully initialized Firestore Client with long-polling and database:", config.firestoreDatabaseId || "(default)");
+      }, "ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91");
+      console.log("[Firebase] Successfully initialized Firestore Client with hardcoded database ID: ai-studio-gcap-978eb8da-bbb3-4e61-9f93-28b174b28c91");
 
       // Server-side real-time Firestore listener to sync logins from other mobiles/devices instantly
       try {
