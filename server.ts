@@ -192,6 +192,8 @@ interface CompanyTreasury {
   totalInjected: number;
   totalDeducted: number;
   totalTransferredToUsers: number;
+  collectedFeeGpBalance?: number;
+  totalFeeGpConverted?: number;
   lastUpdated: string;
 }
 
@@ -445,10 +447,12 @@ const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
 
 const INITIAL_TREASURY: CompanyTreasury = {
   balance: 500000,
-  minAlertThreshold: 500000,
+  minAlertThreshold: 400000,
   totalInjected: 600000,
   totalDeducted: 100000,
   totalTransferredToUsers: 100000,
+  collectedFeeGpBalance: 0,
+  totalFeeGpConverted: 0,
   lastUpdated: new Date().toISOString(),
 };
 
@@ -982,7 +986,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
 }
 
 function syncAdminWalletWithTreasury(db: ServerDB) {
-  const currentTreasuryBalance = typeof db.treasury?.balance === 'number' ? db.treasury.balance : 600000;
+  const currentTreasuryBalance = typeof db.treasury?.balance === 'number' ? db.treasury.balance : 500000;
   const adminKeys = new Set<string>(['usr-admin-01', 'Admin', 'admin', '9800012345', '919800012345']);
 
   db.users.forEach((u) => {
@@ -1578,12 +1582,13 @@ function ensureDb(): ServerDB {
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
 
-    // ONE-TIME PATCH: Force treasury balance to 500,000 if it's currently 600,000 (Amit's 100k deduction)
-    if (parsed.treasury && parsed.treasury.balance === 600000) {
+    // ONE-TIME PATCH: Force treasury balance to 500,000 if it's currently 600,000 and totalInjected is 600,000 (Initial state before Amit's 100k deduction)
+    if (parsed.treasury && parsed.treasury.balance === 600000 && (parsed.treasury.totalInjected === 600000 || !parsed.treasury.totalInjected)) {
       parsed.treasury.balance = 500000;
       parsed.treasury.totalDeducted = (parsed.treasury.totalDeducted || 0) + 100000;
       parsed.treasury.totalTransferredToUsers = (parsed.treasury.totalTransferredToUsers || 0) + 100000;
-      if (!parsed.treasuryLogs.some((l: any) => l.id === "tr-log-amit-100k")) {
+      if (!parsed.treasuryLogs || !parsed.treasuryLogs.some((l: any) => l.id === "tr-log-amit-100k")) {
+        if (!parsed.treasuryLogs) parsed.treasuryLogs = [];
         parsed.treasuryLogs.unshift(INITIAL_LOGS[0]);
       }
       needsSave = true;
@@ -2365,7 +2370,7 @@ async function startServer() {
 
     res.json({
       success: true,
-      message: "System reset to fresh state with ₹6,00,000 Treasury balance.",
+      message: "System reset to fresh state with ₹5,00,000 Treasury balance.",
       treasury: db.treasury,
       transactions: [],
       investments: [],
@@ -3101,6 +3106,7 @@ async function startServer() {
     // Multi-criteria user lookup using standardized helper
     const user = findUserInDb(db, cleanId);
     const effectiveUserId = user ? user.id : cleanId;
+    const isTargetAdmin = user?.role === 'ADMIN' || ['admin', 'usr-admin-01'].includes(String(effectiveUserId).toLowerCase());
 
     // Retrieve existing wallet checking all user aliases
     const existingWallet = getBestUserWallet(db, cleanId, user);
@@ -3123,9 +3129,9 @@ async function startServer() {
     if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
       const amount = Number(adjustment.amount);
       const adjType = adjustment.type || 'ADD'; // 'ADD' | 'DEDUCT' | 'SET'
-      const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned'
+      const targetWallet = adjustment.targetWallet || 'cashBalance'; // 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned' | 'pendingDeposits' | 'pendingWithdrawals'
 
-      const currentVal = existingWallet[targetWallet] || 0;
+      const currentVal = (existingWallet as any)[targetWallet] || 0;
 
       let calculatedVal = currentVal;
       if (adjType === 'ADD') {
@@ -3136,11 +3142,41 @@ async function startServer() {
         calculatedVal = Math.max(0, amount);
       }
 
-      updatedWallet[targetWallet] = calculatedVal;
+      (updatedWallet as any)[targetWallet] = calculatedVal;
+
+      // Special handling for Admin cashBalance adjustment: sync with treasury immediately
+      if (isTargetAdmin && targetWallet === 'cashBalance') {
+        const prevTreasuryBal = db.treasury.balance || 0;
+        db.treasury.balance = calculatedVal;
+        
+        const treasuryDiff = calculatedVal - prevTreasuryBal;
+        if (treasuryDiff !== 0) {
+          if (treasuryDiff > 0) {
+            db.treasury.totalInjected = (db.treasury.totalInjected || 0) + treasuryDiff;
+          } else {
+            db.treasury.totalDeducted = (db.treasury.totalDeducted || 0) + Math.abs(treasuryDiff);
+          }
+
+          const tLog = {
+            id: `tlog-adm-sync-${Date.now()}`,
+            timestamp: Date.now(),
+            date: new Date().toISOString(),
+            type: treasuryDiff > 0 ? 'ADMIN_ADD' : 'ADMIN_DEDUCT',
+            amount: Math.abs(treasuryDiff),
+            balanceBefore: prevTreasuryBal,
+            balanceAfter: calculatedVal,
+            reason: `Admin wallet adjustment sync: ${adjustment.reason || 'Manual sync'}`,
+            reasonHi: `एडमिन वॉलेट एडजस्टमेंट सिंक: ${adjustment.reason || 'मैनुअल सिंक'}`,
+            actor: adminName || 'Super Admin',
+            referenceId: 'SYNC' + Math.floor(100000 + Math.random() * 900000),
+          };
+          db.treasuryLogs.unshift(tLog);
+        }
+      }
 
       const reason = adjustment.reason?.trim() || 'Admin manual balance adjustment';
-      const targetLabelEn = targetWallet === 'cashBalance' ? 'Cash Balance' : targetWallet === 'gpBalance' ? 'GP Balance' : targetWallet === 'totalEarned' ? 'Total Earnings' : 'Royalty Balance';
-      const targetLabelHi = targetWallet === 'cashBalance' ? 'नकद बैलेंस' : targetWallet === 'gpBalance' ? 'GP बैलेंस' : targetWallet === 'totalEarned' ? 'कुल कमाई' : 'रॉयल्टी बैलेंस';
+      const targetLabelEn = targetWallet === 'cashBalance' ? 'Cash Balance' : targetWallet === 'gpBalance' ? 'GP Balance' : targetWallet === 'totalEarned' ? 'Total Earnings' : targetWallet === 'pendingDeposits' ? 'Pending Deposits' : targetWallet === 'pendingWithdrawals' ? 'Pending Withdrawals' : 'Royalty Balance';
+      const targetLabelHi = targetWallet === 'cashBalance' ? 'नकद बैलेंस' : targetWallet === 'gpBalance' ? 'GP बैलेंस' : targetWallet === 'totalEarned' ? 'कुल कमाई' : targetWallet === 'pendingDeposits' ? 'लंबित जमा' : targetWallet === 'pendingWithdrawals' ? 'लंबित निकासी' : 'रॉयल्टी बैलेंस';
 
       const txnType = adjType === 'ADD'
         ? (targetWallet === 'totalEarned' ? 'RETURN_PAYOUT' : 'DEPOSIT')
@@ -3167,25 +3203,28 @@ async function startServer() {
     }
 
     // Calculate net funds transferred to/reclaimed from user for Company Treasury Balance Synchronization
+    // Skip this sync if the target is an Admin (already handled above)
     let netTransferToUser = 0;
-    if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
-      const amount = Number(adjustment.amount);
-      const adjType = adjustment.type || 'ADD';
-      const targetWallet = adjustment.targetWallet || 'cashBalance';
-      if (adjType === 'ADD') {
-        netTransferToUser = amount;
-      } else if (adjType === 'DEDUCT') {
-        netTransferToUser = -amount;
-      } else if (adjType === 'SET') {
-        const currentVal = (existingWallet as any)[targetWallet] || 0;
-        netTransferToUser = amount - currentVal;
+    if (!isTargetAdmin) {
+      if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
+        const amount = Number(adjustment.amount);
+        const adjType = adjustment.type || 'ADD';
+        const targetWallet = adjustment.targetWallet || 'cashBalance';
+        if (adjType === 'ADD') {
+          netTransferToUser = amount;
+        } else if (adjType === 'DEDUCT') {
+          netTransferToUser = -amount;
+        } else if (adjType === 'SET') {
+          const currentVal = (existingWallet as any)[targetWallet] || 0;
+          netTransferToUser = amount - currentVal;
+        }
+      } else if (wallet && typeof wallet === 'object') {
+        const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existingWallet.cashBalance || 0)) : 0;
+        const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existingWallet.gpBalance || 0)) : 0;
+        const earnDiff = typeof wallet.totalEarned === 'number' ? (wallet.totalEarned - (existingWallet.totalEarned || 0)) : 0;
+        const royDiff = typeof wallet.royaltyEarned === 'number' ? (wallet.royaltyEarned - (existingWallet.royaltyEarned || 0)) : 0;
+        netTransferToUser = cashDiff + gpDiff + earnDiff + royDiff;
       }
-    } else if (wallet && typeof wallet === 'object') {
-      const cashDiff = typeof wallet.cashBalance === 'number' ? (wallet.cashBalance - (existingWallet.cashBalance || 0)) : 0;
-      const gpDiff = typeof wallet.gpBalance === 'number' ? (wallet.gpBalance - (existingWallet.gpBalance || 0)) : 0;
-      const earnDiff = typeof wallet.totalEarned === 'number' ? (wallet.totalEarned - (existingWallet.totalEarned || 0)) : 0;
-      const royDiff = typeof wallet.royaltyEarned === 'number' ? (wallet.royaltyEarned - (existingWallet.royaltyEarned || 0)) : 0;
-      netTransferToUser = cashDiff + gpDiff + earnDiff + royDiff;
     }
 
     if (netTransferToUser > 0) {

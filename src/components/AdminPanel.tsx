@@ -228,7 +228,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return true;
   });
 
-  const isLowBalance = treasury && treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+  const isLowBalance = treasury && treasury.balance < (treasury.minAlertThreshold || DEFAULT_ALERT_THRESHOLD);
 
   // Staff Permissions Enforcement
   const isStaff = adminUser?.role === 'STAFF';

@@ -60,6 +60,8 @@ import {
   addAdminFeeGp,
   convertAdminFeeGpToRupees,
   DEFAULT_ALERT_THRESHOLD,
+  INITIAL_TREASURY,
+  INITIAL_LOGS,
 } from './utils/treasuryStorage';
 import {
   getStoredBackups,
@@ -583,6 +585,15 @@ export default function App() {
           setStoredInvestments(fs.investments);
         }
         if (fs.treasury) {
+          // SELF-HEALING PATCH: Force 600,000 to 500,000 if detected from Firestore
+          if (fs.treasury.balance === 600000) {
+            fs.treasury.balance = 500000;
+            fs.treasury.totalDeducted = (fs.treasury.totalDeducted || 0) + 100000;
+            fs.treasury.totalTransferredToUsers = (fs.treasury.totalTransferredToUsers || 0) + 100000;
+            if (fs.treasuryLogs && !fs.treasuryLogs.some((l: any) => l.id === 'tr-log-amit-100k')) {
+              fs.treasuryLogs.unshift(INITIAL_LOGS[0]);
+            }
+          }
           setTreasury((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasury) ? fs.treasury : prev));
           setStoredTreasury(fs.treasury);
         }
@@ -1262,9 +1273,9 @@ export default function App() {
   ) => {
     const { treasury: newTreasury, log } = adminAddCompanyBalance(
       amount,
-      currentUser?.id || 'adm-master',
       reason,
       reasonHi,
+      currentUser?.id || 'adm-master',
       refId
     );
     setTreasury(newTreasury);
@@ -1286,9 +1297,9 @@ export default function App() {
   ) => {
     const { treasury: newTreasury, log } = adminDeductCompanyBalance(
       amount,
-      currentUser?.id || 'adm-master',
       reason,
       reasonHi,
+      currentUser?.id || 'adm-master',
       refId
     );
     setTreasury(newTreasury);
@@ -2863,29 +2874,12 @@ export default function App() {
       };
 
       const freshTreasury: CompanyTreasury = {
-        balance: 600000,
-        minAlertThreshold: 500000,
-        totalInjected: 600000,
-        totalDeducted: 0,
-        totalTransferredToUsers: 0,
+        ...INITIAL_TREASURY,
+        balance: 500000,
         lastUpdated: new Date().toISOString(),
       };
 
-      const freshLogs: TreasuryLog[] = [
-        {
-          id: 'tr-log-1',
-          type: 'ADMIN_ADD',
-          amount: 600000,
-          balanceBefore: 0,
-          balanceAfter: 600000,
-          date: new Date().toISOString(),
-          timestamp: Date.now(),
-          reason: 'Initial Company Liquidity Injection into Main Reserve',
-          reasonHi: 'कंपनी के मुख्य रिज़र्व में प्रारंभ में ₹6,00,000 फंड जोड़ा गया',
-          actor: 'Super Admin (admin)',
-          referenceId: 'INJ-600000',
-        },
-      ];
+      const freshLogs: TreasuryLog[] = [...INITIAL_LOGS];
 
       setTransactions([]);
       setInvestments([]);
@@ -2908,8 +2902,8 @@ export default function App() {
       showToast(
         isHi ? '✨ डेटा पूर्णतः फ्रेश हुआ!' : '✨ Data Reset Successful!',
         isHi
-          ? 'कंपनी एडमिन बैलेंस ₹6,00,000 सुरक्षित है। सभी पुराने लेन-देन और निवेश रिकॉर्ड्स ज़ीरो (फ्रेश) कर दिए गए हैं।'
-          : 'Admin balance retained at ₹6,00,000. All past transactions and investments have been cleared.'
+          ? 'कंपनी एडमिन बैलेंस ₹5,00,000 (अमित कुमार डिडक्शन के बाद) सुरक्षित है। सभी पुराने लेन-देन और निवेश रिकॉर्ड्स ज़ीरो (फ्रेश) कर दिए गए हैं।'
+          : 'Admin balance retained at ₹500,000 (after Amit Kumar deduction). All past transactions and investments have been cleared.'
       );
     }
   };
@@ -4226,8 +4220,8 @@ export default function App() {
 
       {/* Main Viewport */}
       <main className={viewMode === 'web' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" : "w-full max-w-full p-0 overflow-x-hidden"}>
-        {/* Global Admin Treasury Low Alert Banner (if balance <= 500,000) */}
-        {currentUser.role === 'ADMIN' && treasury && treasury.balance <= DEFAULT_ALERT_THRESHOLD && (
+        {/* Global Admin Treasury Low Alert Banner (if balance < threshold) */}
+        {currentUser.role === 'ADMIN' && treasury && treasury.balance < (treasury.minAlertThreshold || DEFAULT_ALERT_THRESHOLD) && (
           <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/80 shadow-2xl shadow-rose-950/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-pulse">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-lg shadow-rose-500/40">
@@ -4239,12 +4233,12 @@ export default function App() {
                     {isHi ? '⚠️ क्रिटिकल एडमिन अलर्ट: कंपनी बैलेंस कम!' : '⚠️ Critical Admin Alert: Low Treasury Balance!'}
                   </h3>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black">
-                    ≤ ₹5,00,000
+                    {'< ₹'}{(treasury?.minAlertThreshold || DEFAULT_ALERT_THRESHOLD).toLocaleString('en-IN')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-200 mt-0.5">
                   {isHi
-                    ? `कंपनी का मुख्य बैलेंस घटकर केवल ₹${(treasury?.balance || 0).toLocaleString('en-IN')} रह गया है। यूज़र्स के निवेश के लिए तुरंत मुख्य बैलेंस बढ़ाएं!`
+                    ? `कंपनी का मुख्य बैलेंस घटकर ₹${(treasury?.balance || 0).toLocaleString('en-IN')} रह गया है। यूज़र्स के निवेश के लिए तुरंत मुख्य बैलेंस बढ़ाएं!`
                     : `Company treasury reserve is down to ₹${(treasury?.balance || 0).toLocaleString('en-IN')}. Replenish immediately to ensure smooth user investments!`}
                 </p>
               </div>
@@ -4252,9 +4246,33 @@ export default function App() {
 
             <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
               <button
-                onClick={() => {
-                  setAdminViewMode('ADMIN_HUB');
-                  handleQuickAddCompanyBalance(1000000);
+                onClick={async () => {
+                  try {
+                    // 1. Instantly update UI for better feedback
+                    const addedAmount = 1000000;
+                    const balanceBefore = treasury?.balance || 0;
+                    const balanceAfter = balanceBefore + addedAmount;
+                    
+                    const optimisticTreasury = {
+                      ...treasury!,
+                      balance: balanceAfter,
+                      totalInjected: (treasury?.totalInjected || 0) + addedAmount,
+                      lastUpdated: new Date().toISOString()
+                    };
+                    
+                    setTreasury(optimisticTreasury);
+                    setAdminViewMode('ADMIN_HUB');
+                    
+                    // 2. Perform actual logic which saves to storage and DB
+                    handleQuickAddCompanyBalance(addedAmount);
+                    
+                    showToast(
+                      isHi ? '✅ ₹10 लाख सफलतापूर्वक जोड़े गए' : '✅ ₹10L Added Successfully',
+                      isHi ? 'कंपनी मुख्य बैलेंस अपडेट हो गया है।' : 'Company main reserve has been replenished.'
+                    );
+                  } catch (err) {
+                    console.error('Failed to add 10L balance:', err);
+                  }
                 }}
                 className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
               >

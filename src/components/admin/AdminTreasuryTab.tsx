@@ -56,7 +56,7 @@ export const AdminTreasuryTab: React.FC<AdminTreasuryTabProps> = ({
     collectedFeeGpBalance: 0,
     totalFeeGpConverted: 0,
   };
-  const isLowBalance = treasury.balance <= DEFAULT_ALERT_THRESHOLD;
+  const isLowBalance = treasury.balance < (treasury.minAlertThreshold || DEFAULT_ALERT_THRESHOLD);
   const collectedFeeGp = treasury.collectedFeeGpBalance || 0;
   const totalConvertedFeeGp = treasury.totalFeeGpConverted || 0;
   const [searchTerm, setSearchTerm] = useState('');

@@ -1016,7 +1016,7 @@ export async function apiAdminAdjustUserWallet(
   wallet: Partial<Wallet>,
   adjustment?: {
     type: 'ADD' | 'DEDUCT' | 'SET';
-    targetWallet: 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned';
+    targetWallet: 'cashBalance' | 'gpBalance' | 'totalEarned' | 'royaltyEarned' | 'pendingDeposits' | 'pendingWithdrawals';
     amount: number;
     reason?: string;
   },
