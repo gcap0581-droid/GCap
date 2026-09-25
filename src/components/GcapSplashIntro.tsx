@@ -302,17 +302,24 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
                 transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                 className="relative z-10 w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-emerald-600 p-1 shadow-2xl shadow-amber-500/30 flex items-center justify-center"
               >
-                <div className="w-full h-full bg-slate-950 rounded-[22px] flex flex-col items-center justify-center p-3 relative overflow-hidden">
+                <div className="w-full h-full bg-slate-950 rounded-[22px] flex flex-col items-center justify-center relative overflow-hidden border border-white/10">
                   <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-amber-950/40" />
+                  
+                  <img 
+                    src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                    alt="GCap Premium Logo" 
+                    className="absolute inset-0 w-full h-full object-cover scale-110 opacity-90"
+                  />
 
-                  <div className="relative z-10 flex items-center justify-center gap-1 text-amber-400">
-                    <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
-                    <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10 text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+                  <div className="relative z-10 flex flex-col items-center justify-center p-2 bg-slate-950/40 backdrop-blur-[2px] rounded-xl border border-white/5 shadow-inner">
+                    <div className="flex items-center justify-center gap-1 text-amber-400 mb-0.5">
+                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                      <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                    </div>
+                    <span className="text-lg sm:text-xl font-black tracking-[0.2em] text-white drop-shadow-lg font-mono">
+                      GCAP
+                    </span>
                   </div>
-
-                  <span className="relative z-10 text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-emerald-300 mt-1 font-mono">
-                    GCAP
-                  </span>
                 </div>
               </motion.div>
             </div>

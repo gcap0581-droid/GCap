@@ -227,9 +227,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {/* Top Header */}
       <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md shrink-0">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
+              <img 
+                src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                alt="GCap Logo" 
+                className="w-full h-full object-cover scale-110"
+              />
             </div>
           </div>
           <div>

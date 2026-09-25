@@ -172,6 +172,7 @@ function dedupeAdminMessages(list: AdminMessage[]): AdminMessage[] {
   return Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
+// GCap Master Workflow Trigger Comment - Verification
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser());
   const [adminViewMode, setAdminViewMode] = useState<'ADMIN_HUB' | 'INVESTOR_VIEW'>('ADMIN_HUB');

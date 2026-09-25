@@ -150,9 +150,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }
                 }
               }}
-              className="flex items-center cursor-pointer select-none hover:opacity-80 transition-all active:scale-95 px-1 py-0.5 rounded-lg focus:outline-none"
+              className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-80 transition-all active:scale-95 px-1 py-0.5 rounded-lg focus:outline-none"
               title={isHi ? 'मुख्य होम पेज पर जाएँ' : 'Go to Home Page'}
             >
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 p-0.5 flex items-center justify-center overflow-hidden border border-emerald-500/30">
+                <img 
+                  src="/src/assets/images/gcap_hd_logo_premium_1790349527564.jpg" 
+                  alt="GCap Logo" 
+                  className="w-full h-full object-cover scale-110"
+                />
+              </div>
               <span className="font-black text-xl sm:text-2xl tracking-tight text-white">
                 GCap
               </span>
