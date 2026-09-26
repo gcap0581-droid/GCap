@@ -525,11 +525,11 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
 };
 
 const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 500000,
+  balance: 1500000,
   minAlertThreshold: 400000,
-  totalInjected: 600000,
-  totalDeducted: 100000,
-  totalTransferredToUsers: 100000,
+  totalInjected: 1500000,
+  totalDeducted: 0,
+  totalTransferredToUsers: 0,
   collectedFeeGpBalance: 0,
   totalFeeGpConverted: 0,
   lastUpdated: new Date().toISOString(),
@@ -656,10 +656,26 @@ try {
                   });
 
                   incomingValid.forEach((incU: any) => {
-                    existingUserMap.set(incU.id, {
-                      ...existingUserMap.get(incU.id),
-                      ...incU,
-                    });
+                    const localU = existingUserMap.get(incU.id);
+                    if (localU) {
+                      const localTs = localU.lastActiveAt ? new Date(localU.lastActiveAt).getTime() : 0;
+                      const incTs = incU.lastActiveAt ? new Date(incU.lastActiveAt).getTime() : 0;
+                      if (localTs > incTs) {
+                        // Local is newer! Preserve local fields, merge with incoming as backup
+                        existingUserMap.set(incU.id, {
+                          ...incU,
+                          ...localU,
+                        });
+                      } else {
+                        // Incoming is newer! Overwrite with incoming
+                        existingUserMap.set(incU.id, {
+                          ...localU,
+                          ...incU,
+                        });
+                      }
+                    } else {
+                      existingUserMap.set(incU.id, incU);
+                    }
                   });
 
                   const mergedUsers = Array.from(existingUserMap.values()).filter((u: any) => {
@@ -2183,6 +2199,8 @@ async function startServer() {
           let localWallets: Record<string, any> = {};
           let localInvestments: any[] = [];
           let localLedger: any[] = [];
+          let localTreasury: any = null;
+          let localTreasuryLogs: any[] = [];
           try {
             if (fs.existsSync(DB_FILE)) {
               const localRaw = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
@@ -2190,8 +2208,22 @@ async function startServer() {
               if (localRaw.wallets) localWallets = localRaw.wallets;
               if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
               if (Array.isArray(localRaw.companyLedger)) localLedger = localRaw.companyLedger;
+              if (localRaw.treasury) localTreasury = localRaw.treasury;
+              if (Array.isArray(localRaw.treasuryLogs)) localTreasuryLogs = localRaw.treasuryLogs;
             }
           } catch (_) {}
+
+          if (localTreasury && remoteDb.treasury) {
+            const localTs = localTreasury.lastUpdated ? new Date(localTreasury.lastUpdated).getTime() : 0;
+            const remoteTs = remoteDb.treasury.lastUpdated ? new Date(remoteDb.treasury.lastUpdated).getTime() : 0;
+            if (localTs > remoteTs) {
+              remoteDb.treasury = localTreasury;
+              console.log("[Firebase Startup Sync] Preferring newer local treasury balance:", localTreasury.balance);
+              if (localTreasuryLogs && localTreasuryLogs.length > 0) {
+                remoteDb.treasuryLogs = localTreasuryLogs;
+              }
+            }
+          }
 
           const userMap = new Map<string, StoredAccount>();
           (remoteDb.users || []).forEach((u: StoredAccount) => { if (u?.id) userMap.set(u.id, u); });
@@ -2414,8 +2446,25 @@ async function startServer() {
   });
 
   // Admin Force System Update Endpoint: Forces all installed PWAs and open mobile apps to update immediately
-  app.post("/api/admin/force-refresh", (_req, res) => {
+  app.post("/api/admin/force-refresh", async (_req, res) => {
     SERVER_BUILD_ID = `${Date.now()}`;
+    
+    // Force reload from Firestore
+    if (firestore) {
+        try {
+            console.log("[Server] Force-refresh: Performing full reload from Firestore...");
+            const remoteDb = await loadFromFirestore();
+            if (remoteDb) {
+                const db = ensureDb();
+                Object.assign(db, remoteDb);
+                saveDb(db, true);
+                console.log("[Server] Force-refresh: Full database state successfully reloaded from Firestore!");
+            }
+        } catch (e) {
+            console.warn("[Server] Force-refresh: Failed to reload from Firestore", e);
+        }
+    }
+
     const db = ensureDb();
     db.lastUpdated = new Date().toISOString();
     saveDb(db);
@@ -2436,7 +2485,7 @@ async function startServer() {
   });
 
   // Admin Reset System Data to Fresh (Keep Treasury ₹6,00,000, clear all transactions & investments)
-  app.post("/api/admin/reset-fresh", (_req, res) => {
+  app.post("/api/admin/reset-fresh", async (_req, res) => {
     const db = ensureDb();
     db.transactions = [];
     db.investments = [];
@@ -2448,8 +2497,22 @@ async function startServer() {
     }
     db.wallets = freshWallets;
 
-    // Reset Treasury to exact INITIAL_TREASURY balance
-    db.treasury = { ...INITIAL_TREASURY };
+    // Use the latest treasury balance from Firestore if available, otherwise fallback
+    let currentTreasury = null;
+    if (firestore) {
+        try {
+            const docSnap = await getClientDoc(clientDoc(firestore, "gcap_database", "treasury"));
+            if (docSnap.exists()) {
+                currentTreasury = docSnap.data()?.data;
+                console.log("[Server] reset-fresh: Loaded latest treasury from Firestore:", currentTreasury);
+            }
+        } catch (e) {
+            console.warn("[Server] reset-fresh: Failed to load treasury from Firestore:", e);
+        }
+    }
+    
+    // Reset Treasury to current Firestore balance or INITIAL_TREASURY
+    db.treasury = currentTreasury || { ...INITIAL_TREASURY };
     db.treasuryLogs = [...INITIAL_LOGS];
 
     db.lastUpdated = new Date().toISOString();

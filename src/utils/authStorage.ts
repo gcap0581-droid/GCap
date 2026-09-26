@@ -230,12 +230,27 @@ export function mergeUsers(existingUsers: UserProfile[], incomingUsers: UserProf
     if (!inc || !inc.id || isUserDeleted(inc)) continue;
     const ex = findExisting(inc);
     if (ex) {
-      const merged: UserProfile = {
-        ...ex,
-        ...inc,
-        password: inc.password || (inc as any).passwordHash || ex.password || ex.passwordHash || '',
-        passwordHash: inc.passwordHash || inc.password || ex.passwordHash || ex.password || '',
-      };
+      const exTs = ex.lastActiveAt ? new Date(ex.lastActiveAt).getTime() : 0;
+      const incTs = inc.lastActiveAt ? new Date(inc.lastActiveAt).getTime() : 0;
+      
+      let merged: UserProfile;
+      if (exTs > incTs) {
+        // Local/existing is newer! Keep local fields as priority
+        merged = {
+          ...inc,
+          ...ex,
+          password: ex.password || ex.passwordHash || inc.password || (inc as any).passwordHash || '',
+          passwordHash: ex.passwordHash || ex.password || inc.passwordHash || inc.password || '',
+        };
+      } else {
+        // Incoming is newer!
+        merged = {
+          ...ex,
+          ...inc,
+          password: inc.password || (inc as any).passwordHash || ex.password || ex.passwordHash || '',
+          passwordHash: inc.passwordHash || inc.password || ex.passwordHash || ex.password || '',
+        };
+      }
       map.set(ex.id, merged);
       if (inc.id && inc.id !== ex.id) {
         map.set(inc.id, merged);
@@ -1251,8 +1266,37 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', onUserActivity, { passive: true });
   window.addEventListener('keydown', onUserActivity, { passive: true });
   window.addEventListener('touchstart', onUserActivity, { passive: true });
+
+  // Send offline ping immediately on window unload or when tab is hidden
+  const reportOffline = () => {
+    const user = getCurrentUser();
+    if (user && user.id) {
+      // Mark local cache as offline first
+      user.isOnline = false;
+      try {
+        updatePresenceInFirestore(user, false).catch(() => {});
+      } catch {}
+      
+      // Use sendBeacon for reliable delivery on page close
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify({ userId: user.id })], { type: 'application/json' });
+        navigator.sendBeacon('/api/auth/offline', blob);
+      } else {
+        fetch('/api/auth/offline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+          keepalive: true
+        }).catch(() => {});
+      }
+    }
+  };
+
+  window.addEventListener('beforeunload', reportOffline);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'hidden') {
+      reportOffline();
+    } else if (document.visibilityState === 'visible') {
       onUserActivity();
     }
   });

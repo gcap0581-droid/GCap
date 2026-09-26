@@ -639,14 +639,30 @@ export default function App() {
           const fsTs = fs.treasury?.lastUpdated ? new Date(fs.treasury.lastUpdated).getTime() : 0;
           setTreasury((prev) => {
             const prevTs = prev?.lastUpdated ? new Date(prev.lastUpdated).getTime() : 0;
-            if (!prev || fsTs > prevTs) {
+            if (!prev || fsTs >= prevTs) {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('gcap_company_treasury_v1', JSON.stringify(fs.treasury));
+              }
               return fs.treasury;
             }
             return prev;
           });
         }
         if (fs.treasuryLogs) {
-          setTreasuryLogs((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.treasuryLogs) ? fs.treasuryLogs : prev));
+          setTreasuryLogs((prev) => {
+            // Check if treasury logs from server have newer or equal updates
+            const fsLatest = fs.treasuryLogs[0];
+            const localLatest = prev[0];
+            const fsTs = fsLatest?.timestamp || (fsLatest?.date ? new Date(fsLatest.date).getTime() : 0);
+            const localTs = localLatest?.timestamp || (localLatest?.date ? new Date(localLatest.date).getTime() : 0);
+            if (!prev || prev.length === 0 || fsTs >= localTs) {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('gcap_treasury_logs_v1', JSON.stringify(fs.treasuryLogs));
+              }
+              return fs.treasuryLogs;
+            }
+            return prev;
+          });
         }
         if (fs.messages && Array.isArray(fs.messages)) {
           setMessages(dedupeAdminMessages(fs.messages));

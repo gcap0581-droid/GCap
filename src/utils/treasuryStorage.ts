@@ -14,7 +14,7 @@ export const INITIAL_TREASURY: CompanyTreasury = {
   totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,
   totalFeeGpConverted: 0,
-  lastUpdated: new Date().toISOString(),
+  lastUpdated: '2026-01-01T00:00:00.000Z',
 };
 
 export const INITIAL_LOGS: TreasuryLog[] = [

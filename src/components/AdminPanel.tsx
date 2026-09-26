@@ -316,76 +316,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       refreshUsers();
     }, 0);
 
-    // 2. Subscribe to custom event & cross-tab storage changes
+    // 2. Central 100% Real-time Subscription (Firestore + SSE + Presence Enrichment)
     const unsubscribeStorage = subscribeToUsersUpdates((updated) => {
       if (Array.isArray(updated) && updated.length > 0) {
         updateUsersSafely(updated);
       }
     });
 
-    // 3. Subscribe to real-time Server-Sent Events (SSE) stream for 0ms cross-device synchronization
-    const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
-      console.log(`[AdminPanel] Received realtime event: ${event.type}`, event);
-      if (event.type === 'USER_STATUS_CHANGED') {
-        const uId = event.userId;
-        const newIsOnline = (event as any).isOnline;
-        if (uId) {
-          recordLivePresence(uId, newIsOnline !== undefined ? Boolean(newIsOnline) : true, (event as any).lastActiveAt, (event as any).lastLogoutAt);
-          setUsersList((prev) => {
-            if (!Array.isArray(prev)) return prev;
-            const cleanUId = String(uId).trim().toLowerCase();
-            const cleanEventDigits = cleanUId.replace(/[^0-9]/g, '');
-            const updated = prev.map((u) => {
-              const cleanId = String(u.id || '').trim().toLowerCase();
-              const cleanLoginId = String(u.loginId || '').trim().toLowerCase();
-              const cleanPhone = String(u.phone || '').replace(/[^0-9]/g, '');
-              const match =
-                cleanId === cleanUId ||
-                (cleanLoginId && cleanLoginId === cleanUId) ||
-                (cleanPhone && cleanEventDigits && (cleanPhone === cleanEventDigits || cleanPhone.endsWith(cleanEventDigits) || cleanEventDigits === cleanPhone.slice(-10)));
-              if (match) {
-                return {
-                  ...u,
-                  isOnline: newIsOnline !== undefined ? Boolean(newIsOnline) : true,
-                  lastActiveAt: new Date().toISOString(),
-                  lastLogoutAt: newIsOnline === false ? new Date().toISOString() : undefined,
-                };
-              }
-              return u;
-            });
-            return updated;
-          });
-        }
-      } else if (
-        event.type === 'USER_REGISTERED' ||
-        event.type === 'USER_ADDED' ||
-        event.type === 'USER_UPDATED' ||
-        event.type === 'USER_DELETED' ||
-        event.type === 'STATE_CHANGED'
-      ) {
-        console.log(`[AdminPanel] Triggering refresh for event: ${event.type}`);
-        if ((event as any).users && Array.isArray((event as any).users)) {
-          updateUsersSafely((event as any).users);
-        }
-        refreshUsers();
-      }
-    });
-
-    // 4. Direct Firestore real-time listener for 100% sync across Vercel, AI Studio, and Mobile
+    // 3. Direct Firestore listener for Wallets Sync only (Users are fully managed by subscribeToUsersUpdates)
     const unsubscribeFirestore = subscribeToFirestoreState((fs) => {
       if (!fs) return;
-      if (fs.users && Array.isArray(fs.users)) {
-        const delSet = new Set((fs.deletedUserIds || []).map(x => String(x).toLowerCase().trim()));
-        const clean = fs.users
-          .filter(u => {
-            if (!u || !u.id) return false;
-            if (delSet.has(String(u.id).toLowerCase())) return false;
-            if (u.loginId && delSet.has(String(u.loginId).toLowerCase())) return false;
-            if (u.phone && delSet.has(String(u.phone).replace(/[^0-9]/g, '').slice(-10))) return false;
-            return true;
-          });
-        updateUsersSafely(clean);
-      }
       if (fs.wallets && typeof fs.wallets === 'object') {
         setWalletsMap((prev) => {
           // If we already have server wallets, preserve current balances to prevent ping-pong with stale Firestore data
@@ -403,20 +343,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
     });
 
-    // 5. Fast auto-polling & real-time presence synchronization tick
-    const interval = setInterval(() => {
-      syncUsersWithServer().then((updated) => {
-        if (Array.isArray(updated) && updated.length > 0) {
-          updateUsersSafely(updated);
-        }
-      }).catch(() => {});
-    }, 2500);
-
     return () => {
+      clearTimeout(tInit);
       unsubscribeStorage();
-      unsubscribeRealtime();
       unsubscribeFirestore();
-      clearInterval(interval);
     };
   }, []);
 
