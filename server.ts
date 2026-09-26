@@ -596,7 +596,7 @@ try {
             return; // Ignore local write echoes from server's own saveToFirestore calls
           }
           if (!snapshot.empty) {
-            const db = ensureDb();
+            const db = await ensureDb();
             let changed = false;
 
             // First pass: extract deletedUserIds and presence if present in this snapshot
@@ -2120,7 +2120,7 @@ async function startServer() {
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
-    const currentDb = ensureDb();
+    const currentDb = await ensureDb();
     res.json({
       buildId: SERVER_BOOT_TIMESTAMP,
       buildTime: new Date(Number(SERVER_BOOT_TIMESTAMP)).toISOString(),
@@ -2134,7 +2134,7 @@ async function startServer() {
 
   // Health check
   app.get("/api/company-profile", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     res.json({ success: true, profile: db.companyProfile });
   });
 
@@ -2142,7 +2142,7 @@ async function startServer() {
     const { profile } = req.body;
     if (!profile) return res.status(400).json({ success: false, error: "Profile required" });
     
-    const db = ensureDb();
+    const db = await ensureDb();
     db.companyProfile = {
       ...db.companyProfile,
       ...profile,
@@ -2164,7 +2164,7 @@ async function startServer() {
   // Dedicated Firebase Live Sync Route
   app.all("/api/firebase/sync", async (_req, res) => {
     try {
-      const currentDb = ensureDb();
+      const currentDb = await ensureDb();
       if (firestore) {
         await saveToFirestore(currentDb);
         return res.json({
@@ -2268,7 +2268,7 @@ async function startServer() {
           remoteDb.investments = Array.from(invMap.values());
 
           fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");
-          const cleanedDb = ensureDb();
+          const cleanedDb = await ensureDb();
           lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
           fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
           saveToFirestore(cleanedDb).catch(err => {
@@ -2323,7 +2323,7 @@ async function startServer() {
 
   // Version for OTA Auto-Sync - Crucial for mobile apps already installed to instantly detect changes
   app.get("/version.json", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
@@ -2341,7 +2341,7 @@ async function startServer() {
 
   // GET: Company ledger entries
   app.get("/api/admin/ledger", (req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     const ledger = (db as any).companyLedger || [];
     
     // Calculate summaries
@@ -2380,7 +2380,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Category is required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!(db as any).companyLedger) {
       (db as any).companyLedger = [];
     }
@@ -2414,7 +2414,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Entry ID is required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const ledger = (db as any).companyLedger || [];
     const initialLen = ledger.length;
     (db as any).companyLedger = ledger.filter((entry: any) => entry.id !== id);
@@ -2434,7 +2434,7 @@ async function startServer() {
   // Admin Force System Update Endpoint: Forces all installed PWAs and open mobile apps to update immediately
   app.post("/api/admin/force-refresh", (_req, res) => {
     SERVER_BUILD_ID = `${Date.now()}`;
-    const db = ensureDb();
+    const db = await ensureDb();
     db.lastUpdated = new Date().toISOString();
     saveDb(db);
 
@@ -2455,7 +2455,7 @@ async function startServer() {
 
   // Admin Reset System Data to Fresh (Keep Treasury ₹6,00,000, clear all transactions & investments)
   app.post("/api/admin/reset-fresh", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     db.transactions = [];
     db.investments = [];
     
@@ -2489,7 +2489,7 @@ async function startServer() {
 
   // GET: Central real-time state for any user or admin across the world
   app.get(["/api/central/state", "/central-state.json"], (req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     const { userId, role } = req.query;
 
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -2702,19 +2702,19 @@ async function startServer() {
 
   // GET: Transactions list
   app.get("/api/transactions", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     res.json({ success: true, transactions: db.transactions || [] });
   });
 
   // GET: Investments list
   app.get("/api/investments", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     res.json({ success: true, investments: db.investments || [] });
   });
 
   // GET: Wallets list
   app.get("/api/wallets", (_req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     res.json({ success: true, wallets: db.wallets || {} });
   });
 
@@ -2725,7 +2725,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Invalid transaction payload" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const effectiveUserId = userId || transaction.userId || "usr-user-01";
     transaction.userId = effectiveUserId;
 
@@ -2825,7 +2825,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Transaction is required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const idx = db.transactions.findIndex((t) => t.id === transaction.id);
     if (idx === -1) {
       db.transactions.unshift(transaction);
@@ -2915,7 +2915,7 @@ async function startServer() {
     const { transaction } = req.body || {};
     if (!transaction) return res.status(400).json({ success: false, error: "No transaction payload" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     db.transactions.unshift(transaction);
 
     // If transaction is SUCCESS and credits funds (DEPOSIT or ADMIN_ADD), increase Company Treasury Balance
@@ -2974,7 +2974,7 @@ async function startServer() {
 
   // DELETE: Admin deletes transaction
   app.delete("/api/transactions/:id", (req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     db.transactions = db.transactions.filter((t) => t.id !== req.params.id);
     saveDb(db);
 
@@ -2991,7 +2991,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Invalid investment payload" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const effectiveUserId = userId || investment.userId || "usr-user-01";
     investment.userId = effectiveUserId;
 
@@ -3093,7 +3093,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Investment required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const idx = db.investments.findIndex((i) => i.id === investment.id);
     if (idx !== -1) {
       db.investments[idx] = { ...db.investments[idx], ...investment };
@@ -3139,7 +3139,7 @@ async function startServer() {
     const { plans } = req.body || {};
     if (!Array.isArray(plans)) return res.status(400).json({ success: false, error: "Plans array required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     db.plans = plans;
     saveDb(db);
     console.log(`[GCap DB] Plans updated: ${plans.length} plans`);
@@ -3155,7 +3155,7 @@ async function startServer() {
     const { rules } = req.body || {};
     if (!rules) return res.status(400).json({ success: false, error: "Rules required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     db.rules = { ...db.rules, ...rules };
     saveDb(db);
     console.log(`[GCap DB] Rules updated`);
@@ -3171,7 +3171,7 @@ async function startServer() {
     const { liveConfig } = req.body || {};
     if (!liveConfig) return res.status(400).json({ success: false, error: "Live config required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     db.liveConfig = { ...db.liveConfig, ...liveConfig };
     saveDb(db);
     console.log(`[GCap DB] Live Config updated`);
@@ -3185,7 +3185,7 @@ async function startServer() {
   // POST: Update Treasury Balance & Logs
   app.post("/api/treasury/update", (req, res) => {
     const { treasury, log } = req.body || {};
-    const db = ensureDb();
+    const db = await ensureDb();
     if (treasury) {
       db.treasury = { ...db.treasury, ...treasury };
     }
@@ -3217,7 +3217,7 @@ async function startServer() {
     const { userId, details } = req.body || {};
     if (!userId) return res.status(400).json({ success: false, error: "User ID required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     db.bankDetails[userId] = details;
     saveDb(db);
 
@@ -3234,7 +3234,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "User ID is required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanId = String(userId).trim();
 
     // Multi-criteria user lookup using standardized helper
@@ -3432,7 +3432,7 @@ async function startServer() {
     const { userId, wallet } = req.body || {};
     if (!userId || !wallet) return res.status(400).json({ success: false, error: "User ID and wallet required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanId = String(userId).trim();
     const user = findUserInDb(db, cleanId);
 
@@ -3458,7 +3458,7 @@ async function startServer() {
 
   // GET: Messages for a user or admin
   app.get("/api/messages", (req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
     const { userId, role } = req.query;
     const allMessages = db.messages || [];
 
@@ -3581,7 +3581,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Title and content are required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!db.messages) db.messages = [];
 
     const msgId = (req.body.id && typeof req.body.id === 'string' && req.body.id.startsWith('msg-'))
@@ -3632,7 +3632,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Messages array required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!db.messages) db.messages = [];
 
     let addedCount = 0;
@@ -3693,7 +3693,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Message ID and User ID required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!db.messages) db.messages = [];
     const msg = db.messages.find((m) => m.id === id);
     if (msg) {
@@ -3715,7 +3715,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "Message ID and User ID required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!db.messages) db.messages = [];
     const msg = db.messages.find((m) => m.id === id);
     if (msg) {
@@ -3734,7 +3734,7 @@ async function startServer() {
     const { id } = req.params;
     if (!id) return res.status(400).json({ success: false, error: "Message ID required" });
 
-    const db = ensureDb();
+    const db = await ensureDb();
     if (!db.messages) db.messages = [];
     const initialLen = db.messages.length;
     db.messages = db.messages.filter((m) => m.id !== id);
@@ -3749,7 +3749,7 @@ async function startServer() {
 
   // GET: Users list with real-time online status, last login, and logout times
   app.get("/api/users", async (req, res) => {
-    const db = ensureDb();
+    const db = await ensureDb();
 
     // Try syncing users from Firestore if available
     if (firestore) {
@@ -3833,7 +3833,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "कृपया पासवर्ड दर्ज करें" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanDigits = trimmedId.replace(/[^0-9]/g, "");
     const normalizedPhone = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : "";
 
@@ -3951,7 +3951,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "User ID required for logout" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanUserId = String(userId || "").trim();
     const cleanLoginId = String(loginId || "").trim().toLowerCase();
     const cleanDigits = String(phone || userId || "").replace(/[^0-9]/g, "");
@@ -3998,7 +3998,7 @@ async function startServer() {
       return res.json({ success: false });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanUserId = String(userId).trim();
     const cleanDigits = cleanUserId.replace(/[^0-9]/g, "");
     const phone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : "";
@@ -4041,7 +4041,7 @@ async function startServer() {
       return res.json({ success: false });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanUserId = String(userId || "").trim();
     const cleanLoginId = String(loginId || "").trim().toLowerCase();
     const cleanDigits = String(phone || userId || "").replace(/[^0-9]/g, "");
@@ -4100,7 +4100,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "User ID and new password required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const account = db.users.find((u) => u.id === userId);
     if (!account) {
       return res.status(404).json({ success: false, error: "User not found" });
@@ -4139,7 +4139,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "पासवर्ड कम से कम 4 अक्षरों का होना चाहिए" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const existing = db.users.find((acc) => {
       const accDigits = acc.phone ? acc.phone.replace(/[^0-9]/g, "") : "";
       const accPhone10 = accDigits.length >= 10 ? accDigits.slice(-10) : "";
@@ -4216,7 +4216,7 @@ async function startServer() {
   // POST: Users Sync (Bi-directional multi-device synchronization)
   app.post("/api/users/sync", (req, res) => {
     const { accounts } = req.body || {};
-    const db = ensureDb();
+    const db = await ensureDb();
     const deletedSet = new Set(db.deletedUserIds || []);
 
     if (Array.isArray(accounts)) {
@@ -4314,7 +4314,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "कृपया 10 अंकों का मान्य फ़ोन नंबर दर्ज करें" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     
     // Always use the primary admin's referral code for users created by admin if not provided
     const adminUser = db.users.find(u => u.role === 'ADMIN');
@@ -4412,7 +4412,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "User ID is required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanId = String(userId).trim().toLowerCase();
     const cleanPhone = cleanId.replace(/[^0-9]/g, "");
     const targetIdx = db.users.findIndex(
@@ -4477,7 +4477,7 @@ async function startServer() {
       return res.status(400).json({ success: false, error: "User ID required" });
     }
 
-    const db = ensureDb();
+    const db = await ensureDb();
     const cleanDigits = userId.replace(/[^0-9]/g, "");
     const cleanPhone10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : "";
     const lowerUserId = userId.toLowerCase();
@@ -4652,7 +4652,7 @@ async function startServer() {
   // Periodic background check for 6-hour cycle payouts and presence reaper
   setInterval(() => {
     try {
-      const db = ensureDb();
+      const db = await ensureDb();
       const updated = processServerSideCycles(db);
       if (updated) {
         saveDb(db);
