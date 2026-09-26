@@ -1543,28 +1543,10 @@ function ensureDb(): ServerDB {
       }
       return initial;
     }
-    // Force read from Firestore instead of local file
-    let parsed: any;
-    if (firestore) {
-        try {
-            const docSnap = await getClientDoc(clientDoc(firestore, "gcap_database", "metadata"));
-            if (docSnap.exists()) {
-                parsed = docSnap.data();
-                console.log("[Server] Loaded data from Firestore");
-            }
-        } catch (e) {
-            console.warn("[Server] Failed to load from Firestore, falling back to local file", e);
-        }
-    }
-
-    if (!parsed) {
-        const raw = fs.readFileSync(DB_FILE, "utf-8");
-        parsed = JSON.parse(raw);
-        console.log("[Server] Loaded data from local file");
-    }
-
     // Reconcile and ensure all fields exist
     let needsSave = false;
+    const raw = fs.readFileSync(DB_FILE, "utf-8");
+    let parsed: any = JSON.parse(raw);
     if (!parsed.users || !Array.isArray(parsed.users)) {
       parsed.users = DEFAULT_ACCOUNTS;
       needsSave = true;
