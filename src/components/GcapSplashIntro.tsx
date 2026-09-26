@@ -305,12 +305,6 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
                 <div className="w-full h-full bg-slate-950 rounded-[22px] flex flex-col items-center justify-center relative overflow-hidden border border-white/10">
                   <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-transparent to-amber-950/40" />
                   
-                  <img 
-                    src="/assets/images/logo.jpg" 
-                    alt="GCap Premium Logo" 
-                    className="absolute inset-0 w-full h-full object-cover scale-110 opacity-90"
-                  />
-
                   <div className="relative z-10 flex flex-col items-center justify-center p-2 bg-slate-950/40 backdrop-blur-[2px] rounded-xl border border-white/5 shadow-inner">
                     <div className="flex items-center justify-center gap-1 text-amber-400 mb-0.5">
                       <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />

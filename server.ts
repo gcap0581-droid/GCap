@@ -1990,6 +1990,7 @@ function ensureDb(): ServerDB {
       bankDetails: {},
       treasury: INITIAL_TREASURY,
       treasuryLogs: INITIAL_LOGS,
+      companyProfile: DEFAULT_COMPANY_PROFILE,
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -2142,7 +2143,7 @@ async function startServer() {
       ...profile,
       lastUpdated: new Date().toISOString()
     };
-    saveDB(db);
+    saveDb(db);
     res.json({ success: true, profile: db.companyProfile });
   });
 
