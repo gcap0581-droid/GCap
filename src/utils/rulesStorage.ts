@@ -127,7 +127,7 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
       );
     }
   } catch (err) {
-    console.error('Failed to save rules:', err);
+    console.warn('Failed to save rules:', err);
   }
 }
 

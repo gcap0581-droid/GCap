@@ -239,7 +239,7 @@ export function initFirestoreRealtimeListener(): () => void {
               try {
                 listener(parsed);
               } catch (e) {
-                console.error('[FirestoreBridge] Listener callback error:', e);
+                console.warn('[FirestoreBridge] Listener callback error:', e);
               }
             });
 
@@ -259,7 +259,7 @@ export function initFirestoreRealtimeListener(): () => void {
               try {
                 listener(offlineBackup);
               } catch (e) {
-                console.error('[FirestoreBridge] Fallback listener error:', e);
+                console.warn('[FirestoreBridge] Fallback listener error:', e);
               }
             });
             // Dispatch global browser event for cross-component re-renders
@@ -302,7 +302,7 @@ export function subscribeToFirestoreState(
     try {
       callback(cachedFirestoreDb);
     } catch (e) {
-      console.error('[FirestoreBridge] Initial callback error:', e);
+      console.warn('[FirestoreBridge] Initial callback error:', e);
     }
   }
 
@@ -393,7 +393,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
     if (errMsg.includes("resource_exhausted") || errMsg.includes("quota")) {
       console.warn('[FirestoreBridge] Firestore quota limit reached. Falling back to local offline DB backup.', err);
     } else {
-      console.error('[FirestoreBridge] Error fetching full state:', err);
+      console.warn('[FirestoreBridge] Error fetching full state:', err);
     }
 
     // Try loading from local offline backup
@@ -461,7 +461,7 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
       try {
         listener(cachedFirestoreDb!);
       } catch (e) {
-        console.error('[FirestoreBridge] Listener callback error on local save:', e);
+        console.warn('[FirestoreBridge] Listener callback error on local save:', e);
       }
     });
 
@@ -738,7 +738,7 @@ export function updateFirestoreBridgeCache(partial: Partial<FirestoreDatabaseSta
     try {
       listener(cachedFirestoreDb!);
     } catch (e) {
-      console.error('[FirestoreBridge] Error in update cache listener:', e);
+      console.warn('[FirestoreBridge] Error in update cache listener:', e);
     }
   });
 

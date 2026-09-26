@@ -35,7 +35,7 @@ export function getStoredLiveConfig(): LiveInterfaceConfig {
     const parsed = JSON.parse(raw);
     return { ...DEFAULT_LIVE_CONFIG, ...parsed };
   } catch (err) {
-    console.error('Failed to parse live config:', err);
+    console.warn('Failed to parse live config:', err);
     return DEFAULT_LIVE_CONFIG;
   }
 }
@@ -49,7 +49,7 @@ export function saveStoredLiveConfig(config: LiveInterfaceConfig, syncToServer =
       apiSaveLiveConfig(config).catch((err) => console.warn('Background apiSaveLiveConfig error:', err));
     }
   } catch (err) {
-    console.error('Failed to save live config:', err);
+    console.warn('Failed to save live config:', err);
   }
 }
 
@@ -75,7 +75,7 @@ export function recordOtaHistory(event: OtaEventPayload): void {
     const updated = [event, ...history.slice(0, 49)]; // keep latest 50
     localStorage.setItem(OTA_HISTORY_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
-    console.error('Failed to save OTA history:', err);
+    console.warn('Failed to save OTA history:', err);
   }
 }
 
@@ -105,7 +105,7 @@ if (typeof window !== 'undefined') {
         const payload: OtaEventPayload = JSON.parse(e.newValue);
         listeners.forEach((fn) => fn(payload));
       } catch (err) {
-        console.error('Failed to parse storage OTA event:', err);
+        console.warn('Failed to parse storage OTA event:', err);
       }
     }
   });
@@ -144,7 +144,7 @@ export function broadcastOtaUpdate(
     try {
       fn(event);
     } catch (err) {
-      console.error('Error executing OTA subscriber:', err);
+      console.warn('Error executing OTA subscriber:', err);
     }
   });
 

@@ -239,7 +239,7 @@ export function exportAllDataToExcel(
 
     return { success: true, filename };
   } catch (err: any) {
-    console.error('Failed to export data to Excel:', err);
+    console.warn('Failed to export data to Excel:', err);
     return { success: false, filename: '', error: err?.message || 'Excel export failed' };
   }
 }

@@ -171,7 +171,7 @@ const DEFAULT_FALLBACK_LEDGER: LedgerEntry[] = [
         applyLedgerState(fsState.companyLedger);
       }
     } catch (err: any) {
-      console.error('[AdminLedgerTab] Error loading ledger:', err);
+      console.warn('[AdminLedgerTab] Error loading ledger:', err);
       setError(err.message || 'Error loading ledger');
     } finally {
       setIsLoading(false);

@@ -106,7 +106,7 @@ export function setStoredTreasury(treasury: CompanyTreasury) {
     const currentLogs = getStoredTreasuryLogs();
     apiUpdateTreasury(treasury, currentLogs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
   } catch (err) {
-    console.error('Failed to save company treasury:', err);
+    console.warn('Failed to save company treasury:', err);
   }
 }
 
@@ -132,7 +132,7 @@ export function setStoredTreasuryLogs(logs: TreasuryLog[]) {
     const currentTreasury = getStoredTreasury();
     apiUpdateTreasury(currentTreasury, uniqueLogs).catch((err) => console.warn('Background apiUpdateTreasury error:', err));
   } catch (err) {
-    console.error('Failed to save treasury logs:', err);
+    console.warn('Failed to save treasury logs:', err);
   }
 }
 

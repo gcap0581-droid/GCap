@@ -694,7 +694,7 @@ export async function registerUserAsync(data: {
 
     return { success: true, user: newUser };
   } catch (fsErr) {
-    console.error('Direct Firestore registration error:', fsErr);
+    console.warn('Direct Firestore registration error:', fsErr);
   }
 
   // Memory fallback
@@ -991,7 +991,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
 
     return { success: true, user: newUser };
   } catch (fsErr) {
-    console.error('Direct Firestore adminAddUser error:', fsErr);
+    console.warn('Direct Firestore adminAddUser error:', fsErr);
   }
 
   const tempId = `usr-admin-${Date.now()}`;
@@ -1087,7 +1087,7 @@ export async function adminDeleteUserAsync(userId: string): Promise<{ success: b
 
     return { success: true };
   } catch (fsErr) {
-    console.error('Direct Firestore adminDeleteUser error:', fsErr);
+    console.warn('Direct Firestore adminDeleteUser error:', fsErr);
   }
 
   cachedUsers = cachedUsers.filter(u => u && !isUserDeleted(u));
@@ -1170,7 +1170,7 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
 
     return { success: true, user: targetUpdated || undefined };
   } catch (fsErr) {
-    console.error('Direct Firestore adminUpdateUser error:', fsErr);
+    console.warn('Direct Firestore adminUpdateUser error:', fsErr);
   }
 
   // Fallback local memory update

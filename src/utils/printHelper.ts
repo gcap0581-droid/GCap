@@ -120,7 +120,7 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
       iframe.remove();
     }, 60000);
   } catch (error) {
-    console.error('Iframe print error, falling back to window.print()', error);
+    console.warn('Iframe print error, falling back to window.print()', error);
     window.print();
   }
 }

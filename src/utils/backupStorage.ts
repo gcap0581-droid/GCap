@@ -155,7 +155,7 @@ export function getStoredBackups(): BackupRecord[] {
     // Sort descending by timestamp
     return parsed.sort((a, b) => b.timestamp - a.timestamp);
   } catch (err) {
-    console.error('Failed to load backups registry:', err);
+    console.warn('Failed to load backups registry:', err);
     return [];
   }
 }
@@ -167,7 +167,7 @@ export function saveStoredBackups(backups: BackupRecord[]): void {
   try {
     localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(backups));
   } catch (err) {
-    console.error('Failed to save backups registry:', err);
+    console.warn('Failed to save backups registry:', err);
   }
 }
 
@@ -287,7 +287,7 @@ export function restoreBackup(backup: BackupRecord): {
       restoredPayload: payload,
     };
   } catch (err: any) {
-    console.error('Restore operation failed:', err);
+    console.warn('Restore operation failed:', err);
     return {
       success: false,
       restoredPayload: backup.payload,

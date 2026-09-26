@@ -18,7 +18,11 @@ import {
   FileSpreadsheet,
   PieChart,
   RefreshCw,
-  Wallet as WalletIcon
+  Wallet as WalletIcon,
+  LayoutGrid,
+  List,
+  Tag,
+  Sparkles
 } from 'lucide-react';
 import { ActiveInvestment, CompanyTreasury, Language, Transaction, UserProfile, Wallet } from '../../types';
 import { formatINR } from '../../utils/storage';
@@ -51,6 +55,7 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [planViewMode, setPlanViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
 
   // Helper to parse dates cleanly
   const getDateRange = (mode: DateFilterType, customStart?: string, customEnd?: string) => {
@@ -183,11 +188,35 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
     .filter((t) => t.status === 'SUCCESS')
     .reduce((sum, t) => sum + (t.adminFeeAmount || 0), 0);
 
-  // Balances across system (Current Live State)
+  // Balances across system (Current Live State for unique registered users)
   const treasuryBalance = treasury?.balance || 0;
-  const totalWalletCashBalance = Object.values(wallets).reduce((sum, w: any) => sum + (w?.cashBalance || 0), 0);
-  const totalWalletGpBalance = Object.values(wallets).reduce((sum, w: any) => sum + (w?.gpBalance || 0), 0);
-  const totalWalletEarningsBalance = Object.values(wallets).reduce((sum, w: any) => sum + (w?.totalEarnings || w?.totalEarned || 0), 0);
+  
+  // Deduplicate and compute true wallet balance across UNIQUE registered users (preventing multi-alias double-counting)
+  const uniqueUserWallets = useMemo(() => {
+    const seenUserIds = new Set<string>();
+    const list: { user: UserProfile; wallet: Wallet }[] = [];
+    users.forEach((u) => {
+      if (!u || !u.id) return;
+      const uid = String(u.id).toLowerCase();
+      if (seenUserIds.has(uid)) return;
+      seenUserIds.add(uid);
+      const w = wallets[u.id] || wallets[u.phone] || wallets[u.loginId || ''] || {};
+      list.push({ user: u, wallet: w as Wallet });
+    });
+    return list;
+  }, [users, wallets]);
+
+  const totalWalletCashBalance = useMemo(() => {
+    return uniqueUserWallets.reduce((sum, item) => sum + ((item.wallet as any)?.cashBalance || 0), 0);
+  }, [uniqueUserWallets]);
+
+  const totalWalletGpBalance = useMemo(() => {
+    return uniqueUserWallets.reduce((sum, item) => sum + ((item.wallet as any)?.gpBalance || 0), 0);
+  }, [uniqueUserWallets]);
+
+  const totalWalletEarningsBalance = useMemo(() => {
+    return uniqueUserWallets.reduce((sum, item) => sum + ((item.wallet as any)?.totalEarnings || (item.wallet as any)?.totalEarned || 0), 0);
+  }, [uniqueUserWallets]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -525,7 +554,7 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
               </span>
               <span className="text-lg font-black font-mono text-white">{formatINR(totalWalletCashBalance)}</span>
               <span className="text-[10px] text-slate-500 block mt-1">
-                {Object.keys(wallets).length} {isHi ? 'वॉलेट्स में' : 'User Wallets'}
+                {uniqueUserWallets.length} {isHi ? 'यूज़र्स के वॉलेट्स में' : 'User Wallets'}
               </span>
             </div>
 
@@ -579,9 +608,9 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
           </div>
 
           <div className="overflow-x-auto max-h-96 rounded-xl border border-slate-800">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[760px]">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10">
+                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10 whitespace-nowrap">
                   <th className="p-3">Ref / ID</th>
                   <th className="p-3">{isHi ? 'यूज़र / खाता' : 'User / Account'}</th>
                   <th className="p-3">{isHi ? 'प्रकार' : 'Type'}</th>
@@ -601,12 +630,12 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                 ) : (
                   filteredTransactions.slice(0, 100).map((t, idx) => (
                     <tr key={`${t.id || 'txn'}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 font-bold text-emerald-400">{t.referenceId || t.id.slice(-8)}</td>
-                      <td className="p-3 text-white font-sans">
+                      <td className="p-3 font-bold text-emerald-400 whitespace-nowrap">{t.referenceId || t.id.slice(-8)}</td>
+                      <td className="p-3 text-white font-sans whitespace-nowrap">
                         <div className="font-bold">{t.userName || t.actor || 'User'}</div>
-                        {t.userPhone && <div className="text-[10px] text-slate-500">{t.userPhone}</div>}
+                        {t.userPhone && <div className="text-[10px] text-slate-500 font-mono">{t.userPhone}</div>}
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                             t.type === 'DEPOSIT' || (t.type as string) === 'ADMIN_ADD'
@@ -621,7 +650,7 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                           {t.type}
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                             t.status === 'SUCCESS'
@@ -634,11 +663,11 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                           {t.status}
                         </span>
                       </td>
-                      <td className="p-3 font-bold text-white">{formatINR(t.amount || 0)}</td>
+                      <td className="p-3 font-bold text-white whitespace-nowrap">{formatINR(t.amount || 0)}</td>
                       <td className="p-3 font-sans text-slate-400 max-w-xs truncate">
                         {isHi ? t.noteHi || t.note : t.note}
                       </td>
-                      <td className="p-3 text-[11px] text-slate-500">
+                      <td className="p-3 text-[11px] text-slate-500 whitespace-nowrap">
                         {new Date(t.date || t.timestamp || Date.now()).toLocaleString()}
                       </td>
                     </tr>
@@ -670,9 +699,9 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
           </div>
 
           <div className="overflow-x-auto max-h-96 rounded-xl border border-slate-800">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[680px]">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10">
+                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10 whitespace-nowrap">
                   <th className="p-3">{isHi ? 'यूज़र नाम / फ़ोन' : 'User Name / Phone'}</th>
                   <th className="p-3">{isHi ? 'रोल / स्थिति' : 'Role / Status'}</th>
                   <th className="p-3">{isHi ? 'कैश बैलेंस' : 'Cash Balance'}</th>
@@ -691,11 +720,11 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
 
                   return (
                     <tr key={`${u.id || 'usr'}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 text-white font-sans">
+                      <td className="p-3 text-white font-sans whitespace-nowrap">
                         <div className="font-bold">{u.name}</div>
-                        <div className="text-[10px] text-slate-400">{u.phone} ({u.loginId})</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{u.phone} ({u.loginId})</div>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3 whitespace-nowrap">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                             u.status === 'ACTIVE'
@@ -706,10 +735,10 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                           {u.status} ({u.role})
                         </span>
                       </td>
-                      <td className="p-3 font-bold text-white">{formatINR((w as any)?.cashBalance || 0)}</td>
-                      <td className="p-3 font-bold text-amber-400">{((w as any)?.gpBalance || 0).toLocaleString()} GP</td>
-                      <td className="p-3 font-bold text-cyan-400">{formatINR(userInvested || (w as any)?.totalInvested || 0)}</td>
-                      <td className="p-3 font-bold text-emerald-400">{formatINR((w as any)?.totalEarnings || (w as any)?.totalEarned || 0)}</td>
+                      <td className="p-3 font-bold text-white whitespace-nowrap">{formatINR((w as any)?.cashBalance || 0)}</td>
+                      <td className="p-3 font-bold text-amber-400 whitespace-nowrap">{((w as any)?.gpBalance || 0).toLocaleString()} GP</td>
+                      <td className="p-3 font-bold text-cyan-400 whitespace-nowrap">{formatINR(userInvested || (w as any)?.totalInvested || 0)}</td>
+                      <td className="p-3 font-bold text-emerald-400 whitespace-nowrap">{formatINR((w as any)?.totalEarnings || (w as any)?.totalEarned || 0)}</td>
                     </tr>
                   );
                 })}
@@ -724,7 +753,7 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
       {/* ======================================================== */}
       {(selectedSection === 'ALL' || selectedSection === 'PLAN_BREAKDOWN') && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <PieChart className="w-5 h-5 text-purple-400" />
               <h3 className="text-sm font-black text-white uppercase tracking-wider">
@@ -733,62 +762,195 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
                   : '6. Plan-wise Principal & Return Breakdown'}
               </h3>
             </div>
-            <span className="text-xs font-mono text-purple-400">
-              {filteredInvestments.length} {isHi ? 'प्लान्स फ़िल्टर' : 'Plans Filtered'}
-            </span>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                {filteredInvestments.length} {isHi ? 'प्लान्स' : 'Plans'}
+              </span>
+
+              {/* View Switcher: Cards vs Table */}
+              <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setPlanViewMode('CARDS')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
+                    planViewMode === 'CARDS'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'कार्ड्स' : 'Cards'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlanViewMode('TABLE')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all ${
+                    planViewMode === 'TABLE'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'टेबल' : 'Table'}</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="overflow-x-auto max-h-96 rounded-xl border border-slate-800">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10">
-                  <th className="p-3">{isHi ? 'प्लान कोड / नाम' : 'Plan Code / Name'}</th>
-                  <th className="p-3">{isHi ? 'यूज़र' : 'User'}</th>
-                  <th className="p-3">{isHi ? 'मूलधन राशि' : 'Principal'}</th>
-                  <th className="p-3">{isHi ? 'दैनिक रिटर्न' : 'Daily Return'}</th>
-                  <th className="p-3">{isHi ? 'अर्जित रिटर्न' : 'Earned So Far'}</th>
-                  <th className="p-3">{isHi ? 'अवधि / स्थिति' : 'Duration / Status'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
-                {filteredInvestments.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-6 text-center text-slate-500 font-sans">
-                      {isHi ? 'कोई प्लान्स नहीं मिले।' : 'No plans found.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredInvestments.map((inv, idx) => (
-                    <tr key={`${inv.id || 'inv'}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 font-sans font-bold text-white">
-                        <div>{inv.planName}</div>
-                        <div className="text-[10px] text-cyan-400 font-mono">{inv.planUniqueCode || inv.planId}</div>
-                      </td>
-                      <td className="p-3 text-slate-300 font-sans">{inv.userName || inv.userId}</td>
-                      <td className="p-3 font-bold text-cyan-400">{formatINR(inv.investedAmount)}</td>
-                      <td className="p-3 text-emerald-400 font-bold">
-                        +{formatINR(inv.dailyReturnAmount || (inv.investedAmount * (inv.dailyRoiPercent || 0.160)) / 100)} /day
-                      </td>
-                      <td className="p-3 text-emerald-400 font-black">
-                        +{formatINR(inv.earnedSoFar || inv.totalEarnedSoFar || 0)}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            inv.status === 'ACTIVE'
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-cyan-500/10 text-cyan-400'
-                          }`}
-                        >
-                          {inv.status} ({inv.durationDays}d)
+          {filteredInvestments.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 font-sans bg-slate-950/50 rounded-xl border border-slate-800">
+              {isHi ? 'कोई प्लान्स रिकॉर्ड नहीं मिले।' : 'No investment plan records found.'}
+            </div>
+          ) : planViewMode === 'CARDS' ? (
+            /* ELEGANT MOBILE & DESKTOP RESPONSIVE CARD VIEW */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredInvestments.map((inv, idx) => {
+                const dailyReturn = inv.dailyReturnAmount || ((inv.investedAmount * (inv.dailyRoiPercent || 0.160)) / 100);
+                const planCode = inv.planUniqueCode || inv.planId || 'PLAN';
+                return (
+                  <div
+                    key={`${inv.id || 'card-inv'}-${idx}`}
+                    className="bg-slate-950/80 border border-slate-800 hover:border-purple-500/40 transition-all rounded-2xl p-4.5 space-y-3.5 shadow-lg group"
+                  >
+                    {/* Top: Plan Code Tag Pill & Status */}
+                    <div className="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shadow-sm">
+                            <Tag className="w-3 h-3 text-cyan-400" />
+                            #{planCode}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-wide uppercase ${
+                              inv.status === 'ACTIVE'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                            }`}
+                          >
+                            ● {inv.status} ({inv.durationDays}d)
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black text-white leading-snug break-words">
+                          {inv.planName}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {/* Investor Information Strip */}
+                    <div className="flex items-center justify-between text-xs bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800/80">
+                      <div className="flex items-center gap-2 text-slate-300 font-sans">
+                        <Users className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="font-bold text-white">{inv.userName || inv.userId}</span>
+                        {inv.userPhone && (
+                          <span className="text-[11px] text-slate-400 font-mono">({inv.userPhone})</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {inv.startDate ? new Date(inv.startDate).toLocaleDateString() : ''}
+                      </div>
+                    </div>
+
+                    {/* 3-Column Financial Numbers Grid */}
+                    <div className="grid grid-cols-3 gap-2 text-center pt-0.5">
+                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/90">
+                        <span className="text-[10px] text-slate-400 block mb-0.5 font-sans font-semibold">
+                          {isHi ? 'मूलधन राशि' : 'Principal'}
                         </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                        <span className="text-xs sm:text-sm font-black font-mono text-cyan-400 block truncate">
+                          {formatINR(inv.investedAmount)}
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/90">
+                        <span className="text-[10px] text-slate-400 block mb-0.5 font-sans font-semibold">
+                          {isHi ? 'दैनिक रिटर्न' : 'Daily ROI'}
+                        </span>
+                        <span className="text-xs sm:text-sm font-black font-mono text-emerald-400 block truncate">
+                          +{formatINR(dailyReturn)}
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/90">
+                        <span className="text-[10px] text-slate-400 block mb-0.5 font-sans font-semibold">
+                          {isHi ? 'अर्जित रिटर्न' : 'Earned So Far'}
+                        </span>
+                        <span className="text-xs sm:text-sm font-black font-mono text-amber-400 block truncate">
+                          +{formatINR(inv.earnedSoFar || inv.totalEarnedSoFar || 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Progress Row */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono pt-1 border-t border-slate-800/60">
+                      <span>
+                        {isHi ? 'कुल अपेक्षित:' : 'Total Expected:'}{' '}
+                        <strong className="text-white font-mono">{formatINR(inv.totalExpectedReturn || 0)}</strong>
+                      </span>
+                      <span className="text-cyan-400 font-bold">
+                        {inv.daysCompleted || 0} / {inv.durationDays} {isHi ? 'दिन' : 'days'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* WIDE SPACIOUS TABLE VIEW WITH CLEAR PLAN CODE PILLS */
+            <div className="overflow-x-auto max-h-96 rounded-xl border border-slate-800">
+              <table className="w-full text-left border-collapse text-xs min-w-[850px]">
+                <thead>
+                  <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10 whitespace-nowrap">
+                    <th className="p-3 w-[260px]">{isHi ? 'प्लान कोड एवं नाम' : 'Plan Code & Name'}</th>
+                    <th className="p-3 w-[160px]">{isHi ? 'यूज़र / खाता' : 'User'}</th>
+                    <th className="p-3 w-[130px]">{isHi ? 'मूलधन राशि' : 'Principal'}</th>
+                    <th className="p-3 w-[140px]">{isHi ? 'दैनिक रिटर्न' : 'Daily Return'}</th>
+                    <th className="p-3 w-[140px]">{isHi ? 'अर्जित रिटर्न' : 'Earned So Far'}</th>
+                    <th className="p-3 w-[130px]">{isHi ? 'अवधि / स्थिति' : 'Duration / Status'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
+                  {filteredInvestments.map((inv, idx) => {
+                    const dailyReturn = inv.dailyReturnAmount || ((inv.investedAmount * (inv.dailyRoiPercent || 0.160)) / 100);
+                    const planCode = inv.planUniqueCode || inv.planId || 'PLAN';
+                    return (
+                      <tr key={`${inv.id || 'inv'}-${idx}`} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="p-3 font-sans">
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 mb-1">
+                            <Tag className="w-2.5 h-2.5 text-cyan-400" />
+                            #{planCode}
+                          </div>
+                          <div className="font-bold text-white text-xs leading-snug">{inv.planName}</div>
+                        </td>
+                        <td className="p-3 text-slate-300 font-sans whitespace-nowrap">
+                          <div className="font-bold text-white">{inv.userName || inv.userId}</div>
+                          {inv.userPhone && <div className="text-[10px] text-slate-500 font-mono">{inv.userPhone}</div>}
+                        </td>
+                        <td className="p-3 font-bold text-cyan-400 whitespace-nowrap">{formatINR(inv.investedAmount)}</td>
+                        <td className="p-3 text-emerald-400 font-bold whitespace-nowrap">
+                          +{formatINR(dailyReturn)} /day
+                        </td>
+                        <td className="p-3 text-amber-400 font-black whitespace-nowrap">
+                          +{formatINR(inv.earnedSoFar || inv.totalEarnedSoFar || 0)}
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              inv.status === 'ACTIVE'
+                                ? 'bg-emerald-500/10 text-emerald-400'
+                                : 'bg-cyan-500/10 text-cyan-400'
+                            }`}
+                          >
+                            {inv.status} ({inv.durationDays}d)
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

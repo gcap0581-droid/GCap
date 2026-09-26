@@ -7,7 +7,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  TrendingUp,
   Users,
   CheckCircle2,
   Sparkles,

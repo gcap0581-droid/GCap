@@ -219,6 +219,45 @@ interface BankAccountDetails {
   upiId?: string;
 }
 
+interface CompanyProfile {
+  companyName: string;
+  companyNameHi?: string;
+  tradeName?: string;
+  cin?: string;
+  pan?: string;
+  tan?: string;
+  gstin?: string;
+  incorporationDate?: string;
+  rocJurisdiction?: string;
+  companyType?: string;
+  authorizedCapital?: string;
+  paidUpCapital?: string;
+  registeredAddress?: string;
+  corporateAddress?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  supportEmail?: string;
+  legalEmail?: string;
+  supportPhone?: string;
+  altPhone?: string;
+  websiteUrl?: string;
+  authorizedSignatory?: string;
+  signatoryDesignation?: string;
+  signatoryDin?: string;
+  sealCity?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  bankBranch?: string;
+  bankAccountType?: string;
+  companyUpiId?: string;
+  companyBankAccountHolder?: string;
+  tagline?: string;
+  taglineHi?: string;
+  lastUpdated?: string;
+}
+
 export interface AdminMessage {
   id: string;
   title: string;
@@ -252,6 +291,7 @@ interface ServerDB {
   bankDetails: Record<string, BankAccountDetails>;
   treasury: CompanyTreasury;
   treasuryLogs: TreasuryLog[];
+  companyProfile: CompanyProfile;
   messages?: AdminMessage[];
   companyLedger?: any[];
   lastUpdated: string;
@@ -443,6 +483,45 @@ const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
   liveBadgeText: "⚡ Live Main DB Connected",
   liveBadgeTextHi: "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
   autoSyncIntervalSec: 3,
+};
+
+const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
+  companyName: 'GCap Assets & Wealth Management Private Limited',
+  companyNameHi: 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट प्राइवेट लिमिटेड',
+  tradeName: 'GCap Assets & Wealth Management',
+  cin: 'U65999MH2024PTC398102',
+  pan: 'AABCG1234F',
+  tan: 'MUMB10293E',
+  gstin: '27AABCG1234F1Z5',
+  incorporationDate: '2024-01-15',
+  rocJurisdiction: 'ROC Mumbai, Maharashtra',
+  companyType: 'Private Limited Company (Non-Govt)',
+  authorizedCapital: '₹5,00,00,000',
+  paidUpCapital: '₹1,00,00,000',
+  registeredAddress: 'GCap Financial Towers, Bandra-Kurla Complex (BKC), Mumbai, MH - 400051',
+  corporateAddress: 'Corporate Office: BKC East, Mumbai, Maharashtra - 400051',
+  city: 'Mumbai',
+  state: 'Maharashtra',
+  pincode: '400051',
+  supportEmail: 'support@gcap.in',
+  legalEmail: 'legal@gcap.in',
+  supportPhone: '+91 98000 12345',
+  altPhone: '+91 22 6800 1234',
+  websiteUrl: 'https://gcap.in',
+  authorizedSignatory: 'Vikramaditya Singhania',
+  signatoryDesignation: 'Managing Director & Authorized Signatory',
+  signatoryDin: 'DIN: 08924192',
+  sealCity: 'MUMBAI',
+  bankName: 'Axis Bank Ltd.',
+  bankAccountNumber: '924010008662307',
+  bankIfsc: 'UTIB0001219',
+  bankBranch: 'Axis Commercial Branch',
+  bankAccountType: 'Current Account',
+  companyUpiId: '8603504808@axisbank',
+  companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
+  tagline: 'Guaranteed Principal Security & Automated Asset Growth',
+  taglineHi: '100% मूलधन सुरक्षा एवं स्वचालित संपत्ति विकास',
+  lastUpdated: new Date().toISOString().split('T')[0],
 };
 
 const INITIAL_TREASURY: CompanyTreasury = {
@@ -666,7 +745,7 @@ try {
     console.warn("[Firebase] No firebase-applet-config.json found.");
   }
 } catch (err) {
-  console.error("[Firebase] Error initializing Firestore Client:", err);
+  console.warn("[Firebase] Error initializing Firestore Client:", err);
 }
 
 // Helper to remove any undefined properties and flatten nested arrays before writing to Firestore
@@ -791,7 +870,7 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
       quotaExhaustedTime = Date.now();
       console.warn("[Firebase Warning] Firestore daily write quota limit reached. Temporarily pausing Firestore writes to prevent error logs. Server is operating safely on fast local file persistence!");
     } else {
-      console.error("[Firebase] Error saving to Firestore:", err);
+      console.warn("[Firebase] Error saving to Firestore:", err);
     }
   }
 }
@@ -980,7 +1059,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
 
     return loadedDb as ServerDB;
   } catch (err) {
-    console.error("[Firebase] Error loading from Firestore:", err);
+    console.warn("[Firebase] Error loading from Firestore:", err);
     return null;
   }
 }
@@ -1449,6 +1528,7 @@ function ensureDb(): ServerDB {
         bankDetails: {},
         treasury: INITIAL_TREASURY,
         treasuryLogs: INITIAL_LOGS,
+        companyProfile: DEFAULT_COMPANY_PROFILE,
         lastUpdated: new Date().toISOString(),
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), "utf-8");
@@ -1458,7 +1538,7 @@ function ensureDb(): ServerDB {
         saveToFirestore(initial).then(() => {
           console.log("[Firebase] Seeded Firestore with initial default DB");
         }).catch(err => {
-          console.error("[Firebase] Error seeding Firestore:", err);
+          console.warn("[Firebase] Error seeding Firestore:", err);
         });
       }
       return initial;
@@ -1626,6 +1706,11 @@ function ensureDb(): ServerDB {
           dismissedByUserIds: [],
         },
       ];
+    }
+    
+    if (!parsed.companyProfile || typeof parsed.companyProfile !== 'object') {
+      parsed.companyProfile = DEFAULT_COMPANY_PROFILE;
+      needsSave = true;
     }
 
     // Ensure Admin account exists and has the requested password
@@ -1893,7 +1978,7 @@ function ensureDb(): ServerDB {
 
     return parsed as ServerDB;
   } catch (err: any) {
-    console.error("Error reading server DB:", err);
+    console.warn("Error reading server DB:", err);
     return {
       users: DEFAULT_ACCOUNTS,
       wallets: {},
@@ -1961,7 +2046,7 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
         }
         pendingDbToSave = null;
         saveToFirestore(db).catch(err => {
-          console.error("[Firebase] Immediate save to Firestore failed:", err);
+          console.warn("[Firebase] Immediate save to Firestore failed:", err);
         });
       } else {
         if (!firestoreSaveTimeout) {
@@ -1973,7 +2058,7 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
               try {
                 await saveToFirestore(dbToSave);
               } catch (err) {
-                console.error("[Firebase] Live save to Firestore failed:", err);
+                console.warn("[Firebase] Live save to Firestore failed:", err);
               }
             }
           }, 800); // Super fast 800ms live synchronization
@@ -1981,7 +2066,7 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
       }
     }
   } catch (err) {
-    console.error("Error saving server DB:", err);
+    console.warn("Error saving server DB:", err);
   }
 }
 
@@ -1995,7 +2080,7 @@ function flushPendingFirestoreSave() {
       firestoreSaveTimeout = null;
     }
     saveToFirestore(dbToSave).catch(err => {
-      console.error("[Firebase] Flush on exit failed:", err);
+      console.warn("[Firebase] Flush on exit failed:", err);
     });
   }
 }
@@ -2042,6 +2127,25 @@ async function startServer() {
   });
 
   // Health check
+  app.get("/api/company-profile", (_req, res) => {
+    const db = ensureDb();
+    res.json({ success: true, profile: db.companyProfile });
+  });
+
+  app.post("/api/company-profile/save", (req, res) => {
+    const { profile } = req.body;
+    if (!profile) return res.status(400).json({ success: false, error: "Profile required" });
+    
+    const db = ensureDb();
+    db.companyProfile = {
+      ...db.companyProfile,
+      ...profile,
+      lastUpdated: new Date().toISOString()
+    };
+    saveDB(db);
+    res.json({ success: true, profile: db.companyProfile });
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({
       status: "ok",
@@ -2162,12 +2266,12 @@ async function startServer() {
           lastSyncedTimestamp = cleanedDb.lastUpdated || new Date().toISOString();
           fs.writeFileSync(DB_FILE, JSON.stringify(cleanedDb, null, 2), "utf-8");
           saveToFirestore(cleanedDb).catch(err => {
-            console.error("[Firebase] Initial saveToFirestore caught:", err);
+            console.warn("[Firebase] Initial saveToFirestore caught:", err);
           });
           console.log(`[Firebase] Initial sync and clean complete. Synced database state updated to timestamp: ${lastSyncedTimestamp}`);
         }
       } catch (err) {
-        console.error("[Firebase] Startup sync error:", err);
+        console.warn("[Firebase] Startup sync error:", err);
       }
     })();
   }
@@ -4575,7 +4679,7 @@ async function startServer() {
         });
       }
     } catch (e) {
-      console.error("[Server Cycle Error]:", e);
+      console.warn("[Server Cycle Error]:", e);
     }
   }, 15000);
 

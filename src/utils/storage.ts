@@ -117,7 +117,7 @@ export function setStoredWallet(wallet: Wallet) {
   try {
     localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(wallet));
   } catch (err) {
-    console.error('Failed to save wallet:', err);
+    console.warn('Failed to save wallet:', err);
   }
 }
 
@@ -269,7 +269,7 @@ export function setStoredInvestments(investments: ActiveInvestment[]) {
   try {
     localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(investments));
   } catch (err) {
-    console.error('Failed to save investments:', err);
+    console.warn('Failed to save investments:', err);
   }
 }
 
@@ -345,7 +345,7 @@ export function setStoredTransactions(txns: Transaction[]) {
   try {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txns));
   } catch (err) {
-    console.error('Failed to save txns:', err);
+    console.warn('Failed to save txns:', err);
   }
 }
 
@@ -385,6 +385,6 @@ export function setStoredBankDetails(userId: string, details: BankAccountDetails
   try {
     localStorage.setItem(BANK_DETAILS_KEY_PREFIX + userId, JSON.stringify(details));
   } catch (err) {
-    console.error('Failed to save bank details:', err);
+    console.warn('Failed to save bank details:', err);
   }
 }

@@ -471,7 +471,7 @@ export async function fetchCentralState(
     const fs = await fetchFullFirestoreState();
     if (fs) return formatDatabaseToCentralResponse(fs, userId, role);
   } catch (fsErr) {
-    console.error('[CentralSync] Firestore fallback failed:', fsErr);
+    console.warn('[CentralSync] Firestore fallback failed:', fsErr);
   }
 
   return null;

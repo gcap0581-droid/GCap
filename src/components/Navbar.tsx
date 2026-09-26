@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Menu,
-  TrendingUp,
   Wallet as WalletIcon,
   PlusCircle,
   Globe,

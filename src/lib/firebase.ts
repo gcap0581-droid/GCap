@@ -23,7 +23,7 @@ export function getFirebaseApp(): FirebaseApp | null {
     }
     return cachedApp;
   } catch (err) {
-    console.error('[Firebase] App initialization error:', err);
+    console.warn('[Firebase] App initialization error:', err);
     return null;
   }
 }
@@ -38,7 +38,7 @@ export function getFirestoreDb(): Firestore | null {
     console.log('[Firebase] Firestore initialized with DB:', DB_ID);
     return cachedDb;
   } catch (err) {
-    console.error('[Firebase] Firestore initialization error:', err);
+    console.warn('[Firebase] Firestore initialization error:', err);
     return null;
   }
 }
@@ -48,7 +48,7 @@ export const db = new Proxy({} as Firestore, {
   get(_target, prop) {
     const instance = getFirestoreDb();
     if (!instance) {
-      console.error('[Firebase] Accessing DB instance that failed to initialize');
+      console.warn('[Firebase] Accessing DB instance that failed to initialize');
       return undefined;
     }
     const val = (instance as any)[prop];

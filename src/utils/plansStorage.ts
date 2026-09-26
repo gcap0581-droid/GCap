@@ -177,7 +177,7 @@ export function getStoredPlans(): InvestmentPlan[] {
 
     return finalPlans;
   } catch (err) {
-    console.error('Failed to load plans from storage:', err);
+    console.warn('Failed to load plans from storage:', err);
     return DEFAULT_PLANS;
   }
 }
@@ -205,7 +205,7 @@ export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, sync
       );
     }
   } catch (err) {
-    console.error('Failed to save plans to storage:', err);
+    console.warn('Failed to save plans to storage:', err);
   }
 }
 

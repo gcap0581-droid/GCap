@@ -386,8 +386,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           });
         updateUsersSafely(clean);
       }
-      if (fs.wallets) {
-        setWalletsMap(fs.wallets);
+      if (fs.wallets && typeof fs.wallets === 'object') {
+        setWalletsMap((prev) => {
+          // If we already have server wallets, preserve current balances to prevent ping-pong with stale Firestore data
+          if (prev && Object.keys(prev).length > 0) {
+            const merged = { ...prev };
+            for (const [k, w] of Object.entries(fs.wallets)) {
+              if (!merged[k]) {
+                merged[k] = w as Wallet;
+              }
+            }
+            return merged;
+          }
+          return fs.wallets;
+        });
       }
     });
 

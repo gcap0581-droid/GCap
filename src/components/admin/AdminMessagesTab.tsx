@@ -156,7 +156,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
         alert(isHi ? 'इतिहास सिंक करने में विफल: ' + res.error : 'Failed to sync history: ' + res.error);
       }
     } catch (err: any) {
-      console.error('History sync error:', err);
+      console.warn('History sync error:', err);
     } finally {
       setIsSyncingHistory(false);
     }
@@ -301,7 +301,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
       );
       setTimeout(() => setSuccessToast(''), 6000);
     } catch (err) {
-      console.error('Re-send error:', err);
+      console.warn('Re-send error:', err);
     } finally {
       setIsSubmitting(false);
       onRefreshMessages();
@@ -470,7 +470,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
       setSelectedUserIds([]);
       setEditingMessage(null);
     } catch (err: any) {
-      console.error('Send broadcast error:', err);
+      console.warn('Send broadcast error:', err);
     } finally {
       setIsSubmitting(false);
       onRefreshMessages();

@@ -383,7 +383,7 @@ export const AdminDeductionsTab: React.FC<AdminDeductionsTabProps> = ({
 
       XLSX.writeFile(wb, `GCap_Deductions_Report_${timestamp}.xlsx`);
     } catch (err) {
-      console.error('Failed to export Excel:', err);
+      console.warn('Failed to export Excel:', err);
       alert(isHi ? 'एक्सेल फाइल डाउनलोड करने में त्रुटि हुई।' : 'Failed to generate Excel download.');
     }
   };

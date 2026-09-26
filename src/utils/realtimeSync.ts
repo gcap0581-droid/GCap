@@ -185,7 +185,7 @@ class RealtimeSyncManager {
       try {
         listener(payload);
       } catch (err) {
-        console.error('[RealtimeSync] Error in listener:', err);
+        console.warn('[RealtimeSync] Error in listener:', err);
       }
     });
 

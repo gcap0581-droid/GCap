@@ -473,13 +473,13 @@ export default function App() {
             if (res.hasChanges) {
               setInvestments(res.updatedInvestments);
               setStoredInvestments(res.updatedInvestments);
-              saveInvestmentsToFirestore(res.updatedInvestments).catch(console.error);
+              saveInvestmentsToFirestore(res.updatedInvestments).catch(console.warn);
 
               // Sync each updated investment to Express server immediately to prevent rollback and duplicate toast alerts
               res.updatedInvestments.forEach((inv) => {
                 const oldInv = currentInvs.find((i) => i.id === inv.id);
                 if (!oldInv || JSON.stringify(oldInv) !== JSON.stringify(inv)) {
-                  apiUpdateInvestment(inv, currentUser?.id).catch(console.error);
+                  apiUpdateInvestment(inv, currentUser?.id).catch(console.warn);
                 }
               });
 
@@ -496,7 +496,7 @@ export default function App() {
                       royaltyEarned: Math.round(((prev.royaltyEarned || 0) + delta.royaltyEarnedDelta) * 100) / 100,
                     };
                     setStoredWallet(updatedWallet);
-                    apiUpdateWallet(currentUser.id, updatedWallet).catch(console.error);
+                    apiUpdateWallet(currentUser.id, updatedWallet).catch(console.warn);
                     return updatedWallet;
                   });
                 }
@@ -504,7 +504,7 @@ export default function App() {
 
               if (res.newTransactions && res.newTransactions.length > 0) {
                 res.newTransactions.forEach((txn) => {
-                  apiCreateTransaction(txn, txn.userId).catch(console.error);
+                  apiCreateTransaction(txn, txn.userId).catch(console.warn);
                 });
                 setTransactions((prev) => {
                   const updated = [...res.newTransactions, ...prev];
@@ -577,22 +577,69 @@ export default function App() {
         if (fs.users && Array.isArray(fs.users)) {
           syncServerUsersToLocal(fs.users);
         }
-        if (fs.transactions) {
-          setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.transactions) ? fs.transactions : prev));
-          setStoredTransactions(fs.transactions);
+        if (fs.transactions && Array.isArray(fs.transactions)) {
+          setTransactions((prev) => {
+            if (!Array.isArray(prev) || prev.length === 0) {
+              setStoredTransactions(fs.transactions);
+              return fs.transactions;
+            }
+            // Additive union-merge: preserve all 114+ transactions from server/local without letting older 98-snapshot erase them
+            const map = new Map<string, Transaction>();
+            (prev || []).forEach((t) => {
+              const k = t?.id || t?.referenceId;
+              if (k) map.set(k, t);
+            });
+            fs.transactions.forEach((t: Transaction) => {
+              const k = t?.id || t?.referenceId;
+              if (k) {
+                if (!map.has(k)) {
+                  map.set(k, t);
+                } else {
+                  const existing = map.get(k)!;
+                  if (t.timestamp && (!existing.timestamp || t.timestamp > existing.timestamp)) {
+                    map.set(k, { ...existing, ...t });
+                  }
+                }
+              }
+            });
+            const merged = Array.from(map.values()).sort(
+              (a, b) => (b.timestamp || new Date(b.date || 0).getTime()) - (a.timestamp || new Date(a.date || 0).getTime())
+            );
+            setStoredTransactions(merged);
+            return merged;
+          });
         }
-        if (fs.investments) {
-          setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.investments) ? fs.investments : prev));
-          setStoredInvestments(fs.investments);
+        if (fs.investments && Array.isArray(fs.investments)) {
+          setInvestments((prev) => {
+            if (!Array.isArray(prev) || prev.length === 0) {
+              setStoredInvestments(fs.investments);
+              return fs.investments;
+            }
+            const map = new Map<string, ActiveInvestment>();
+            (prev || []).forEach((i) => {
+              if (i?.id) map.set(i.id, i);
+            });
+            fs.investments.forEach((i: ActiveInvestment) => {
+              if (i?.id) {
+                if (!map.has(i.id)) {
+                  map.set(i.id, i);
+                } else {
+                  const existing = map.get(i.id)!;
+                  const higherEarned = Math.max(existing.earnedSoFar || 0, i.earnedSoFar || 0);
+                  map.set(i.id, { ...existing, ...i, earnedSoFar: higherEarned });
+                }
+              }
+            });
+            const merged = Array.from(map.values());
+            setStoredInvestments(merged);
+            return merged;
+          });
         }
         if (fs.treasury) {
+          const fsTs = fs.treasury?.lastUpdated ? new Date(fs.treasury.lastUpdated).getTime() : 0;
           setTreasury((prev) => {
-            // Only update if Firestore has newer data (or if we have no local data)
-            const fsTs = fs.treasury?.lastUpdated ? new Date(fs.treasury.lastUpdated).getTime() : 0;
             const prevTs = prev?.lastUpdated ? new Date(prev.lastUpdated).getTime() : 0;
-            
             if (!prev || fsTs > prevTs) {
-              setStoredTreasury(fs.treasury);
               return fs.treasury;
             }
             return prev;
@@ -1194,7 +1241,7 @@ export default function App() {
           const updatedUser = { ...currentUser, dismissedPopupMsgIds: updatedList };
           setCurrentUser(updatedUser);
           localStorage.setItem('gcap_current_user', JSON.stringify(updatedUser));
-          adminUpdateUserAsync(currentUser.id, { dismissedPopupMsgIds: updatedList }).catch(console.error);
+          adminUpdateUserAsync(currentUser.id, { dismissedPopupMsgIds: updatedList }).catch(console.warn);
         }
         await apiDismissMessage(msgId, currentUser.id);
         setMessages((prev) =>
@@ -1227,7 +1274,7 @@ export default function App() {
     if (currentUser) {
       for (const msg of userVisibleMessages) {
         if (!msg.readByUserIds?.includes(currentUser.id)) {
-          apiMarkMessageRead(msg.id, currentUser.id).catch(console.error);
+          apiMarkMessageRead(msg.id, currentUser.id).catch(console.warn);
         }
       }
       setMessages((prev) =>
@@ -1246,7 +1293,7 @@ export default function App() {
   const handleUpdateLiveConfig = (newConfig: LiveInterfaceConfig) => {
     saveStoredLiveConfig(newConfig);
     setLiveConfig(newConfig);
-    apiSaveLiveConfig(newConfig).catch(console.error);
+    apiSaveLiveConfig(newConfig).catch(console.warn);
     showToast(
       isHi ? 'लाइव इन-ऐप OTA अपडेट्स ब्रॉडकास्ट किए गए!' : 'Live In-App OTA Broadcast Sent!',
       isHi
@@ -1258,7 +1305,7 @@ export default function App() {
   const handleResetLiveConfig = () => {
     const def = resetLiveConfigToDefault();
     setLiveConfig(def);
-    apiSaveLiveConfig(def).catch(console.error);
+    apiSaveLiveConfig(def).catch(console.warn);
     showToast(
       isHi ? 'डिफ़ॉल्ट लाइव कॉन्फ़िग बहाल हुई' : 'Default Live Config Restored',
       isHi ? 'मूल इंटरफ़ेस व ब्रॉडकास्ट सेटिंग्स रीसेट हो गईं।' : 'Standard live settings restored.'
@@ -1353,7 +1400,7 @@ export default function App() {
     }
     setTreasury(res.treasury);
     setTreasuryLogs(getStoredTreasuryLogs());
-    apiUpdateTreasury(res.treasury).catch(console.error);
+    apiUpdateTreasury(res.treasury).catch(console.warn);
 
     if (destination === 'ADMIN_WALLET' && currentUser) {
       const currentAdminGp = wallet?.gpBalance || 0;
@@ -1364,7 +1411,7 @@ export default function App() {
       };
       setWallet(updatedAdminWallet);
       setStoredWallet(updatedAdminWallet);
-      apiUpdateWallet(updatedAdminWallet, currentUser.id).catch(console.error);
+      apiUpdateWallet(updatedAdminWallet, currentUser.id).catch(console.warn);
     }
 
     confetti({ particleCount: 80, spread: 80 });
@@ -1384,7 +1431,7 @@ export default function App() {
   const handleAdminAddPlan = (newPlan: InvestmentPlan) => {
     const updated = addPlan(newPlan);
     setPlans(updated);
-    apiSavePlans(updated).catch(console.error);
+    apiSavePlans(updated).catch(console.warn);
     showToast(
       isHi ? 'नया प्लान सफलतापूर्वक जोड़ा गया!' : 'New plan created successfully!',
       isHi ? `${newPlan.name} अब निवेशकों के लिए सक्रिय है।` : `${newPlan.name} is now live.`
@@ -1394,7 +1441,7 @@ export default function App() {
   const handleAdminUpdatePlan = (updatedPlan: InvestmentPlan) => {
     const updated = updatePlan(updatedPlan);
     setPlans(updated);
-    apiSavePlans(updated).catch(console.error);
+    apiSavePlans(updated).catch(console.warn);
 
     // Synchronize 6-hour rate to active platform rules
     if (updatedPlan.id === 'short-term' && typeof updatedPlan.dailyRoiPercent === 'number') {
@@ -1418,7 +1465,7 @@ export default function App() {
   const handleAdminDeletePlan = (planId: string) => {
     const updated = deletePlan(planId);
     setPlans(updated);
-    apiSavePlans(updated).catch(console.error);
+    apiSavePlans(updated).catch(console.warn);
     showToast(
       isHi ? 'प्लान हटा दिया गया!' : 'Plan deleted!',
       isHi ? 'प्लान को सफलतापूर्वक हटाया गया।' : 'The plan was successfully deleted.'
@@ -1428,7 +1475,7 @@ export default function App() {
   const handleAdminResetPlans = () => {
     const defaults = resetPlansToDefault();
     setPlans(defaults);
-    apiSavePlans(defaults).catch(console.error);
+    apiSavePlans(defaults).catch(console.warn);
     showToast(
       isHi ? 'डिफ़ॉल्ट प्लान्स बहाल हुए' : 'Default plans restored',
       isHi ? 'सभी मूल निवेश योजनाएं रीसेट हो गई हैं।' : 'Standard schemes restored.'
@@ -1447,7 +1494,7 @@ export default function App() {
           setStoredTreasury(res.treasury);
         }
       })
-      .catch(console.error);
+      .catch(console.warn);
 
     if (newTxn.status === 'SUCCESS') {
       if (newTxn.type === 'DEPOSIT' || newTxn.type === 'ADMIN_ADD') {
@@ -1498,7 +1545,7 @@ export default function App() {
           setStoredTreasury(res.treasury);
         }
       })
-      .catch(console.error);
+      .catch(console.warn);
 
     // Rule: Admin Approval moves deposit funds to wallet cash balance
     if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
@@ -1510,7 +1557,7 @@ export default function App() {
       );
       setTreasury(deductRes.treasury);
       setTreasuryLogs(getStoredTreasuryLogs());
-      apiUpdateTreasury(deductRes.treasury).catch(console.error);
+      apiUpdateTreasury(deductRes.treasury).catch(console.warn);
 
       // 2. Update target user's wallet in central database
       apiAdminAdjustUserWallet(
@@ -1523,7 +1570,7 @@ export default function App() {
           reason: `Deposit Approval: ${updatedTxn.referenceId || updatedTxn.id}`,
         },
         currentUser?.name || 'Super Admin'
-      ).catch(console.error);
+      ).catch(console.warn);
 
       // 3. If the current active session is this user, update local wallet state
       if (currentUser && (currentUser.id === updatedTxn.userId)) {
@@ -1563,7 +1610,7 @@ export default function App() {
       );
       setTreasury(payoutResult.treasury);
       setTreasuryLogs(getStoredTreasuryLogs());
-      apiUpdateTreasury(payoutResult.treasury).catch(console.error);
+      apiUpdateTreasury(payoutResult.treasury).catch(console.warn);
 
       // Voice announcement for withdrawal approval
       audioAnnouncer.announceWithdrawalApproved({
@@ -1598,7 +1645,7 @@ export default function App() {
             reason: `Withdrawal Rejected (Refund): ${updatedTxn.id}`,
           },
           currentUser?.name || 'Super Admin'
-        ).catch(console.error);
+        ).catch(console.warn);
 
         if (currentUser && (currentUser.id === updatedTxn.userId)) {
           const updatedWallet = { ...wallet! };
@@ -1627,7 +1674,7 @@ export default function App() {
             reason: `Deposit Rejected: ${updatedTxn.id}`,
           },
           currentUser?.name || 'Super Admin'
-        ).catch(console.error);
+        ).catch(console.warn);
 
         if (currentUser && (currentUser.id === updatedTxn.userId)) {
           const updatedWallet = {
@@ -1656,7 +1703,7 @@ export default function App() {
     const updated = transactions.filter((t) => t.id !== txnId);
     setTransactions(updated);
     setStoredTransactions(updated);
-    apiDeleteTransaction(txnId).catch(console.error);
+    apiDeleteTransaction(txnId).catch(console.warn);
     showToast(
       isHi ? 'लेन-देन रिकॉर्ड हटाया गया' : 'Record deleted',
       isHi ? 'लेन-देन इतिहास से हटाया गया।' : 'Transaction removed from ledger.'
@@ -1828,10 +1875,10 @@ export default function App() {
       setWallet(updatedSenderWallet);
       setStoredWallet(updatedSenderWallet);
 
-      apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.error);
-      apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.error);
+      apiUpdateWallet(updatedSenderWallet, currentUser.id).catch(console.warn);
+      apiUpdateWallet(updatedRecipientWallet, recipient.id).catch(console.warn);
       if (adminUser && updatedAdminWallet) {
-        apiUpdateWallet(updatedAdminWallet, adminUser.id).catch(console.error);
+        apiUpdateWallet(updatedAdminWallet, adminUser.id).catch(console.warn);
       }
 
       // Update Firestore Cache
@@ -1889,8 +1936,8 @@ export default function App() {
       setTransactions(updatedTxns);
       setStoredTransactions(updatedTxns);
 
-      apiCreateTransaction(senderTxn, currentUser.id, updatedSenderWallet).catch(console.error);
-      apiCreateTransaction(recipientTxn, recipient.id, updatedRecipientWallet).catch(console.error);
+      apiCreateTransaction(senderTxn, currentUser.id, updatedSenderWallet).catch(console.warn);
+      apiCreateTransaction(recipientTxn, recipient.id, updatedRecipientWallet).catch(console.warn);
 
       // Create Admin Fee Transaction Record if Admin is separate
       if (adminUser && updatedAdminWallet) {
@@ -1908,7 +1955,7 @@ export default function App() {
           note: `Received 2% Admin Fee (${fee.toFixed(2)} GP) from P2P Transfer (${currentUser.loginId} ➔ ${recipient.loginId})`,
           noteHi: `P2P ट्रांसफर (${currentUser.loginId} ➔ ${recipient.loginId}) से 2% एडमिन चार्ज (${fee.toFixed(2)} GP) पर्सनल वॉलेट में प्राप्त हुआ`,
         };
-        apiCreateTransaction(adminFeeTxn, adminUser.id, updatedAdminWallet).catch(console.error);
+        apiCreateTransaction(adminFeeTxn, adminUser.id, updatedAdminWallet).catch(console.warn);
       }
 
       // Also log Fee GP collection in Treasury Ledger
@@ -1931,7 +1978,7 @@ export default function App() {
 
       return true;
     } catch (err) {
-      console.error('GP Transfer Error:', err);
+      console.warn('GP Transfer Error:', err);
       alert(isHi ? 'GP ट्रांसफर के दौरान त्रुटि हुई। कोई GP नहीं काटा गया।' : 'An error occurred during GP transfer. No GP was deducted.');
       return false; // Error -> 0 GP deducted
     }
@@ -2259,8 +2306,8 @@ export default function App() {
     setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.warn);
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
     }
 
     // Trigger Personalized Audio Voice Announcement (plays in background)
@@ -2356,8 +2403,8 @@ export default function App() {
     setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.warn);
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
     }
 
     // Trigger Audio Voice Announcement
@@ -2442,8 +2489,8 @@ export default function App() {
     setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id).catch(console.error);
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id).catch(console.warn);
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
     }
 
     // Trigger Personalized Audio Voice Announcement
@@ -2475,7 +2522,7 @@ export default function App() {
     if (result.log) {
       setTreasuryLogs((prev) => [result.log!, ...prev]);
     }
-    apiUpdateTreasury(updatedTreasury, result.log).catch(console.error);
+    apiUpdateTreasury(updatedTreasury, result.log).catch(console.warn);
 
     const dailyReturn = (amount * plan.dailyRoiPercent) / 100;
     const totalExpected = dailyReturn * plan.durationDays;
@@ -2586,9 +2633,9 @@ export default function App() {
     setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiCreateInvestment(newInvestment, currentUser.id, updatedWallet).catch(console.error);
-      newTxns.forEach((tx) => apiCreateTransaction(tx, currentUser.id, updatedWallet).catch(console.error));
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
+      apiCreateInvestment(newInvestment, currentUser.id, updatedWallet).catch(console.warn);
+      newTxns.forEach((tx) => apiCreateTransaction(tx, currentUser.id, updatedWallet).catch(console.warn));
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
     }
 
     // Trigger Personalized Audio Voice Announcement
@@ -2673,15 +2720,15 @@ export default function App() {
 
     setInvestments(updatedInvestments);
     setStoredInvestments(updatedInvestments);
-    saveInvestmentsToFirestore(updatedInvestments).catch(console.error);
+    saveInvestmentsToFirestore(updatedInvestments).catch(console.warn);
 
     setWallet(updatedWallet);
     setStoredWallet(updatedWallet);
     if (currentUser?.id) {
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
       const updatedInv = updatedInvestments.find((i) => i.id === investmentId);
       if (updatedInv) {
-        apiUpdateInvestment(updatedInv, currentUser.id).catch(console.error);
+        apiUpdateInvestment(updatedInv, currentUser.id).catch(console.warn);
       }
     }
 
@@ -2689,7 +2736,7 @@ export default function App() {
     setTransactions(updatedTxns);
     setStoredTransactions(updatedTxns);
     if (currentUser?.id) {
-      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.warn);
     }
 
     confetti({ particleCount: 50, spread: 60 });
@@ -2735,7 +2782,7 @@ export default function App() {
 
     setInvestments(updatedInvestments);
     setStoredInvestments(updatedInvestments);
-    saveInvestmentsToFirestore(updatedInvestments).catch(console.error);
+    saveInvestmentsToFirestore(updatedInvestments).catch(console.warn);
 
     setWallet(updatedWallet);
     setStoredWallet(updatedWallet);
@@ -2745,9 +2792,9 @@ export default function App() {
     setStoredTransactions(updatedTxns);
 
     if (currentUser?.id) {
-      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.error);
-      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.error);
-      updatedInvestments.forEach((inv) => apiUpdateInvestment(inv, currentUser.id).catch(console.error));
+      apiUpdateWallet(updatedWallet, currentUser.id).catch(console.warn);
+      apiCreateTransaction(newTx, currentUser.id, updatedWallet).catch(console.warn);
+      updatedInvestments.forEach((inv) => apiUpdateInvestment(inv, currentUser.id).catch(console.warn));
     }
 
     confetti({ particleCount: 70, spread: 70 });
@@ -2931,7 +2978,7 @@ export default function App() {
       };
       saveStoredCompanyProfile(updatedProfile);
     } catch (e) {
-      console.error('Failed to sync company profile:', e);
+      console.warn('Failed to sync company profile:', e);
     }
 
     showToast(
@@ -2942,8 +2989,20 @@ export default function App() {
     );
   };
 
-  const handleSaveCompanyProfile = (updatedProfile: CompanyProfile) => {
+  const handleSaveCompanyProfile = async (updatedProfile: CompanyProfile) => {
     saveStoredCompanyProfile(updatedProfile);
+    
+    // Persist to central server
+    try {
+      await fetch('/api/company-profile/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: updatedProfile }),
+      });
+    } catch (err) {
+      console.warn('Failed to persist company profile to central server:', err);
+    }
+
     // Sync company bank details to rules state so all user modals update live
     const updatedRules: AppRules = {
       ...rules,
@@ -2973,7 +3032,7 @@ export default function App() {
 
     // Persist to central database
     apiSaveRules(def).catch((err) => {
-      console.error('Failed to persist reset rules to central database:', err);
+      console.warn('Failed to persist reset rules to central database:', err);
     });
 
     showToast(
@@ -3000,7 +3059,7 @@ export default function App() {
           const updatedUser = { ...currentUser, shownLockCongratsIds: updatedList };
           setCurrentUser(updatedUser);
           localStorage.setItem('gcap_current_user', JSON.stringify(updatedUser));
-          adminUpdateUserAsync(currentUser.id, { shownLockCongratsIds: updatedList }).catch(console.error);
+          adminUpdateUserAsync(currentUser.id, { shownLockCongratsIds: updatedList }).catch(console.warn);
         }
       }
 
@@ -3008,13 +3067,13 @@ export default function App() {
         const updated = prev.map((inv) => {
           if (inv.id === id) {
             const updatedInv = { ...inv, lockCongratulationsShown: true, isInitialLockCompleted: true };
-            apiUpdateInvestment(updatedInv, currentUser?.id).catch(console.error);
+            apiUpdateInvestment(updatedInv, currentUser?.id).catch(console.warn);
             return updatedInv;
           }
           return inv;
         });
         setStoredInvestments(updated);
-        saveInvestmentsToFirestore(updated).catch(console.error);
+        saveInvestmentsToFirestore(updated).catch(console.warn);
         return updated;
       });
     }
@@ -3028,13 +3087,13 @@ export default function App() {
       if (res.hasChanges) {
         setInvestments(res.updatedInvestments);
         setStoredInvestments(res.updatedInvestments);
-        saveInvestmentsToFirestore(res.updatedInvestments).catch(console.error);
+        saveInvestmentsToFirestore(res.updatedInvestments).catch(console.warn);
 
         // Sync each updated investment to Express server immediately to prevent rollback and duplicate toast alerts
         res.updatedInvestments.forEach((inv) => {
           const oldInv = investments.find((i) => i.id === inv.id);
           if (!oldInv || JSON.stringify(oldInv) !== JSON.stringify(inv)) {
-            apiUpdateInvestment(inv, currentUser?.id).catch(console.error);
+            apiUpdateInvestment(inv, currentUser?.id).catch(console.warn);
           }
         });
 
@@ -3052,7 +3111,7 @@ export default function App() {
                 royaltyEarned: Math.round(((prev.royaltyEarned || 0) + delta.royaltyEarnedDelta) * 100) / 100,
               };
               setStoredWallet(updatedWallet);
-              apiUpdateWallet(currentUser.id, updatedWallet).catch(console.error);
+              apiUpdateWallet(currentUser.id, updatedWallet).catch(console.warn);
               return updatedWallet;
             });
 
@@ -3100,12 +3159,12 @@ export default function App() {
 
         if (res.newTransactions && res.newTransactions.length > 0) {
           res.newTransactions.forEach((txn) => {
-            apiCreateTransaction(txn, txn.userId).catch(console.error);
+            apiCreateTransaction(txn, txn.userId).catch(console.warn);
           });
           setTransactions((prev) => {
             const updatedTxns = [...res.newTransactions, ...prev];
             setStoredTransactions(updatedTxns);
-            saveTransactionsToFirestore(updatedTxns).catch(console.error);
+            saveTransactionsToFirestore(updatedTxns).catch(console.warn);
             return updatedTxns;
           });
         }
@@ -3139,14 +3198,14 @@ export default function App() {
           currentCycleStartTimestamp: currentStart,
           currentCycleEndTimestamp: currentEnd,
         };
-        apiUpdateInvestment(uInv, currentUser?.id).catch(console.error);
+        apiUpdateInvestment(uInv, currentUser?.id).catch(console.warn);
         return uInv;
       }
       return i;
     });
 
     setInvestments(updated);
-    saveInvestmentsToFirestore(updated).catch(console.error);
+    saveInvestmentsToFirestore(updated).catch(console.warn);
     setCongratulationsInvestment({
       ...inv,
       isInitialLockCompleted: true,
@@ -3215,7 +3274,7 @@ export default function App() {
 
     setInvestments(updated);
     setStoredInvestments(updated);
-    saveInvestmentsToFirestore(updated).catch(console.error);
+    saveInvestmentsToFirestore(updated).catch(console.warn);
 
     let updatedWallet: Wallet | null = null;
     setWallet((prev) => {
@@ -3227,8 +3286,8 @@ export default function App() {
       };
       setStoredWallet(updatedWallet);
       if (currentUser) {
-        apiUpdateWallet(currentUser.id, updatedWallet).catch(console.error);
-        saveWalletsToFirestore({ [currentUser.id]: updatedWallet }).catch(console.error);
+        apiUpdateWallet(currentUser.id, updatedWallet).catch(console.warn);
+        saveWalletsToFirestore({ [currentUser.id]: updatedWallet }).catch(console.warn);
       }
       return updatedWallet;
     });
@@ -3290,13 +3349,13 @@ export default function App() {
 
     // Call apiCreateTransaction for each transaction to persist and credit sponsor wallets on server
     newTxns.forEach((txn) => {
-      apiCreateTransaction(txn, txn.userId).catch(console.error);
+      apiCreateTransaction(txn, txn.userId).catch(console.warn);
     });
 
     setTransactions((prev) => {
       const updatedTxns = [...newTxns, ...prev];
       setStoredTransactions(updatedTxns);
-      saveTransactionsToFirestore(updatedTxns).catch(console.error);
+      saveTransactionsToFirestore(updatedTxns).catch(console.warn);
       return updatedTxns;
     });
 
@@ -4269,7 +4328,7 @@ export default function App() {
                       isHi ? 'कंपनी मुख्य बैलेंस अपडेट हो गया है।' : 'Company main reserve has been replenished.'
                     );
                   } catch (err) {
-                    console.error('Failed to add 10L balance:', err);
+                    console.warn('Failed to add 10L balance:', err);
                   }
                 }}
                 className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
