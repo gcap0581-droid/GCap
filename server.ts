@@ -1662,18 +1662,6 @@ function ensureDb(): ServerDB {
     if (!parsed.bankDetails || typeof parsed.bankDetails !== "object") parsed.bankDetails = {};
     if (!parsed.treasury || typeof parsed.treasury !== "object") parsed.treasury = INITIAL_TREASURY;
 
-    // ONE-TIME PATCH: Force treasury balance to 500,000 if it's currently 600,000 and totalInjected is 600,000 (Initial state before Amit's 100k deduction)
-    if (parsed.treasury && parsed.treasury.balance === 600000 && (parsed.treasury.totalInjected === 600000 || !parsed.treasury.totalInjected)) {
-      parsed.treasury.balance = 500000;
-      parsed.treasury.totalDeducted = (parsed.treasury.totalDeducted || 0) + 100000;
-      parsed.treasury.totalTransferredToUsers = (parsed.treasury.totalTransferredToUsers || 0) + 100000;
-      if (!parsed.treasuryLogs || !parsed.treasuryLogs.some((l: any) => l.id === "tr-log-amit-100k")) {
-        if (!parsed.treasuryLogs) parsed.treasuryLogs = [];
-        parsed.treasuryLogs.unshift(INITIAL_LOGS[0]);
-      }
-      needsSave = true;
-    }
-
     if (!parsed.treasuryLogs || !Array.isArray(parsed.treasuryLogs)) {
       parsed.treasuryLogs = INITIAL_LOGS;
     } else {
