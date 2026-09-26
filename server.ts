@@ -1388,7 +1388,7 @@ function processServerSideCycles(db: ServerDB): boolean {
   return hasChanges;
 }
 
-function ensureDb(): ServerDB {
+async function ensureDb(): Promise<ServerDB> {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
