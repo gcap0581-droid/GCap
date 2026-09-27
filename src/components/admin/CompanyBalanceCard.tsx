@@ -18,6 +18,8 @@ import { CompanyTreasury, Language } from '../../types';
 import { formatINR } from '../../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../../utils/treasuryStorage';
 
+import { Key } from 'lucide-react';
+
 interface CompanyBalanceCardProps {
   treasury?: CompanyTreasury | null;
   language: Language;
@@ -26,6 +28,7 @@ interface CompanyBalanceCardProps {
   onQuickAdd: (amount: number) => void;
   onOpenHistory?: () => void;
   onOpenConvertFeeGpModal?: () => void;
+  onChangeTxPasswordModalOpen?: () => void;
 }
 
 export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
@@ -36,6 +39,7 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
   onQuickAdd,
   onOpenHistory,
   onOpenConvertFeeGpModal,
+  onChangeTxPasswordModalOpen,
 }) => {
   const isHi = language === 'hi';
   const treasury: CompanyTreasury = rawTreasury || {
@@ -130,8 +134,8 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons: Add Balance & Deduct Balance */}
-          <div className="flex items-center gap-2.5">
+          {/* Action Buttons: Add Balance, Deduct Balance & Change Tx Password */}
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               id="btn-admin-add-company-balance"
               onClick={onOpenAddModal}
@@ -149,6 +153,17 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
               <MinusCircle className="w-4 h-4" />
               <span>{isHi ? '- बैलेंस घटाएं' : '- Deduct Balance'}</span>
             </button>
+
+            {onChangeTxPasswordModalOpen && (
+              <button
+                onClick={onChangeTxPasswordModalOpen}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-md"
+                title={isHi ? 'ट्रांजेक्शन पासवर्ड बदलें (Default: adtra123)' : 'Change Transaction Password (Default: adtra123)'}
+              >
+                <Key className="w-4 h-4 text-amber-400" />
+                <span>{isHi ? '🔑 पासवर्ड बदलें' : '🔑 Change Password'}</span>
+              </button>
+            )}
           </div>
         </div>
 

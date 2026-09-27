@@ -25,6 +25,8 @@ interface AdminTransactionsTabProps {
   onEditTransaction: (txn: Transaction) => void;
   onDeleteTransaction: (txnId: string) => void;
   onQuickApprove?: (txnId: string) => void;
+  onApproveDepositPayment?: (txnId: string) => void;
+  onTransferDepositToUser?: (txnId: string) => void;
   onRejectTransaction?: (txnId: string) => void;
 }
 
@@ -36,6 +38,8 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
   onEditTransaction,
   onDeleteTransaction,
   onQuickApprove,
+  onApproveDepositPayment,
+  onTransferDepositToUser,
   onRejectTransaction,
 }) => {
   const isHi = language === 'hi';
@@ -335,6 +339,8 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                           className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             t.status === 'SUCCESS'
                               ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER')
+                              ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-extrabold animate-pulse'
                               : t.status === 'PENDING'
                               ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                               : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
@@ -342,12 +348,18 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                         >
                           {t.status === 'SUCCESS' ? (
                             <CheckCircle2 className="w-3 h-3" />
+                          ) : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') ? (
+                            <Zap className="w-3 h-3 text-cyan-400" />
                           ) : t.status === 'PENDING' ? (
                             <Clock className="w-3 h-3" />
                           ) : (
                             <XCircle className="w-3 h-3" />
                           )}
-                          <span>{t.status}</span>
+                          <span>
+                            {(t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER')
+                              ? (isHi ? 'स्वीकृत (ट्रांसफर बाकी)' : 'APPROVED (TRANSFER PENDING)')
+                              : t.status}
+                          </span>
                         </span>
                       </td>
 
@@ -359,23 +371,68 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {t.status === 'PENDING' && onRejectTransaction && (
+                          {/* Reject Button for PENDING or APPROVED stage */}
+                          {(t.status === 'PENDING' || t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') && onRejectTransaction && (
                             <button
                               onClick={() => onRejectTransaction(t.id)}
                               className="px-2 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 rounded text-[10px] font-bold transition-all cursor-pointer"
-                              title={isHi ? 'कारण सहित अस्वीकार करें' : 'Reject with reason'}
+                              title={isHi ? 'अस्वीकार करें' : 'Reject'}
                             >
                               {isHi ? 'रिजेक्ट' : 'Reject'}
                             </button>
                           )}
-                          {t.status === 'PENDING' && onQuickApprove && (
-                            <button
-                              onClick={() => onQuickApprove(t.id)}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition-all cursor-pointer"
-                              title="Approve with password"
-                            >
-                              {isHi ? 'अप्रूव' : 'Approve'}
-                            </button>
+
+                          {/* 2-Step Actions for BOTH DEPOSIT and WITHDRAWAL */}
+                          {(t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') ? (
+                            <>
+                              {/* Step 1: Approve Request */}
+                              {t.status === 'PENDING' ? (
+                                <button
+                                  onClick={() => onApproveDepositPayment ? onApproveDepositPayment(t.id) : (onQuickApprove && onQuickApprove(t.id))}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition-all cursor-pointer shadow-sm shadow-emerald-900/50 flex items-center gap-1"
+                                  title={isHi ? '1. अनुरोध स्वीकार करें (ट्रांसफर बटन चालू होगा)' : '1. Approve Request (Activates Transfer button)'}
+                                >
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>{isHi ? '1. अप्रूव' : '1. Approve'}</span>
+                                </button>
+                              ) : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') ? (
+                                <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800/80 rounded text-[10px] font-bold flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>{isHi ? 'स्वीकृत' : 'Approved'}</span>
+                                </span>
+                              ) : null}
+
+                              {/* Step 2: Transfer Funds (Prompts for Password) */}
+                              {t.status === 'PENDING' ? (
+                                <button
+                                  disabled
+                                  className="px-2.5 py-1 bg-slate-800 text-slate-500 border border-slate-700/60 rounded text-[10px] font-bold cursor-not-allowed opacity-60 flex items-center gap-1"
+                                  title={isHi ? 'पहले 1. अप्रूव करें (यह बटन तब चालू होगा)' : 'First Approve to activate Transfer'}
+                                >
+                                  <span>🔒 {isHi ? '2. ट्रांसफर' : '2. Transfer'}</span>
+                                </button>
+                              ) : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') ? (
+                                <button
+                                  onClick={() => onQuickApprove ? onQuickApprove(t.id) : (onTransferDepositToUser && onTransferDepositToUser(t.id))}
+                                  className="px-2.5 py-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded text-[10px] font-black transition-all cursor-pointer shadow-md shadow-cyan-900/50 flex items-center gap-1 animate-bounce"
+                                  title={isHi ? '2. पासवर्ड दर्ज कर फंड ट्रांसफर करें (adtra123)' : '2. Enter password to Transfer Funds (adtra123)'}
+                                >
+                                  <Zap className="w-3 h-3" />
+                                  <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>
+                                </button>
+                              ) : null}
+                            </>
+                          ) : (
+                            /* Fallback for other transaction types */
+                            t.status === 'PENDING' && onQuickApprove && (
+                              <button
+                                onClick={() => onQuickApprove(t.id)}
+                                className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition-all cursor-pointer"
+                                title="Approve immediately"
+                              >
+                                {isHi ? 'अप्रूव' : 'Approve'}
+                              </button>
+                            )
                           )}
 
                           <button

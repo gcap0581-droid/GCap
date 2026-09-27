@@ -3,8 +3,25 @@ import { broadcastOtaUpdate } from './liveConfigStorage';
 import { apiSaveRules } from './centralSync';
 import { saveRulesToFirestore } from '../lib/firestoreBridge';
 
+export const DEFAULT_ADMIN_TX_PASSWORD = 'adtra123';
+
+export function getStoredAdminTxPassword(): string {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('gcap_admin_tx_password');
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return DEFAULT_ADMIN_TX_PASSWORD;
+}
+
+export function setStoredAdminTxPassword(newPassword: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('gcap_admin_tx_password', newPassword.trim());
+  }
+}
+
 export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCAP GLOBAL ASSET PORTAL',
+  adminTxPassword: 'adtra123',
   gpRatePerRupee: 1.0,
   minDeposit: 10000,
   maxDeposit: 1000000000,

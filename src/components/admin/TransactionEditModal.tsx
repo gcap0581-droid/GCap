@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Receipt, Check, AlertCircle } from 'lucide-react';
-import { Language, Transaction, TransactionType } from '../../types';
+import { Language, Transaction, TransactionType, TransactionStatus } from '../../types';
 
 interface TransactionEditModalProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [id, setId] = useState('');
   const [type, setType] = useState<TransactionType>('DEPOSIT');
   const [amount, setAmount] = useState<number>(5000);
-  const [status, setStatus] = useState<'SUCCESS' | 'PENDING' | 'FAILED' | 'REJECTED'>('SUCCESS');
+  const [status, setStatus] = useState<TransactionStatus>('SUCCESS');
   const [method, setMethod] = useState('UPI / Admin Credit');
   const [referenceId, setReferenceId] = useState('');
   const [note, setNote] = useState('');

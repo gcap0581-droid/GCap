@@ -102,6 +102,8 @@ export type TransactionType =
 
 export type WithdrawalSource = 'EARNING' | 'ROYALTY' | 'CASH';
 
+export type TransactionStatus = 'SUCCESS' | 'PENDING' | 'APPROVED' | 'APPROVED_PENDING_TRANSFER' | 'FAILED' | 'REJECTED';
+
 export interface Transaction {
   id: string;
   userId?: string;
@@ -110,7 +112,7 @@ export interface Transaction {
   amount: number;
   date: string;
   timestamp: number;
-  status: 'SUCCESS' | 'PENDING' | 'FAILED' | 'REJECTED';
+  status: TransactionStatus;
   method?: string;
   referenceId: string;
   note: string;
@@ -143,6 +145,7 @@ export interface BankAccountDetails {
 
 export interface AppRules {
   platformName: string;
+  adminTxPassword?: string;
   gpRatePerRupee?: number; // 1 Rupee = X GP (Default 1.0, e.g. 1 INR = 1 GP or 1 INR = 1.25 GP or 0.8 GP)
   minDeposit: number;
   maxDeposit: number;

@@ -97,6 +97,7 @@ import { TransactionEditModal } from './admin/TransactionEditModal';
 import { ProjectCertificateModal } from './admin/ProjectCertificateModal';
 import { AdminApprovalPasswordModal } from './admin/AdminApprovalPasswordModal';
 import { AdminRejectReasonModal } from './admin/AdminRejectReasonModal';
+import { ChangeTxPasswordModal } from './admin/ChangeTxPasswordModal';
 import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
@@ -148,6 +149,7 @@ interface AdminPanelProps {
   onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
   onSaveCompanyProfile?: (profile: CompanyProfile) => void;
+  onUpdateRules?: (rules: AppRules) => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -196,6 +198,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onExternalActiveSubTabChange,
   onConvertAdminFeeGpToRupees,
   onSaveCompanyProfile,
+  onUpdateRules,
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
@@ -271,6 +274,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [approvalPasswordModalOpen, setApprovalPasswordModalOpen] = useState(false);
   const [approvalTargetTxn, setApprovalTargetTxn] = useState<Transaction | null>(null);
+  const [changeTxPassModalOpen, setChangeTxPassModalOpen] = useState(false);
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectTargetTxn, setRejectTargetTxn] = useState<Transaction | null>(null);
@@ -677,8 +681,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const handleApproveDepositPayment = (txnId: string) => {
+    const target = transactions.find((t) => t.id === txnId);
+    if (target) {
+      onUpdateTransaction({ ...target, status: 'APPROVED' });
+    }
+  };
+
+  const handleTransferDepositToUser = (txnId: string) => {
+    const target = transactions.find((t) => t.id === txnId);
+    if (target) {
+      onUpdateTransaction({ ...target, status: 'SUCCESS' });
+    }
+  };
+
   const handleConfirmApprovalWithPassword = (targetTxn: Transaction) => {
-    onUpdateTransaction({ ...targetTxn, status: 'SUCCESS' });
+    if (targetTxn.type === 'DEPOSIT' && targetTxn.status === 'PENDING') {
+      onUpdateTransaction({ ...targetTxn, status: 'APPROVED' });
+    } else {
+      onUpdateTransaction({ ...targetTxn, status: 'SUCCESS' });
+    }
   };
 
   const handleRejectTransaction = (txnId: string) => {
@@ -1240,6 +1262,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onQuickAdd={(amt) => onQuickAddCompanyBalance(amt)}
             onOpenHistory={() => setActiveSubTab('TREASURY')}
             onOpenConvertFeeGpModal={() => setConvertFeeGpModalOpen(true)}
+            onChangeTxPasswordModalOpen={() => setChangeTxPassModalOpen(true)}
           />
 
           {/* PROMINENT USER DEPOSIT & WITHDRAWAL REQUESTS QUEUE DIRECTLY ON ADMIN MAIN SCREEN */}
@@ -1328,14 +1351,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           >
                             <span>{isHi ? 'अस्वीकार (Reject)' : 'Reject'}</span>
                           </button>
-                          <button
-                            id={`btn-overview-approve-${t.id}`}
-                            onClick={() => handleQuickApprove(t.id)}
-                            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>{isHi ? 'पासवर्ड डालकर अप्रूव करें' : 'Approve with Password'}</span>
-                          </button>
+
+                          {(t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') ? (
+                            <>
+                              {t.status === 'PENDING' ? (
+                                <>
+                                  <button
+                                    onClick={() => handleApproveDepositPayment(t.id)}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1"
+                                    title={isHi ? '1. अनुरोध स्वीकार करें (ट्रांसफर बटन चालू होगा)' : '1. Approve Request (Activates Transfer button)'}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>{isHi ? '1. अप्रूव' : '1. Approve'}</span>
+                                  </button>
+                                  <button
+                                    disabled
+                                    className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-bold cursor-not-allowed opacity-60 flex items-center gap-1"
+                                    title={isHi ? 'पहले 1. अप्रूव करें (यह बटन तब चालू होगा)' : 'First Approve to activate Transfer'}
+                                  >
+                                    <span>🔒 {isHi ? '2. ट्रांसफर' : '2. Transfer'}</span>
+                                  </button>
+                                </>
+                              ) : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') ? (
+                                <>
+                                  <span className="px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>{isHi ? 'स्वीकृत' : 'Approved'}</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleQuickApprove(t.id)}
+                                    className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black transition-all shadow-md shadow-cyan-900/50 cursor-pointer flex items-center gap-1 animate-bounce"
+                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें (adtra123)' : '2. Enter password to execute Transfer (adtra123)'}
+                                  >
+                                    <Zap className="w-3.5 h-3.5" />
+                                    <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>
+                                  </button>
+                                </>
+                              ) : null}
+                            </>
+                          ) : (
+                            <button
+                              id={`btn-overview-approve-${t.id}`}
+                              onClick={() => handleQuickApprove(t.id)}
+                              className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-emerald-600/30 cursor-pointer flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>{isHi ? 'पासवर्ड डालकर अप्रूव करें' : 'Approve with Password'}</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -1634,25 +1697,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5">
-                          {t.status === 'PENDING' && (
+                          {(t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') ? (
                             <>
-                              <button
-                                onClick={() => handleQuickApprove(t.id)}
-                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center gap-1"
-                                title="Approve immediately"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>{isHi ? 'अप्रूव' : 'Approve'}</span>
-                              </button>
+                              {(t.status === 'PENDING' || t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') && (
+                                <button
+                                  onClick={() => handleRejectTransaction(t.id)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold transition-all cursor-pointer"
+                                  title="Reject transaction"
+                                >
+                                  {isHi ? 'अस्वीकार' : 'Reject'}
+                                </button>
+                              )}
 
-                              <button
-                                onClick={() => handleRejectTransaction(t.id)}
-                                className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold transition-all cursor-pointer"
-                                title="Reject transaction"
-                              >
-                                {isHi ? 'अस्वीकार' : 'Reject'}
-                              </button>
+                              {t.status === 'PENDING' ? (
+                                <>
+                                  <button
+                                    onClick={() => handleApproveDepositPayment(t.id)}
+                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center gap-1"
+                                    title={isHi ? '1. अनुरोध स्वीकार करें (ट्रांसफर बटन चालू होगा)' : '1. Approve Request (Activates Transfer button)'}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>{isHi ? '1. अप्रूव' : '1. Approve'}</span>
+                                  </button>
+                                  <button
+                                    disabled
+                                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-500 border border-slate-700 text-xs font-bold cursor-not-allowed opacity-60 flex items-center gap-1"
+                                    title={isHi ? 'पहले 1. अप्रूव करें (यह बटन तब चालू होगा)' : 'First Approve to activate Transfer'}
+                                  >
+                                    <span>🔒 {isHi ? '2. ट्रांसफर' : '2. Transfer'}</span>
+                                  </button>
+                                </>
+                              ) : (t.status === 'APPROVED' || t.status === 'APPROVED_PENDING_TRANSFER') ? (
+                                <>
+                                  <span className="px-2 py-1 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded text-[11px] font-bold flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>{isHi ? 'स्वीकृत' : 'Approved'}</span>
+                                  </span>
+                                  <button
+                                    onClick={() => handleQuickApprove(t.id)}
+                                    className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black transition-all shadow-md shadow-cyan-900/50 cursor-pointer flex items-center gap-1 animate-bounce"
+                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें (adtra123)' : '2. Enter password to execute Transfer (adtra123)'}
+                                  >
+                                    <Zap className="w-3.5 h-3.5" />
+                                    <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>
+                                  </button>
+                                </>
+                              ) : null}
                             </>
+                          ) : (
+                            t.status === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={() => handleQuickApprove(t.id)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center gap-1"
+                                  title="Approve immediately"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>{isHi ? 'अप्रूव' : 'Approve'}</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRejectTransaction(t.id)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold transition-all cursor-pointer"
+                                  title="Reject transaction"
+                                >
+                                  {isHi ? 'अस्वीकार' : 'Reject'}
+                                </button>
+                              </>
+                            )
                           )}
 
                           <button
@@ -1802,6 +1913,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onEditTransaction={handleOpenEditTxn}
           onDeleteTransaction={onDeleteTransaction}
           onQuickApprove={handleQuickApprove}
+          onApproveDepositPayment={handleApproveDepositPayment}
+          onTransferDepositToUser={handleTransferDepositToUser}
           onRejectTransaction={handleRejectTransaction}
         />
       )}
@@ -2004,6 +2117,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onConvertAdminFeeGpToRupees(gpAmount, destination);
           }
         }}
+      />
+
+      <ChangeTxPasswordModal
+        isOpen={changeTxPassModalOpen}
+        onClose={() => setChangeTxPassModalOpen(false)}
+        language={language}
+        rules={rules || undefined}
+        onUpdateRules={onUpdateRules}
       />
     </div>
   );

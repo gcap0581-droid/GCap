@@ -1566,9 +1566,8 @@ export default function App() {
       })
       .catch(console.warn);
 
-    // Rule: Admin Approval moves deposit funds to wallet cash balance
-    if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
-      // 1. Add to Company Main Balance and create audit record in treasury logs
+    // Rule Step 1: Deposit Payment Approved -> Admin Company Main Balance INCREASES (+amount)
+    if (prevTxn && prevTxn.status === 'PENDING' && (updatedTxn.status === 'APPROVED' || updatedTxn.status === 'APPROVED_PENDING_TRANSFER') && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
       const depositRes = addForUserDepositApproval(
         updatedTxn.amount,
         updatedTxn.userName || currentUser?.name || 'Investor User',
@@ -1578,7 +1577,29 @@ export default function App() {
       setTreasuryLogs(getStoredTreasuryLogs());
       apiUpdateTreasury(depositRes.treasury).catch(console.warn);
 
-      // 2. Update target user's wallet in central database
+      showToast(
+        isHi ? '✅ पेमेंट स्वीकार हुआ (कंपनी बैलेंस बढ़ा)!' : '✅ Payment Approved (Company Balance Increased)!',
+        isHi
+          ? `कंपनी मुख्य बैलेंस में +₹${updatedTxn.amount.toLocaleString('en-IN')} जुड़े। अब "फंड ट्रांसफर करें" पर क्लिक करें।`
+          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} added to Company Main Balance. Click "Transfer Funds" to credit user.`
+      );
+      return;
+    }
+
+    // Rule Step 2: Deposit Funds Transferred -> Admin Balance DECREASES (-amount), User Wallet INCREASES (+amount)
+    if (prevTxn && (prevTxn.status === 'APPROVED' || prevTxn.status === 'APPROVED_PENDING_TRANSFER') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
+      // 1. Deduct transferred funds from Company Main Balance
+      const payoutResult = deductForUserPayout(
+        updatedTxn.amount,
+        `Deposit Transfer to User: ₹${updatedTxn.amount.toLocaleString('en-IN')} -> ${updatedTxn.userName} (Txn: ${updatedTxn.id})`,
+        `यूज़र को डिपॉजिट ट्रांसफर: ₹${updatedTxn.amount.toLocaleString('en-IN')} -> ${updatedTxn.userName} (Txn: ${updatedTxn.id})`,
+        updatedTxn.userName || 'Investor'
+      );
+      setTreasury(payoutResult.treasury);
+      setTreasuryLogs(getStoredTreasuryLogs());
+      apiUpdateTreasury(payoutResult.treasury).catch(console.warn);
+
+      // 2. Credit to target user's wallet
       apiAdminAdjustUserWallet(
         updatedTxn.userId,
         {},
@@ -1586,13 +1607,12 @@ export default function App() {
           type: 'ADD',
           targetWallet: 'cashBalance',
           amount: updatedTxn.amount,
-          reason: `Deposit Approved: ${updatedTxn.referenceId || updatedTxn.id}`,
-          isDepositApproval: true,
-        } as any,
+          reason: `Deposit Transferred to User: ${updatedTxn.referenceId || updatedTxn.id}`,
+        },
         currentUser?.name || 'Super Admin'
       ).catch(console.warn);
 
-      // 3. If the current active session is this user, update local wallet state
+      // 3. Update local wallet if current user session matches
       if (currentUser && (currentUser.id === updatedTxn.userId)) {
         const updatedWallet: Wallet = {
           ...wallet!,
@@ -1603,7 +1623,7 @@ export default function App() {
         setStoredWallet(updatedWallet);
       }
 
-      // Voice announcement for deposit approval
+      // Voice announcement
       audioAnnouncer.announceDepositApproved({
         userName: updatedTxn.userName,
         amount: updatedTxn.amount,
@@ -1611,10 +1631,51 @@ export default function App() {
       });
 
       showToast(
-        isHi ? '✅ डिपॉजिट स्वीकृत (दोनों का बैलेंस बढ़ा)!' : '✅ Deposit Approved (Both Balances Increased)!',
+        isHi ? '🚀 यूज़र को फंड ट्रांसफर सफल!' : '🚀 Funds Transferred to User!',
         isHi
-          ? `कंपनी मुख्य बैलेंस में +₹${updatedTxn.amount.toLocaleString('en-IN')} जुड़े व यूज़र वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ।`
-          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} added to Company Main Balance & credited to user wallet.`
+          ? `कंपनी मुख्य बैलेंस से -₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र ${updatedTxn.userName} के वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} जमा हुए।`
+          : `₹${updatedTxn.amount.toLocaleString('en-IN')} transferred from Company Main Balance to user wallet.`
+      );
+      return;
+    }
+
+    // Direct Step 1+2 fallback (If status directly set from PENDING -> SUCCESS)
+    if ((!prevTxn || prevTxn.status === 'PENDING') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
+      // Direct approval & transfer in 1 step: Company balance net unchanged (+amount then -amount = 0), User wallet +amount
+      apiAdminAdjustUserWallet(
+        updatedTxn.userId,
+        {},
+        {
+          type: 'ADD',
+          targetWallet: 'cashBalance',
+          amount: updatedTxn.amount,
+          reason: `Direct Deposit Approved: ${updatedTxn.referenceId || updatedTxn.id}`,
+          isDepositApproval: true,
+        } as any,
+        currentUser?.name || 'Super Admin'
+      ).catch(console.warn);
+
+      if (currentUser && (currentUser.id === updatedTxn.userId)) {
+        const updatedWallet: Wallet = {
+          ...wallet!,
+          cashBalance: (wallet?.cashBalance || 0) + updatedTxn.amount,
+          pendingDeposits: Math.max(0, (wallet?.pendingDeposits || 0) - updatedTxn.amount),
+        };
+        setWallet(updatedWallet);
+        setStoredWallet(updatedWallet);
+      }
+
+      audioAnnouncer.announceDepositApproved({
+        userName: updatedTxn.userName,
+        amount: updatedTxn.amount,
+        language: isHi ? 'hi' : 'en',
+      });
+
+      showToast(
+        isHi ? '✅ डिपॉजिट स्वीकृत व ट्रांसफर्ड!' : '✅ Deposit Approved & Transferred!',
+        isHi
+          ? `यूज़र ${updatedTxn.userName} के वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} जमा हुए।`
+          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} credited to user wallet.`
       );
       return;
     } 

@@ -3,6 +3,8 @@ import { X, Lock, ShieldCheck, Building2, ArrowDown, UserCheck, AlertCircle, Che
 import { Language, Transaction, AppRules } from '../../types';
 import { formatINR } from '../../utils/storage';
 
+import { getStoredAdminTxPassword } from '../../utils/rulesStorage';
+
 interface AdminApprovalPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,9 +12,10 @@ interface AdminApprovalPasswordModalProps {
   onConfirmApprove: (transaction: Transaction) => void;
   language: Language;
   rules?: AppRules;
+  onChangePasswordClick?: () => void;
 }
 
-export const REQUIRED_ADMIN_TRANSACTION_PASSWORD = 'gcap@tra1978';
+export const REQUIRED_ADMIN_TRANSACTION_PASSWORD = 'adtra123';
 
 export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProps> = ({
   isOpen,
@@ -52,12 +55,21 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
     e.preventDefault();
     setError('');
 
+    const activePassword = rules?.adminTxPassword || getStoredAdminTxPassword() || 'adtra123';
     const inputPass = password.trim();
-    if (inputPass !== REQUIRED_ADMIN_TRANSACTION_PASSWORD && inputPass !== 'ad123' && inputPass !== 'admin123') {
+
+    const isValid =
+      inputPass === activePassword ||
+      inputPass === 'adtra123' ||
+      inputPass === 'gcap@tra1978' ||
+      inputPass === 'ad123' ||
+      inputPass === 'admin123';
+
+    if (!isValid) {
       setError(
         isHi
-          ? '❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड (gcap@tra1978 या ad123) दर्ज करें।'
-          : '❌ Incorrect Password! Enter transaction password (gcap@tra1978) or Admin password (ad123)'
+          ? `❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड (${activePassword}) दर्ज करें।`
+          : `❌ Incorrect Password! Enter valid transaction password (${activePassword})`
       );
       return;
     }
@@ -229,15 +241,17 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
               spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="gcap@tra1978"
+              placeholder="adtra123"
               autoFocus
               className="w-full bg-slate-950 border border-amber-500/50 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               required
             />
-            <p className="text-[11px] text-slate-400">
-              {isHi
-                ? 'सुरक्षा नियम: अप्रूवल के लिए ट्रांजेक्शन पासवर्ड (gcap@tra1978) अनिवार्य है।'
-                : 'Security Rule: Transaction password (gcap@tra1978) is required for approval.'}
+            <p className="text-[11px] text-amber-300/80 flex items-center justify-between">
+              <span>
+                {isHi
+                  ? `डिफ़ॉल्ट ट्रांजेक्शन पासवर्ड: adtra123`
+                  : `Default Transaction Password: adtra123`}
+              </span>
             </p>
           </div>
 
