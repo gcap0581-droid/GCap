@@ -55,6 +55,7 @@ import {
   adminDeductCompanyBalance,
   deductForUserInvestment,
   deductForUserDepositApproval,
+  addForUserDepositApproval,
   deductForUserPayout,
   resetTreasuryToDefault,
   addAdminFeeGp,
