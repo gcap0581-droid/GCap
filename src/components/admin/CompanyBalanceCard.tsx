@@ -158,7 +158,7 @@ export const CompanyBalanceCard: React.FC<CompanyBalanceCardProps> = ({
               <button
                 onClick={onChangeTxPasswordModalOpen}
                 className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-md"
-                title={isHi ? 'ट्रांजेक्शन पासवर्ड बदलें (Default: adtra123)' : 'Change Transaction Password (Default: adtra123)'}
+                title={isHi ? 'ट्रांजेक्शन पासवर्ड बदलें' : 'Change Transaction Password'}
               >
                 <Key className="w-4 h-4 text-amber-400" />
                 <span>{isHi ? '🔑 पासवर्ड बदलें' : '🔑 Change Password'}</span>

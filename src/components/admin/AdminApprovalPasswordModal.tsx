@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, ShieldCheck, Building2, ArrowDown, UserCheck, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
+import { X, Lock, ShieldCheck, Building2, ArrowDown, UserCheck, AlertCircle, CheckCircle2, Zap, Eye, EyeOff } from 'lucide-react';
 import { Language, Transaction, AppRules } from '../../types';
 import { formatINR } from '../../utils/storage';
 
@@ -27,12 +27,14 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
 }) => {
   const isHi = language === 'hi';
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setPassword('');
+      setShowPassword(false);
       setError('');
       setIsSubmitting(false);
     }
@@ -68,8 +70,8 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
     if (!isValid) {
       setError(
         isHi
-          ? `❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड (${activePassword}) दर्ज करें।`
-          : `❌ Incorrect Password! Enter valid transaction password (${activePassword})`
+          ? '❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड दर्ज करें।'
+          : '❌ Incorrect Transaction Password! Please enter valid password.'
       );
       return;
     }
@@ -228,31 +230,29 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
               <ShieldCheck className="w-4 h-4 text-amber-400" />
               <span>{isHi ? 'एडमिन ट्रांजेक्शन पासवर्ड दर्ज करें:' : 'Enter Admin Transaction Password:'}</span>
             </label>
-            <input
-              type="text"
-              inputMode="text"
-              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-              autoComplete="one-time-code"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              data-form-type="other"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="adtra123"
-              autoFocus
-              className="w-full bg-slate-950 border border-amber-500/50 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
-              required
-            />
-            <p className="text-[11px] text-amber-300/80 flex items-center justify-between">
-              <span>
-                {isHi
-                  ? `डिफ़ॉल्ट ट्रांजेक्शन पासवर्ड: adtra123`
-                  : `Default Transaction Password: adtra123`}
-              </span>
-            </p>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                spellCheck={false}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoFocus
+                className="w-full bg-slate-950 border border-amber-500/50 rounded-xl py-2.5 pl-3.5 pr-10 text-white font-mono text-sm focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+                title={showPassword ? (isHi ? 'छिपाएं' : 'Hide') : (isHi ? 'दिखाएं' : 'Show')}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

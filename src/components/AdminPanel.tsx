@@ -35,6 +35,7 @@ import {
   Plus,
   Download,
   BarChart3,
+  Key,
 } from 'lucide-react';
 import {
   AppRules,
@@ -592,11 +593,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleToggleUserStatus = async (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED') => {
+  const handleToggleUserStatus = async (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED') => {
     setIsSyncingUsers(true);
     try {
       const nextStatus = currentStatus === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE';
       await adminUpdateUserAsync(userId, { status: nextStatus });
+      await refreshUsers();
+    } finally {
+      setIsSyncingUsers(false);
+    }
+  };
+
+  const handleSuspendUser = async (userId: string, status: 'SUSPENDED' | 'ACTIVE', reason?: string) => {
+    setIsSyncingUsers(true);
+    try {
+      const updates: any = {
+        status,
+        suspendedReason: status === 'SUSPENDED' ? (reason || 'सुरक्षा/सत्यापन हेतु आपका खाता निलंबित किया गया है।') : '',
+        suspendedReasonHi: status === 'SUSPENDED' ? (reason || 'सुरक्षा/सत्यापन हेतु आपका खाता निलंबित किया गया है।') : '',
+        suspendedAt: status === 'SUSPENDED' ? new Date().toISOString() : undefined,
+      };
+      await adminUpdateUserAsync(userId, updates);
       await refreshUsers();
     } finally {
       setIsSyncingUsers(false);
@@ -876,6 +893,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>{isHi ? '⚙️ नियम व सीमाएं' : '⚙️ Rules & Limits'}</span>
                 </button>
 
+                <button
+                  id="btn-admin-change-tx-pass-menu"
+                  onClick={() => setChangeTxPassModalOpen(true)}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer shadow-md"
+                >
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span>{isHi ? '🔑 ट्रांजेक्शन पासवर्ड बदलें' : '🔑 Change Tx Password'}</span>
+                </button>
+
                 {onResetSystemFresh && (
                   <button
                     id="btn-admin-fresh-reset-system"
@@ -918,6 +944,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="leading-tight pt-1">
                     <h4 className="text-sm font-black tracking-tight">{isHi ? 'डैशबोर्ड' : 'Overview'}</h4>
                     <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'मुख्य सांख्यिकी' : 'System Stats'}</p>
+                  </div>
+                </button>
+
+                {/* TRANSACTION PASSWORD CHANGE TILE */}
+                <button
+                  id="tab-admin-change-tx-pass"
+                  onClick={() => setChangeTxPassModalOpen(true)}
+                  className="p-3 rounded-xl border border-amber-500/40 hover:border-amber-400 bg-gradient-to-br from-amber-950/60 via-slate-950 to-slate-950 hover:from-amber-900/60 text-amber-300 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group shadow-lg shadow-amber-950/30"
+                  title={isHi ? 'डिपॉजिट/विथड्रॉल ट्रांसफर हेतु ट्रांजेक्शन पासवर्ड बदलें' : 'Change Transaction Password'}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="p-1.5 rounded-lg border bg-amber-500/20 border-amber-500/40 text-amber-300 group-hover:scale-110 transition-transform">
+                      <Key className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono bg-amber-500/30 text-amber-200 border border-amber-500/40">
+                      SECURITY
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight text-white group-hover:text-amber-200 transition-colors">{isHi ? '🔑 पासवर्ड बदलें' : '🔑 Tx Password'}</h4>
+                    <p className="text-[10px] sm:text-xs text-amber-300/80 font-medium mt-0.5">{isHi ? 'ट्रांजेक्शन पिन' : 'Transfer Pin'}</p>
                   </div>
                 </button>
 
@@ -1381,7 +1428,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   <button
                                     onClick={() => handleQuickApprove(t.id)}
                                     className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black transition-all shadow-md shadow-cyan-900/50 cursor-pointer flex items-center gap-1 animate-bounce"
-                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें (adtra123)' : '2. Enter password to execute Transfer (adtra123)'}
+                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें' : '2. Enter password to execute Transfer'}
                                   >
                                     <Zap className="w-3.5 h-3.5" />
                                     <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>
@@ -1736,7 +1783,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   <button
                                     onClick={() => handleQuickApprove(t.id)}
                                     className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black transition-all shadow-md shadow-cyan-900/50 cursor-pointer flex items-center gap-1 animate-bounce"
-                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें (adtra123)' : '2. Enter password to execute Transfer (adtra123)'}
+                                    title={isHi ? '2. पासवर्ड दर्ज कर ट्रांसफर निष्पादित करें' : '2. Enter password to execute Transfer'}
                                   >
                                     <Zap className="w-3.5 h-3.5" />
                                     <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>
@@ -1893,6 +1940,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onEditUser={handleOpenEditUser}
           onEditUserWallet={handleOpenEditUserWallet}
           onToggleUserStatus={handleToggleUserStatus}
+          onSuspendUser={handleSuspendUser}
           onDeleteUser={handleDeleteUser}
           onViewAgreement={(user) => {
             setAgreementUser(user);

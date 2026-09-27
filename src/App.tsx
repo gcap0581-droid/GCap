@@ -142,6 +142,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { GuidesModal } from './components/GuidesModal';
 import { UserAgreementModal } from './components/UserAgreementModal';
 import { UserManualModal } from './components/UserManualModal';
+import { SuspendedUserModal } from './components/SuspendedUserModal';
 import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
@@ -1868,6 +1869,19 @@ export default function App() {
   };
 
   // Modals state
+  const [isSuspendedModalOpen, setIsSuspendedModalOpen] = useState<boolean>(false);
+  const [suspendedActionTitle, setSuspendedActionTitle] = useState<string>('');
+
+  const checkSuspendedAction = useCallback((actionFn: () => void, actionTitle?: string) => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      if (actionTitle) setSuspendedActionTitle(actionTitle);
+      setIsSuspendedModalOpen(true);
+      return false;
+    }
+    actionFn();
+    return true;
+  }, [currentUser]);
+
   const [isDepositOpen, setIsDepositOpen] = useState<boolean>(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState<boolean>(false);
   const [isSwapOpen, setIsSwapOpen] = useState<boolean>(false);
@@ -1891,6 +1905,11 @@ export default function App() {
 
   const handleExecuteGpTransfer = (recipientLoginIdOrPhone: string, amount: number): boolean => {
     if (!currentUser) return false;
+    if (currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'जीपी ट्रांसफर' : 'GP Transfer');
+      setIsSuspendedModalOpen(true);
+      return false;
+    }
     const cleanInput = recipientLoginIdOrPhone.trim();
     if (!cleanInput) {
       alert(isHi ? 'कृपया प्राप्तकर्ता की आईडी या फोन नंबर दर्ज करें।' : 'Please enter recipient ID or phone.');
@@ -2413,6 +2432,11 @@ export default function App() {
     gpAmount: number,
     direction: 'CASH_TO_GP' | 'GP_TO_CASH' = 'CASH_TO_GP'
   ) => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap');
+      setIsSuspendedModalOpen(true);
+      return;
+    }
     if (!wallet) return;
     
     let updatedWallet: Wallet;
@@ -2511,6 +2535,11 @@ export default function App() {
     withdrawalSource: WithdrawalSource = 'EARNING',
     voucherDetails?: Partial<Transaction>
   ) => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'निकासी (Withdrawal)' : 'Withdrawal');
+      setIsSuspendedModalOpen(true);
+      return;
+    }
     if (!wallet) return;
     // Rule 1, 2, 3: Deduct only from the selected source (totalEarned or royaltyEarned)
     const isRoyalty = withdrawalSource === 'ROYALTY';
@@ -2752,6 +2781,11 @@ export default function App() {
   };
 
   const handleOpenInvest = (plan: InvestmentPlan, prefilledAmount?: number) => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'प्लान में निवेश' : 'Plan Investment');
+      setIsSuspendedModalOpen(true);
+      return;
+    }
     setSelectedPlan(plan);
     if (prefilledAmount) {
       setInitialInvestAmount(prefilledAmount);
@@ -2762,6 +2796,11 @@ export default function App() {
   };
 
   const handleClaimSingleReturn = (investmentId: string) => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'मुनाफा क्लेम' : 'Claim Earnings');
+      setIsSuspendedModalOpen(true);
+      return;
+    }
     const inv = investments.find((i) => i.id === investmentId);
     if (!inv || inv.unclaimedEarnings <= 0) return;
 
@@ -2830,6 +2869,11 @@ export default function App() {
   };
 
   const handleClaimAllReturns = () => {
+    if (currentUser && currentUser.status === 'SUSPENDED') {
+      setSuspendedActionTitle(isHi ? 'मुनाफा क्लेम' : 'Claim Earnings');
+      setIsSuspendedModalOpen(true);
+      return;
+    }
     if (!wallet) return;
     if (unclaimedReturnsTotal <= 0) return;
 
@@ -3888,7 +3932,7 @@ export default function App() {
             wallet={displayWallet}
             onNavigateTab={(tab) => setDesktopTab(tab as DesktopCategoryTab)}
             onOpenDeposit={() => setIsDepositOpen(true)}
-            onOpenWithdraw={() => setIsWithdrawOpen(true)}
+            onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
           />
 
           {/* Prominent Company Announcement & Notice Card */}
@@ -3947,9 +3991,9 @@ export default function App() {
             unclaimedReturnsTotal={unclaimedReturnsTotal}
             dailyProjectedTotal={dailyProjectedTotal}
             onOpenDeposit={() => setIsDepositOpen(true)}
-            onOpenWithdraw={() => setIsWithdrawOpen(true)}
-            onOpenSwap={() => setIsSwapOpen(true)}
-            onOpenGpTransfer={() => setIsGpTransferOpen(true)}
+            onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+            onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
+            onOpenGpTransfer={() => checkSuspendedAction(() => setIsGpTransferOpen(true), isHi ? 'जीपी ट्रांसफर' : 'GP Transfer')}
             onClaimAllReturns={handleClaimAllReturns}
           />
 
@@ -4048,8 +4092,8 @@ export default function App() {
             unclaimedReturnsTotal={unclaimedReturnsTotal}
             dailyProjectedTotal={dailyProjectedTotal}
             onOpenDeposit={() => setIsDepositOpen(true)}
-            onOpenWithdraw={() => setIsWithdrawOpen(true)}
-            onOpenSwap={() => setIsSwapOpen(true)}
+            onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+            onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
             onClaimAllReturns={handleClaimAllReturns}
           />
           <TransactionsTable
@@ -4277,6 +4321,40 @@ export default function App() {
         />
       )}
 
+      {/* Suspended User Banner */}
+      {currentUser && currentUser.status === 'SUSPENDED' && (
+        <div className="bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 border-b border-purple-500/50 px-4 py-3 text-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xl sticky top-0 z-40">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0 font-bold animate-pulse text-base">
+              🚫
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-md bg-purple-500/30 text-purple-200 border border-purple-500/40 text-[10px] font-extrabold uppercase tracking-wider">
+                  {isHi ? '⚠️ खाता निलंबित (Suspended Mode)' : '⚠️ Account Suspended'}
+                </span>
+                <span className="text-emerald-400 font-bold text-[11px]">
+                  {isHi ? '✅ आप फंड जमा (Deposit) कर सकते हैं' : '✅ You can deposit funds normally'}
+                </span>
+              </div>
+              <p className="text-purple-200 truncate mt-0.5 text-xs">
+                <strong className="text-white">{isHi ? 'निलंबन का कारण:' : 'Reason:'}</strong>{' '}
+                {currentUser.suspendedReason || currentUser.suspendedReasonHi || (isHi ? 'सुरक्षा या सत्यापन हेतु खाता निलंबित किया गया है।' : 'Account suspended for verification.')}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setSuspendedActionTitle('');
+              setIsSuspendedModalOpen(true);
+            }}
+            className="px-3.5 py-1.5 rounded-xl bg-purple-500/30 hover:bg-purple-500/50 text-purple-200 font-bold border border-purple-500/50 shrink-0 cursor-pointer transition-all text-xs flex items-center gap-1"
+          >
+            <span>{isHi ? 'पूरा विवरण देखें' : 'View Full Details'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Navigation Bar (Web Mode Only) */}
       {viewMode === 'web' && (
         <Navbar
@@ -4287,8 +4365,8 @@ export default function App() {
           onLanguageChange={setLanguage}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onOpenDeposit={() => setIsDepositOpen(true)}
-          onOpenWithdraw={() => setIsWithdrawOpen(true)}
+          onOpenDeposit={() => checkSuspendedAction(() => setIsDepositOpen(true), isHi ? 'फंड जमा (Deposit)' : 'Fund Deposit')}
+          onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
           onOpenRules={() => setIsRulesOpen(true)}
           onOpenReferral={() => setIsReferralOpen(true)}
           onSimulateDay={handleSimulateDay}
@@ -4331,9 +4409,9 @@ export default function App() {
           setDesktopTab(tab);
           setMobileTab(tab);
         }}
-        onOpenDeposit={() => setIsDepositOpen(true)}
-        onOpenWithdraw={() => setIsWithdrawOpen(true)}
-        onOpenSwap={() => setIsSwapOpen(true)}
+        onOpenDeposit={() => checkSuspendedAction(() => setIsDepositOpen(true), isHi ? 'फंड जमा (Deposit)' : 'Fund Deposit')}
+        onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+        onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
         onOpenRules={() => setIsRulesOpen(true)}
         onOpenReferral={() => setIsReferralOpen(true)}
         onOpenAgreement={() => setIsAgreementOpen(true)}
@@ -4504,8 +4582,8 @@ export default function App() {
             treasury={treasury || undefined}
             investments={investments}
             onOpenDeposit={() => setIsDepositOpen(true)}
-            onOpenWithdraw={() => setIsWithdrawOpen(true)}
-            onOpenSwap={() => setIsSwapOpen(true)}
+            onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+            onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
             onOpenRules={() => setIsRulesOpen(true)}
             onOpenReferral={() => setIsReferralOpen(true)}
             isAdminHubActive={currentUser.role === 'ADMIN'}
@@ -4576,7 +4654,7 @@ export default function App() {
                       wallet={displayWallet}
                       onNavigateTab={(tab) => setMobileTab(tab)}
                       onOpenDeposit={() => setIsDepositOpen(true)}
-                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
+                      onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
                     />
 
                     {/* Prominent Company Announcement & Notice Card (Mobile) */}
@@ -4628,8 +4706,8 @@ export default function App() {
                       unclaimedReturnsTotal={unclaimedReturnsTotal}
                       dailyProjectedTotal={dailyProjectedTotal}
                       onOpenDeposit={() => setIsDepositOpen(true)}
-                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
-                      onOpenSwap={() => setIsSwapOpen(true)}
+                      onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+                      onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
                       onClaimAllReturns={handleClaimAllReturns}
                     />
                   </div>
@@ -4686,9 +4764,9 @@ export default function App() {
                       unclaimedReturnsTotal={unclaimedReturnsTotal}
                       dailyProjectedTotal={dailyProjectedTotal}
                       onOpenDeposit={() => setIsDepositOpen(true)}
-                      onOpenWithdraw={() => setIsWithdrawOpen(true)}
-                      onOpenSwap={() => setIsSwapOpen(true)}
-                      onOpenGpTransfer={() => setIsGpTransferOpen(true)}
+                      onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
+                      onOpenSwap={() => checkSuspendedAction(() => setIsSwapOpen(true), isHi ? 'जीपी स्वैप (GP Swap)' : 'GP Swap')}
+                      onOpenGpTransfer={() => checkSuspendedAction(() => setIsGpTransferOpen(true), isHi ? 'जीपी ट्रांसफर' : 'GP Transfer')}
                       onClaimAllReturns={handleClaimAllReturns}
                     />
                     <TransactionsTable
@@ -4954,6 +5032,16 @@ export default function App() {
           onExecuteGpTransfer={handleExecuteGpTransfer}
         />
       )}
+
+      {/* Suspended User Notice Modal */}
+      <SuspendedUserModal
+        isOpen={isSuspendedModalOpen}
+        onClose={() => setIsSuspendedModalOpen(false)}
+        user={currentUser}
+        language={language}
+        rules={rules}
+        actionTitle={suspendedActionTitle}
+      />
 
     </div>
   );

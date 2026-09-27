@@ -8,6 +8,7 @@ import {
   Lock,
   Unlock,
   ShieldCheck,
+  ShieldAlert,
   Award,
   AlertTriangle,
   UserCheck,
@@ -21,10 +22,12 @@ import {
   LogOut,
   Clock,
   Radio,
+  Ban,
 } from 'lucide-react';
 import { Language, UserProfile, Wallet } from '../../types';
 import { getWalletForUser } from '../../utils/centralSync';
 import { enrichUsersWithPresence } from '../../utils/authStorage';
+import { AdminSuspendModal } from './AdminSuspendModal';
 
 interface AdminUsersTabProps {
   users: UserProfile[];
@@ -33,12 +36,13 @@ interface AdminUsersTabProps {
   onAddUser: () => void;
   onEditUser: (user: UserProfile) => void;
   onEditUserWallet?: (user: UserProfile) => void;
-  onToggleUserStatus: (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED') => void;
+  onToggleUserStatus: (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED') => void;
+  onSuspendUser?: (userId: string, status: 'SUSPENDED' | 'ACTIVE', reason?: string) => Promise<void> | void;
   onDeleteUser: (userId: string) => void;
   onViewAgreement?: (user: UserProfile) => void;
   onRefresh?: () => void;
   isSyncing?: boolean;
-  defaultFilterStatus?: 'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN';
+  defaultFilterStatus?: 'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN' | 'SUSPENDED';
 }
 
 export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
@@ -49,6 +53,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   onEditUser,
   onEditUserWallet,
   onToggleUserStatus,
+  onSuspendUser,
   onDeleteUser,
   onViewAgreement,
   onRefresh,
@@ -57,8 +62,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN'>(defaultFilterStatus || 'ALL');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN' | 'SUSPENDED'>(defaultFilterStatus || 'ALL');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [suspendTargetUser, setSuspendTargetUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (defaultFilterStatus) {
@@ -114,7 +120,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
       (filterStatus === 'ONLINE' && isOnline) ||
       (filterStatus === 'OFFLINE' && !isOnline) ||
       (filterStatus === 'USER' && u.role === 'USER') ||
-      (filterStatus === 'ADMIN' && u.role === 'ADMIN');
+      (filterStatus === 'ADMIN' && u.role === 'ADMIN') ||
+      (filterStatus === 'SUSPENDED' && u.status === 'SUSPENDED');
 
     return matchesSearch && matchesStatus;
   });
@@ -357,6 +364,16 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           >
             Admin
           </button>
+          <button
+            onClick={() => setFilterStatus('SUSPENDED')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              filterStatus === 'SUSPENDED'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            🚫 {isHi ? 'निलंबित' : 'Suspended'}
+          </button>
         </div>
       </div>
 
@@ -409,6 +426,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           filteredUsers.map((u) => {
             const isAdmin = u.role === 'ADMIN';
             const isBlocked = u.status === 'BLOCKED';
+            const isSuspended = u.status === 'SUSPENDED';
             const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
             const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
             const userWallet = getWalletForUser(u.id, wallets, users);
@@ -482,13 +500,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       </span>
                       <span
                         className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                          isBlocked
+                          isSuspended
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                            : isBlocked
                             ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
                             : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                         }`}
                       >
-                        <span className={`w-1 h-1 rounded-full ${isBlocked ? 'bg-rose-500' : 'bg-emerald-400'}`} />
-                        {isBlocked ? (isHi ? 'निलंबित' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
+                        <span className={`w-1 h-1 rounded-full ${isSuspended ? 'bg-purple-400 animate-pulse' : isBlocked ? 'bg-rose-500' : 'bg-emerald-400'}`} />
+                        {isSuspended ? (isHi ? '🚫 निलंबित' : '🚫 Suspended') : isBlocked ? (isHi ? 'ब्लॉक' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
                       </span>
                     </div>
                   </div>
@@ -580,6 +600,29 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                         <FileCheck className="w-4 h-4" />
                       </button>
                     )}
+                    {isSuspended && (
+                      <button
+                        onClick={() => onSuspendUser?.(u.id, 'ACTIVE')}
+                        disabled={u.loginId === 'admin'}
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                        title={isHi ? 'सस्पेंशन हटाएं (Unsuspend)' : 'Remove Suspension'}
+                      >
+                        <UserCheck className="w-4 h-4 text-emerald-400" />
+                        <span>{isHi ? 'सस्पेंशन हटाएं' : 'Unsuspend'}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setSuspendTargetUser(u)}
+                      disabled={u.loginId === 'admin'}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer disabled:opacity-30 ${
+                        isSuspended
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                          : 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border-purple-500/30'
+                      }`}
+                      title={isSuspended ? (isHi ? 'निलंबन विवरण/एडिट' : 'Manage Suspension') : (isHi ? 'यूज़र निलंबित करें' : 'Suspend User')}
+                    >
+                      <ShieldAlert className="w-4 h-4 text-purple-400" />
+                    </button>
                     <button
                       onClick={() => onToggleUserStatus(u.id, u.status)}
                       disabled={u.loginId === 'admin'}
@@ -633,6 +676,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 filteredUsers.map((u) => {
                   const isAdmin = u.role === 'ADMIN';
                   const isBlocked = u.status === 'BLOCKED';
+                  const isSuspended = u.status === 'SUSPENDED';
                   const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
                   const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
                   const userWallet = getWalletForUser(u.id, wallets, users);
@@ -736,13 +780,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             </span>
                             <span
                               className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                                isBlocked
+                                isSuspended
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                  : isBlocked
                                   ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
-                                  : 'bg-slate-800 text-slate-300 border border-slate-700'
+                                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                               }`}
                             >
-                              <span className={`w-1 h-1 rounded-full ${isBlocked ? 'bg-rose-500' : 'bg-emerald-400'}`} />
-                              {isBlocked ? (isHi ? 'निलंबित' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
+                              <span className={`w-1 h-1 rounded-full ${isSuspended ? 'bg-purple-400 animate-pulse' : isBlocked ? 'bg-rose-500' : 'bg-emerald-400'}`} />
+                              {isSuspended ? (isHi ? '🚫 निलंबित' : '🚫 Suspended') : isBlocked ? (isHi ? 'ब्लॉक' : 'Blocked') : (isHi ? 'सक्रिय' : 'Active')}
                             </span>
                           </div>
                         </div>
@@ -801,6 +847,31 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             title={isHi ? 'कानूनी अनुबंध पत्र देखें / प्रिंट करें' : 'View & Print Legal Agreement PDF'}
                           >
                             <FileCheck className="w-3.5 h-3.5 text-amber-400" />
+                          </button>
+
+                          {/* Suspend / Unsuspend */}
+                          {isSuspended && (
+                            <button
+                              onClick={() => onSuspendUser?.(u.id, 'ACTIVE')}
+                              disabled={u.loginId === 'admin'}
+                              className="px-2 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                              title={isHi ? 'सस्पेंशन हटाएं (Unsuspend)' : 'Remove Suspension'}
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{isHi ? 'सस्पेंशन हटाएं' : 'Unsuspend'}</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setSuspendTargetUser(u)}
+                            disabled={u.loginId === 'admin'}
+                            className={`p-1.5 rounded-xl border text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                              isSuspended
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                : 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border-purple-500/30'
+                            }`}
+                            title={isSuspended ? (isHi ? 'निलंबन विवरण/एडिट' : 'Manage Suspension') : (isHi ? 'यूज़र निलंबित करें' : 'Suspend User')}
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
                           </button>
 
                           {/* Toggle Block / Unblock */}
@@ -880,6 +951,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           </div>
         </div>
       )}
+      {/* Admin Suspend Modal */}
+      <AdminSuspendModal
+        isOpen={Boolean(suspendTargetUser)}
+        onClose={() => setSuspendTargetUser(null)}
+        user={suspendTargetUser}
+        language={language}
+        onConfirmSuspend={async (userId, status, reason) => {
+          if (onSuspendUser) {
+            await onSuspendUser(userId, status, reason);
+          } else {
+            await onToggleUserStatus(userId, status);
+          }
+        }}
+      />
     </div>
   );
 };

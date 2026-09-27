@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, ShieldCheck, Key, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Lock, ShieldCheck, Key, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Language, AppRules } from '../../types';
 import { getStoredAdminTxPassword, setStoredAdminTxPassword, saveStoredRules } from '../../utils/rulesStorage';
 
@@ -24,6 +24,9 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -34,6 +37,9 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setShowCurrent(false);
+      setShowNew(false);
+      setShowConfirm(false);
       setError('');
       setSuccess('');
     }
@@ -131,8 +137,8 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
             <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
               {isHi
-                ? `वर्तमान एक्टिव पासवर्ड: ${activePassword} (डिफ़ॉल्ट: adtra123)`
-                : `Current Active Password: ${activePassword} (Default: adtra123)`}
+                ? 'सुरक्षित प्रमाणीकरण: नया पासवर्ड सेट करने के लिए पहले वर्तमान ट्रांजेक्शन पासवर्ड सत्यापित करें।'
+                : 'Secure Authorization: Enter current transaction password to authorize change.'}
             </span>
           </div>
 
@@ -141,16 +147,25 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
             <label className="block text-xs font-bold text-slate-300">
               {isHi ? '1. वर्तमान / डिफ़ॉल्ट पासवर्ड दर्ज़ करें:' : '1. Current / Default Password:'}
             </label>
-            <input
-              type="text"
-              inputMode="text"
-              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="adtra123"
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none transition-all"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showCurrent ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 pl-3.5 pr-10 text-white font-mono text-sm focus:outline-none transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+                title={showCurrent ? (isHi ? 'छिपाएं' : 'Hide') : (isHi ? 'दिखाएं' : 'Show')}
+              >
+                {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {/* New Password */}
@@ -158,16 +173,25 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
             <label className="block text-xs font-bold text-slate-300">
               {isHi ? '2. नया ट्रांजेक्शन पासवर्ड:' : '2. New Transaction Password:'}
             </label>
-            <input
-              type="text"
-              inputMode="text"
-              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder={isHi ? 'नया पासवर्ड दर्ज करें' : 'Enter new password'}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none transition-all"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showNew ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 pl-3.5 pr-10 text-white font-mono text-sm focus:outline-none transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+                title={showNew ? (isHi ? 'छिपाएं' : 'Hide') : (isHi ? 'दिखाएं' : 'Show')}
+              >
+                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {/* Confirm New Password */}
@@ -175,16 +199,25 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
             <label className="block text-xs font-bold text-slate-300">
               {isHi ? '3. नया पासवर्ड दोबारा दर्ज़ करें:' : '3. Confirm New Password:'}
             </label>
-            <input
-              type="text"
-              inputMode="text"
-              style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={isHi ? 'पुष्टि के लिए दोबारा लिखें' : 'Confirm new password'}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none transition-all"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl py-2.5 pl-3.5 pr-10 text-white font-mono text-sm focus:outline-none transition-all"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+                title={showConfirm ? (isHi ? 'छिपाएं' : 'Hide') : (isHi ? 'दिखाएं' : 'Show')}
+              >
+                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

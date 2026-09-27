@@ -415,7 +415,7 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                                 <button
                                   onClick={() => onQuickApprove ? onQuickApprove(t.id) : (onTransferDepositToUser && onTransferDepositToUser(t.id))}
                                   className="px-2.5 py-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded text-[10px] font-black transition-all cursor-pointer shadow-md shadow-cyan-900/50 flex items-center gap-1 animate-bounce"
-                                  title={isHi ? '2. पासवर्ड दर्ज कर फंड ट्रांसफर करें (adtra123)' : '2. Enter password to Transfer Funds (adtra123)'}
+                                  title={isHi ? '2. पासवर्ड दर्ज कर फंड ट्रांसफर करें' : '2. Enter password to Transfer Funds'}
                                 >
                                   <Zap className="w-3 h-3" />
                                   <span>🚀 {isHi ? '2. ट्रांसफर करें' : '2. Transfer'}</span>

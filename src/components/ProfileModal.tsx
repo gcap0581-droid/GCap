@@ -91,6 +91,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setError('');
     setSuccessMessage('');
 
+    if (currentUser.status === 'SUSPENDED') {
+      setError(
+        isHi
+          ? `❌ खाता निलंबित (Suspended Mode)! ${currentUser.suspendedReason || 'सुरक्षा हेतु जानकारी अपडेट करने की अनुमति नहीं है।'}`
+          : `❌ Account Suspended! ${currentUser.suspendedReason || 'You cannot update information while suspended.'}`
+      );
+      return;
+    }
+
     // If new password is provided, validate
     const trimmedPass = newPassword.trim();
     if (activeMenu === 'SECURITY') {

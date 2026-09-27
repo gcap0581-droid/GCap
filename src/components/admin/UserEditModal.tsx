@@ -37,7 +37,7 @@ export interface UserEditModalProps {
     email: string;
     password?: string;
     role: UserRole;
-    status: 'ACTIVE' | 'BLOCKED';
+    status: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED';
     joinedDate?: string;
     referralCode?: string;
     referredBy?: string;
@@ -82,7 +82,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [isPasswordDirty, setIsPasswordDirty] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('USER');
-  const [status, setStatus] = useState<'ACTIVE' | 'BLOCKED'>('ACTIVE');
+  const [status, setStatus] = useState<'ACTIVE' | 'BLOCKED' | 'SUSPENDED'>('ACTIVE');
   const [joinedDate, setJoinedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [referralCode, setReferralCode] = useState('');
   const [referredBy, setReferredBy] = useState('');

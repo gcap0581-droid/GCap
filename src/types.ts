@@ -201,7 +201,10 @@ export interface UserProfile {
   referralCode?: string;
   referredBy?: string;
   joinedDate: string;
-  status: 'ACTIVE' | 'BLOCKED';
+  status: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED';
+  suspendedReason?: string;
+  suspendedReasonHi?: string;
+  suspendedAt?: string;
   bankDetails?: BankAccountDetails;
   permissions?: StaffPermissions;
   dismissedPopupMsgIds?: string[];

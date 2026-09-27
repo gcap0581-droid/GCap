@@ -25,7 +25,10 @@ interface StoredAccount {
   referralCode?: string;
   referredBy?: string;
   joinedDate?: string;
-  status: "ACTIVE" | "BLOCKED";
+  status: "ACTIVE" | "BLOCKED" | "SUSPENDED";
+  suspendedReason?: string;
+  suspendedReasonHi?: string;
+  suspendedAt?: string;
   passwordHash: string;
   password?: string;
   permissions?: {
@@ -4508,6 +4511,9 @@ async function startServer() {
     if (updates.role !== undefined) current.role = updates.role;
     if (updates.permissions !== undefined) current.permissions = updates.permissions;
     if (updates.status !== undefined) current.status = updates.status;
+    if (updates.suspendedReason !== undefined) current.suspendedReason = updates.suspendedReason;
+    if (updates.suspendedReasonHi !== undefined) current.suspendedReasonHi = updates.suspendedReasonHi;
+    if (updates.suspendedAt !== undefined) current.suspendedAt = updates.suspendedAt;
     if (updates.joinedDate !== undefined) current.joinedDate = updates.joinedDate;
     if (updates.referralCode !== undefined) current.referralCode = updates.referralCode.trim();
     if (updates.referredBy !== undefined) current.referredBy = updates.referredBy.trim();
