@@ -525,11 +525,11 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
 };
 
 const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 1500000,
+  balance: 5500000,
   minAlertThreshold: 400000,
-  totalInjected: 1500000,
-  totalDeducted: 0,
-  totalTransferredToUsers: 0,
+  totalInjected: 5600000,
+  totalDeducted: 100000,
+  totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,
   totalFeeGpConverted: 0,
   lastUpdated: new Date().toISOString(),
@@ -2216,9 +2216,11 @@ async function startServer() {
           if (localTreasury && remoteDb.treasury) {
             const localTs = localTreasury.lastUpdated ? new Date(localTreasury.lastUpdated).getTime() : 0;
             const remoteTs = remoteDb.treasury.lastUpdated ? new Date(remoteDb.treasury.lastUpdated).getTime() : 0;
-            if (localTs > remoteTs) {
+            const localBal = Number(localTreasury.balance || 0);
+            const remoteBal = Number(remoteDb.treasury.balance || 0);
+            if (localTs > remoteTs || localBal > remoteBal) {
               remoteDb.treasury = localTreasury;
-              console.log("[Firebase Startup Sync] Preferring newer local treasury balance:", localTreasury.balance);
+              console.log("[Firebase Startup Sync] Preferring newer or larger local treasury balance:", localTreasury.balance);
               if (localTreasuryLogs && localTreasuryLogs.length > 0) {
                 remoteDb.treasuryLogs = localTreasuryLogs;
               }
@@ -3384,7 +3386,9 @@ async function startServer() {
     // Calculate net funds transferred to/reclaimed from user for Company Treasury Balance Synchronization
     // Skip this sync if the target is an Admin (already handled above)
     let netTransferToUser = 0;
-    if (!isTargetAdmin) {
+    const isDepositApproval = Boolean(adjustment?.isDepositApproval || adjustment?.reason?.includes('Deposit Approved') || adjustment?.reason?.includes('डिपॉजिट अप्रूव'));
+
+    if (!isTargetAdmin && !isDepositApproval) {
       if (adjustment && typeof adjustment.amount === 'number' && adjustment.amount !== 0) {
         const amount = Number(adjustment.amount);
         const adjType = adjustment.type || 'ADD';
@@ -3404,6 +3408,28 @@ async function startServer() {
         const royDiff = typeof wallet.royaltyEarned === 'number' ? (wallet.royaltyEarned - (existingWallet.royaltyEarned || 0)) : 0;
         netTransferToUser = cashDiff + gpDiff + earnDiff + royDiff;
       }
+    } else if (!isTargetAdmin && isDepositApproval && adjustment?.amount) {
+      // For deposit approvals, ensure treasury receives the deposit
+      const depositAmt = Number(adjustment.amount);
+      const prevBal = db.treasury.balance || 0;
+      db.treasury.balance = prevBal + depositAmt;
+      db.treasury.totalInjected = (db.treasury.totalInjected || 0) + depositAmt;
+      const treasuryLog = {
+        id: `tlog-dep-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        type: 'ADMIN_ADD',
+        amount: depositAmt,
+        balanceBefore: prevBal,
+        balanceAfter: db.treasury.balance,
+        reason: `User deposit approved: ₹${depositAmt} added to Company Main Balance & credited to ${user?.name || effectiveUserId} wallet`,
+        reasonHi: `यूज़र डिपॉजिट स्वीकृत: ₹${depositAmt} कंपनी मुख्य बैलेंस में जोड़ा गया व ${user?.name || effectiveUserId} के वॉलेट में क्रेडिट हुआ`,
+        actor: adminName || 'Super Admin',
+        referenceId: 'DEP' + Math.floor(10000000 + Math.random() * 90000000),
+      };
+      db.treasuryLogs.unshift(treasuryLog);
+      syncAdminWalletWithTreasury(db);
+      broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, logs: db.treasuryLogs, timestamp: Date.now() });
     }
 
     if (netTransferToUser > 0) {

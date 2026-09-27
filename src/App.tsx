@@ -639,7 +639,9 @@ export default function App() {
           const fsTs = fs.treasury?.lastUpdated ? new Date(fs.treasury.lastUpdated).getTime() : 0;
           setTreasury((prev) => {
             const prevTs = prev?.lastUpdated ? new Date(prev.lastUpdated).getTime() : 0;
-            if (!prev || fsTs >= prevTs) {
+            const fsBal = Number(fs.treasury.balance || 0);
+            const prevBal = Number(prev?.balance || 0);
+            if (!prev || fsTs > prevTs || fsBal >= prevBal) {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('gcap_company_treasury_v1', JSON.stringify(fs.treasury));
               }
@@ -1565,15 +1567,15 @@ export default function App() {
 
     // Rule: Admin Approval moves deposit funds to wallet cash balance
     if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && (updatedTxn.type === 'DEPOSIT' || updatedTxn.type === 'ADMIN_ADD')) {
-      // 1. Deduct from Company Main Balance and create audit record in treasury logs
-      const deductRes = deductForUserDepositApproval(
+      // 1. Add to Company Main Balance and create audit record in treasury logs
+      const depositRes = addForUserDepositApproval(
         updatedTxn.amount,
         updatedTxn.userName || currentUser?.name || 'Investor User',
         updatedTxn.referenceId || updatedTxn.id
       );
-      setTreasury(deductRes.treasury);
+      setTreasury(depositRes.treasury);
       setTreasuryLogs(getStoredTreasuryLogs());
-      apiUpdateTreasury(deductRes.treasury).catch(console.warn);
+      apiUpdateTreasury(depositRes.treasury).catch(console.warn);
 
       // 2. Update target user's wallet in central database
       apiAdminAdjustUserWallet(
@@ -1583,8 +1585,9 @@ export default function App() {
           type: 'ADD',
           targetWallet: 'cashBalance',
           amount: updatedTxn.amount,
-          reason: `Deposit Approval: ${updatedTxn.referenceId || updatedTxn.id}`,
-        },
+          reason: `Deposit Approved: ${updatedTxn.referenceId || updatedTxn.id}`,
+          isDepositApproval: true,
+        } as any,
         currentUser?.name || 'Super Admin'
       ).catch(console.warn);
 
@@ -1607,10 +1610,10 @@ export default function App() {
       });
 
       showToast(
-        isHi ? '✅ डिपॉजिट अप्रूव हुआ (कंपनी बैलेंस से डिडक्ट)!' : '✅ Deposit Approved (Deducted from Company Balance)!',
+        isHi ? '✅ डिपॉजिट स्वीकृत (दोनों का बैलेंस बढ़ा)!' : '✅ Deposit Approved (Both Balances Increased)!',
         isHi
-          ? `कंपनी मुख्य बैलेंस से ₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र वॉलेट में ₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ।`
-          : `₹${updatedTxn.amount.toLocaleString('en-IN')} deducted from Company Main Balance & credited to user wallet.`
+          ? `कंपनी मुख्य बैलेंस में +₹${updatedTxn.amount.toLocaleString('en-IN')} जुड़े व यूज़र वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} कैश क्रेडिट हुआ।`
+          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} added to Company Main Balance & credited to user wallet.`
       );
       return;
     } 

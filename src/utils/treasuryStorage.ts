@@ -7,14 +7,14 @@ const TREASURY_LOGS_STORAGE_KEY = 'gcap_treasury_logs_v1';
 export const DEFAULT_ALERT_THRESHOLD = 500000; // ₹5,00,000 threshold for low balance alert
 
 export const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 500000, // ₹6,00,000 initial - ₹1,00,000 transferred to Amit = ₹5,00,000
-  minAlertThreshold: 400000, // Lowered to avoid alert at exactly 500k
-  totalInjected: 600000,
+  balance: 5500000,
+  minAlertThreshold: 400000,
+  totalInjected: 5600000,
   totalDeducted: 100000,
   totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,
   totalFeeGpConverted: 0,
-  lastUpdated: '2026-01-01T00:00:00.000Z',
+  lastUpdated: new Date().toISOString(),
 };
 
 export const INITIAL_LOGS: TreasuryLog[] = [
@@ -289,23 +289,22 @@ export function deductForUserInvestment(
 }
 
 /**
- * Deduct from Company Main Balance when admin approves a user's fund deposit:
- * "Koi bhi user jub fund add karega to uske balance company ke main balance wallet se deduct hoker hi melega aur uska record admin ke pass rahna chaiye."
+ * Add to Company Main Balance when admin approves a user's fund deposit:
+ * When user deposits funds and admin approves, company receives cash (treasury +amount) and user receives credit (user wallet +amount).
  */
-export function deductForUserDepositApproval(
+export function addForUserDepositApproval(
   amount: number,
   userName: string = 'User',
   referenceId: string = 'DEP-REF'
 ): { success: boolean; treasury: CompanyTreasury; log: TreasuryLog } {
   const current = getStoredTreasury();
   const balanceBefore = current.balance;
-  const balanceAfter = Math.max(0, balanceBefore - amount);
+  const balanceAfter = balanceBefore + amount;
 
   const updatedTreasury: CompanyTreasury = {
     ...current,
     balance: balanceAfter,
-    totalTransferredToUsers: current.totalTransferredToUsers + amount,
-    totalDeducted: current.totalDeducted + amount,
+    totalInjected: current.totalInjected + amount,
     lastUpdated: new Date().toISOString(),
   };
 
@@ -317,8 +316,8 @@ export function deductForUserDepositApproval(
     balanceAfter,
     date: new Date().toISOString(),
     timestamp: Date.now(),
-    reason: `User fund deposit approved: ₹${amount.toLocaleString('en-IN')} deducted from Company Main Balance -> Credited to ${userName} wallet (UTR: ${referenceId})`,
-    reasonHi: `यूज़र फंड डिपॉजिट अप्रूव: कंपनी मुख्य बैलेंस से ₹${amount.toLocaleString('en-IN')} डिडक्ट होकर ${userName} के वॉलेट में क्रेडिट हुआ (UTR: ${referenceId})`,
+    reason: `User fund deposit approved: ₹${amount.toLocaleString('en-IN')} added to Company Main Balance & credited to ${userName} wallet (UTR: ${referenceId})`,
+    reasonHi: `यूज़र फंड डिपॉजिट अप्रूव: कंपनी मुख्य बैलेंस में ₹${amount.toLocaleString('en-IN')} जुड़े व ${userName} के वॉलेट में क्रेडिट हुआ (UTR: ${referenceId})`,
     actor: 'Admin Approval',
     referenceId,
   };
@@ -334,6 +333,8 @@ export function deductForUserDepositApproval(
     log: newLog,
   };
 }
+
+export const deductForUserDepositApproval = addForUserDepositApproval;
 
 /**
  * Deduct from Company Main Balance when admin gives money directly to a user:
