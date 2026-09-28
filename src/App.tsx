@@ -2253,13 +2253,13 @@ export default function App() {
   }, []);
 
   // =========================================================================
-  // AUTO-LOGOUT ON INACTIVITY (3 Minutes Inactivity on Web & App)
+  // USER REQUIREMENT: AUTO-LOGOUT AFTER 3 MINUTES OF INACTIVITY
+  // (If user does not interact with the app for 3 minutes, automatically log out)
   // =========================================================================
   useEffect(() => {
     if (!currentUser) return;
 
-    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes (180 seconds)
-    let lastActivityTime = Date.now();
+    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes (180,000 ms)
     let timerId: ReturnType<typeof setTimeout>;
 
     const triggerAutoLogout = () => {
@@ -2267,30 +2267,16 @@ export default function App() {
       logoutUser(uid);
       setCurrentUser(null);
       showToast(
-        isHi ? '⏳ 3 मिनट की निष्क्रियता के कारण लॉगआउट' : '⏳ Auto Logged Out (3m Inactivity)',
+        isHi ? '⏳ 3 मिनट की निष्क्रियता के कारण स्वतः लॉगआउट' : '⏳ Auto Logged Out (3m Inactivity)',
         isHi
-          ? 'सुरक्षा कारणों से 3 मिनट तक कोई गतिविधि न होने पर आपका सेशन स्वतः समाप्त हो गया।'
+          ? '3 मिनट तक कोई गतिविधि न होने के कारण आपका खाता सुरक्षा कारणों से स्वतः लॉगआउट हो गया है।'
           : 'Your session has ended automatically due to 3 minutes of inactivity.'
       );
     };
 
     const resetTimer = () => {
-      lastActivityTime = Date.now();
       clearTimeout(timerId);
-      timerId = setTimeout(() => {
-        triggerAutoLogout();
-      }, INACTIVITY_TIMEOUT_MS);
-    };
-
-    const handleVisibilityOrFocus = () => {
-      if (document.visibilityState === 'visible') {
-        const elapsed = Date.now() - lastActivityTime;
-        if (elapsed >= INACTIVITY_TIMEOUT_MS) {
-          triggerAutoLogout();
-          return;
-        }
-      }
-      resetTimer();
+      timerId = setTimeout(triggerAutoLogout, INACTIVITY_TIMEOUT_MS);
     };
 
     const activityEvents = [
@@ -2308,10 +2294,8 @@ export default function App() {
     activityEvents.forEach((ev) => {
       window.addEventListener(ev, resetTimer, { passive: true });
     });
-    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
-    window.addEventListener('focus', handleVisibilityOrFocus);
 
-    // Initial arming of the 2-minute timer
+    // Start timer on login / mount
     resetTimer();
 
     return () => {
@@ -2319,8 +2303,6 @@ export default function App() {
       activityEvents.forEach((ev) => {
         window.removeEventListener(ev, resetTimer);
       });
-      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
     };
   }, [currentUser, isHi]);
 

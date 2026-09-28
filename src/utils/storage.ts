@@ -97,7 +97,8 @@ export function getStoredWallet(userId?: string): Wallet {
       const isAmit = userId && (userId.includes('7564841400') || userId.includes('usr-1790000000555') || userId.includes('1790000000555'));
       const w = {
         ...INITIAL_WALLET,
-        cashBalance: isAmit ? 102041 : INITIAL_WALLET.cashBalance,
+        cashBalance: isAmit ? 0 : INITIAL_WALLET.cashBalance,
+        totalInvested: isAmit ? 100000 : INITIAL_WALLET.totalInvested,
         totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned,
       };
       setStoredWallet(w, userId);

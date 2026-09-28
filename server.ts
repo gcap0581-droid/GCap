@@ -7,6 +7,14 @@ import tailwindcss from "@tailwindcss/vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot, setLogLevel, collection as clientCollection } from "firebase/firestore";
 
+// Global process exception handlers to permanently prevent server crash or shutdown
+process.on("uncaughtException", (err) => {
+  console.error("[Global UncaughtException Prevented Server Crash]:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[Global UnhandledRejection Prevented Server Crash]:", reason);
+});
+
 try {
   setLogLevel("silent");
 } catch (_) {}
@@ -1843,6 +1851,42 @@ function ensureDb(): ServerDB {
         cyclesCompleted: 11,
         cycleReturnAmount: 3.2,
         totalEarnedSoFar: 35.5
+      },
+      {
+        id: "inv-amit-7564841400-641",
+        userId: "usr-1790000000555",
+        userLoginId: "7564841400",
+        userPhone: "+91 7564841400",
+        userName: "Amit Kumar",
+        planId: "short-term",
+        planName: "641-Day High Yield Growth Plan",
+        planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+        planUniqueId: "STP-641D-75641",
+        investedAmount: 100000,
+        dailyRoiPercent: 0.16,
+        dailyReturnAmount: 160,
+        durationDays: 641,
+        daysCompleted: 0,
+        earnedSoFar: 0,
+        totalEarnedSoFar: 0,
+        unclaimedEarnings: 0,
+        claimedSoFar: 0,
+        totalExpectedReturn: 102560,
+        startDate: "2026-09-28T10:30:00.000Z",
+        endDate: "2028-06-30T10:30:00.000Z",
+        status: "ACTIVE",
+        activationTimestamp: 1790591400000,
+        createdAt: 1790591400000,
+        lockedUntilTimestamp: 1790677800000,
+        isInitialLockCompleted: false,
+        lockCongratulationsShown: false,
+        completedCyclesCount: 0,
+        cyclesCompleted: 0,
+        currentCycleStartTimestamp: 1790677800000,
+        currentCycleEndTimestamp: 1790699400000,
+        totalWithdrawn: 0,
+        cycleDurationHours: 6,
+        cycleReturnAmount: 40
       }
     ];
 
@@ -1895,23 +1939,27 @@ function ensureDb(): ServerDB {
           return valB - valA;
         });
         const best = { ...candidates[0] };
-        if (isSandhya) {
-          best.cashBalance = Math.max(best.cashBalance || 0, 230000);
-          best.gpBalance = Math.max(best.gpBalance || 0, 19600);
-          best.totalInvested = Math.max(best.totalInvested || 0, 110000);
-          const sandhyaInvs = (parsed.investments || []).filter((i) =>
-            i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
-          );
-          const dynamicEarned = sandhyaInvs.reduce((sum, inv) => {
-            const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
-              ? inv.earnedSoFar
-              : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
-            return sum + e;
-          }, 0);
-          best.totalEarned = dynamicEarned > 0 ? Math.round(dynamicEarned * 100) / 100 : 475.5;
-        } else if (isAmit) {
-          best.cashBalance = Math.max(best.cashBalance || 0, 102041);
+        
+        // Dynamically compute totalInvested and totalEarned from user's active investments
+        const cleanPhone10 = u.phone ? u.phone.replace(/[^0-9]/g, '').slice(-10) : '';
+        const userInvs = (parsed.investments || []).filter((i: any) =>
+          i.userId === u.id ||
+          (u.loginId && i.userLoginId && i.userLoginId.toLowerCase() === u.loginId.toLowerCase()) ||
+          (cleanPhone10 && i.userPhone && i.userPhone.includes(cleanPhone10))
+        );
+        const dynamicInvested = userInvs.reduce((sum: number, inv: any) => sum + (inv.status === 'ACTIVE' ? (inv.investedAmount || 0) : 0), 0);
+        const dynamicEarned = userInvs.reduce((sum: number, inv: any) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0);
+        if (dynamicInvested > 0) {
+          best.totalInvested = dynamicInvested;
         }
+        if (dynamicEarned > 0) {
+          best.totalEarned = Math.round(dynamicEarned * 100) / 100;
+        }
+        if (isAmit && dynamicInvested >= 100000) {
+          best.cashBalance = 0;
+          best.gpBalance = 0;
+        }
+
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
             if (!parsed.wallets[k] || JSON.stringify(parsed.wallets[k]) !== JSON.stringify(best)) {
@@ -1933,9 +1981,9 @@ function ensureDb(): ServerDB {
             }
           : isAmit
           ? {
-              cashBalance: 102041,
+              cashBalance: 0,
               gpBalance: 0,
-              totalInvested: 0,
+              totalInvested: 100000,
               totalEarned: 0,
               royaltyEarned: 0,
               pendingWithdrawals: 0,
@@ -4812,8 +4860,13 @@ async function startServer() {
     }
   }, 15000);
 
-  app.listen(PORT, "0.0.0.0", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`GCap Full-Stack Main Database Server running on port ${PORT}`);
+  });
+  server.keepAliveTimeout = 120000;
+  server.headersTimeout = 125000;
+  server.on("error", (err: any) => {
+    console.error("[HTTP Server Error Prevented Server Exit]:", err);
   });
 }
 
