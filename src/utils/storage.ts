@@ -81,6 +81,42 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
     cyclesCompleted: 11,
     cycleReturnAmount: 3.2,
     totalEarnedSoFar: 35.5
+  },
+  {
+    id: "inv-amit-7564841400-641",
+    userId: "usr-1790000000555",
+    userLoginId: "7564841400",
+    userPhone: "+91 7564841400",
+    userName: "Amit Kumar",
+    planId: "short-term",
+    planName: "641-Day High Yield Growth Plan",
+    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
+    planUniqueId: "STP-641D-75641",
+    investedAmount: 100000,
+    dailyRoiPercent: 0.16,
+    dailyReturnAmount: 160,
+    durationDays: 641,
+    daysCompleted: 0,
+    earnedSoFar: 0,
+    totalEarnedSoFar: 0,
+    unclaimedEarnings: 0,
+    claimedSoFar: 0,
+    totalExpectedReturn: 102560,
+    startDate: "2026-09-28T10:30:00.000Z",
+    endDate: "2028-06-30T10:30:00.000Z",
+    status: "ACTIVE",
+    activationTimestamp: 1790591400000,
+    createdAt: 1790591400000,
+    lockedUntilTimestamp: 1790677800000,
+    isInitialLockCompleted: false,
+    lockCongratulationsShown: false,
+    completedCyclesCount: 0,
+    cyclesCompleted: 0,
+    currentCycleStartTimestamp: 1790677800000,
+    currentCycleEndTimestamp: 1790699400000,
+    totalWithdrawn: 0,
+    cycleDurationHours: 6,
+    cycleReturnAmount: 40
   }
 ];
 
@@ -257,11 +293,12 @@ export function getStoredInvestments(): ActiveInvestment[] {
       setStoredInvestments(INITIAL_INVESTMENTS);
       return normalizeInvestmentsList(INITIAL_INVESTMENTS);
     }
-    // Ensure both Sandhya plans exist
+    // Ensure Sandhya and Amit plans exist
     const hasSandhya1 = parsed.some(i => i.id === 'inv-sandhya-7808056040-1' || (i.userPhone?.includes('7808056040') && i.investedAmount === 100000));
     const hasSandhya2 = parsed.some(i => i.id === 'inv-sandhya-7808056040-2' || (i.userPhone?.includes('7808056040') && i.investedAmount === 10000));
+    const hasAmit = parsed.some(i => i.id === 'inv-amit-7564841400-641' || (i.userPhone?.includes('7564841400') && i.investedAmount === 100000) || i.userLoginId === '7564841400' || (i.planUniqueId && i.planUniqueId.includes('75641')));
     let workingList = parsed;
-    if (!hasSandhya1 || !hasSandhya2) {
+    if (!hasSandhya1 || !hasSandhya2 || !hasAmit) {
       workingList = [...parsed, ...INITIAL_INVESTMENTS.filter(init => !parsed.some(p => p.id === init.id))];
     }
 

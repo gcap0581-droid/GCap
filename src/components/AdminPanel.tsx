@@ -1943,6 +1943,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <AdminUsersTab
           users={usersList}
           wallets={walletsMap}
+          investments={investments}
           language={language}
           onAddUser={handleOpenAddUser}
           onEditUser={handleOpenEditUser}

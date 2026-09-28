@@ -4,6 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { GoogleGenAI } from "@google/genai";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot, setLogLevel, collection as clientCollection } from "firebase/firestore";
 
@@ -2427,6 +2428,230 @@ async function startServer() {
       lastDbUpdate: db.lastUpdated || SERVER_BOOT_TIME,
       serverTime: Date.now(),
     });
+  });
+
+  // Helper for High-Quality Local Hindi GCap Knowledge Fallback
+  function generateGcapLocalReply(msg: string, rules: any, companyProfile: any): string {
+    const q = (msg || "").toLowerCase().trim();
+
+    // 1. Greetings (Welcome & Introduction)
+    if (
+      q === "hi" ||
+      q === "hello" ||
+      q.includes("namaste") ||
+      q.includes("नमस्ते") ||
+      q.includes("hello") ||
+      q.includes("kya hal") ||
+      q.includes("kaise ho") ||
+      q.includes("pranam") ||
+      q.includes("प्रणाम")
+    ) {
+      return "🙏 नमस्ते जी! मैं GCap Capital का आधिकारिक AI सहायक (GCap Assistant) हूँ। GCap में निवेश कैसे करें, प्लान्स, विड्रॉल, या खाते से जुड़ी कोई भी जानकारी आप मुझसे लिखकर या बोलकर पूछ सकते हैं। बताइए, मैं आपकी क्या सहायता करूँ?";
+    }
+
+    // 2. Goodbyes & Thanks (Bidai Sandesh)
+    if (
+      q.includes("alvida") ||
+      q.includes("अलविदा") ||
+      q.includes("bye") ||
+      q.includes("बाय") ||
+      q.includes("dhanyawad") ||
+      q.includes("धन्यवाद") ||
+      q.includes("shukriya") ||
+      q.includes("शुक्रिया") ||
+      q.includes("thanks") ||
+      q.includes("theek hai") ||
+      q.includes("ठीक है")
+    ) {
+      return "🙏 GCap Capital पर भरोसा करने के लिए आपका बहुत-बहुत धन्यवाद जी! आपका दिन शुभ, समृद्ध और मंगलमय हो। अलविदा और हार्दिक शुभकामनाएं!";
+    }
+
+    // 3. How GCap works / Kaise kaam kare
+    if (
+      q.includes("kaise kam") ||
+      q.includes("kaise kaam") ||
+      q.includes("कैसे काम") ||
+      q.includes("kya hai") ||
+      q.includes("क्या है") ||
+      q.includes("gcap kya hai") ||
+      q.includes("shuru") ||
+      q.includes("शुरू") ||
+      q.includes("process")
+    ) {
+      return `🌟 GCap Capital में काम करना बहुत सरल और सुरक्षित है:\n\n1️⃣ खाता बनाएं (रजिस्टर करें) और लॉगिन करें।\n2️⃣ 'डिपॉजिट' पर जाकर कंपनी के अधिकृत UPI (${rules.companyUpiId || "8603504808@axisbank"}) या बैंक खाते में पैसे भेजें और UTR नंबर सबमिट करें। एडमिन द्वारा सत्यापित होते ही बैलेंस वॉलेट में आ जाएगा।\n3️⃣ 'जीपी स्वैप' से अपने कैश को GP पॉइंट्स में बदलें (दर: ₹1 = 1 GP)। प्लान्स केवल GP से खरीदे जाते हैं।\n4️⃣ 'प्लान्स' सेक्शन में जाकर 641-दिन या 365-दिन का प्लान चुनें और GP से एक्टिवेट करें।\n5️⃣ हर 6 घंटे में स्वचालित रिटर्न सीधे आपके वॉलेट में GP के रूप में जुड़ता रहेगा!\n\nक्या आप किसी विशेष प्लान की जानकारी चाहते हैं?`;
+    }
+
+    // 4. Plans (641-Day Short Term & 365-Day Long Term)
+    if (
+      q.includes("plan") ||
+      q.includes("प्लान") ||
+      q.includes("scheme") ||
+      q.includes("योजना") ||
+      q.includes("641") ||
+      q.includes("365") ||
+      q.includes("return") ||
+      q.includes("रिटर्न")
+    ) {
+      return `📦 GCap Capital में 2 मुख्य उच्च-रिटर्न निवेश प्लान हैं:\n\n⚡ 1. शॉर्ट टर्म प्लान (641-Day Plan):\n• न्यूनतम निवेश: ₹1,00,000 (1 लाख रुपये) से असीमित\n• अवधि: 641 दिन (पहले 24 घंटे का लॉक)\n• रिटर्न दर: 0.040% हर 6 घंटे में (दैनिक 0.16% = ₹1 लाख पर ₹160 प्रतिदिन)\n• 641 दिन पूरे होने पर 100% मूलधन वापस या रिन्यूअल विकल्प।\n\n👑 2. लॉन्ग टर्म प्लान (365-Day & Royalty Plan):\n• निवेश सीमा: ₹10,000 से ₹1,00,000 तक\n• अवधि: 365 दिन (पहले 24 घंटे का लॉक) + 1461-दिन रॉयल्टी पाथवे\n• रिटर्न दर: 0.033% हर 6 घंटे में (दैनिक 0.132% = ₹10,000 पर ₹13.2 प्रतिदिन)।\n\nदोनों ही प्लान्स में आपका मूलधन 100% सुरक्षित रहता है!`;
+    }
+
+    // 5. Withdrawal / Nikasi
+    if (
+      q.includes("nikasi") ||
+      q.includes("withdrawal") ||
+      q.includes("निकासी") ||
+      q.includes("nikal") ||
+      q.includes("paisa nikal")
+    ) {
+      return `🏦 GCap में निकासी (Withdrawal) के नियम:\n\n• अर्निंग निकासी: हर महीने की 1 तारीख से 5 तारीख तक।\n• रॉयल्टी निकासी: हर महीने की 6 तारीख से 10 तारीख तक।\n• न्यूनतम निकासी: मात्र ₹200।\n• निकासी शुल्क: 0%।\n• निकासी सीधे आपके बैंक खाते या UPI में ट्रांसफर की जाती है।\n\nविड्रॉल लगाने के लिए वॉलेट में जाकर 'निकासी' बटन दबाएं।`;
+    }
+
+    // 6. Deposit / Paisa Jama
+    if (
+      q.includes("deposit") ||
+      q.includes("डिपॉजिट") ||
+      q.includes("jama") ||
+      q.includes("जमा") ||
+      q.includes("paisa dale") ||
+      q.includes("recharge")
+    ) {
+      return `💰 GCap में पैसा जमा करने की विधि:\n\n1. ऐप में 'डिपॉजिट (Deposit)' बटन पर क्लिक करें।\n2. कंपनी की आधिकारिक UPI ID: ${rules.companyUpiId || "8603504808@axisbank"} पर PhonePe/GooglePay/Paytm से भुगतान करें।\n3. या बैंक ट्रांसफर करें: Axis Bank, खाता: ${rules.companyBankAccountNumber || "924010002662307"}, IFSC: ${rules.companyBankIfsc || "UTIB0001219"}।\n4. पेमेंट का 12-अंकों का UTR नंबर ऐप में डालकर सबमिट करें।\n5. एडमिन सत्यापन के बाद तुरंत कैश बैलेंस आपके वॉलेट में आ जाएगा।`;
+    }
+
+    // 7. GP Swap
+    if (
+      q.includes("gp") ||
+      q.includes("swap") ||
+      q.includes("स्वैप") ||
+      q.includes("point")
+    ) {
+      return `🪙 GP स्वैप (G-Points):\n\n• 1 रुपया (₹1) = 1 GP पॉइंट।\n• डिपॉजिट किया हुआ कैश बैलेंस सीधे 'जीपी स्वैप' से GP में बदल सकते हैं।\n• सभी निवेश प्लान्स GP पॉइंट्स से ही एक्टिवेट होते हैं।\n• जब आपका रिटर्न आता है, तो वह भी GP में मिलता है जिसे आप आसानी से कैश में बदल सकते हैं!`;
+    }
+
+    // 8. Company Profile / Legal / Trust
+    if (
+      q.includes("company") ||
+      q.includes("कंपनी") ||
+      q.includes("cin") ||
+      q.includes("pan") ||
+      q.includes("legal") ||
+      q.includes("safe") ||
+      q.includes("surakshit") ||
+      q.includes("office") ||
+      q.includes("address")
+    ) {
+      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: GCap Assets & Wealth Management Private Limited\n• CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}\n• पैन: ${companyProfile.pan || "ABCPG1234F"} | टैन: ${companyProfile.tan || "RCHG12345E"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Grand Plaza, 4th Floor, Main Road, Ranchi, Jharkhand - 834001"}\n• ईमेल: ${rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${rules.supportPhone || "+91 98000 12345"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित परिसंपत्ति प्रबंधन कंपनी है।`;
+    }
+
+    // 9. Referral
+    if (
+      q.includes("referral") ||
+      q.includes("रेफरल") ||
+      q.includes("commission") ||
+      q.includes("कमीशन") ||
+      q.includes("team") ||
+      q.includes("टीम")
+    ) {
+      return `🤝 GCap रेफरल व टीम इनकम:\n\n• लेवल 1 (डायरेक्ट रेफरल): आपके द्वारा सीधे जोड़े गए सदस्य की अर्निंग पर 1% बोनस।\n• लेवल 2 (इनडायरेक्ट टीम): उनके नीचे जुड़े सदस्यों की अर्निंग पर 0.5% बोनस।\n• अपना रेफरल लिंक या कोड शेयर करने के लिए 'रेफरल' मेनू पर जाएं।`;
+    }
+
+    // Default polite redirection strictly to GCap
+    return `🙏 नमस्ते जी! मैं GCap Capital का आधिकारिक AI सहायक हूँ।\n\nमैं GCap के निवेश प्लान्स (641-दिन व 365-दिन), पैसा जमा/निकासी, GP स्वैप, या खाता नियमों के बारे में आपकी सहायता कर सकता हूँ।\n\nकृपया GCap से जुड़ा कोई भी प्रश्न पूछें, मैं विस्तार से आपकी मदद करूँगा!`;
+  }
+
+  // POST: GCap AI Assistant Chat Endpoint
+  app.post("/api/assistant/chat", async (req, res) => {
+    try {
+      const { message, history } = req.body || {};
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ success: false, error: "Message is required" });
+      }
+
+      const trimmedMsg = message.trim();
+      const db = ensureDb();
+      const companyProfile = (db as any).companyProfile || {};
+      const rules = (db as any).rules || {};
+
+      const systemInstruction = `
+आप GCap Capital Private Limited के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
+आपका एकमात्र उद्देश्य यूज़र को GCap Capital के बारे में हर जानकारी शुद्ध और सरल हिंदी (या यूज़र की भाषा) में देना है।
+
+कंपनी की मुख्य जानकारी:
+- नाम: GCap Assets & Wealth Management Private Limited (GCap Capital)
+- CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}
+- PAN: ${companyProfile.pan || "ABCPG1234F"} | TAN: ${companyProfile.tan || "RCHG12345E"}
+- रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Grand Plaza, 4th Floor, Main Road, Ranchi, Jharkhand - 834001"}
+- हेल्पलाइन सपोर्ट: ${rules.supportEmail || "support@gcap.in"} | ${rules.supportPhone || "+91 98000 12345"}
+- UPI ID: ${rules.companyUpiId || "8603504808@axisbank"}
+- बैंक खाता: Axis Bank, A/C: ${rules.companyBankAccountNumber || "924010002662307"}, IFSC: ${rules.companyBankIfsc || "UTIB0001219"}
+
+GCap में काम कैसे होता है:
+1. खाता रजिस्ट्रेशन: मोबाइल नंबर और पासवर्ड से खाता बनता है।
+2. पैसा जमा (Deposit): कंपनी के UPI या बैंक खाते में पैसा ट्रांसफर करके UTR/रेफरेंस नंबर सबमिट करें। एडमिन अप्रूवल के बाद वॉलेट में कैश जमा हो जाता है।
+3. GP स्वैप (GP Points Swap): कैश बैलेंस को GP पॉइंट्स में बदलें (1 रुपया = 1 GP)। प्लान्स केवल GP से खरीदे जाते हैं।
+4. प्लान में निवेश: 641-दिन या 365-दिन प्लान में GP पॉइंट्स से निवेश करें।
+5. स्वचालित रिटर्न: हर 6 घंटे में रिटर्न स्वतः आपके वॉलेट में GP के रूप में क्रेडिट होता है।
+
+प्लान्स:
+1. शॉर्ट टर्म प्लान (641-Day Short Term Plan):
+   - न्यूनतम निवेश: ₹1,00,000 (1 लाख) से असीमित।
+   - अवधि: 641 दिन। पहला 24 घंटे का लॉक।
+   - रिटर्न दर: 0.040% हर 6 घंटे में (दैनिक 0.16% = ₹1 लाख पर ₹160 प्रतिदिन)।
+   - परिपक्वता: 641 दिन पर 100% मूलधन वापस या रिन्यूअल।
+2. लॉन्ग टर्म प्लान (365-Day Long Term & Royalty Plan):
+   - निवेश सीमा: ₹10,000 से ₹1,00,000।
+   - अवधि: 365 दिन + 1461-दिन रॉयल्टी विकल्प।
+   - पहला 24 घंटे का लॉक।
+   - रिटर्न दर: 0.033% हर 6 घंटे में (दैनिक 0.132% = ₹10,000 पर ₹13.2 प्रतिदिन)।
+   - 365 दिन बाद रॉयल्टी पाथवे।
+
+निकासी नियम:
+- अर्निंग निकासी: हर महीने की 1 से 5 तारीख तक।
+- रॉयल्टी निकासी: हर महीने की 6 से 10 तारीख तक।
+- न्यूनतम निकासी: ₹200।
+
+कड़े नियम:
+1. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
+2. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।
+3. यदि यूज़र धन्यवाद, अलविदा, बाय, ठीक है या बात समाप्त करे, तो सम्मानजनक विदाई संदेश अवश्य दें: "🙏 GCap Capital चुनने के लिए आपका बहुत-बहुत धन्यवाद! आपका दिन शुभ और समृद्ध हो। अलविदा!"
+`;
+
+      // Try Gemini API first
+      try {
+        const ai = new GoogleGenAI();
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            ...(Array.isArray(history) ? history.slice(-6).map((h: any) => ({
+              role: h.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: String(h.content || '') }]
+            })) : []),
+            {
+              role: 'user',
+              parts: [{ text: trimmedMsg }]
+            }
+          ],
+          config: {
+            systemInstruction,
+            temperature: 0.3,
+          }
+        });
+
+        const replyText = response.text || "";
+        if (replyText.trim()) {
+          return res.json({ success: true, reply: replyText.trim() });
+        }
+      } catch (aiErr) {
+        console.warn("[GCap Assistant Gemini Fallback]:", (aiErr as any)?.message || aiErr);
+      }
+
+      // High-precision fallback response generator if Gemini API key not present or rate limited
+      const fallbackReply = generateGcapLocalReply(trimmedMsg, rules, companyProfile);
+      return res.json({ success: true, reply: fallbackReply });
+    } catch (err: any) {
+      console.error("[GCap Assistant Chat Error]:", err);
+      res.status(500).json({ success: false, error: err?.message || "Internal server error" });
+    }
   });
 
   // GET: Company ledger entries

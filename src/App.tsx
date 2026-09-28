@@ -143,6 +143,7 @@ import { GuidesModal } from './components/GuidesModal';
 import { UserAgreementModal } from './components/UserAgreementModal';
 import { UserManualModal } from './components/UserManualModal';
 import { SuspendedUserModal } from './components/SuspendedUserModal';
+import { GcapAssistantModal } from './components/GcapAssistantModal';
 import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
@@ -161,6 +162,7 @@ import {
   Radio,
   ArrowLeft,
   Bell,
+  Bot,
 } from 'lucide-react';
 
 function dedupeAdminMessages(list: AdminMessage[]): AdminMessage[] {
@@ -234,7 +236,9 @@ export default function App() {
   }, [currentUser?.id]);
 
   const [wallet, setWallet] = useState<Wallet | null>(() => (currentUser?.id ? getStoredWallet(currentUser.id) : null));
-  const [rawInvestments, setRawInvestments] = useState<ActiveInvestment[]>([]);
+  const [rawInvestments, setRawInvestments] = useState<ActiveInvestment[]>(() => {
+    return normalizeInvestmentsList(getStoredInvestments());
+  });
   const investments = normalizeInvestmentsList(rawInvestments);
   const setInvestments = useCallback((val: ActiveInvestment[] | ((prev: ActiveInvestment[]) => ActiveInvestment[])) => {
     if (typeof val === 'function') {
@@ -1026,6 +1030,59 @@ export default function App() {
   // Automatically sync historical messages from local storage backup to server database & Firestore on Admin startup
   const hasSyncedHistoricalMessages = useRef<boolean>(false);
   const shownToastTxnIdsRef = useRef<Set<string>>(new Set());
+  const isInitialTxnLoadRef = useRef<boolean>(true);
+
+  // Dedicated Transaction Notification Watcher for Admin:
+  // "Admin ko sirf paisa jana aur nikalne ka notification aya. Jaise koi Paisa dale ya peisa niklane ka request dale. Matlab ki sirf transition ka hi"
+  useEffect(() => {
+    if (currentUser?.role !== 'ADMIN') return;
+    if (!Array.isArray(transactions) || transactions.length === 0) return;
+
+    if (isInitialTxnLoadRef.current) {
+      // First load: seed all existing transaction IDs so Admin doesn't get flooded with past history
+      transactions.forEach((t) => {
+        if (t?.id) shownToastTxnIdsRef.current.add(t.id);
+      });
+      isInitialTxnLoadRef.current = false;
+      return;
+    }
+
+    // Subsequent updates: detect newly added transactions of type DEPOSIT or WITHDRAWAL
+    for (const t of transactions) {
+      if (!t || !t.id) continue;
+      if (shownToastTxnIdsRef.current.has(t.id)) continue;
+      shownToastTxnIdsRef.current.add(t.id);
+
+      // ONLY notify for money in / money out (DEPOSIT / WITHDRAWAL)
+      if (t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') {
+        const isDeposit = t.type === 'DEPOSIT';
+        const userIdentifier = t.userName || t.userPhone || t.userLoginId || (isHi ? 'यूज़र' : 'User');
+        const amtStr = `₹${Number(t.amount || 0).toLocaleString('en-IN')}`;
+
+        const title = isDeposit
+          ? (isHi ? '💰 नया पैसा जमा अनुरोध (Deposit Request)' : '💰 New Deposit Request')
+          : (isHi ? '💸 नया पैसा निकासी अनुरोध (Withdrawal Request)' : '💸 New Withdrawal Request');
+
+        const desc = isDeposit
+          ? (isHi ? `यूज़र ${userIdentifier} ने ${amtStr} जमा करने का अनुरोध भेजा है। एडमिन पैनल में अप्रूव करें।` : `User ${userIdentifier} requested deposit of ${amtStr}.`)
+          : (isHi ? `यूज़र ${userIdentifier} ने ${amtStr} निकासी का अनुरोध भेजा है।` : `User ${userIdentifier} requested withdrawal of ${amtStr}.`);
+
+        playRealtimeChime('info');
+        showToast(title, desc);
+
+        // Voice announcement
+        if (isDeposit) {
+          audioAnnouncer.speak(`एडमिन जी! ${amtStr} रुपये का नया पैसा जमा अनुरोध आया है।`, isHi ? 'hi' : 'en');
+        } else {
+          audioAnnouncer.speak(`एडमिन जी! ${amtStr} रुपये का नया पैसा निकासी अनुरोध आया है।`, isHi ? 'hi' : 'en');
+        }
+
+        // Native device push notification
+        triggerDevicePushNotification(title, desc);
+      }
+    }
+  }, [transactions, currentUser?.role, isHi, triggerDevicePushNotification]);
+
   useEffect(() => {
     if (currentUser?.role === 'ADMIN' && !hasSyncedHistoricalMessages.current) {
       try {
@@ -1183,6 +1240,29 @@ export default function App() {
           targetType: 'ALL',
           showPopup: false,
           senderName: 'User Transaction System',
+        });
+      }
+
+      // Completed / Approved Transactions (Money In & Money Out History)
+      const recentCompleted = transactions
+        .filter((t) => (t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') && t.status !== 'PENDING')
+        .slice(0, 30);
+      for (const t of recentCompleted) {
+        const isDep = t.type === 'DEPOSIT';
+        const isApprove = t.status === 'APPROVED' || t.status === 'SUCCESS';
+        adminAlerts.push({
+          id: `notif-done-${t.id}`,
+          title: isDep ? `✅ Deposit Credited: ₹${t.amount.toLocaleString('en-IN')}` : `💸 Withdrawal Sent: ₹${t.amount.toLocaleString('en-IN')}`,
+          titleHi: isDep ? `✅ पैसा जमा सफल: ₹${t.amount.toLocaleString('en-IN')}` : `💸 निकासी ट्रांसफर सफल: ₹${t.amount.toLocaleString('en-IN')}`,
+          content: `User: ${t.userName || t.userPhone || 'User'}. Status: ${isApprove ? 'Approved' : t.status}. Ref: ${t.referenceId || 'N/A'}.`,
+          contentHi: `यूज़र: ${t.userName || t.userPhone || 'यूज़र'}। स्थिति: ${isApprove ? 'स्वीकृत/ट्रांसफर' : t.status}। संदर्भ: ${t.referenceId || 'N/A'}।`,
+          createdAt: t.date || new Date().toISOString(),
+          timestamp: new Date(t.date || Date.now()).getTime(),
+          category: 'ALERT',
+          priority: 'NORMAL',
+          targetType: 'ALL',
+          showPopup: false,
+          senderName: 'Transaction Ledger',
         });
       }
 
@@ -1909,6 +1989,7 @@ export default function App() {
   const [selectedVoucherTxn, setSelectedVoucherTxn] = useState<Transaction | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState<boolean>(false);
   const [isGpTransferOpen, setIsGpTransferOpen] = useState<boolean>(false);
+  const [isAssistantModalOpen, setIsAssistantModalOpen] = useState<boolean>(false);
 
   const handleExecuteGpTransfer = (recipientLoginIdOrPhone: string, amount: number): boolean => {
     if (!currentUser) return false;
@@ -2104,37 +2185,42 @@ export default function App() {
     }, 4500);
   };
 
-  // Real-time Event Listener for instant Audio Chime & Admin Live Notifications
+  // Real-time Event Listener for instant Audio Chime & Admin Live Notifications:
+  // "Admin ko sirf paisa jana aur nikalne ka notification aya. Jaise koi Paisa dale ya peisa niklane ka request dale. Matlab ki sirf transition ka hi"
   useEffect(() => {
     if (!currentUser) return;
 
     const unsubscribe = subscribeToRealtimeEvents((event) => {
       if (currentUser.role === 'ADMIN') {
-        if (event.type === 'USER_REGISTERED' && event.user) {
-          playRealtimeChime('success');
-          showToast(
-            '🔔 नया यूज़र रजिस्टर हुआ!',
-            `${event.user.name} (${event.user.phone || event.user.loginId}) ने अभी रजिस्टर किया। एडमिन पैनल में तुरंत जुड़ गया!`
-          );
-        } else if (event.type === 'TRANSACTION_CREATED' && event.transaction) {
+        if (event.type === 'TRANSACTION_CREATED' && event.transaction) {
           const t = event.transaction;
-          playRealtimeChime('info');
-          const title =
-            t.type === 'DEPOSIT'
-              ? '💰 नया डिपॉजिट अनुरोध!'
-              : t.type === 'WITHDRAWAL'
-              ? '💸 नया निकासी अनुरोध!'
-              : '📝 नया ट्रांजेक्शन';
-          showToast(
-            title,
-            `₹${Number(t.amount || 0).toLocaleString('en-IN')} - ${t.userName || t.userLoginId || t.userId || 'यूज़र'} (तुरंत अपडेट)`
-          );
-        } else if (event.type === 'INVESTMENT_CREATED' && event.investment) {
-          playRealtimeChime('info');
-          showToast(
-            '📈 नया निवेश प्लान सक्रिय!',
-            `₹${Number(event.investment.investedAmount || 0).toLocaleString('en-IN')} - ${event.investment.planName}`
-          );
+          // STRICT RULE: Admin receives notifications ONLY for money coming in (Deposit) and money going out (Withdrawal)
+          if (t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') {
+            const isDeposit = t.type === 'DEPOSIT';
+            const userIdentifier = t.userName || t.userPhone || t.userLoginId || (isHi ? 'यूज़र' : 'User');
+            const amtStr = `₹${Number(t.amount || 0).toLocaleString('en-IN')}`;
+
+            const title = isDeposit
+              ? (isHi ? '💰 नया पैसा जमा अनुरोध (Deposit Request)' : '💰 New Deposit Request')
+              : (isHi ? '💸 नया पैसा निकासी अनुरोध (Withdrawal Request)' : '💸 New Withdrawal Request');
+
+            const desc = isDeposit
+              ? (isHi ? `यूज़र ${userIdentifier} ने ${amtStr} जमा करने का अनुरोध डाला है। एडमिन पैनल में अप्रूव करें।` : `User ${userIdentifier} submitted deposit request of ${amtStr}. Please verify and approve.`)
+              : (isHi ? `यूज़र ${userIdentifier} ने ${amtStr} निकासी का अनुरोध डाला है।` : `User ${userIdentifier} requested withdrawal of ${amtStr}.`);
+
+            playRealtimeChime('info');
+            showToast(title, desc);
+
+            // Voice announcement specifically for transactions
+            if (isDeposit) {
+              audioAnnouncer.speak(`एडमिन जी! ${amtStr} रुपये का नया पैसा जमा अनुरोध प्राप्त हुआ है।`, isHi ? 'hi' : 'en');
+            } else {
+              audioAnnouncer.speak(`एडमिन जी! ${amtStr} रुपये का नया पैसा निकासी अनुरोध प्राप्त हुआ है।`, isHi ? 'hi' : 'en');
+            }
+
+            // Browser/Mobile device push notification
+            triggerDevicePushNotification(title, desc);
+          }
         }
       }
     });
@@ -2142,7 +2228,7 @@ export default function App() {
     return () => {
       unsubscribe();
     };
-  }, [currentUser?.id, currentUser?.role]);
+  }, [currentUser?.id, currentUser?.role, isHi, triggerDevicePushNotification]);
 
   const handleLoginSuccess = async (user: UserProfile) => {
     setCurrentUser(user);
@@ -4386,6 +4472,7 @@ export default function App() {
           onSelectAdminSubTab={setAdminMobileTab}
           onRefreshApp={() => window.location.reload()}
           onGoHome={handleGoHome}
+          onOpenAssistant={() => setIsAssistantModalOpen(true)}
         />
       )}
 
@@ -4427,6 +4514,7 @@ export default function App() {
         onViewModeChange={setViewMode}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenSplashIntro={() => setShowSplashIntro(true)}
+        onOpenAssistant={() => setIsAssistantModalOpen(true)}
       />
 
       {/* Main Viewport */}
@@ -4587,6 +4675,7 @@ export default function App() {
             onOpenNotifications={() => setIsNotificationsOpen(true)}
             onOpenProfile={() => setIsProfileOpen(true)}
             onGoHome={handleGoHome}
+            onOpenAssistant={() => setIsAssistantModalOpen(true)}
           >
             {currentUser.role === 'ADMIN' ? (
               <AdminPanel
@@ -5036,6 +5125,33 @@ export default function App() {
         language={language}
         rules={rules}
         actionTitle={suspendedActionTitle}
+      />
+
+      {/* Floating GCap AI Voice & Text Assistant Button for Users */}
+      {currentUser && (
+        <button
+          id="btn-floating-gcap-assistant"
+          onClick={() => setIsAssistantModalOpen(true)}
+          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-2xl shadow-emerald-950/70 hover:shadow-emerald-500/50 border border-emerald-400/50 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
+          title={isHi ? 'GCap AI सहायक (बोलकर या लिखकर पूछें)' : 'Ask GCap AI Assistant (Voice or Text)'}
+        >
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+          </span>
+          <Bot className="w-5 h-5 text-white animate-pulse" />
+          <span className="text-xs font-bold tracking-wide">
+            {isHi ? 'GCap सहायक 🎙️' : 'GCap AI 🎙️'}
+          </span>
+        </button>
+      )}
+
+      {/* GCap AI Voice & Text Assistant Modal */}
+      <GcapAssistantModal
+        isOpen={isAssistantModalOpen}
+        onClose={() => setIsAssistantModalOpen(false)}
+        language={language}
+        currentUser={currentUser}
       />
 
     </div>

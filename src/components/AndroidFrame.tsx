@@ -28,6 +28,7 @@ import {
   Activity,
   Globe,
   User,
+  Bot,
 } from 'lucide-react';
 import { Language, UserProfile, Wallet, DesktopCategoryTab, CompanyTreasury, ActiveInvestment } from '../types';
 import { formatINR } from '../utils/storage';
@@ -56,6 +57,7 @@ interface AndroidFrameProps {
   onOpenProfile?: () => void;
   onLanguageChange?: (lang: Language) => void;
   onGoHome?: () => void;
+  onOpenAssistant?: () => void;
 }
 
 export const AndroidFrame: React.FC<AndroidFrameProps> = ({
@@ -82,6 +84,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onOpenProfile,
   onLanguageChange,
   onGoHome,
+  onOpenAssistant,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
@@ -244,6 +247,18 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                   </span>
                 )}
               </div>
+            </button>
+          )}
+
+          {/* GCap AI Assistant Button in Mobile Header */}
+          {currentUser && onOpenAssistant && (
+            <button
+              id="btn-mobile-header-assistant"
+              onClick={onOpenAssistant}
+              className="p-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 transition-all cursor-pointer active:scale-95 shadow-sm"
+              title={isHi ? 'GCap AI सहायक (बोलकर या लिखकर पूछें)' : 'GCap AI Assistant (Voice & Text)'}
+            >
+              <Bot className="w-4 h-4 text-emerald-400 animate-pulse" />
             </button>
           )}
         </div>
@@ -686,6 +701,31 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                       <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                     </button>
                   </div>
+
+                  {/* GCap AI Assistant Quick Trigger */}
+                  {onOpenAssistant && (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onOpenAssistant();
+                      }}
+                      className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-850 to-cyan-950/80 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-md active:scale-95 transition-all"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                          <Bot className="w-4 h-4 animate-pulse" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>{isHi ? 'GCap AI सहायक' : 'GCap AI Assistant'}</span>
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 font-extrabold">🎙️ 24/7</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block">{isHi ? 'बोलकर या लिखकर पूछें' : 'Voice & Text Assistant'}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-emerald-400" />
+                    </button>
+                  )}
 
                   {/* Category 1: Plans */}
                   <div className="space-y-1">

@@ -31,6 +31,7 @@ import {
   Database,
   Activity,
   CheckCircle2,
+  Bot,
 } from 'lucide-react';
 import {
   Language,
@@ -70,6 +71,7 @@ interface NavigationDrawerProps {
   onViewModeChange: (mode: ViewMode) => void;
   onOpenProfile?: () => void;
   onOpenSplashIntro?: () => void;
+  onOpenAssistant?: () => void;
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
@@ -100,6 +102,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onViewModeChange,
   onOpenProfile,
   onOpenSplashIntro,
+  onOpenAssistant,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
@@ -225,6 +228,33 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
         {/* Accordion Menus & Submenus */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-800">
+
+          {/* GCap AI Assistant Trigger Card */}
+          {onOpenAssistant && (
+            <div className="p-3 bg-gradient-to-r from-emerald-950/80 via-slate-900 to-cyan-950/80 rounded-xl border border-emerald-500/40 shadow-lg shadow-emerald-950/40">
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAssistant();
+                }}
+                className="w-full flex items-center justify-between text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
+                    <Bot className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white text-xs">{isHi ? 'GCap AI सहायक' : 'GCap AI Assistant'}</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">🎙️ LIVE</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">{isHi ? 'बोलकर या लिखकर सब पूछें' : 'Voice & Text Assistant'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          )}
           
           {/* MENU 1: निवेश योजनाएँ (Investments) */}
           <div className="rounded-xl border border-slate-800 bg-slate-950/50 overflow-hidden">

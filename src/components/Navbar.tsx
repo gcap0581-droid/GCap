@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Bell,
   RefreshCw,
+  Bot,
 } from 'lucide-react';
 import {
   Language,
@@ -55,6 +56,7 @@ interface NavbarProps {
   onSelectAdminSubTab?: (tab: 'OVERVIEW' | 'TRANSACTIONS' | 'USERS' | 'TREASURY' | 'INVESTMENTS' | 'PLANS') => void;
   onRefreshApp?: () => void;
   onGoHome?: () => void;
+  onOpenAssistant?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -85,6 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectAdminSubTab,
   onRefreshApp,
   onGoHome,
+  onOpenAssistant,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
@@ -224,6 +227,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
+              </button>
+            )}
+
+            {/* GCap AI Voice & Text Assistant Button */}
+            {currentUser && onOpenAssistant && (
+              <button
+                id="btn-nav-assistant-quick"
+                onClick={onOpenAssistant}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600/30 via-teal-600/30 to-cyan-600/30 hover:from-emerald-600/50 hover:to-cyan-600/50 border border-emerald-500/40 text-emerald-300 font-bold text-xs shadow-sm cursor-pointer transition-all active:scale-95"
+                title={isHi ? 'GCap AI सहायक (बोलकर या लिखकर पूछें)' : 'GCap AI Assistant (Voice & Text)'}
+              >
+                <Bot className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span className="hidden sm:inline whitespace-nowrap">{isHi ? 'GCap सहायक 🎙️' : 'Assistant 🎙️'}</span>
               </button>
             )}
 
