@@ -328,30 +328,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
     });
 
-    // 3. Direct Firestore listener for Wallets Sync only (Users are fully managed by subscribeToUsersUpdates)
+    // 3. Direct Firestore listener for Wallets Sync
     const unsubscribeFirestore = subscribeToFirestoreState((fs) => {
       if (!fs) return;
       if (fs.wallets && typeof fs.wallets === 'object') {
-        setWalletsMap((prev) => {
-          // If we already have server wallets, preserve current balances to prevent ping-pong with stale Firestore data
-          if (prev && Object.keys(prev).length > 0) {
-            const merged = { ...prev };
-            for (const [k, w] of Object.entries(fs.wallets)) {
-              if (!merged[k]) {
-                merged[k] = w as Wallet;
-              }
-            }
-            return merged;
-          }
-          return fs.wallets;
-        });
+        setWalletsMap((prev) => ({
+          ...prev,
+          ...fs.wallets,
+        }));
       }
+    });
+
+    // 4. Central Real-Time SSE Event Subscription (Instant wallet, user, and transaction updates)
+    const unsubscribeRealtime = subscribeToRealtimeEvents((event) => {
+      if (event.type === 'WALLET_UPDATED' && event.wallet && event.userId) {
+        const rawTarget = String(event.userId).trim();
+        const cleanDigits = rawTarget.replace(/[^0-9]/g, '');
+        const clean10 = cleanDigits.slice(-10);
+        setWalletsMap((prev) => ({
+          ...prev,
+          [rawTarget]: event.wallet!,
+          ...(cleanDigits ? { [cleanDigits]: event.wallet! } : {}),
+          ...(clean10 ? { [clean10]: event.wallet! } : {}),
+        }));
+      }
+      refreshUsers();
     });
 
     return () => {
       clearTimeout(tInit);
       unsubscribeStorage();
       unsubscribeFirestore();
+      unsubscribeRealtime();
     };
   }, []);
 

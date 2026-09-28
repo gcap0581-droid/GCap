@@ -233,7 +233,7 @@ export default function App() {
     };
   }, [currentUser?.id]);
 
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWallet] = useState<Wallet | null>(() => (currentUser?.id ? getStoredWallet(currentUser.id) : null));
   const [rawInvestments, setRawInvestments] = useState<ActiveInvestment[]>([]);
   const investments = normalizeInvestmentsList(rawInvestments);
   const setInvestments = useCallback((val: ActiveInvestment[] | ((prev: ActiveInvestment[]) => ActiveInvestment[])) => {
@@ -680,10 +680,17 @@ export default function App() {
         }
         const userPhoneDigits = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
         const combinedUsers = fs.users && fs.users.length > 0 ? fs.users : [currentUser];
-        const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
-        if (myWallet) {
-          setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
-          setStoredWallet(myWallet);
+        const { aliases } = findUserAndAllAliases(currentUser.id, combinedUsers);
+        const hasFirestoreWallet = Boolean(
+          fs.wallets &&
+          aliases.some((a) => a && fs.wallets && fs.wallets[a] !== undefined)
+        );
+        if (hasFirestoreWallet) {
+          const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
+          if (myWallet && (myWallet.cashBalance > 0 || myWallet.gpBalance > 0 || myWallet.totalInvested > 0 || myWallet.totalEarned > 0)) {
+            setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
+            setStoredWallet(myWallet, currentUser.id);
+          }
         }
         if (fs.transactions) {
           const { aliases } = findUserAndAllAliases(currentUser.id, combinedUsers);
@@ -812,7 +819,7 @@ export default function App() {
           // Regular User
           if (state.wallet) {
             setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(state.wallet) ? state.wallet : prev));
-            setStoredWallet(state.wallet);
+            setStoredWallet(state.wallet, currentUser.id);
           }
           if (state.transactions) {
             setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(state.transactions) ? state.transactions : prev));
@@ -871,7 +878,7 @@ export default function App() {
           (targetPhone10 && curPhone10 && targetPhone10 === curPhone10)
         ) {
           setWallet(event.wallet);
-          setStoredWallet(event.wallet);
+          setStoredWallet(event.wallet, currentUser.id);
         }
       }
       debouncedSync();
@@ -2155,6 +2162,12 @@ export default function App() {
         : (isHi ? 'आपका निवेशक डैशबोर्ड सक्रिय है।' : 'Your investor dashboard is ready.')
     );
 
+    // Initialize user wallet synchronously from persistent local storage to avoid 0-value flash
+    if (user.role !== 'ADMIN') {
+      const initW = getStoredWallet(user.id);
+      setWallet(initW);
+    }
+
     // Immediately synchronize user/admin state from central database
     try {
       const state = await fetchCentralState(user.id, user.role);
@@ -2191,7 +2204,7 @@ export default function App() {
         } else {
           if (state.wallet) {
             setWallet(state.wallet);
-            setStoredWallet(state.wallet);
+            setStoredWallet(state.wallet, user.id);
           }
           if (state.transactions) {
             setTransactions(state.transactions);

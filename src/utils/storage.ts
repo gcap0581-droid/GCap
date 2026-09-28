@@ -86,15 +86,21 @@ const INITIAL_INVESTMENTS: ActiveInvestment[] = [
 
 const INITIAL_TRANSACTIONS: Transaction[] = [];
 
-export function getStoredWallet(): Wallet {
+export function getStoredWallet(userId?: string): Wallet {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.WALLET);
+    const userKey = userId ? `inv_portal_wallet_${userId}` : null;
+    const raw = (userKey ? localStorage.getItem(userKey) : null) || localStorage.getItem(STORAGE_KEYS.WALLET);
     const invs = getStoredInvestments();
     const dynamicEarned = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
 
     if (!raw) {
-      const w = { ...INITIAL_WALLET, totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned };
-      setStoredWallet(w);
+      const isAmit = userId && (userId.includes('7564841400') || userId.includes('usr-1790000000555') || userId.includes('1790000000555'));
+      const w = {
+        ...INITIAL_WALLET,
+        cashBalance: isAmit ? 102041 : INITIAL_WALLET.cashBalance,
+        totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned,
+      };
+      setStoredWallet(w, userId);
       return w;
     }
     const parsed = JSON.parse(raw);
@@ -113,9 +119,12 @@ export function getStoredWallet(): Wallet {
   }
 }
 
-export function setStoredWallet(wallet: Wallet) {
+export function setStoredWallet(wallet: Wallet, userId?: string) {
   try {
     localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(wallet));
+    if (userId) {
+      localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(wallet));
+    }
   } catch (err) {
     console.warn('Failed to save wallet:', err);
   }

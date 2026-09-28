@@ -301,12 +301,15 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         }
       }
 
+      const cleanPhone10 = phone.replace(/[^0-9]/g, '').slice(-10);
+      const resolvedLoginId = role === 'ADMIN' && (user?.loginId === 'admin' || loginId === 'admin') ? 'admin' : (cleanPhone10 || loginId.trim() || undefined);
+
       // Execute onSave with a safety timeout so the spinner never hangs
       await Promise.race([
         Promise.resolve(onSave({
           userId: user?.id,
           name: name.trim(),
-          loginId: loginId.trim() || undefined,
+          loginId: resolvedLoginId,
           phone: phone.trim(),
           email: (() => {
             let clean = (email || '').trim().replace(/\s+/g, '');
@@ -486,15 +489,21 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {isHi ? 'लॉगिन आईडी (Login ID / Username):' : 'Login ID / Username:'}
+                    {isHi ? 'यूज़र आईडी (User ID):' : 'User ID (Login ID):'}
                   </label>
-                  <input
-                    type="text"
-                    value={loginId}
-                    onChange={(e) => setLoginId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-cyan-300 focus:border-cyan-400 focus:outline-none"
-                    placeholder="e.g. 9876543210 or user123"
-                  />
+                  <div className="w-full px-3 py-2 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs font-mono text-cyan-300 flex items-center justify-between">
+                    <span className="font-bold tracking-wide">
+                      {role === 'ADMIN' && (loginId === 'admin' || user?.loginId === 'admin')
+                        ? 'admin'
+                        : (phone.replace(/[^0-9]/g, '').slice(-10) || loginId || (isHi ? 'मोबाइल नंबर से स्वतः' : 'Auto from phone'))}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                      {isHi ? '✓ मोबाइल = यूज़र ID' : '✓ Mobile = User ID'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    {isHi ? 'यूज़र का 10-अंकीय मोबाइल नंबर ही उसकी स्थायी यूज़र आईडी रहता है।' : '10-digit mobile number automatically acts as User ID.'}
+                  </p>
                 </div>
 
                 <div>

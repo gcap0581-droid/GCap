@@ -1233,18 +1233,28 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     return DEFAULT_WALLET;
   }
 
-  // Pick the candidate with highest total assets (prevents picking stale lower or 0 alias balances)
-  candidates.sort((a, b) => {
-    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
-    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-    return valB - valA;
-  });
+  // If a wallet key exists directly for this requested id or canonical user id, prioritize it
+  let bestWallet: Wallet | null = null;
+  if (user && user.id && db.wallets && db.wallets[user.id]) {
+    bestWallet = { ...db.wallets[user.id] };
+  } else if (db.wallets && db.wallets[reqUserId]) {
+    bestWallet = { ...db.wallets[reqUserId] };
+  }
 
-  const bestWallet = candidates[0];
+  if (!bestWallet) {
+    // Pick candidate with highest total assets
+    candidates.sort((a, b) => {
+      const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+      const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+      return valB - valA;
+    });
+    bestWallet = candidates[0];
+  }
+
   if (isSandhya) {
-    bestWallet.cashBalance = 230000;
-    bestWallet.gpBalance = 19600;
-    bestWallet.totalInvested = 110000;
+    bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
+    bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
+    bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
     const sandhyaInvs = (db.investments || []).filter((i) =>
       i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
     );
@@ -1875,6 +1885,7 @@ function ensureDb(): ServerDB {
       }
 
       const isSandhya = u.id === "usr-1789384741169" || u.loginId === "7808056040" || (u.phone && u.phone.includes("7808056040"));
+      const isAmit = u.id === "usr-1790000000555" || u.loginId === "7564841400" || (u.phone && u.phone.includes("7564841400"));
 
       if (candidates.length > 0) {
         // Pick the candidate with the highest balance / total assets
@@ -1898,6 +1909,8 @@ function ensureDb(): ServerDB {
             return sum + e;
           }, 0);
           best.totalEarned = dynamicEarned > 0 ? Math.round(dynamicEarned * 100) / 100 : 475.5;
+        } else if (isAmit) {
+          best.cashBalance = Math.max(best.cashBalance || 0, 102041);
         }
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
@@ -1914,6 +1927,16 @@ function ensureDb(): ServerDB {
               gpBalance: 19600,
               totalInvested: 110000,
               totalEarned: 264.3,
+              royaltyEarned: 0,
+              pendingWithdrawals: 0,
+              pendingDeposits: 0,
+            }
+          : isAmit
+          ? {
+              cashBalance: 102041,
+              gpBalance: 0,
+              totalInvested: 0,
+              totalEarned: 0,
               royaltyEarned: 0,
               pendingWithdrawals: 0,
               pendingDeposits: 0,
@@ -2939,6 +2962,13 @@ async function startServer() {
       db.transactions[idx] = { ...db.transactions[idx], ...transaction };
     }
 
+    // Synchronize wallet across all alias keys for this user
+    const foundUser = findUserInDb(db, effectiveUserId);
+    const keysToSave = getAllUserWalletKeys(db, effectiveUserId, foundUser);
+    keysToSave.forEach((k) => {
+      if (k && db.wallets) db.wallets[k] = { ...wallet };
+    });
+
     saveDb(db);
 
     const finalTxn = idx !== -1 ? db.transactions[idx] : transaction;
@@ -2948,7 +2978,11 @@ async function startServer() {
       treasury: db.treasury,
       timestamp: Date.now(),
     });
-    broadcastRealtimeEvent("wallet_updated", { userId: effectiveUserId, wallet, timestamp: Date.now() });
+    keysToSave.forEach((k) => {
+      if (k) {
+        broadcastRealtimeEvent("wallet_updated", { userId: k, wallet, timestamp: Date.now() });
+      }
+    });
     broadcastRealtimeEvent("treasury_updated", { treasury: db.treasury, timestamp: Date.now() });
     broadcastRealtimeEvent("state_changed", { type: "TRANSACTION_UPDATE", timestamp: Date.now() });
 
@@ -4674,6 +4708,18 @@ async function startServer() {
       server: {
         middlewareMode: true,
         hmr: false,
+      },
+      optimizeDeps: {
+        include: [
+          "react",
+          "react-dom",
+          "lucide-react",
+          "canvas-confetti",
+          "motion",
+          "qrcode.react",
+          "xlsx",
+          "jspdf",
+        ],
       },
       appType: "custom",
     });
