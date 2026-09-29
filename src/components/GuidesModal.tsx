@@ -64,7 +64,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
 
   // Dynamic Short Term Plan (e.g. 641D)
   const shortPlan = activePlans.find(
-    (p) => p.durationDays > 500 || p.name.toLowerCase().includes('short') || p.id.includes('stp')
+    (p) => p.durationDays > 500 || p.id.includes('short') || p.id.includes('stp')
   ) || {
     name: 'GCap 641-Day Prime Short Term',
     nameHi: 'GCap 641-दिन शॉर्ट टर्म योजना',
@@ -76,7 +76,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
 
   // Dynamic Long Term Plan (e.g. 365D)
   const longPlan = activePlans.find(
-    (p) => p.durationDays === 365 || p.name.toLowerCase().includes('long') || p.id.includes('ltp')
+    (p) => p.durationDays === 365 || p.id.includes('long') || p.id.includes('ltp')
   ) || {
     name: 'GCap 365-Day Long Term Asset Plan',
     nameHi: 'GCap 365-दिन लॉन्ग टर्म एसेट प्लान',
@@ -90,14 +90,14 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
   const sampleCapital = 100000;
   
   // Short term calculations
-  const shortDailyPayout = (sampleCapital * shortPlan.dailyRoiPercent) / 100;
+  const shortDailyPayout = (sampleCapital * (shortPlan.dailyRoiPercent || 0)) / 100;
   const short6hPayout = shortDailyPayout / 4;
-  const shortTotalRoi = shortDailyPayout * shortPlan.durationDays;
+  const shortTotalRoi = shortDailyPayout * (shortPlan.durationDays || 641);
   const shortTotalMaturity = sampleCapital + shortTotalRoi;
 
   // Long term calculations
-  const longDailyPayout = (sampleCapital * longPlan.dailyRoiPercent) / 100;
-  const longTotalRoi = longDailyPayout * longPlan.durationDays;
+  const longDailyPayout = (sampleCapital * (longPlan.dailyRoiPercent || 0)) / 100;
+  const longTotalRoi = longDailyPayout * (longPlan.durationDays || 365);
   const longTotalMaturity = sampleCapital + longTotalRoi;
 
   return (
@@ -202,7 +202,14 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
               <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border border-amber-500/30 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <img src="/icon.svg" alt="GCap Logo" className="w-8 h-8 rounded-lg object-cover border border-amber-400 print:border-black shrink-0" />
+                    <img
+                      src="/assets/images/logo.jpg"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                      }}
+                      alt="GCap Logo"
+                      className="w-8 h-8 rounded-lg object-cover border border-amber-400 print:border-black shrink-0"
+                    />
                     <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
                       DOC #GCAP-641D
                     </span>
@@ -221,32 +228,55 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
                 </p>
               </div>
 
-              {/* Core Specifications Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    <span>{isHi ? '1. परिपक्वता व चक्र (Duration & Cycle)' : '1. Tenure & Return Cycle'}</span>
+              {/* Dynamic Short Term Plan (e.g. 641D) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/30 space-y-2">
+                    <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      <span>{isHi ? '1. समय-सीमा एवं चक्र' : '1. Tenure & Return Cycle'}</span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+                      <li><b>कुल अवधि:</b> {shortPlan.durationDays} दिन</li>
+                      <li><b>शुरुआती लॉक:</b> पहला 24 घंटा</li>
+                      <li><b>क्रेडिट चक्र:</b> हर 6 घंटे में 0.040%</li>
+                      <li><b>दैनिक रिटर्न:</b> 0.160% प्रति दिन</li>
+                    </ul>
                   </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li><b>कुल अवधि:</b> {shortPlan.durationDays} दिन ({shortPlan.durationDays} Days)</li>
-                    <li><b>शुरुआती लॉक:</b> पहला 24 घंटा (Day 1 Activation)</li>
-                    <li><b>क्रेडिट चक्र:</b> हर 6 घंटे में {(shortPlan.dailyRoiPercent / 4).toFixed(3)}% GP ऑटो-क्रेडिट</li>
-                    <li><b>दैनिक आवृत्ति:</b> 24 घंटे में कुल 4 किस्तें</li>
-                  </ul>
+
+                  <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2">
+                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{isHi ? '2. सुरक्षा एवं गारंटी' : '2. Security & Guarantee'}</span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+                      <li><b>मूलधन वापसी:</b> 100% रिफंड (641वें दिन)</li>
+                      <li><b>सर्टिफिकेट:</b> आधिकारिक डिजिटल प्रमाणपत्र</li>
+                      <li><b>पारदर्शिता:</b> लाइव ब्लॉकचैन लेजर रिकॉर्ड</li>
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                    <Percent className="w-4 h-4" />
-                    <span>{isHi ? '2. रिटर्न दर व मूलधन (ROI & Capital)' : '2. ROI Rates & Principal'}</span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li><b>दैनिक रिटर्न:</b> {shortPlan.dailyRoiPercent}% प्रति दिन</li>
-                    <li><b>6 घंटे का पेआउट:</b> {(shortPlan.dailyRoiPercent / 4).toFixed(3)}% प्रति चक्र</li>
-                    <li><b>मूलधन वापसी:</b> {shortPlan.durationDays}वें दिन 100% मूलधन वापस</li>
-                    <li><b>सर्टिफिकेट:</b> डिजिटल परिपक्वता प्रमाण-पत्र</li>
-                  </ul>
+                <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                   <h4 className="text-xs font-bold text-amber-400 uppercase">📊 {isHi ? 'रिटर्न चार्ट (₹1,00,000 निवेश)' : 'ROI CHART (₹1,00,000 INV)'}</h4>
+                   <div className="space-y-2 font-mono text-[11px]">
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">6h Payout</span>
+                       <span className="text-emerald-400 font-bold">₹40.00</span>
+                     </div>
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">Daily Return</span>
+                       <span className="text-emerald-300 font-bold">₹160.00</span>
+                     </div>
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">Monthly Est.</span>
+                       <span className="text-white font-bold">₹4,800.00</span>
+                     </div>
+                     <div className="flex justify-between pt-1">
+                       <span className="text-amber-400 font-bold">Total Maturity</span>
+                       <span className="text-amber-300 font-black">₹2,02,560.00</span>
+                     </div>
+                   </div>
                 </div>
               </div>
 
@@ -351,31 +381,54 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
               </div>
 
               {/* Core Features */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    <span>{isHi ? '1. समय-सीमा एवं चक्र' : '1. Tenure & Return Frequency'}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 space-y-2">
+                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" />
+                      <span>{isHi ? '1. समय-सीमा एवं चक्र' : '1. Tenure & Return Frequency'}</span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+                      <li><b>कुल अवधि:</b> {longPlan.durationDays} दिन (12 माह)</li>
+                      <li><b>शुरुआती लॉक:</b> पहला 24 घंटा सुरक्षा जांच</li>
+                      <li><b>रिटर्न फ्रीक्वेंसी:</b> प्रतिदिन ऑटो-क्रेडिट (4 किश्तें)</li>
+                      <li><b>दैनिक रिटर्न:</b> {longPlan.dailyRoiPercent}% प्रति दिन</li>
+                    </ul>
                   </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li><b>कुल अवधि:</b> {longPlan.durationDays} दिन ({longPlan.durationDays} Days)</li>
-                    <li><b>शुरुआती लॉक:</b> पहला 24 घंटा (Activation Lock)</li>
-                    <li><b>रिटर्न फ्रीक्वेंसी:</b> प्रतिदिन ऑटो-क्रेडिट</li>
-                    <li><b>विड्रॉल विंडो:</b> हर महीने की 1 से 5 तारीख</li>
-                  </ul>
+
+                  <div className="p-4 rounded-xl bg-slate-950 border border-teal-500/30 space-y-2">
+                    <div className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{isHi ? '2. रिटर्न एवं सुरक्षा' : '2. Return Yield & Capital Refund'}</span>
+                    </div>
+                    <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+                      <li><b>मूलधन वापसी:</b> 100% वापस (365वें दिन)</li>
+                      <li><b>रॉयल्टी लाभ:</b> लाइफटाइम बोनस हेतु पात्रता</li>
+                      <li><b>सर्टिफिकेट:</b> परिपक्वता प्रमाणपत्र जारी</li>
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{isHi ? '2. रिटर्न एवं सुरक्षा' : '2. Return Yield & Capital Refund'}</span>
-                  </div>
-                  <ul className="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-                    <li><b>दैनिक रिटर्न:</b> {longPlan.dailyRoiPercent}% प्रति दिन</li>
-                    <li><b>वार्षिक रिटर्न:</b> {(longPlan.dailyRoiPercent * longPlan.durationDays).toFixed(1)}% कुल रिटर्न</li>
-                    <li><b>मूलधन वापसी:</b> {longPlan.durationDays}वें दिन 100% वापस</li>
-                    <li><b>सर्टिफिकेट:</b> डिजिटल परिपक्वता प्रमाणपत्र</li>
-                  </ul>
+                <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                   <h4 className="text-xs font-bold text-emerald-400 uppercase">📊 {isHi ? 'रिटर्न चार्ट (₹1,00,000 निवेश)' : 'ROI CHART (₹1,00,000 INV)'}</h4>
+                   <div className="space-y-2 font-mono text-[11px]">
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">6h Payout</span>
+                       <span className="text-emerald-400 font-bold">₹33.00</span>
+                     </div>
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">Daily Return</span>
+                       <span className="text-emerald-300 font-bold">₹132.00</span>
+                     </div>
+                     <div className="flex justify-between border-b border-slate-800 pb-1">
+                       <span className="text-slate-500">Monthly Est.</span>
+                       <span className="text-white font-bold">₹3,960.00</span>
+                     </div>
+                     <div className="flex justify-between pt-1">
+                       <span className="text-amber-400 font-bold">Total Maturity</span>
+                       <span className="text-amber-300 font-black">₹1,48,180.00</span>
+                     </div>
+                   </div>
                 </div>
               </div>
 
@@ -554,7 +607,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
           {/* Footer Official Stamp on Printed PDF */}
           <div className="pt-6 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono flex-wrap gap-2 print:border-black print:text-black">
             <div>
-              <b>GCap Assets & Wealth Management Private Limited Official Document</b> • Synchronized System Guidelines
+              <b>GCAP PRIVATE LIMITED Official Document</b> • Synchronized System Guidelines
             </div>
             <div>
               Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

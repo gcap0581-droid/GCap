@@ -59,7 +59,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         <!DOCTYPE html>
         <html>
           <head>
-            <title>GCap Assets & Wealth Management - Official Operations SOP & User Manual</title>
+            <title>GCAP PRIVATE LIMITED - Official Operations SOP & User Manual</title>
             <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
             <style>
               @media print {
@@ -111,7 +111,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
           <body onload="setTimeout(() => { window.focus(); window.print(); window.close(); }, 600);">
             <div class="max-w-4xl mx-auto space-y-6 bg-white text-slate-900 p-8 shadow-2xl rounded-2xl border border-slate-300">
               <div class="flex items-center justify-center gap-4 pb-6 border-b-2 border-emerald-600 mb-6">
-                <img src="/icon.svg" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
+                <img src="/assets/images/logo.jpg" onerror="this.src='/icon.svg'" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
                 <div class="text-left">
                   <h1 class="text-2xl font-black text-slate-900">GCAP PRIVATE LIMITED</h1>
                   <p class="text-sm font-bold text-emerald-700 mt-0.5">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
@@ -178,14 +178,17 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         <div className="border-b-2 border-emerald-500/40 pb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src="/icon.svg"
+              src="/assets/images/logo.jpg"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+              }}
               alt="GCap Logo"
               className="w-16 h-16 rounded-2xl object-cover shadow-xl shadow-amber-500/20 border-2 border-amber-300 print:border-black shrink-0"
             />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl sm:text-3xl font-black text-white print:text-black tracking-tight">
-                  GCap Assets & Wealth Management Private Limited
+                  GCAP PRIVATE LIMITED
                 </h1>
               </div>
               <p className="text-xs sm:text-sm font-bold text-emerald-400 print:text-slate-700 mt-0.5">
@@ -502,61 +505,65 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         </div>
 
         {/* ACTIVE INVESTMENT SCHEMES MATRIX */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center gap-3 border-b-2 border-emerald-500/30 pb-3">
             <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
               <Layers className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white print:text-black">
-                4. वर्तमान सक्रिय निवेश योजनाएं (Active Investment Schemes & Returns)
+                4. वर्तमान सक्रिय निवेश योजनाएं एवं विस्तृत रिटर्न (Active Investment Schemes)
               </h2>
               <p className="text-xs text-slate-400 print:text-slate-600">
-                ऐप में उपलब्ध सभी एक्टिव प्लान्स का विस्तृत रिटर्न ब्रेकअप:
+                GCap प्लेटफॉर्म पर वर्तमान में उपलब्ध मुख्य निवेश श्रेणियां:
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {activePlans.map((p) => {
-              const dailyAmt = p.minAmount * (p.dailyRoiPercent / 100);
-              const totalReturnAmt = dailyAmt * (p.durationDays || 641);
-              const cyclePayout = dailyAmt / 4;
+              const isShortTerm = p.durationDays > 500 || p.id.includes('short') || p.id.includes('stp');
+              const dailyAmt = (100000 * (p.dailyRoiPercent || 0)) / 100;
+              
               return (
-                <div
-                  key={p.id}
-                  className="p-5 rounded-2xl bg-slate-900 print:bg-slate-50 border-2 border-slate-800 print:border-slate-300 space-y-3 shadow-xl relative overflow-hidden"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-300 pb-2.5">
-                    <span className="font-black text-base text-white print:text-black">{p.name}</span>
-                    <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      {p.dailyRoiPercent}% दैनिक ROI
-                    </span>
+                <div key={p.id} className={`p-6 rounded-3xl bg-slate-900/80 print:bg-white border-2 ${isShortTerm ? 'border-amber-500/40' : 'border-emerald-500/40'} print:border-slate-300 space-y-4 shadow-2xl relative overflow-hidden`}>
+                  <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                    {isShortTerm ? <Zap className="w-20 h-20 text-amber-400" /> : <Award className="w-20 h-20 text-emerald-400" />}
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-800 print:border-slate-200 pb-3">
+                    <div className="space-y-1">
+                      <h3 className="font-black text-lg text-white print:text-black uppercase tracking-tight">{isHi && p.nameHi ? p.nameHi : p.name}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isShortTerm ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'} uppercase`}>
+                        {isShortTerm ? (isHi ? 'शॉर्ट टर्म ग्रोथ' : 'SHORT TERM GROWTH') : (isHi ? 'लॉन्ग टर्म एसेट' : 'LONG TERM ASSET')}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-2xl font-black ${isShortTerm ? 'text-amber-400 print:text-amber-800' : 'text-emerald-400 print:text-emerald-800'} font-mono`}>{p.dailyRoiPercent}%</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">{isHi ? 'दैनिक रिटर्न' : 'Daily ROI'}</div>
+                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">न्यूनतम निवेश (Min Deposit)</span>
-                    <div className="text-xl font-black font-mono text-amber-400 print:text-amber-800">
-                      {p.minAmount.toLocaleString('en-IN')} GP <span className="text-xs text-slate-400 font-normal">(₹{p.minAmount.toLocaleString('en-IN')})</span>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-slate-200 print:text-slate-800 space-y-2 bg-slate-950/80 print:bg-slate-100 p-3 rounded-xl border border-slate-800 print:border-slate-300">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">प्रति 6h पेआउट:</span>
-                      <strong className="text-emerald-400 print:text-emerald-700 font-mono font-bold">{formatINR(cyclePayout)} / चक्र</strong>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">कुल दैनिक अर्निंग:</span>
-                      <strong className="text-emerald-300 print:text-emerald-800 font-mono font-bold">{formatINR(dailyAmt)} / दिन</strong>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">अवधि (Term):</span>
-                      <strong className="font-bold">{p.durationDays || 641} दिन</strong>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t border-slate-800 print:border-slate-300">
-                      <span className="text-slate-400 font-bold">कुल संभावित रिटर्न:</span>
-                      <strong className="text-purple-300 print:text-purple-800 font-mono font-black">{formatINR(totalReturnAmt)}</strong>
+                  <div className="space-y-3 text-xs text-slate-300 print:text-slate-800">
+                    <p className="leading-relaxed min-h-[40px]">
+                      {isHi && p.descriptionHi ? p.descriptionHi : (p.description || 'Investment scheme details provided by GCap Corporate guidelines.')}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 bg-slate-950/60 print:bg-slate-50 p-3 rounded-2xl border border-slate-800 print:border-slate-200">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">{isHi ? 'न्यूनतम निवेश' : 'Min Amount'}</span>
+                        <span className="font-bold text-white print:text-black">{formatINR(p.minAmount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">{isHi ? 'पेआउट चक्र' : '6h Payout'}</span>
+                        <span className={`font-bold ${isShortTerm ? 'text-amber-400 print:text-amber-700' : 'text-emerald-400 print:text-emerald-700'}`}>{(p.dailyRoiPercent / 4).toFixed(3)}%</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">{isHi ? 'कुल अवधि' : 'Tenure'}</span>
+                        <span className="font-bold text-white print:text-black">{p.durationDays} {isHi ? 'दिन' : 'Days'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block uppercase font-bold">{isHi ? 'रिटर्न (₹1L पर)' : 'Return (1L)'}</span>
+                        <span className="font-bold text-purple-400 print:text-purple-800">+{formatINR(dailyAmt)}/Day</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -623,7 +630,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         {/* Corporate Signatory & Official Footer */}
         <div className="pt-8 border-t-2 border-slate-800 print:border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print:text-slate-700">
           <div className="space-y-1 text-center sm:text-left">
-            <div className="font-black text-sm text-white print:text-black">GCap Assets & Wealth Management Private Limited</div>
+            <div className="font-black text-sm text-white print:text-black">GCAP PRIVATE LIMITED</div>
             <div>कॉर्पोरेट ईमेल: <span className="text-emerald-400 print:text-black font-mono">support@gcapasset.com</span></div>
             <div>हेल्पलाइन टोल-फ्री: <span className="text-amber-300 print:text-black font-mono">1800-GCAP-HELP (1800-4227-4357)</span></div>
             <div className="text-[10px] text-slate-500">पंजीकृत कार्यालय: Corporate Tower, Financial District, Cyberabad</div>

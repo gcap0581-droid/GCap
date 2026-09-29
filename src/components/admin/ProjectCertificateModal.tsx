@@ -22,13 +22,14 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
   const isHi = language === 'hi';
 
   // Sample data states for admin testing
-  const [investorName, setInvestorName] = useState('Amit Kumar Sharma');
-  const [investorId, setInvestorId] = useState('GCAP-INV88219');
-  const [projectName, setProjectName] = useState('GCap Green Infrastructure & Solar Fund (30 Days)');
-  const [principalAmount, setPrincipalAmount] = useState(50000);
-  const [totalRoiPaid, setTotalRoiPaid] = useState(27000); // e.g. 1.8% daily for 30 days = 54%
-  const [maturityDate, setMaturityDate] = useState('09 Sep 2026');
-  const [certId, setCertId] = useState('GCAP-CERT-2026-990142');
+  // Generic Sample data for Admin preview
+  const [investorName, setInvestorName] = useState('SAMPLE INVESTOR NAME');
+  const [investorId, setInvestorId] = useState('GCAP-SMP-99412');
+  const [projectName, setProjectName] = useState('GCAP 641-DAY PRIME GROWTH SCHEME');
+  const [principalAmount, setPrincipalAmount] = useState(100000);
+  const [totalRoiPaid, setTotalRoiPaid] = useState(102560); 
+  const [maturityDate, setMaturityDate] = useState(new Date().toLocaleDateString('hi-IN'));
+  const [certId, setCertId] = useState('GCAP-CERT-SAMPLE-001');
 
   const totalPayout = principalAmount + totalRoiPaid;
 
@@ -145,7 +146,14 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
             {/* Certificate Brand Header */}
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-3">
-                <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-400 print:border-black shrink-0" />
+                <img
+                  src="/assets/images/logo.jpg"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                  }}
+                  alt="GCap Logo"
+                  className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-400 print:border-black shrink-0"
+                />
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-white print:text-black font-sans">
                   {profile.companyName || 'GCAP PRIVATE LIMITED'}
                 </span>
@@ -273,17 +281,16 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                 />
               </div>
 
-              {/* Authorized Signatory */}
-              <div className="text-center sm:text-right shrink-0">
+              <div className="text-right sm:text-right w-full sm:w-auto">
                 <div className="h-8 font-serif italic text-amber-300 print:text-slate-900 font-bold text-base">
-                  {profile.authorizedSignatory || 'Dr. R. K. Varma'}
+                  {profile.authorizedSignatory || 'Authorized Signatory'}
                 </div>
                 <div className="w-36 border-b border-slate-700 print:border-slate-400 my-1 mx-auto sm:ml-auto"></div>
                 <span className="text-[11px] font-bold text-white print:text-black block">
-                  {profile.signatoryDesignation || 'Chief Investment Officer (CIO)'}
+                  {profile.signatoryDesignation || 'Chief Executive Officer (CEO)'}
                 </span>
                 <span className="text-[10px] text-slate-400 print:text-slate-600 block">
-                  {profile.companyName || 'GCap Assets & Wealth Management Board'}
+                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
                 </span>
               </div>
 

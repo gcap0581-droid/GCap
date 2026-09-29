@@ -42,6 +42,8 @@ import {
   CompanyTreasury,
 } from '../types';
 import { formatINR } from '../utils/storage';
+import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
+import { OFFICIAL_APK_DOWNLOAD_URL } from '../utils/apkConfig';
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -135,9 +137,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               onClose();
               onSelectTab('dashboard');
             }}
-            className="flex items-center text-left cursor-pointer select-none hover:opacity-80 transition-all focus:outline-none"
+            className="flex items-center gap-3 text-left cursor-pointer select-none hover:opacity-85 transition-all focus:outline-none"
             title={isHi ? 'मुख्य होम पेज पर जाएँ' : 'Go to Home Page'}
           >
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-950 shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.25)] flex items-center justify-center">
+              <img
+                src={PRIMARY_COMPANY_LOGO}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/images/logo.jpg';
+                }}
+                alt="GCap Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div>
               <span className="font-black text-2xl tracking-tight text-white block">GCap</span>
               <p className="text-[10px] text-slate-400">
@@ -568,7 +580,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 </button>
 
                 <a
-                  href="https://drive.google.com/file/d/117Tn84m7yVG6-FWu8CHFHC3PX1YbrRsf/view?usp=drivesdk"
+                  href={OFFICIAL_APK_DOWNLOAD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between text-emerald-300 hover:bg-emerald-500/10 transition-colors font-bold border border-emerald-500/30 bg-emerald-500/5 mt-1"

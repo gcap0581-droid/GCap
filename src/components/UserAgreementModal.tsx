@@ -48,28 +48,43 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
   language,
 }) => {
   const [docLang, setDocLang] = useState<Language>(language);
-  const [activeUser, setActiveUser] = useState<UserProfile | null>(initialUser);
+  // Admin Sample User for Generic Previews (Replaces real user data in samples)
+  const SAMPLE_USER: UserProfile = {
+    id: 'usr-sample-001',
+    loginId: '9999999999',
+    phone: '+91 9999999999',
+    name: 'INVESTOR NAME (SAMPLE)',
+    email: 'investor@gcap.in',
+    role: 'USER',
+    status: 'ACTIVE',
+    joinedDate: new Date().toISOString().split('T')[0]
+  };
+
+  const [activeUser, setActiveUser] = useState<UserProfile | null>(initialUser || (allUsers.length === 0 ? SAMPLE_USER : null));
 
   // Fallback to stored company profile if prop not provided
   const profile: CompanyProfile = propCompanyProfile || getStoredCompanyProfile();
+
+  // Combine all users with sample user for Admin dropdown
+  const adminUsersList = [SAMPLE_USER, ...allUsers.filter(u => u.id !== SAMPLE_USER.id)];
 
   // Sync active user when initialUser prop changes
   React.useEffect(() => {
     if (initialUser) {
       setActiveUser(initialUser);
-    } else if (allUsers.length > 0) {
-      setActiveUser(allUsers.find((u) => u.role === 'USER') || allUsers[0]);
+    } else if (allUsers.length > 0 && !activeUser) {
+      // If no initial user, we default to the sample user for Admin Hub general view
+      setActiveUser(SAMPLE_USER);
     }
   }, [initialUser, allUsers]);
 
   if (!isOpen) return null;
 
-  const user = activeUser || initialUser || (allUsers.length > 0 ? allUsers[0] : null);
-  if (!user) return null;
+  const user = activeUser || SAMPLE_USER;
 
   const isHi = docLang === 'hi';
   const agreementId = `GCAP-AGR-${new Date().getFullYear()}-${user.id.slice(-6).toUpperCase()}`;
-  const agreementDate = user.joinedDate || new Date().toISOString().split('T')[0];
+  const agreementDate = user.id.includes('sample') ? new Date().toISOString().split('T')[0] : (user.joinedDate || new Date().toISOString().split('T')[0]);
 
   const activePlans = plans && plans.length > 0 ? plans : getStoredPlans();
 
@@ -146,26 +161,26 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
           {/* Action Toolbar: User Selector (Admin), Language Toggle & Action Buttons */}
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-900 flex-wrap sm:flex-nowrap">
             {/* Left: User Selector for Admin */}
-            {allUsers.length > 1 ? (
+            {allUsers.length > 0 ? (
               <div className="w-full sm:w-auto min-w-0">
                 <select
                   value={user.id}
                   onChange={(e) => {
-                    const target = allUsers.find((u) => u.id === e.target.value);
+                    const target = adminUsersList.find((u) => u.id === e.target.value);
                     if (target) setActiveUser(target);
                   }}
                   className="w-full sm:w-auto max-w-full sm:max-w-xs bg-slate-900 border border-slate-700/80 text-amber-300 text-xs rounded-xl px-3 py-1.5 font-bold focus:outline-none focus:ring-1 focus:ring-amber-500 truncate cursor-pointer"
                 >
-                  {allUsers.map((u) => (
+                  {adminUsersList.map((u) => (
                     <option key={u.id} value={u.id}>
-                      👤 {u.name} ({u.loginId})
+                      {u.id === SAMPLE_USER.id ? '📋 ' : '👤 '}{u.name} ({u.loginId})
                     </option>
                   ))}
                 </select>
               </div>
             ) : (
               <div className="hidden sm:block text-[11px] text-slate-500">
-                {isHi ? 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट • कानूनी प्रमाणित' : 'GCap Assets & Wealth Management • Verified'}
+                {isHi ? 'जीकैप प्राइवेट लिमिटेड • कानूनी प्रमाणित' : 'GCAP PRIVATE LIMITED • Verified'}
               </div>
             )}
 
@@ -256,7 +271,14 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
           <div className="border-b-2 border-amber-500/50 print:border-black pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-500/50 print:border-black shrink-0" />
+                <img
+                  src="/assets/images/logo.jpg"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                  }}
+                  alt="GCap Logo"
+                  className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-500/50 print:border-black shrink-0"
+                />
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white print:text-black font-sans">
                   {profile.companyName || 'GCAP PRIVATE LIMITED'}
                 </h1>

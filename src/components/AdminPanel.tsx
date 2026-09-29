@@ -36,6 +36,7 @@ import {
   Download,
   BarChart3,
   Key,
+  Sparkles,
 } from 'lucide-react';
 import {
   AppRules,
@@ -85,6 +86,7 @@ import { AdminOtaTab } from './admin/AdminOtaTab';
 import { AdminInvestmentsTab } from './admin/AdminInvestmentsTab';
 import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminCompanySealTab } from './admin/AdminCompanySealTab';
+import { AdminCompanyLogoTab } from './admin/AdminCompanyLogoTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
@@ -104,6 +106,7 @@ import { UserAgreementModal } from './UserAgreementModal';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { ActiveInvestment } from '../types';
 import { fetchCentralState, apiAdminAdjustUserWallet, getWalletForUser } from '../utils/centralSync';
+import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 
 interface AdminPanelProps {
   adminUser: UserProfile;
@@ -147,8 +150,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
-  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER';
-  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER') => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
   onSaveCompanyProfile?: (profile: CompanyProfile) => void;
   onUpdateRules?: (rules: AppRules) => void;
@@ -204,7 +207,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -223,6 +226,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [balanceModalMode, setBalanceModalMode] = useState<'ADD' | 'DEDUCT'>('ADD');
   const [convertFeeGpModalOpen, setConvertFeeGpModalOpen] = useState(false);
+  const [certModalOpen, setCertModalOpen] = useState(false);
 
   // Overview recent activity filter
   const [overviewTxnFilter, setOverviewTxnFilter] = useState<'ALL' | 'PENDING' | 'DEPOSIT' | 'WITHDRAWAL'>('ALL');
@@ -281,7 +285,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectTargetTxn, setRejectTargetTxn] = useState<Transaction | null>(null);
 
-  const [certModalOpen, setCertModalOpen] = useState(false);
+  // Admin Sample User for Generic Previews (Replaces real user data in samples)
+  const SAMPLE_USER: UserProfile = {
+    id: 'usr-sample-001',
+    loginId: '9999999999',
+    phone: '+91 9999999999',
+    name: 'SAMPLE INVESTOR (SAMPLE ONLY)',
+    email: 'investor@example.com',
+    role: 'USER',
+    status: 'ACTIVE',
+    joinedDate: new Date().toISOString().split('T')[0]
+  };
+
+  const [certId, setCertId] = useState('GCAP-CERT-SAMPLE-001');
 
   // User Legal Agreement Modal State
   const [agreementModalOpen, setAgreementModalOpen] = useState(false);
@@ -772,8 +788,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="bg-gradient-to-r from-slate-900 via-emerald-950/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 shadow-xl shadow-emerald-950/5 space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
-                  <Award className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-950 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.25)] flex items-center justify-center">
+                  <img
+                    src={PRIMARY_COMPANY_LOGO}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/assets/images/logo.jpg';
+                    }}
+                    alt="GCap Logo"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -887,8 +910,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   id="btn-admin-agreement-view"
                   onClick={() => {
-                    const firstInvestor = usersList.find((u) => u.role === 'USER') || usersList[0] || null;
-                    setAgreementUser(firstInvestor);
+                    setAgreementUser(SAMPLE_USER);
                     setAgreementModalOpen(true);
                   }}
                   className="flex items-center gap-2 p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer"
@@ -1298,6 +1320,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </button>
 
+                {/* COMPANY_LOGO */}
+                <button
+                  id="tab-admin-company-logo"
+                  onClick={() => setActiveSubTab('COMPANY_LOGO')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'COMPANY_LOGO'
+                      ? 'bg-amber-500/10 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'COMPANY_LOGO' ? 'bg-amber-500/20 border-amber-500/30 text-amber-300' : 'bg-slate-800 border-slate-700 text-amber-400'}`}>
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'COMPANY_LOGO' ? 'bg-amber-500/30 text-amber-200' : 'bg-slate-800 text-slate-400'}`}>
+                      4K LOGO
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'कंपनी HD लोगो' : 'Company HD Logo'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'हर साइज में PNG / JPG' : 'All Sizes PNG & JPG'}</p>
+                  </div>
+                </button>
+
                 {/* INVESTMENTS */}
                 <button
                   id="tab-admin-investments"
@@ -1570,7 +1616,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
 
           {/* Quick Action Hub for Admin */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div
               onClick={() => setActiveSubTab('PLANS')}
               className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all cursor-pointer group"
@@ -1619,6 +1665,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {isHi
                   ? `कुल ${transactions.length} लेन-देन। मैन्युअल क्रेडिट/डेबिट जोड़ें या स्थिति बदलें।`
                   : `Total ${transactions.length} records. Manually credit, debit, or approve.`}
+              </p>
+            </div>
+
+            <div
+              onClick={() => setActiveSubTab('COMPANY_LOGO')}
+              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/40 hover:border-amber-400 transition-all cursor-pointer group shadow-lg"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform border border-amber-500/30">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
+                  {isHi ? 'कंपनी HD लोगो स्टूडियो' : 'HD Logo Studio'}
+                </h4>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-amber-500 text-slate-950 uppercase font-mono">
+                  4K / HD
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                {isHi
+                  ? 'लग्जरी 3D गोल्ड व कॉरपोरेट लोगो हर साइज (128px-4K) में PNG और JPEG डाउनलोड करें।'
+                  : 'Download luxury 3D gold & corporate logos in any size in PNG and JPEG formats.'}
               </p>
             </div>
           </div>
@@ -2084,6 +2152,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* TAB 10B: COMPANY SEALS & STAMPS GENERATOR */}
       {activeSubTab === 'COMPANY_SEAL' && (
         <AdminCompanySealTab
+          language={language}
+          onSwitchToLogoTab={() => setActiveSubTab('COMPANY_LOGO')}
+        />
+      )}
+
+      {/* TAB 10C: ADVANCED HD COMPANY LOGO STUDIO */}
+      {activeSubTab === 'COMPANY_LOGO' && (
+        <AdminCompanyLogoTab
           language={language}
         />
       )}

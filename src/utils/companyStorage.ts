@@ -54,10 +54,13 @@ export function getStoredCompanyProfile(): CompanyProfile {
     const parsed = JSON.parse(raw);
     
     // Auto-migrate old name if it exists in storage
-    if (parsed.companyName && parsed.companyName.includes('ASSETS & WEALTH MANAGEMENT')) {
+    const oldNameKeyword = 'ASSETS & WEALTH MANAGEMENT';
+    if (parsed.companyName && parsed.companyName.toUpperCase().includes(oldNameKeyword)) {
       parsed.companyName = 'GCAP PRIVATE LIMITED';
       parsed.tradeName = 'GCAP PRIVATE LIMITED';
       parsed.companyNameHi = 'जीकैप प्राइवेट लिमिटेड';
+      parsed.companyBankAccountHolder = 'GCAP PRIVATE LIMITED';
+      saveStoredCompanyProfile(parsed);
     }
 
     return {

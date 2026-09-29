@@ -98,11 +98,18 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
           {/* Printable Header / Company Logo */}
           <div className="flex items-start justify-between border-b border-slate-800 print:border-slate-300 pb-4">
             <div className="flex items-center gap-3">
-              <img src="/icon.svg" alt="GCap Logo" className="w-12 h-12 rounded-xl object-cover border border-amber-500/50 print:border-black shrink-0 shadow-md" />
+              <img
+                src="/assets/images/logo.jpg"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                }}
+                alt="GCap Logo"
+                className="w-12 h-12 rounded-xl object-cover border border-amber-500/50 print:border-black shrink-0 shadow-md"
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                    {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
+                    {profile.companyName || 'GCAP PRIVATE LIMITED'}
                   </span>
                   <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/30">
                     OFFICIAL VOUCHER

@@ -141,7 +141,14 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
 
           {/* Header & Logo */}
           <div className="text-center mb-8 relative">
-            <img src="/icon.svg" alt="GCap Logo" className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-amber-400 mb-3 mx-auto print:border-black shrink-0" />
+            <img
+              src="/assets/images/logo.jpg"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+              }}
+              alt="GCap Logo"
+              className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-amber-400 mb-3 mx-auto print:border-black shrink-0"
+            />
             <h1 className="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider uppercase font-serif print:text-amber-800">
               {profile.companyName || 'GCAP PRIVATE LIMITED'}
             </h1>

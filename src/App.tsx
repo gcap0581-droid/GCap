@@ -262,7 +262,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');

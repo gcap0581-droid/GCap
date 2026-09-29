@@ -4983,6 +4983,11 @@ GCap में काम कैसे होता है:
     next();
   });
 
+  // Serve static public assets explicitly before Vite and fallback routes
+  const publicDir = path.resolve(process.cwd(), "public");
+  app.use(express.static(publicDir));
+  app.use("/assets", express.static(path.resolve(process.cwd(), "public/assets")));
+
   // Vite middleware for development vs static production serve
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

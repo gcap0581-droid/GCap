@@ -26,6 +26,7 @@ import {
   ActiveInvestment,
 } from '../types';
 import { formatINR } from '../utils/storage';
+import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 
 interface NavbarProps {
   wallet?: Wallet | null;
@@ -152,9 +153,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }
                 }
               }}
-              className="flex items-center gap-2.5 cursor-pointer select-none hover:opacity-80 transition-all active:scale-95 px-1 py-0.5 rounded-lg focus:outline-none"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none hover:opacity-85 transition-all active:scale-95 px-1 py-0.5 rounded-lg focus:outline-none"
               title={isHi ? 'मुख्य होम पेज पर जाएँ' : 'Go to Home Page'}
             >
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-950 shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.25)] flex items-center justify-center">
+                <img
+                  src={PRIMARY_COMPANY_LOGO}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/assets/images/logo.jpg';
+                  }}
+                  alt="GCap Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <span className="font-black text-xl sm:text-2xl tracking-tight text-white">
                 GCap
               </span>

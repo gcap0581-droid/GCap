@@ -156,19 +156,6 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
   }
 
   const cleanId = String(userId || '').trim().replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
-  const isSandhya = cleanId.includes("7808056040") || cleanId.includes("1789384741169");
-  const isAmit = cleanId.includes("7564841400") || cleanId.includes("1790000000555");
-
-  if (isSandhya) {
-    bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
-    bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
-    bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
-  }
-
-  if (isAmit) {
-    bestWallet.cashBalance = 0;
-    bestWallet.totalInvested = 100000;
-  }
 
   // Self-heal: propagate bestWallet to all alias keys in the wallets object
   for (const alias of aliases) {
@@ -1503,4 +1490,27 @@ export async function apiDeleteAdminMessage(
   } catch {
     return { success: false };
   }
+}
+
+/**
+ * Global API Event Listeners to break circular dependencies with storage modules
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener('gcap_api_save_plans', (e: any) => {
+    if (e.detail) {
+      apiSavePlans(e.detail).catch(err => console.warn('[CentralSync] Global save plans error:', err));
+    }
+  });
+
+  window.addEventListener('gcap_api_save_rules', (e: any) => {
+    if (e.detail) {
+      apiSaveRules(e.detail).catch(err => console.warn('[CentralSync] Global save rules error:', err));
+    }
+  });
+
+  window.addEventListener('gcap_api_save_live_config', (e: any) => {
+    if (e.detail) {
+      apiSaveLiveConfig(e.detail).catch(err => console.warn('[CentralSync] Global save live config error:', err));
+    }
+  });
 }

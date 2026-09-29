@@ -1,6 +1,5 @@
 import { AppRules } from '../types';
 import { broadcastOtaUpdate } from './liveConfigStorage';
-import { apiSaveRules } from './centralSync';
 import { saveRulesToFirestore } from '../lib/firestoreBridge';
 
 export const DEFAULT_ADMIN_TX_PASSWORD = 'adtra123';
@@ -47,7 +46,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   supportPhone: '+91 9876543210',
   lastUpdated: '2026-03-24',
   companyUpiId: 'gcap@upi',
-  companyBankAccountHolder: 'GCAP GLOBAL ASSET HOLDINGS',
+  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
   companyBankName: 'State Bank of India',
   companyBankAccountNumber: '39482910482',
   companyBankIfsc: 'SBIN0001234',
@@ -131,7 +130,9 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
       localStorage.setItem('gcap_platform_rules_v1', JSON.stringify(sanitizedRules));
     }
     if (syncToServer) {
-      apiSaveRules(sanitizedRules).catch((err) => console.warn('Background apiSaveRules error:', err));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('gcap_api_save_rules', { detail: sanitizedRules }));
+      }
       saveRulesToFirestore(sanitizedRules).catch((err) => console.warn('Direct saveRulesToFirestore error:', err));
     }
     if (broadcast) {

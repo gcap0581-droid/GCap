@@ -19,9 +19,10 @@ import { Language } from '../../types';
 
 interface AdminCompanySealTabProps {
   language?: Language;
+  onSwitchToLogoTab?: () => void;
 }
 
-export const AdminCompanySealTab: React.FC<AdminCompanySealTabProps> = ({ language = 'hi' }) => {
+export const AdminCompanySealTab: React.FC<AdminCompanySealTabProps> = ({ language = 'hi', onSwitchToLogoTab }) => {
   const isHi = language === 'hi';
   const profile = getStoredCompanyProfile();
 
@@ -509,6 +510,16 @@ export const AdminCompanySealTab: React.FC<AdminCompanySealTabProps> = ({ langua
               <Printer className="w-4 h-4 text-slate-300" />
               <span>{isHi ? 'प्रिंट प्रिंटर शीट' : 'Print Sheet'}</span>
             </button>
+
+            {onSwitchToLogoTab && (
+              <button
+                onClick={onSwitchToLogoTab}
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs transition-all cursor-pointer active:scale-95 shadow-md"
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>{isHi ? 'कंपनी HD लोगो स्टूडियो' : 'HD Logo Studio'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

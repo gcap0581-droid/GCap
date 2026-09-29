@@ -3,6 +3,7 @@ import { X, Users, Copy, Check, Gift, Share2, Award, ArrowUpRight, Lock, UserChe
 import { AppRules, Language, UserProfile } from '../types';
 import { formatINR, getStoredInvestments } from '../utils/storage';
 import { getAllUsers } from '../utils/authStorage';
+import { OFFICIAL_APK_DOWNLOAD_URL, OFFICIAL_WEBSITE_URL } from '../utils/apkConfig';
 
 interface ReferralModalProps {
   isOpen: boolean;
@@ -27,9 +28,9 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const [copied, setCopied] = useState(false);
 
   const referralCode = currentUser?.referralCode || (currentUser?.id ? `GCAP-${currentUser.id.toUpperCase().slice(-6)}` : 'GCAP-INV992');
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const apkDownloadUrl = 'https://drive.google.com/file/d/117Tn84m7yVG6-FWu8CHFHC3PX1YbrRsf/view?usp=drivesdk';
-  const referralLink = `${baseUrl}?ref=${referralCode}`;
+  const targetJoinDomain = OFFICIAL_WEBSITE_URL;
+  const apkDownloadUrl = OFFICIAL_APK_DOWNLOAD_URL;
+  const referralLink = `${targetJoinDomain}/?ref=${referralCode}`;
 
   // Dynamic Team Data (Direct Level 1 & Level 2)
   const allUsersList = Array.isArray(getAllUsers()) ? getAllUsers() : [];
@@ -243,7 +244,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
                   <a
                     href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                      `🚀 GCap ऐप में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% रेफरल कमीशन + दैनिक रिटर्न कमाएं!\n\nवेबसाइट ज्वाइन लिंक: ${referralLink}\n\n📱 एंड्रॉइड APK ऐप डाउनलोड लिंक: ${apkDownloadUrl}\n\nमेरा रेफरल कोड: ${referralCode}`
+                      `🚀 GCap ऐप में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% रेफरल कमीशन + दैनिक रिटर्न कमाएं!\n\n🌐 वेबसाइट रजिस्ट्रेशन लिंक: ${referralLink}\n\n📱 एंड्रॉइड APK ऐप डाउनलोड लिंक: ${apkDownloadUrl}\n\n🔑 मेरा स्पॉन्सर कोड (रजिस्ट्रेशन में स्वतः लॉक रहेगा): ${referralCode}`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -258,7 +259,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                       if (navigator.share) {
                         navigator.share({
                           title: 'GCap Daily Returns App',
-                          text: `GCap में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% कमीशन पाएं!\nवेबसाइट: ${referralLink}\nAndroid APK: ${apkDownloadUrl}\nकोड: ${referralCode}`,
+                          text: `GCap में शामिल हों और टीम के चक्र मुनाफे पर ${rules.referralL1Percent}% कमीशन पाएं!\nवेबसाइट रजिस्ट्रेशन लिंक: ${referralLink}\nAndroid APK: ${apkDownloadUrl}\nस्पॉन्सर कोड (ऑटो-लॉक): ${referralCode}`,
                         }).catch(() => {});
                       } else {
                         handleCopy();

@@ -20,6 +20,7 @@ import {
 import { Language, UserProfile, ViewMode } from '../types';
 import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY } from '../utils/authStorage';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
+import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -59,23 +60,44 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   // Auto-detect referral code in URL parameter or local storage when opened via share link
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const refParam = params.get('ref') || params.get('referral') || params.get('sponsor') || params.get('code');
-      const savedRef = localStorage.getItem('gcap_saved_referral_code');
-      
-      const codeToLock = refParam || savedRef;
-      if (codeToLock) {
-        const cleanCode = codeToLock.trim().toUpperCase();
-        setRegReferral(cleanCode);
-        setIsReferralLocked(true);
-        localStorage.setItem('gcap_saved_referral_code', cleanCode);
-        if (refParam) {
-          setAuthMode('REGISTER');
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        let refParam = searchParams.get('ref') || searchParams.get('referral') || searchParams.get('sponsor') || searchParams.get('code');
+        
+        // Also check hash parameters if URL routing was in hash (e.g. #/?ref=...)
+        if (!refParam && window.location.hash.includes('?')) {
+          const hashQuery = window.location.hash.split('?')[1];
+          const hashParams = new URLSearchParams(hashQuery);
+          refParam = hashParams.get('ref') || hashParams.get('referral') || hashParams.get('sponsor') || hashParams.get('code');
         }
-      } else {
-        // Direct registration: Default to GCAP-DIRECT (editable)
-        setRegReferral('GCAP-DIRECT');
-        setIsReferralLocked(false);
+
+        // Also check full href regex fallback for robustness
+        if (!refParam) {
+          const match = window.location.href.match(/[?&](?:ref|referral|sponsor|code)=([^&#]+)/i);
+          if (match && match[1]) {
+            refParam = decodeURIComponent(match[1]);
+          }
+        }
+
+        const savedRef = localStorage.getItem('gcap_saved_referral_code') || sessionStorage.getItem('gcap_saved_referral_code');
+        
+        const codeToLock = refParam || savedRef;
+        if (codeToLock) {
+          const cleanCode = codeToLock.trim().toUpperCase();
+          setRegReferral(cleanCode);
+          setIsReferralLocked(true);
+          localStorage.setItem('gcap_saved_referral_code', cleanCode);
+          sessionStorage.setItem('gcap_saved_referral_code', cleanCode);
+          if (refParam) {
+            setAuthMode('REGISTER');
+          }
+        } else {
+          // Direct registration: Default to GCAP-DIRECT (editable)
+          setRegReferral('GCAP-DIRECT');
+          setIsReferralLocked(false);
+        }
+      } catch (err) {
+        console.warn('Error reading referral param:', err);
       }
     }
   }, []);
@@ -229,7 +251,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
             <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
               <img 
-                src="/assets/images/logo.jpg" 
+                src={PRIMARY_COMPANY_LOGO} 
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/images/logo.jpg';
+                }}
                 alt="GCap Logo" 
                 className="w-full h-full object-cover scale-110"
               />
@@ -642,9 +667,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <span>{isHi ? 'रेफरल / स्पॉन्सर कोड' : 'Sponsor / Referral Code'}</span>
                       </label>
                       {isReferralLocked ? (
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/50 flex items-center gap-1 shadow-sm">
                           <Lock className="w-3 h-3 text-amber-400" />
-                          {isHi ? 'स्पॉन्सर लॉक' : 'Sponsor Locked'}
+                          {isHi ? `स्पॉन्सर लॉक: ${regReferral}` : `Sponsor Locked: ${regReferral}`}
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
@@ -660,12 +685,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         data-1p-ignore="true"
                         data-form-type="other"
                         readOnly={isReferralLocked}
+                        tabIndex={isReferralLocked ? -1 : 0}
                         value={regReferral}
-                        onChange={(e) => setRegReferral(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          if (!isReferralLocked) {
+                            setRegReferral(e.target.value.toUpperCase());
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (isReferralLocked && e.key !== 'Tab' && e.key !== 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         placeholder="GCAP-DIRECT"
-                        className={`w-full px-3.5 py-2.5 bg-slate-900/90 border rounded-xl font-mono text-sm uppercase font-bold pr-9 focus:outline-none ${
+                        className={`w-full px-3.5 py-2.5 bg-slate-900/90 border rounded-xl font-mono text-sm uppercase font-bold pr-9 focus:outline-none transition-all ${
                           isReferralLocked
-                            ? 'border-amber-500/40 text-amber-300 cursor-not-allowed select-none'
+                            ? 'border-amber-500/50 text-amber-300 bg-slate-950/80 cursor-not-allowed select-none shadow-[0_0_10px_rgba(245,158,11,0.1)]'
                             : 'border-slate-700 text-white focus:border-emerald-500'
                         }`}
                       />
@@ -677,7 +712,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       <span>✓</span>
                       <span>
                         {isReferralLocked
-                          ? (isHi ? 'स्पॉन्सर लिंक द्वारा रेफरल कोड सुरक्षित रूप से सेट है।' : 'Sponsor code securely linked from invite.')
+                          ? (isHi ? `🔒 स्पॉन्सर कोड (${regReferral}) आपके आमंत्रण लिंक द्वारा लॉक है (बदला नहीं जा सकता)।` : `🔒 Sponsor code (${regReferral}) is permanently locked from invite.`)
                           : (isHi ? 'यदि कोई स्पॉन्सर नहीं है तो GCAP-DIRECT रहने दें।' : 'Leave as GCAP-DIRECT if you do not have a sponsor.')}
                       </span>
                     </p>
@@ -754,7 +789,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {viewMode !== 'android' && (
         <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-3 text-center text-xs text-slate-500">
           <p>
-            © 2026 GCap Assets & Wealth Management Private Limited • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
+            © 2026 GCAP PRIVATE LIMITED • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
           </p>
         </footer>
       )}

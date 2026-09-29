@@ -20,105 +20,7 @@ const INITIAL_WALLET: Wallet = {
   pendingDeposits: 0,
 };
 
-const INITIAL_INVESTMENTS: ActiveInvestment[] = [
-  {
-    id: "inv-sandhya-7808056040-1",
-    userId: "usr-1789384741169",
-    userLoginId: "7808056040",
-    userPhone: "+91 7808056040",
-    userName: "Sandhya",
-    planId: "short-term",
-    planName: "641-Day High Yield Growth Plan",
-    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
-    planUniqueId: "STP-641D-89421",
-    investedAmount: 100000,
-    dailyRoiPercent: 0.160,
-    dailyReturnAmount: 160,
-    totalExpectedReturn: 202560,
-    earnedSoFar: 440,
-    claimedSoFar: 0,
-    unclaimedEarnings: 440,
-    durationDays: 641,
-    daysCompleted: 0,
-    status: "ACTIVE",
-    startDate: "2026-09-16T15:23:23.901Z",
-    createdAt: 1789572203901,
-    activationTimestamp: 1789572203901,
-    lockedUntilTimestamp: 1789658603901,
-    isInitialLockCompleted: true,
-    lockCongratulationsShown: true,
-    completedCyclesCount: 11,
-    cyclesCompleted: 11,
-    totalEarnedSoFar: 440
-  },
-  {
-    id: "inv-sandhya-7808056040-2",
-    userId: "usr-1789384741169",
-    userLoginId: "7808056040",
-    userPhone: "+91 7808056040",
-    userName: "Sandhya",
-    planId: "long-term",
-    planName: "365-Day Long Term Royalty Asset Plan",
-    planNameHi: "365-दिवसीय लॉन्ग टर्म रॉयल्टी प्लान",
-    planUniqueId: "LTP-365D-89421",
-    investedAmount: 10000,
-    dailyRoiPercent: 0.132,
-    dailyReturnAmount: 13.2,
-    totalExpectedReturn: 14818,
-    earnedSoFar: 35.5,
-    claimedSoFar: 0,
-    unclaimedEarnings: 35.5,
-    durationDays: 365,
-    daysCompleted: 0,
-    status: "ACTIVE",
-    startDate: "2026-09-16T17:44:24.512Z",
-    createdAt: 1789580664512,
-    activationTimestamp: 1789580664512,
-    lockedUntilTimestamp: 1789667064512,
-    isInitialLockCompleted: true,
-    lockCongratulationsShown: true,
-    completedCyclesCount: 11,
-    cyclesCompleted: 11,
-    cycleReturnAmount: 3.2,
-    totalEarnedSoFar: 35.5
-  },
-  {
-    id: "inv-amit-7564841400-641",
-    userId: "usr-1790000000555",
-    userLoginId: "7564841400",
-    userPhone: "+91 7564841400",
-    userName: "Amit Kumar",
-    planId: "short-term",
-    planName: "641-Day High Yield Growth Plan",
-    planNameHi: "641-दिवसीय हाई यील्ड ग्रोथ प्लान",
-    planUniqueId: "STP-641D-75641",
-    investedAmount: 100000,
-    dailyRoiPercent: 0.16,
-    dailyReturnAmount: 160,
-    durationDays: 641,
-    daysCompleted: 0,
-    earnedSoFar: 0,
-    totalEarnedSoFar: 0,
-    unclaimedEarnings: 0,
-    claimedSoFar: 0,
-    totalExpectedReturn: 102560,
-    startDate: "2026-09-28T10:30:00.000Z",
-    endDate: "2028-06-30T10:30:00.000Z",
-    status: "ACTIVE",
-    activationTimestamp: 1790591400000,
-    createdAt: 1790591400000,
-    lockedUntilTimestamp: 1790677800000,
-    isInitialLockCompleted: false,
-    lockCongratulationsShown: false,
-    completedCyclesCount: 0,
-    cyclesCompleted: 0,
-    currentCycleStartTimestamp: 1790677800000,
-    currentCycleEndTimestamp: 1790699400000,
-    totalWithdrawn: 0,
-    cycleDurationHours: 6,
-    cycleReturnAmount: 40
-  }
-];
+const INITIAL_INVESTMENTS: ActiveInvestment[] = [];
 
 const INITIAL_TRANSACTIONS: Transaction[] = [];
 
@@ -130,11 +32,8 @@ export function getStoredWallet(userId?: string): Wallet {
     const dynamicEarned = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
 
     if (!raw) {
-      const isAmit = userId && (userId.includes('7564841400') || userId.includes('usr-1790000000555') || userId.includes('1790000000555'));
       const w = {
         ...INITIAL_WALLET,
-        cashBalance: isAmit ? 0 : INITIAL_WALLET.cashBalance,
-        totalInvested: isAmit ? 100000 : INITIAL_WALLET.totalInvested,
         totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned,
       };
       if (userId) {
@@ -309,16 +208,8 @@ export function getStoredInvestments(): ActiveInvestment[] {
       setStoredInvestments(INITIAL_INVESTMENTS);
       return normalizeInvestmentsList(INITIAL_INVESTMENTS);
     }
-    // Ensure Sandhya and Amit plans exist
-    const hasSandhya1 = parsed.some(i => i.id === 'inv-sandhya-7808056040-1' || (i.userPhone?.includes('7808056040') && i.investedAmount === 100000));
-    const hasSandhya2 = parsed.some(i => i.id === 'inv-sandhya-7808056040-2' || (i.userPhone?.includes('7808056040') && i.investedAmount === 10000));
-    const hasAmit = parsed.some(i => i.id === 'inv-amit-7564841400-641' || (i.userPhone?.includes('7564841400') && i.investedAmount === 100000) || i.userLoginId === '7564841400' || (i.planUniqueId && i.planUniqueId.includes('75641')));
-    let workingList = parsed;
-    if (!hasSandhya1 || !hasSandhya2 || !hasAmit) {
-      workingList = [...parsed, ...INITIAL_INVESTMENTS.filter(init => !parsed.some(p => p.id === init.id))];
-    }
-
-    const normalized = normalizeInvestmentsList(workingList);
+    
+    const normalized = normalizeInvestmentsList(parsed);
     if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
       setStoredInvestments(normalized);
     }

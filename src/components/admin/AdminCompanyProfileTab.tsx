@@ -689,7 +689,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                     </div>
                     <div className="space-y-0.5 min-w-0">
                       <h4 className="font-black text-sm text-slate-950 tracking-tight uppercase leading-tight truncate">
-                        {formData.companyName || 'GCAP ASSET MANAGEMENT PVT. LTD.'}
+                        {formData.companyName || 'GCAP PRIVATE LIMITED'}
                       </h4>
                       {formData.companyNameHi && (
                         <p className="text-[11px] text-slate-700 font-medium">{formData.companyNameHi}</p>
@@ -763,7 +763,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                     {/* Seal Stamp */}
                     <div className="relative flex items-center justify-center my-2">
                       <div className="w-20 h-20 rounded-full border-2 border-dashed border-amber-700 flex flex-col items-center justify-center p-1 text-[7px] font-black uppercase text-amber-900 text-center leading-tight">
-                        <span>★ {formData.tradeName ? formData.tradeName.toUpperCase().slice(0, 15) : 'GCAP ASSET'} ★</span>
+                        <span>★ {formData.tradeName ? formData.tradeName.toUpperCase().slice(0, 15) : 'GCAP'} ★</span>
                         <span className="font-mono text-[6px] text-slate-700">SEAL & SIGN</span>
                         <span>{formData.sealCity || 'MUMBAI'}</span>
                       </div>
