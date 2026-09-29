@@ -135,7 +135,29 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
     return `🪙 **कैश को GP पॉइंट्स में बदलने (GP Swap) की चरण-दर-चरण विधि (Step-by-Step):**\n\n• **विनिमय दर**: ₹1 (1 रुपया) = **0.98 GP पॉइंट**।\n\n1️⃣ **स्टेप 1**: ऐप के मुख्य मेन्यू या वॉलेट से **'जीपी स्वैप (GP Swap)'** विकल्प पर क्लिक करें।\n2️⃣ **स्टेप 2**: अपने कैश वॉलेट से वह राशि दर्ज करें जिसे आप GP में बदलना चाहते हैं।\n3️⃣ **स्टेप 3**: स्क्रीन पर आपको मिलने वाले GP पॉइंट्स दिख जाएंगे (दर: ₹1 = 0.98 GP)।\n4️⃣ **स्टेप 4**: **'स्वैप करें (Swap Now)'** बटन दबाएं। आपके GP पॉइंट्स तुरंत एक्टिवेट हो जाएंगे, जिससे आप निवेश प्लान खरीद सकते हैं!\n\nस्वैप प्रक्रिया 100% निःशुल्क है।`;
   }
 
-  // 5. STEP-BY-STEP: Plan Purchase / Investment
+  // 5. STEP-BY-STEP: Plan Return, 6-Hour Cycle & Exact Calculations
+  if (
+    q.includes('6 ghant') ||
+    q.includes('6-hour') ||
+    q.includes('6 hour') ||
+    q.includes('6 घंटे') ||
+    q.includes('earning') ||
+    q.includes('percent') ||
+    q.includes('प्रतिशत') ||
+    q.includes('पर्सेंट') ||
+    q.includes('calculation') ||
+    q.includes('कैलकुलेशन') ||
+    q.includes('हिसाब') ||
+    q.includes('kitna milega') ||
+    q.includes('kitna aayega') ||
+    q.includes('kitna return') ||
+    q.includes('roi') ||
+    q.includes('daily roi')
+  ) {
+    return `📊 **GCap प्लान्स का 6-घंटे का रिटर्न प्रतिशत एवं सटीक कैलकुलेशन (Exact ROI):**\n\n⚡ **1. शॉर्ट टर्म प्लान (641-Day Short Term Plan):**\n• **न्यूनतम निवेश**: ₹1,00,000 (1 लाख रुपये) से असीमित।\n• **6-घंटे का रिटर्न दर**: **0.040%** (शून्य दशमलव शून्य चार शून्य प्रतिशत प्रति 6 घंटे)।\n• **24-घंटे (दैनिक) रिटर्न**: **0.160%** (दिन भर में 4 चक्र: 4 × 0.040% = 0.160%)।\n• **सटीक कैलकुलेशन (₹1 लाख के निवेश पर):**\n   - हर 6 घंटे में: **₹40** (40 GP)\n   - प्रतिदिन (24 घंटे में): **₹160** (160 GP)\n   - 30 दिन (महीने) में: **₹4,800**\n   - 641 दिनों में कुल मुनाफा: **₹1,02,560**\n   - परिपक्वता पर कुल राशि: **₹2,02,560** (₹1,02,560 मुनाफा + ₹1,00,000 मूलधन सुरक्षित वापसी)!\n\n👑 **2. लॉन्ग टर्म प्लान (365-Day Long Term & Royalty Plan):**\n• **निवेश सीमा**: ₹10,000 से ₹1,00,000 तक।\n• **6-घंटे का रिटर्न दर**: **0.033%** (शून्य दशमलव शून्य तीन तीन प्रतिशत प्रति 6 घंटे)।\n• **24-घंटे (दैनिक) रिटर्न**: **0.132%** (दिन भर में 4 चक्र: 4 × 0.033% = 0.132%)।\n• **सटीक कैलकुलेशन:**\n   - **₹10,000 के निवेश पर:**\n     * हर 6 घंटे में: **₹3.30** (3.30 GP)\n     * प्रतिदिन (24 घंटे में): **₹13.20** (13.20 GP)\n     * 30 दिन (महीने) में: **₹396**\n     * 365 दिनों में कुल मुनाफा: **₹4,818** (+ ₹10,000 मूलधन = कुल ₹14,818)\n   - **₹1,00,000 (1 लाख) के निवेश पर:**\n     * हर 6 घंटे में: **₹33** (33 GP)\n     * प्रतिदिन (24 घंटे में): **₹132** (132 GP)\n     * 30 दिन (महीने) में: **₹3,960**\n     * 365 दिनों में कुल मुनाफा: **₹48,180** (+ मूलधन वापसी + 1461 दिन रॉयल्टी पाथवे)!\n\n🔒 **नोट**: निवेश सक्रिय होते ही पहले 24 घंटे का लॉक रहता है, उसके बाद हर 6 घंटे में अर्निंग स्वतः आपके वॉलेट में GP के रूप में जुड़ती है।`;
+  }
+
+  // 6. STEP-BY-STEP: Plan Purchase / Investment Overview
   if (
     q.includes('plan') ||
     q.includes('प्लान') ||
@@ -147,7 +169,7 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
     q.includes('रिटर्न') ||
     (q.includes('kaise') && (q.includes('plan') || q.includes('invest')))
   ) {
-    return `📦 **GCap में निवेश प्लान खरीदने की चरण-दर-चरण विधि (Step-by-Step):**\n\n1️⃣ **स्टेप 1**: अपने कैश को 'GP Swap' से GP पॉइंट्स में बदल लें (क्योंकि प्लान्स केवल GP से खरीदे जाते हैं)।\n2️⃣ **स्टेप 2**: ऐप के **'उपलब्ध प्लान्स (Plans List)'** टैब पर जाएं।\n3️⃣ **स्टेप 3**: अपनी पसंद का प्लान चुनें:\n   • **641-दिन शॉर्ट टर्म प्लान**: न्यूनतम ₹1,00,000 (1 लाख), 0.040% हर 6 घंटे में रिटर्न (₹160 प्रतिदिन)।\n   • **365-दिन लॉन्ग टर्म प्लान**: ₹10,000 से ₹1,00,000, 0.033% हर 6 घंटे में रिटर्न + रॉयल्टी।\n4️⃣ **स्टेप 4**: **'निवेश करें (Invest)'** बटन दबाकर GP पॉइंट्स से प्लान को तुरंत सक्रिय (Activate) करें।\n5️⃣ हर 6 घंटे में स्वचालित रिटर्न आपके वॉलेट में क्रेडिट होने लगेगा!`;
+    return `📦 **GCap में निवेश प्लान खरीदने की चरण-दर-चरण विधि (Step-by-Step):**\n\n1️⃣ **स्टेप 1**: अपने कैश को 'GP Swap' से GP पॉइंट्स में बदल लें (क्योंकि प्लान्स केवल GP से खरीदे जाते हैं)।\n2️⃣ **स्टेप 2**: ऐप के **'उपलब्ध प्लान्स (Plans List)'** टैब पर जाएं।\n3️⃣ **स्टेप 3**: अपनी पसंद का प्लान चुनें:\n   • **641-दिन शॉर्ट टर्म प्लान**: न्यूनतम ₹1,00,000 (1 लाख), 0.040% हर 6 घंटे में (₹160 प्रतिदिन = 0.160%)।\n   • **365-दिन लॉन्ग टर्म प्लान**: ₹10,000 से ₹1,00,000, 0.033% हर 6 घंटे में (₹13.2 प्रति ₹10,000 = 0.132%) + रॉयल्टी।\n4️⃣ **स्टेप 4**: **'निवेश करें (Invest)'** बटन दबाकर GP पॉइंट्स से प्लान को तुरंत सक्रिय (Activate) करें।\n5️⃣ हर 6 घंटे में स्वचालित रिटर्न आपके वॉलेट में क्रेडिट होने लगेगा!`;
   }
 
   // 6. STEP-BY-STEP: Withdrawal / Nikasi
@@ -237,11 +259,34 @@ export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({
     if (!isVoiceEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
       window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*#`_1-9️⃣📦⚡👑🏦💰🪙🏛️🤝🙏✨]/g, '').trim();
+      
+      // Preserve all numbers and percentages while stripping markdown and emojis cleanly
+      const cleanText = text
+        .replace(/[*#`_~•]/g, ' ') // Strip markdown formatting and bullet points
+        .replace(/[0-9]️⃣/g, '') // Strip number-box emojis like 1️⃣, 2️⃣ without stripping the actual numbers
+        .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Strip unicode emojis
+        .replace(/₹\s*([0-9,.]+)/g, '$1 रुपये') // Pronounce ₹ nicely as रुपये
+        .replace(/([0-9.]+)\s*%/g, '$1 प्रतिशत') // Pronounce % nicely as प्रतिशत
+        .replace(/\b6h\b/gi, '6 घंटे')
+        .replace(/\s+/g, ' ')
+        .trim();
+
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'hi-IN';
-      utterance.rate = 1.0;
+      utterance.rate = 0.95; // Slightly slower for natural Hindi comprehension
       utterance.pitch = 1.0;
+
+      // Select best Hindi voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const hiVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().includes('hi') ||
+          v.name.toLowerCase().includes('hindi') ||
+          v.name.toLowerCase().includes('india')
+      );
+      if (hiVoice) {
+        utterance.voice = hiVoice;
+      }
 
       utterance.onstart = () => setCurrentlySpeakingId(msgId);
       utterance.onend = () => setCurrentlySpeakingId(null);
