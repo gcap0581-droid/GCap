@@ -471,9 +471,9 @@ const DEFAULT_RULES: AppRules = {
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
   companyUpiId: "8603504808@axisbank",
-  companyBankAccountHolder: "GCap Assets & Wealth Management Private Limited",
-  companyBankName: "Axis Bank",
-  companyBankAccountNumber: "924010002662307",
+  companyBankAccountHolder: "GCAP PRIVATE LIMITED",
+  companyBankName: "Axis Bank Ltd.",
+  companyBankAccountNumber: "924010008662307",
   companyBankIfsc: "UTIB0001219",
 };
 
@@ -498,41 +498,41 @@ const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
 };
 
 const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCap Assets & Wealth Management Private Limited',
-  companyNameHi: 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट प्राइवेट लिमिटेड',
-  tradeName: 'GCap Assets & Wealth Management',
-  cin: 'U65999MH2024PTC398102',
+  companyName: 'GCAP PRIVATE LIMITED',
+  companyNameHi: 'जीकैप प्राइवेट लिमिटेड',
+  tradeName: 'GCAP PRIVATE LIMITED',
+  cin: 'U66190BR2026OPC088307',
   pan: 'AABCG1234F',
   tan: 'MUMB10293E',
   gstin: '27AABCG1234F1Z5',
   incorporationDate: '2024-01-15',
-  rocJurisdiction: 'ROC Mumbai, Maharashtra',
+  rocJurisdiction: 'ROC Patna, Bihar',
   companyType: 'Private Limited Company (Non-Govt)',
   authorizedCapital: '₹5,00,00,000',
   paidUpCapital: '₹1,00,00,000',
-  registeredAddress: 'GCap Financial Towers, Bandra-Kurla Complex (BKC), Mumbai, MH - 400051',
-  corporateAddress: 'Corporate Office: BKC East, Mumbai, Maharashtra - 400051',
-  city: 'Mumbai',
-  state: 'Maharashtra',
-  pincode: '400051',
+  registeredAddress: 'Grand Plaza, Main Road, Sasaram, Bihar - 821115',
+  corporateAddress: 'Corporate Office: Main Road, Sasaram, Bihar - 821115',
+  city: 'Sasaram',
+  state: 'Bihar',
+  pincode: '821115',
   supportEmail: 'support@gcap.in',
   legalEmail: 'legal@gcap.in',
   supportPhone: '+91 98000 12345',
-  altPhone: '+91 22 6800 1234',
+  altPhone: '+91 6184 220011',
   websiteUrl: 'https://gcap.in',
-  authorizedSignatory: 'Vikramaditya Singhania',
-  signatoryDesignation: 'Managing Director & Authorized Signatory',
+  authorizedSignatory: 'Amit Kumar',
+  signatoryDesignation: 'Director & Authorized Signatory',
   signatoryDin: 'DIN: 08924192',
-  sealCity: 'MUMBAI',
+  sealCity: 'SASARAM (BIHAR)',
   bankName: 'Axis Bank Ltd.',
   bankAccountNumber: '924010008662307',
   bankIfsc: 'UTIB0001219',
   bankBranch: 'Axis Commercial Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
-  tagline: 'Guaranteed Principal Security & Automated Asset Growth',
-  taglineHi: '100% मूलधन सुरक्षा एवं स्वचालित संपत्ति विकास',
+  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
+  tagline: 'ASSETS & WEALTH MANAGEMENT SYSTEM',
+  taglineHi: 'संपत्ति और धन प्रबंधन प्रणाली',
   lastUpdated: new Date().toISOString().split('T')[0],
 };
 
@@ -2623,7 +2623,7 @@ async function startServer() {
       q.includes("office") ||
       q.includes("address")
     ) {
-      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: GCap Assets & Wealth Management Private Limited\n• CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}\n• पैन: ${companyProfile.pan || "ABCPG1234F"} | टैन: ${companyProfile.tan || "RCHG12345E"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Main Road, Sasaram, Bihar - 821115"}\n• ईमेल: ${rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${rules.supportPhone || "+91 98000 12345"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित परिसंपत्ति प्रबंधन कंपनी है।`;
+      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AABCG1234F"} | टैन: ${companyProfile.tan || "MUMB10293E"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Grand Plaza, Main Road, Sasaram, Bihar - 821115"}\n• ईमेल: ${rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${rules.supportPhone || "+91 98000 12345"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
     }
 
     // 9. Referral
@@ -2656,17 +2656,18 @@ async function startServer() {
       const rules = (db as any).rules || {};
 
       const systemInstruction = `
-आप GCap Capital Private Limited के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
+आप GCap Capital (GCAP PRIVATE LIMITED) के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
 आपका एकमात्र उद्देश्य यूज़र को GCap Capital के बारे में हर जानकारी शुद्ध और सरल हिंदी (या यूज़र की भाषा) में देना है।
 
 कंपनी की मुख्य जानकारी:
-- नाम: GCap Assets & Wealth Management Private Limited (GCap Capital)
-- CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}
-- PAN: ${companyProfile.pan || "ABCPG1234F"} | TAN: ${companyProfile.tan || "RCHG12345E"}
-- रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Main Road, Sasaram, Bihar - 821115"}
+- नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"} (${companyProfile.companyNameHi || "जीकैप प्राइवेट लिमिटेड"})
+- CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}
+- PAN: ${companyProfile.pan || "AABCG1234F"} | TAN: ${companyProfile.tan || "MUMB10293E"}
+- अधिकृत निदेशक / हस्ताक्षरकर्ता: ${companyProfile.authorizedSignatory || "Amit Kumar"}
+- रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Grand Plaza, Main Road, Sasaram, Bihar - 821115"}
 - हेल्पलाइन सपोर्ट: ${rules.supportEmail || "support@gcap.in"} | ${rules.supportPhone || "+91 98000 12345"}
 - UPI ID: ${rules.companyUpiId || "8603504808@axisbank"}
-- बैंक खाता: Axis Bank, A/C: ${rules.companyBankAccountNumber || "924010002662307"}, IFSC: ${rules.companyBankIfsc || "UTIB0001219"}
+- बैंक खाता: ${companyProfile.bankName || "Axis Bank Ltd."}, खाता धारक: ${companyProfile.companyBankAccountHolder || "GCAP PRIVATE LIMITED"}, A/C: ${rules.companyBankAccountNumber || "924010008662307"}, IFSC: ${rules.companyBankIfsc || "UTIB0001219"}
 
 GCap में काम कैसे होता है:
 1. खाता रजिस्ट्रेशन: मोबाइल नंबर और पासवर्ड से खाता बनता है।
@@ -2695,7 +2696,7 @@ GCap में काम कैसे होता है:
 
 कड़े नियम:
 1. डिफ़ॉल्ट रूप से हमेशा शुद्ध और अत्यंत विनम्र हिंदी में उत्तर दें। यदि यूज़र किसी अन्य भाषा (जैसे अंग्रेज़ी) में सवाल पूछे, तो उसके साथ उसी भाषा में उत्तर दें।
-2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190JH2024PTC022718, PAN, TAN, रांची ऑफिस पता, एक्सिस बैंक खाता, UPI) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
+2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190BR2026OPC088307, PAN AABCG1234F, TAN MUMB10293E, सासाराम बिहार ऑफिस पता, अधिकृत निदेशक Amit Kumar, एक्सिस बैंक खाता, UPI 8603504808@axisbank) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
 3. GCap के सॉफ्टवेयर में कोई भी काम कैसे करना है (जैसे: पैसे जमा/डिपॉजिट करना, GP स्वैप करना [₹1 = 0.98 GP], प्लान खरीदना/एक्टिवेट करना, बैंक विड्रॉल करना, पासवर्ड बदलना, रेफरल शेयर करना), उसका उत्तर हमेशा 1️⃣, 2️⃣, 3️⃣ करके चरण-दर-चरण (Step-by-Step) स्पष्ट दें।
 4. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
 5. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।

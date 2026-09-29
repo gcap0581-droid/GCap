@@ -211,7 +211,7 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
     q.includes('office') ||
     q.includes('address')
   ) {
-    return `🏛️ **GCap Capital आधिकारिक एवं वैधानिक विवरण:**\n\n• **कंपनी का नाम**: GCAP PRIVATE LIMITED\n• **CIN**: U66190JH2024PTC022718\n• **पैन (PAN)**: ABCPG1234F | **टैन (TAN)**: RCHG12345E\n• **पंजीकृत कार्यालय**: Main Road, Sasaram, Bihar - 821115\n• **हेल्पलाइन ईमेल**: support@gcap.in\n• **कस्टमर केयर फ़ोन**: +91 98000 12345\n\nGCap भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA) के अधीन पूरी तरह पंजीकृत एवं सुरक्षित परिसंपत्ति प्रबंधन संस्था है।`;
+    return `🏛️ **GCap Capital आधिकारिक एवं वैधानिक विवरण:**\n\n• **कंपनी का नाम**: GCAP PRIVATE LIMITED\n• **CIN**: U66190BR2026OPC088307\n• **पैन (PAN)**: AABCG1234F | **टैन (TAN)**: MUMB10293E\n• **निदेशक / अधिकृत हस्ताक्षरकर्ता**: Amit Kumar\n• **पंजीकृत कार्यालय**: Grand Plaza, Main Road, Sasaram, Bihar - 821115\n• **हेल्पलाइन ईमेल**: support@gcap.in\n• **कस्टमर केयर फ़ोन**: +91 98000 12345\n\nGCap भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA) के अधीन पूरी तरह पंजीकृत एवं सुरक्षित परिसंपत्ति प्रबंधन संस्था है।`;
   }
 
   // 9. Referral & Team Income

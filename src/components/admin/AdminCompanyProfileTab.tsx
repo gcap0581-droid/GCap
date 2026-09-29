@@ -267,7 +267,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.cin || ''}
                   onChange={(e) => handleChange('cin', e.target.value)}
-                  placeholder="e.g. U65999MH2024PTC398102"
+                  placeholder="e.g. U66190BR2026OPC088307"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-amber-300 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 uppercase"
                 />
               </div>
@@ -357,7 +357,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   rows={2}
                   value={formData.registeredAddress || ''}
                   onChange={(e) => handleChange('registeredAddress', e.target.value)}
-                  placeholder="e.g. GCap Financial Towers, Bandra-Kurla Complex (BKC), Mumbai, MH - 400051"
+                  placeholder="e.g. Grand Plaza, Main Road, Sasaram, Bihar - 821115"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500 resize-none"
                 />
               </div>
@@ -370,7 +370,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.corporateAddress || ''}
                   onChange={(e) => handleChange('corporateAddress', e.target.value)}
-                  placeholder="e.g. Corporate Tower, BKC East, Mumbai, MH - 400051"
+                  placeholder="e.g. Corporate Office: Main Road, Sasaram, Bihar - 821115"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
               </div>
@@ -492,7 +492,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.authorizedSignatory || ''}
                   onChange={(e) => handleChange('authorizedSignatory', e.target.value)}
-                  placeholder="e.g. Vikramaditya Singhania"
+                  placeholder="e.g. Amit Kumar"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-bold focus:outline-none focus:ring-1 focus:ring-yellow-500"
                 />
               </div>

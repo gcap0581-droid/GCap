@@ -42,14 +42,14 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   adminFeePercent: 0.02,
   shortTerm6hRate: 0.040,
   longTerm6hRate: 0.033,
-  supportEmail: 'support@gcap.com',
-  supportPhone: '+91 9876543210',
-  lastUpdated: '2026-03-24',
-  companyUpiId: 'gcap@upi',
+  supportEmail: 'support@gcap.in',
+  supportPhone: '+91 98000 12345',
+  lastUpdated: '2026-09-29',
+  companyUpiId: '8603504808@axisbank',
   companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
-  companyBankName: 'State Bank of India',
-  companyBankAccountNumber: '39482910482',
-  companyBankIfsc: 'SBIN0001234',
+  companyBankName: 'Axis Bank Ltd.',
+  companyBankAccountNumber: '924010008662307',
+  companyBankIfsc: 'UTIB0001219',
 };
 
 const RULES_STORAGE_KEY = 'gcap_platform_rules_v2';
