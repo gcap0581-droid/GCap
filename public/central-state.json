@@ -12,9 +12,8 @@
       "passwordHash": "ad123",
       "password": "ad123",
       "isOnline": false,
-      "lastActiveAt": "2026-09-29T13:37:40.272Z",
-      "lastLoginAt": "2026-09-29T13:31:29.802Z",
-      "lastLogoutAt": "2026-09-29T13:37:40.272Z"
+      "lastActiveAt": "2026-09-29T13:54:51.260Z",
+      "lastLoginAt": "2026-09-29T13:31:29.802Z"
     },
     {
       "id": "usr-1789384741169",
@@ -68,7 +67,10 @@
       "status": "ACTIVE",
       "passwordHash": "1111",
       "password": "1111",
-      "isOnline": false
+      "isOnline": false,
+      "lastActiveAt": "2026-09-29T13:51:56.031Z",
+      "lastLoginAt": "2026-09-29T13:50:49.193Z",
+      "lastLogoutAt": "2026-09-29T13:51:56.031Z"
     }
   ],
   "wallets": {
@@ -1990,9 +1992,36 @@
       "referenceId": "INJ-600000"
     }
   ],
-  "messages": [],
+  "messages": [
+    {
+      "id": "msg-welcome-01",
+      "title": "Welcome to GCap Investment Platform",
+      "titleHi": "जीकैप निवेश मंच में आपका स्वागत है",
+      "content": "Welcome to GCap! You can now explore high-yield investment plans, earn daily automated returns, and withdraw directly to your bank account or UPI.",
+      "contentHi": "जीकैप में आपका हार्दिक स्वागत है! अब आप उच्च रिटर्न वाले प्लान्स में निवेश कर सकते हैं, हर 6 घंटे में रिटर्न प्राप्त कर सकते हैं और महीने की 1-5 या 6-10 तारीख को सीधे अपने बैंक खाते में निकासी कर सकते हैं।",
+      "senderName": "GCap Management",
+      "targetType": "ALL",
+      "priority": "NORMAL",
+      "category": "ANNOUNCEMENT",
+      "showPopup": false,
+      "createdAt": "2026-09-29T08:49:21.354Z",
+      "timestamp": 1790668161354,
+      "readByUserIds": [],
+      "dismissedByUserIds": []
+    }
+  ],
   "deletedUserIds": [],
   "companyLedger": [
+    {
+      "id": "led-1790689769786-920",
+      "type": "EXPENSE",
+      "amount": 2041,
+      "category": "प्लान रिटर्न भुगतान",
+      "description": "Payment to Amit kumar Arya",
+      "date": "2026-09-28",
+      "addedBy": "Admin",
+      "createdAt": "2026-09-29T13:49:29.786Z"
+    },
     {
       "id": "led-1790688865436-13",
       "type": "EXPENSE",
@@ -2011,7 +2040,8 @@
       "description": "Rubber stamp",
       "date": "2026-09-29",
       "addedBy": "Admin",
-      "createdAt": "2026-09-29T13:33:05.634Z"
+      "createdAt": "2026-09-29T13:33:05.634Z",
+      "updatedAt": "2026-09-29T13:43:59.315Z"
     },
     {
       "id": "led-1790688743297-183",
@@ -2021,7 +2051,8 @@
       "description": "Stamp paper aggreement",
       "date": "2026-09-28",
       "addedBy": "Admin",
-      "createdAt": "2026-09-29T13:32:23.297Z"
+      "createdAt": "2026-09-29T13:32:23.297Z",
+      "updatedAt": "2026-09-29T13:44:07.218Z"
     },
     {
       "id": "led-1790268660436-292",
@@ -2054,7 +2085,7 @@
       "createdAt": "2026-09-24T16:49:52.567Z"
     }
   ],
-  "lastUpdated": "2026-09-29T13:42:38.291Z",
+  "lastUpdated": "2026-09-29T13:56:26.905Z",
   "companyProfile": {
     "companyName": "GCap Assets & Wealth Management Private Limited",
     "companyNameHi": "जीकैप एसेट्स एंड वेल्थ मैनेजमेंट प्राइवेट लिमिटेड",

@@ -2024,6 +2024,16 @@ function ensureDb(): ServerDB {
     if (!(parsed as any).companyLedger || !Array.isArray((parsed as any).companyLedger) || (parsed as any).companyLedger.length === 0) {
       (parsed as any).companyLedger = [
         {
+          id: "led-1790689769786-920",
+          type: "EXPENSE",
+          amount: 2041,
+          category: "प्लान रिटर्न भुगतान",
+          description: "Payment to Amit kumar Arya",
+          date: "2026-09-28",
+          addedBy: "Admin",
+          createdAt: "2026-09-29T13:49:29.786Z"
+        },
+        {
           id: "led-1790688865436-13",
           type: "EXPENSE",
           amount: 5000,
@@ -2372,7 +2382,21 @@ async function startServer() {
 
           const ledgerMap = new Map<string, any>();
           (localLedger || []).forEach((item: any) => { if (item?.id) ledgerMap.set(item.id, item); });
-          (remoteDb.companyLedger || []).forEach((item: any) => { if (item?.id) ledgerMap.set(item.id, item); });
+          (remoteDb.companyLedger || []).forEach((item: any) => {
+            if (!item?.id) return;
+            const existing = ledgerMap.get(item.id);
+            if (!existing) {
+              ledgerMap.set(item.id, item);
+            } else {
+              const remoteTime = new Date(item.updatedAt || item.createdAt || 0).getTime();
+              const localTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+              if (remoteTime >= localTime) {
+                ledgerMap.set(item.id, { ...existing, ...item });
+              } else {
+                ledgerMap.set(item.id, { ...item, ...existing });
+              }
+            }
+          });
           remoteDb.companyLedger = Array.from(ledgerMap.values());
 
           remoteDb.users = Array.from(userMap.values());

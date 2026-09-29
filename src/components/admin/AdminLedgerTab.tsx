@@ -50,6 +50,16 @@ interface AdminLedgerTabProps {
 
 export const OFFICIAL_ALL_LEDGER_ENTRIES: LedgerEntry[] = [
   {
+    id: "led-1790689769786-920",
+    type: "EXPENSE",
+    amount: 2041,
+    category: "प्लान रिटर्न भुगतान",
+    description: "Payment to Amit kumar Arya",
+    date: "2026-09-28",
+    addedBy: "Admin",
+    createdAt: "2026-09-29T13:49:29.786Z"
+  },
+  {
     id: "led-1790688865436-13",
     type: "EXPENSE",
     amount: 5000,
@@ -281,15 +291,57 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
   useEffect(() => {
     fetchLedgerData();
 
-    // Subscribe to real-time Firestore changes for live cloud sync
+    // 1. Subscribe to real-time Firebase Firestore changes (Instant multi-device cloud sync)
     const unsub = subscribeToFirestoreState((fsState) => {
       if (fsState && Array.isArray(fsState.companyLedger) && fsState.companyLedger.length > 0) {
         applyLedgerState(fsState.companyLedger);
       }
     });
 
+    // 2. Server-Sent Events (SSE) listener for realtime server broadcasts
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/events');
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && (data.type === 'LEDGER_UPDATED' || data.type === 'STATE_CHANGED' || data.type === 'FULL_SYNC')) {
+            fetchLedgerData();
+          }
+        } catch (_) {}
+      };
+    } catch (_) {}
+
+    // 3. Tab visibility / Window focus instant sync
+    const handleFocus = () => {
+      fetchLedgerData();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchLedgerData();
+      }
+    });
+
+    // 4. Periodic lightweight background sync (every 10s)
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        apiFetch('/api/admin/ledger')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && Array.isArray(data.ledger)) {
+              applyLedgerState(data.ledger);
+            }
+          })
+          .catch(() => {});
+      }
+    }, 10000);
+
     return () => {
       unsub();
+      if (eventSource) eventSource.close();
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
     };
   }, []);
 
