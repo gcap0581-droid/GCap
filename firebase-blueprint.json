@@ -12,12 +12,32 @@
         "email": { "type": "string" },
         "status": { "type": "string" }
       }
+    },
+    "LedgerEntry": {
+      "title": "Company Ledger Entry",
+      "description": "Financial income and expense bahi-khata record for GCap company operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["INCOME", "EXPENSE"] },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "addedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "amount", "category", "date"]
     }
   },
   "firestore": {
     "/gcap_database/{docId}": {
       "schema": "User",
-      "description": "Central database storage documents for GCap"
+      "description": "Central database storage documents for GCap applet state including companyLedger"
+    },
+    "/gcap_database/companyLedger": {
+      "schema": "LedgerEntry",
+      "description": "Real-time persistent company income/expense ledger for cloud sync"
     }
   }
 }

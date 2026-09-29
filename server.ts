@@ -2024,6 +2024,36 @@ function ensureDb(): ServerDB {
     if (!(parsed as any).companyLedger || !Array.isArray((parsed as any).companyLedger) || (parsed as any).companyLedger.length === 0) {
       (parsed as any).companyLedger = [
         {
+          id: "led-1790688865436-13",
+          type: "EXPENSE",
+          amount: 5000,
+          category: "अन्य व्यय",
+          description: "Startup India Registration",
+          date: "2026-09-29",
+          addedBy: "Admin",
+          createdAt: "2026-09-29T13:34:25.436Z"
+        },
+        {
+          id: "led-1790688785634-811",
+          type: "INCOME",
+          amount: 200,
+          category: "अन्य आय",
+          description: "Rubber stamp",
+          date: "2026-09-29",
+          addedBy: "Admin",
+          createdAt: "2026-09-29T13:33:05.634Z"
+        },
+        {
+          id: "led-1790688743297-183",
+          type: "INCOME",
+          amount: 350,
+          category: "प्रशासनिक शुल्क",
+          description: "Stamp paper aggreement",
+          date: "2026-09-28",
+          addedBy: "Admin",
+          createdAt: "2026-09-29T13:32:23.297Z"
+        },
+        {
           id: "led-1790268660436-292",
           type: "EXPENSE",
           amount: 750,
@@ -2752,6 +2782,85 @@ GCap में काम कैसे होता है:
     });
 
     res.json({ success: true, entry: newEntry });
+  });
+
+  // PUT: Edit existing ledger entry
+  app.put("/api/admin/ledger/:id", (req, res) => {
+    const { id } = req.params;
+    const { type, amount, category, description, date, addedBy } = req.body || {};
+    
+    if (!id) {
+      return res.status(400).json({ success: false, error: "Entry ID is required" });
+    }
+    if (type && !["INCOME", "EXPENSE"].includes(type)) {
+      return res.status(400).json({ success: false, error: "Type must be INCOME or EXPENSE" });
+    }
+    const numAmount = Number(amount);
+    if (amount !== undefined && (isNaN(numAmount) || numAmount <= 0)) {
+      return res.status(400).json({ success: false, error: "Amount must be a valid positive number" });
+    }
+
+    const db = ensureDb();
+    const ledger = (db as any).companyLedger || [];
+    const idx = ledger.findIndex((e: any) => e.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: "Ledger entry not found" });
+    }
+
+    ledger[idx] = {
+      ...ledger[idx],
+      type: type || ledger[idx].type,
+      amount: amount !== undefined ? numAmount : ledger[idx].amount,
+      category: category ? String(category).trim() : ledger[idx].category,
+      description: description !== undefined ? String(description).trim() : ledger[idx].description,
+      date: date || ledger[idx].date,
+      addedBy: addedBy || ledger[idx].addedBy || "Admin",
+      updatedAt: new Date().toISOString()
+    };
+
+    (db as any).companyLedger = ledger;
+    saveDb(db, true);
+
+    broadcastRealtimeEvent("state_changed", {
+      type: "LEDGER_UPDATED",
+      timestamp: Date.now()
+    });
+
+    res.json({ success: true, entry: ledger[idx] });
+  });
+
+  // POST: Bulk Sync ledger entries from client to server and Firestore
+  app.post("/api/admin/ledger/sync", (req, res) => {
+    const { ledger } = req.body || {};
+    if (!Array.isArray(ledger)) {
+      return res.status(400).json({ success: false, error: "Ledger array is required" });
+    }
+
+    const db = ensureDb();
+    const existing = (db as any).companyLedger || [];
+    const map = new Map<string, any>();
+    
+    // First put current DB entries
+    existing.forEach((item: any) => {
+      if (item?.id) map.set(item.id, item);
+    });
+
+    // Then merge client incoming entries
+    ledger.forEach((item: any) => {
+      if (item?.id) {
+        map.set(item.id, { ...map.get(item.id), ...item });
+      }
+    });
+
+    (db as any).companyLedger = Array.from(map.values());
+    saveDb(db, true);
+
+    broadcastRealtimeEvent("state_changed", {
+      type: "LEDGER_UPDATED",
+      timestamp: Date.now()
+    });
+
+    res.json({ success: true, ledger: (db as any).companyLedger });
   });
 
   // DELETE: Delete ledger entry
