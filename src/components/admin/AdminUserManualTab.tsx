@@ -113,7 +113,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
               <div class="flex items-center justify-center gap-4 pb-6 border-b-2 border-emerald-600 mb-6">
                 <img src="/icon.svg" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
                 <div class="text-left">
-                  <h1 class="text-2xl font-black text-slate-900">GCAP ASSETS & WEALTH MANAGEMENT PRIVATE LIMITED</h1>
+                  <h1 class="text-2xl font-black text-slate-900">GCAP PRIVATE LIMITED</h1>
                   <p class="text-sm font-bold text-emerald-700 mt-0.5">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
                   <p class="text-xs text-slate-500 mt-0.5">Generated on: ${new Date().toLocaleString()} | Official Compliance Document</p>
                 </div>

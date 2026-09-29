@@ -4,6 +4,7 @@ import { Language, Transaction, AppRules, CompanyProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
+import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
 
 interface PaymentVoucherModalProps {
   isOpen: boolean;
@@ -265,25 +266,13 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
               </p>
             </div>
 
-            <div className="text-center sm:text-right print:text-right shrink-0">
-              <div className="inline-block p-2 rounded-xl bg-slate-950 print:bg-white border border-slate-800 print:border-slate-300">
-                <div className="w-24 h-12 border-2 border-dashed border-emerald-500/40 print:border-emerald-700 rounded-lg flex flex-col items-center justify-center p-1 bg-emerald-500/5">
-                  <span className="text-[9px] font-black uppercase text-emerald-400 print:text-emerald-800 tracking-wider">
-                    {profile.tradeName ? profile.tradeName.slice(0, 14) : 'GCap TREASURY'}
-                  </span>
-                  <span className="text-[8px] font-mono text-slate-400 print:text-slate-700">
-                    SEAL APPROVED
-                  </span>
-                </div>
-              </div>
-              <p className="text-[10px] text-slate-400 print:text-slate-600 font-semibold mt-1">
-                {profile.authorizedSignatory || 'Authorized Signatory'}
-              </p>
-              {profile.signatoryDesignation && (
-                <p className="text-[9px] text-slate-500 print:text-slate-600">
-                  {profile.signatoryDesignation}
-                </p>
-              )}
+            <div className="shrink-0 flex items-center justify-center">
+              <OfficialCorporateSealBadge
+                size={105}
+                color="#4c1d95"
+                showDirectorStamp={true}
+                directorName={profile.authorizedSignatory || 'AMIT KUMAR'}
+              />
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import { X, Printer, Award, ShieldCheck, CheckCircle2, Sparkles, Building2, Refr
 import { Language } from '../../types';
 import { formatINR } from '../../utils/storage';
 import { getStoredCompanyProfile } from '../../utils/companyStorage';
+import { OfficialCorporateSealBadge } from '../OfficialCorporateSealBadge';
 
 interface ProjectCertificateModalProps {
   isOpen: boolean;
@@ -130,12 +131,23 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
             <div className="absolute bottom-3 left-3 w-8 h-8 border-b-2 border-l-2 border-amber-400 print:border-amber-600"></div>
             <div className="absolute bottom-3 right-3 w-8 h-8 border-b-2 border-r-2 border-amber-400 print:border-amber-600"></div>
 
+            {/* GCap Corporate Verified Certificate Band */}
+            <div className="w-full max-w-2xl mx-auto rounded-xl border border-amber-500/50 print:border-amber-900 p-2.5 bg-slate-950/40 print:bg-slate-50 text-slate-200 print:text-black flex items-center justify-between text-[10px] font-mono gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">🛡️</span>
+                <span className="font-bold text-amber-300 print:text-black">GCAP CORPORATE VERIFIED CERTIFICATE</span>
+              </div>
+              <div className="text-right text-emerald-400 print:text-emerald-800 font-bold">
+                CERT ID: GCAP-{certId.slice(-8).toUpperCase()}
+              </div>
+            </div>
+
             {/* Certificate Brand Header */}
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-3">
                 <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-400 print:border-black shrink-0" />
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
+                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-2 text-[11px] text-amber-300 print:text-amber-800 uppercase tracking-widest font-mono">
@@ -251,12 +263,14 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                 </div>
               </div>
 
-              {/* Gold Embossed Seal */}
-              <div className="w-20 h-20 rounded-full border-4 border-amber-400 print:border-amber-600 bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 text-slate-950 flex flex-col items-center justify-center shadow-lg font-black text-center p-1 shrink-0">
-                <Award className="w-6 h-6 text-slate-950" />
-                <span className="text-[8px] tracking-tight uppercase leading-none font-bold mt-0.5">
-                  GCap SEAL OF MATURITY
-                </span>
+              {/* Official Corporate Seal & Stamp Badge */}
+              <div className="shrink-0 flex items-center justify-center">
+                <OfficialCorporateSealBadge
+                  size={110}
+                  color="#4c1d95"
+                  showDirectorStamp={true}
+                  directorName={profile.authorizedSignatory || 'AMIT KUMAR'}
+                />
               </div>
 
               {/* Authorized Signatory */}

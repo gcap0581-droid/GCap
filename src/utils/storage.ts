@@ -125,7 +125,7 @@ const INITIAL_TRANSACTIONS: Transaction[] = [];
 export function getStoredWallet(userId?: string): Wallet {
   try {
     const userKey = userId ? `inv_portal_wallet_${userId}` : null;
-    const raw = (userKey ? localStorage.getItem(userKey) : null) || localStorage.getItem(STORAGE_KEYS.WALLET);
+    const raw = userKey ? localStorage.getItem(userKey) : localStorage.getItem(STORAGE_KEYS.WALLET);
     const invs = getStoredInvestments();
     const dynamicEarned = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
 
@@ -137,7 +137,11 @@ export function getStoredWallet(userId?: string): Wallet {
         totalInvested: isAmit ? 100000 : INITIAL_WALLET.totalInvested,
         totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned,
       };
-      setStoredWallet(w, userId);
+      if (userId) {
+        localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(w));
+      } else {
+        localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(w));
+      }
       return w;
     }
     const parsed = JSON.parse(raw);
@@ -158,7 +162,19 @@ export function getStoredWallet(userId?: string): Wallet {
 
 export function setStoredWallet(wallet: Wallet, userId?: string) {
   try {
-    localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(wallet));
+    let curUserId = '';
+    const rawUser = localStorage.getItem('gcap_auth_user') || localStorage.getItem('inv_portal_auth_user');
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        curUserId = parsed?.id || '';
+      } catch {
+        // Ignore
+      }
+    }
+    if (!userId || (curUserId && curUserId === userId)) {
+      localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(wallet));
+    }
     if (userId) {
       localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(wallet));
     }

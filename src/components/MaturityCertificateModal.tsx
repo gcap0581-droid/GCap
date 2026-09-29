@@ -5,6 +5,7 @@ import { formatINR } from '../utils/storage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
 import { getStoredRules } from '../utils/rulesStorage';
+import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
 
 interface MaturityCertificateModalProps {
   isOpen: boolean;
@@ -127,11 +128,22 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
             <ShieldCheck className="w-96 h-96 text-amber-400" />
           </div>
 
+          {/* GCap Corporate Verified Certificate Band */}
+          <div className="w-full rounded-xl border border-amber-500/50 print:border-amber-900 p-2.5 bg-slate-950/40 print:bg-slate-50 text-slate-200 print:text-black flex items-center justify-between text-[10px] font-mono mb-6 flex-wrap gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">🛡️</span>
+              <span className="font-bold text-amber-300 print:text-black">GCAP CORPORATE VERIFIED MATURITY CERTIFICATE</span>
+            </div>
+            <div className="text-right text-emerald-400 print:text-emerald-800 font-bold">
+              CERT ID: MAT-{investment.id.slice(-8).toUpperCase()}
+            </div>
+          </div>
+
           {/* Header & Logo */}
           <div className="text-center mb-8 relative">
             <img src="/icon.svg" alt="GCap Logo" className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-amber-400 mb-3 mx-auto print:border-black shrink-0" />
             <h1 className="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider uppercase font-serif print:text-amber-800">
-              {profile.companyName || 'GCAP ASSETS & WEALTH MANAGEMENT PRIVATE LIMITED'}
+              {profile.companyName || 'GCAP PRIVATE LIMITED'}
             </h1>
             {profile.companyNameHi && (
               <p className="text-xs font-semibold text-amber-300 print:text-amber-900 mt-0.5">
@@ -227,11 +239,11 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
           </div>
 
           {/* Signatures & Seal Section */}
-          <div className="grid grid-cols-2 gap-6 mt-8 pt-6 border-t border-amber-500/30 text-center text-xs print:border-amber-300">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-8 pt-6 border-t border-amber-500/30 text-center text-xs print:border-amber-300">
             <div>
               <div className="h-10 flex items-center justify-center">
                 <span className="font-serif italic font-bold text-amber-300 text-base print:text-slate-800">
-                  {profile.authorizedSignatory ? profile.authorizedSignatory : 'GCap Authorized'}
+                  {profile.authorizedSignatory ? profile.authorizedSignatory : 'AMIT KUMAR'}
                 </span>
               </div>
               <div className="w-36 h-0.5 bg-slate-700 mx-auto mb-1 print:bg-slate-400"></div>
@@ -243,18 +255,13 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
               </span>
             </div>
 
-            <div>
-              <div className="h-10 flex items-center justify-center gap-1 text-emerald-400 font-bold print:text-emerald-800">
-                <ShieldCheck className="w-5 h-5" />
-                <span className="font-mono text-xs">{profile.sealCity || 'MUMBAI'} SEAL</span>
-              </div>
-              <div className="w-36 h-0.5 bg-slate-700 mx-auto mb-1 print:bg-slate-400"></div>
-              <span className="text-[10px] text-slate-400 uppercase font-semibold block print:text-slate-600">
-                {isHi ? 'प्रबंध निदेशक एवं कॉर्पोरेट मुहर' : 'Managing Director & Corporate Seal'}
-              </span>
-              <span className="text-[9px] text-slate-500 block print:text-slate-500">
-                {profile.cin ? `CIN: ${profile.cin}` : 'Digital Seal Verified'}
-              </span>
+            <div className="flex flex-col items-center">
+              <OfficialCorporateSealBadge
+                size={110}
+                color="#4c1d95"
+                showDirectorStamp={true}
+                directorName={profile.authorizedSignatory || 'AMIT KUMAR'}
+              />
             </div>
           </div>
 

@@ -157,12 +157,19 @@ export function reconcileAllInvestmentsWithTime(
     const lockEnd = inv.lockedUntilTimestamp || ((inv.activationTimestamp || new Date(inv.startDate).getTime()) + 24 * 3600 * 1000);
 
     if (now >= lockEnd) {
-      const totalEligibleCycles = countElapsedFixedSlots(lockEnd, now);
+      // User Logic: The first earning slab starts at the NEXT fixed slot after unlock.
+      // e.g. Unlock at 4 PM -> First slab starts at 8 PM.
+      const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);
+      
+      // Credit happens only after completing that slab (at the start of the following slab).
+      const totalEligibleCycles = countElapsedFixedSlots(firstSlabStart, now);
+      
       const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
       const expectedEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
       const actualEarned = inv.earnedSoFar || 0;
 
-      const nextEnd = getNextFixedCycleTimestamp(now);
+      // UI Timer Logic: The next payout milestone is the next fixed slot after (now OR firstSlabStart)
+      const nextEnd = getNextFixedCycleTimestamp(Math.max(now, firstSlabStart));
       const nextStart = nextEnd - 6 * 3600 * 1000;
 
       const needsCycleUpdate = totalEligibleCycles > currentCompleted;
@@ -231,14 +238,16 @@ export function reconcileAllInvestmentsWithTime(
       }
     } else {
       // In 24h initial lock phase
-      const nextEnd = getNextFixedCycleTimestamp(lockEnd);
-      if (inv.currentCycleEndTimestamp !== nextEnd) {
+      const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);
+      const firstPayoutReflection = getNextFixedCycleTimestamp(firstSlabStart);
+      
+      if (inv.currentCycleEndTimestamp !== firstPayoutReflection) {
         hasChanges = true;
         return {
           ...inv,
           isInitialLockCompleted: false,
           currentCycleStartTimestamp: lockEnd,
-          currentCycleEndTimestamp: nextEnd,
+          currentCycleEndTimestamp: firstPayoutReflection,
         };
       }
     }

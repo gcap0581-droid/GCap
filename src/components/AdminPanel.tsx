@@ -84,6 +84,7 @@ import { AdminBackupTab } from './admin/AdminBackupTab';
 import { AdminOtaTab } from './admin/AdminOtaTab';
 import { AdminInvestmentsTab } from './admin/AdminInvestmentsTab';
 import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
+import { AdminCompanySealTab } from './admin/AdminCompanySealTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
@@ -146,8 +147,8 @@ interface AdminPanelProps {
   onSendMessage?: (msg: Partial<AdminMessage>) => Promise<boolean>;
   onDeleteMessage?: (msgId: string) => Promise<boolean>;
   onRefreshMessages?: () => void;
-  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY';
-  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY') => void;
+  externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER';
+  onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
   onSaveCompanyProfile?: (profile: CompanyProfile) => void;
   onUpdateRules?: (rules: AppRules) => void;
@@ -203,7 +204,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -287,8 +288,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [agreementUser, setAgreementUser] = useState<UserProfile | null>(null);
 
   // Refresh and sync users list and all user wallets with centralized server
-  const refreshUsers = async () => {
-    setIsSyncingUsers(true);
+  const refreshUsers = async (showSpinner = false) => {
+    if (showSpinner) setIsSyncingUsers(true);
     try {
       const [updated, centralState] = await Promise.all([
         getAllUsersAsync(),
@@ -298,27 +299,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         updateUsersSafely(updated);
       }
       if (centralState?.wallets) {
-        setWalletsMap(centralState.wallets);
+        setWalletsMap((prev) => ({
+          ...prev,
+          ...centralState.wallets,
+        }));
       }
     } catch {
       updateUsersSafely(getAllUsers());
     } finally {
-      setIsSyncingUsers(false);
+      if (showSpinner) setIsSyncingUsers(false);
     }
   };
 
-  // Auto-refresh users whenever switching to the USERS tab
+  // Sync users silently on switching to USERS tab
   useEffect(() => {
     if (activeSubTab === 'USERS') {
-      refreshUsers();
+      refreshUsers(false);
     }
   }, [activeSubTab]);
 
   // Live subscription and heartbeat polling so any new registration appears immediately
   useEffect(() => {
-    // 1. Initial sync on mount (deferred to avoid render phase updates)
+    // 1. Initial sync on mount (silent, deferred to avoid render phase updates)
     const tInit = setTimeout(() => {
-      refreshUsers();
+      refreshUsers(false);
     }, 0);
 
     // 2. Central 100% Real-time Subscription (Firestore + SSE + Presence Enrichment)
@@ -351,8 +355,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           ...(cleanDigits ? { [cleanDigits]: event.wallet! } : {}),
           ...(clean10 ? { [clean10]: event.wallet! } : {}),
         }));
+      } else if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
+        refreshUsers(false);
       }
-      refreshUsers();
     });
 
     return () => {
@@ -1269,6 +1274,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </button>
 
+                {/* COMPANY_SEAL */}
+                <button
+                  id="tab-admin-company-seal"
+                  onClick={() => setActiveSubTab('COMPANY_SEAL')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'COMPANY_SEAL'
+                      ? 'bg-purple-500/10 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'COMPANY_SEAL' ? 'bg-purple-500/20 border-purple-500/30 text-purple-300' : 'bg-slate-800 border-slate-700 text-purple-400'}`}>
+                      <Award className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'COMPANY_SEAL' ? 'bg-purple-500/30 text-purple-200' : 'bg-slate-800 text-slate-400'}`}>
+                      LEGAL SEAL
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight">{isHi ? 'कंपनी मुहर एवं सील' : 'Stamps & Seals'}</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'डायरेक्टर मुहर व गोल सील' : 'Download PNG/Print'}</p>
+                  </div>
+                </button>
+
                 {/* INVESTMENTS */}
                 <button
                   id="tab-admin-investments"
@@ -2049,6 +2078,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <AdminCompanyProfileTab
           language={language}
           onSaveProfile={onSaveCompanyProfile}
+        />
+      )}
+
+      {/* TAB 10B: COMPANY SEALS & STAMPS GENERATOR */}
+      {activeSubTab === 'COMPANY_SEAL' && (
+        <AdminCompanySealTab
+          language={language}
         />
       )}
 

@@ -3,10 +3,10 @@ import { CompanyProfile } from '../types';
 const COMPANY_PROFILE_STORAGE_KEY = 'gcap_corporate_company_profile_v1';
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCap Assets & Wealth Management Private Limited',
-  companyNameHi: 'जीकैप एसेट्स एंड वेल्थ मैनेजमेंट प्राइवेट लिमिटेड',
-  tradeName: 'GCap Assets & Wealth Management',
-  cin: 'U65999MH2024PTC398102',
+  companyName: 'GCAP PRIVATE LIMITED',
+  companyNameHi: 'जीकैप प्राइवेट लिमिटेड',
+  tradeName: 'GCAP PRIVATE LIMITED',
+  cin: 'U66190BR2026OPC088307',
   pan: 'AABCG1234F',
   tan: 'MUMB10293E',
   gstin: '27AABCG1234F1Z5',
@@ -15,29 +15,29 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   companyType: 'Private Limited Company (Non-Govt)',
   authorizedCapital: '₹5,00,00,000',
   paidUpCapital: '₹1,00,00,000',
-  registeredAddress: 'GCap Financial Towers, Bandra-Kurla Complex (BKC), Mumbai, MH - 400051',
-  corporateAddress: 'Corporate Office: BKC East, Mumbai, Maharashtra - 400051',
-  city: 'Mumbai',
-  state: 'Maharashtra',
-  pincode: '400051',
+  registeredAddress: 'Grand Plaza, Main Road, Sasaram, Bihar - 821115',
+  corporateAddress: 'Corporate Office: Main Road, Sasaram, Bihar - 821115',
+  city: 'Sasaram',
+  state: 'Bihar',
+  pincode: '821115',
   supportEmail: 'support@gcap.in',
   legalEmail: 'legal@gcap.in',
   supportPhone: '+91 98000 12345',
-  altPhone: '+91 22 6800 1234',
+  altPhone: '+91 6184 220011',
   websiteUrl: 'https://gcap.in',
-  authorizedSignatory: 'Vikramaditya Singhania',
-  signatoryDesignation: 'Managing Director & Authorized Signatory',
+  authorizedSignatory: 'Amit Kumar',
+  signatoryDesignation: 'Director & Authorized Signatory',
   signatoryDin: 'DIN: 08924192',
-  sealCity: 'MUMBAI',
+  sealCity: 'SASARAM (BIHAR)',
   bankName: 'Axis Bank Ltd.',
   bankAccountNumber: '924010008662307',
   bankIfsc: 'UTIB0001219',
   bankBranch: 'Axis Commercial Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCap Assets & Wealth Management Private Limited',
-  tagline: 'Guaranteed Principal Security & Automated Asset Growth',
-  taglineHi: '100% मूलधन सुरक्षा एवं स्वचालित संपत्ति विकास',
+  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
+  tagline: 'ASSETS & WEALTH MANAGEMENT SYSTEM',
+  taglineHi: 'संपत्ति और धन प्रबंधन प्रणाली',
   lastUpdated: new Date().toISOString().split('T')[0],
 };
 
@@ -52,6 +52,14 @@ export function getStoredCompanyProfile(): CompanyProfile {
       return DEFAULT_COMPANY_PROFILE;
     }
     const parsed = JSON.parse(raw);
+    
+    // Auto-migrate old name if it exists in storage
+    if (parsed.companyName && parsed.companyName.includes('ASSETS & WEALTH MANAGEMENT')) {
+      parsed.companyName = 'GCAP PRIVATE LIMITED';
+      parsed.tradeName = 'GCAP PRIVATE LIMITED';
+      parsed.companyNameHi = 'जीकैप प्राइवेट लिमिटेड';
+    }
+
     return {
       ...DEFAULT_COMPANY_PROFILE,
       ...parsed,

@@ -24,6 +24,7 @@ import { getStoredRules } from '../utils/rulesStorage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
 import { getStoredPlans } from '../utils/plansStorage';
+import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
 
 interface UserAgreementModalProps {
   isOpen: boolean;
@@ -220,13 +221,44 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
         {/* PRINTABLE AGREEMENT BODY */}
         <div id="user-agreement-document" className="p-6 sm:p-8 overflow-y-auto space-y-6 text-sm flex-1 bg-slate-900 text-slate-200 print:bg-white print:text-black print:p-8 print:space-y-5 print:overflow-visible">
           
+          {/* GCap Corporate Verified Document Header Band */}
+          <div className="rounded-xl border-2 border-amber-500/60 print:border-amber-900 p-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 print:bg-slate-50 text-slate-200 print:text-black space-y-2 mb-2">
+            <div className="flex items-center justify-between border-b border-amber-500/30 print:border-amber-900 pb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center border border-amber-400 text-xs shrink-0">
+                  🛡️
+                </div>
+                <div>
+                  <h4 className="font-black text-amber-300 print:text-black uppercase text-xs tracking-wider">
+                    {isHi ? 'GCAP कॉर्पोरेट सत्यापित दस्तावेज़' : 'GCAP CORPORATE VERIFIED DOCUMENT'}
+                  </h4>
+                  <p className="text-[10px] text-slate-300 print:text-slate-700">
+                    {isHi ? 'डिजिटल रूप से हस्ताक्षरित एवं प्रमाणित' : 'Digitally Signed & Certified Official Record'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right font-mono text-[10px]">
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 print:bg-amber-100 print:text-black font-bold border border-amber-400/40">
+                  STATUS: VERIFIED
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono text-slate-300 print:text-slate-800">
+              <div><b>Doc ID:</b> <span className="text-amber-300 print:text-black font-bold">{agreementId.slice(-8)}</span></div>
+              <div><b>Date:</b> <span className="text-amber-300 print:text-black font-bold">{agreementDate}</span></div>
+              <div><b>Auth:</b> <span className="text-amber-300 print:text-black font-bold">GCAP DIGITAL</span></div>
+              <div><b>Valid:</b> <span className="text-emerald-400 print:text-emerald-800 font-bold">✓ AUTHENTICATED</span></div>
+            </div>
+          </div>
+
           {/* Official Letterhead Header */}
           <div className="border-b-2 border-amber-500/50 print:border-black pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <img src="/icon.svg" alt="GCap Logo" className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-500/50 print:border-black shrink-0" />
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCap Assets & Wealth Management Private Limited'}
+                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
                 </h1>
               </div>
 
@@ -477,20 +509,14 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                   </span>
                 </div>
 
-                {/* Digital Stamp & Sign */}
+                {/* Official Corporate Seal & Sign Badge */}
                 <div className="my-2 flex flex-col items-center">
-                  <div className="relative flex items-center justify-center">
-                    {/* Seal Ring */}
-                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-amber-500 print:border-black flex flex-col items-center justify-center p-1 text-[8px] font-black uppercase text-amber-400 print:text-black text-center leading-tight">
-                      <span>★ {profile.tradeName ? profile.tradeName.toUpperCase().slice(0, 15) : 'GCAP ASSET'} ★</span>
-                      <span className="font-mono text-[7px] text-slate-400 print:text-black">SEAL & SIGN</span>
-                      <span>{profile.sealCity || profile.city || 'MUMBAI'}</span>
-                    </div>
-                    {/* Simulated Signature */}
-                    <div className="absolute text-amber-300 print:text-blue-900 font-serif italic text-base font-bold rotate-[-12deg] select-none">
-                      {profile.authorizedSignatory ? profile.authorizedSignatory.split(' ')[0] : 'GCap Authorized'}
-                    </div>
-                  </div>
+                  <OfficialCorporateSealBadge
+                    size={110}
+                    color="#4c1d95"
+                    showDirectorStamp={true}
+                    directorName={profile.authorizedSignatory || 'AMIT KUMAR'}
+                  />
                 </div>
 
                 <div className="w-full text-center border-t border-slate-800 print:border-slate-400 pt-1.5 text-[10px] text-slate-300 print:text-black">

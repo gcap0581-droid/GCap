@@ -158,18 +158,19 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          {onRefresh && (
-            <button
-              id="btn-admin-refresh-users"
-              onClick={onRefresh}
-              disabled={isSyncing}
-              title={isHi ? 'सर्वर से नया डेटा खींचें' : 'Fetch latest users from server'}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-400' : 'text-slate-300'}`} />
-              <span>{isSyncing ? (isHi ? 'सिंक हो रहा है...' : 'Syncing...') : (isHi ? 'रीफ़्रेश' : 'Refresh')}</span>
-            </button>
-          )}
+          <button
+            id="btn-admin-refresh-users"
+            onClick={() => {
+              if (onRefresh) onRefresh();
+              window.location.reload();
+            }}
+            disabled={isSyncing}
+            title={isHi ? 'सर्वर से वास्तविक नया डेटा रीलोड करें' : 'Hard reload latest users from server'}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-400' : 'text-slate-300'}`} />
+            <span>{isSyncing ? (isHi ? 'सिंक हो रहा है...' : 'Syncing...') : (isHi ? 'रीफ़्रेश' : 'Refresh')}</span>
+          </button>
 
           <button
             id="btn-admin-add-user"

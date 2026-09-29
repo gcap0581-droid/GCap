@@ -1191,10 +1191,6 @@ function getAllUserWalletKeys(db: any, queryId: string, foundUser?: any): string
     });
   }
 
-  if (user && user.name) {
-    keys.add(user.name);
-  }
-
   const isSandhyaUser = clean.includes("7808056040") || clean.includes("1789384741169") || (user && (user.loginId === "7808056040" || (user.phone && user.phone.includes("7808056040"))));
   if (isSandhyaUser) {
     keys.add("Sandhya");
@@ -1223,6 +1219,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
   }
 
   const isSandhya = reqUserId.includes("7808056040") || reqUserId.includes("1789384741169") || (user && (user.loginId === "7808056040" || (user.phone && user.phone.includes("7808056040"))));
+  const isAmit = reqUserId.includes("7564841400") || reqUserId.includes("1790000000555") || (user && (user.loginId === "7564841400" || (user.phone && user.phone.includes("7564841400"))));
 
   if (candidates.length === 0) {
     if (isSandhya) {
@@ -1239,26 +1236,31 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       keys.forEach((k) => { db.wallets[k] = { ...sandhyaWallet }; });
       return { ...sandhyaWallet };
     }
+    if (isAmit) {
+      const amitWallet: Wallet = {
+        cashBalance: 0,
+        gpBalance: 0,
+        totalInvested: 100000,
+        totalEarned: 0,
+        royaltyEarned: 0,
+        pendingWithdrawals: 0,
+        pendingDeposits: 0,
+      };
+      if (!db.wallets) db.wallets = {};
+      keys.forEach((k) => { db.wallets[k] = { ...amitWallet }; });
+      return { ...amitWallet };
+    }
     return DEFAULT_WALLET;
   }
 
-  // If a wallet key exists directly for this requested id or canonical user id, prioritize it
-  let bestWallet: Wallet | null = null;
-  if (user && user.id && db.wallets && db.wallets[user.id]) {
-    bestWallet = { ...db.wallets[user.id] };
-  } else if (db.wallets && db.wallets[reqUserId]) {
-    bestWallet = { ...db.wallets[reqUserId] };
-  }
+  // Pick candidate wallet with highest total assets to ensure non-zero wallet is never overridden by an empty/uninitialized key
+  candidates.sort((a, b) => {
+    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
+    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
+    return valB - valA;
+  });
 
-  if (!bestWallet) {
-    // Pick candidate with highest total assets
-    candidates.sort((a, b) => {
-      const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
-      const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-      return valB - valA;
-    });
-    bestWallet = candidates[0];
-  }
+  let bestWallet: Wallet = { ...candidates[0] };
 
   if (isSandhya) {
     bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
@@ -1274,6 +1276,11 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       return sum + e;
     }, 0);
     bestWallet.totalEarned = dynamicEarned > 0 ? dynamicEarned : 264.3;
+  }
+
+  if (isAmit) {
+    bestWallet.cashBalance = 0;
+    bestWallet.totalInvested = 100000;
   }
 
   // Synchronize all alias keys so EVERY single key has the exact same unified balance
@@ -1443,9 +1450,9 @@ function ensureDb(): ServerDB {
       };
 
       const initialAmitWallet: Wallet = {
-        cashBalance: 100000,
+        cashBalance: 0,
         gpBalance: 0,
-        totalInvested: 0,
+        totalInvested: 100000,
         totalEarned: 0,
         royaltyEarned: 0,
         pendingWithdrawals: 0,
@@ -2525,7 +2532,7 @@ async function startServer() {
       q.includes("स्वैप") ||
       q.includes("point")
     ) {
-      return `🪙 GP स्वैप (G-Points):\n\n• 1 रुपया (₹1) = 1 GP पॉइंट।\n• डिपॉजिट किया हुआ कैश बैलेंस सीधे 'जीपी स्वैप' से GP में बदल सकते हैं।\n• सभी निवेश प्लान्स GP पॉइंट्स से ही एक्टिवेट होते हैं।\n• जब आपका रिटर्न आता है, तो वह भी GP में मिलता है जिसे आप आसानी से कैश में बदल सकते हैं!`;
+      return `🪙 GP स्वैप (G-Points):\n\n• 1 रुपया (₹1) = 0.98 GP पॉइंट।\n• डिपॉजिट किया हुआ कैश बैलेंस सीधे 'जीपी स्वैप' से GP में बदल सकते हैं।\n• सभी निवेश प्लान्स GP पॉइंट्स से ही एक्टिवेट होते हैं।\n• जब आपका रिटर्न आता है, तो वह भी GP में मिलता है जिसे आप आसानी से कैश में बदल सकते हैं!`;
     }
 
     // 8. Company Profile / Legal / Trust
@@ -2540,7 +2547,7 @@ async function startServer() {
       q.includes("office") ||
       q.includes("address")
     ) {
-      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: GCap Assets & Wealth Management Private Limited\n• CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}\n• पैन: ${companyProfile.pan || "ABCPG1234F"} | टैन: ${companyProfile.tan || "RCHG12345E"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Grand Plaza, 4th Floor, Main Road, Ranchi, Jharkhand - 834001"}\n• ईमेल: ${rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${rules.supportPhone || "+91 98000 12345"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित परिसंपत्ति प्रबंधन कंपनी है।`;
+      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: GCap Assets & Wealth Management Private Limited\n• CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}\n• पैन: ${companyProfile.pan || "ABCPG1234F"} | टैन: ${companyProfile.tan || "RCHG12345E"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Main Road, Sasaram, Bihar - 821115"}\n• ईमेल: ${rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${rules.supportPhone || "+91 98000 12345"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित परिसंपत्ति प्रबंधन कंपनी है।`;
     }
 
     // 9. Referral
@@ -2580,7 +2587,7 @@ async function startServer() {
 - नाम: GCap Assets & Wealth Management Private Limited (GCap Capital)
 - CIN: ${companyProfile.cin || "U66190JH2024PTC022718"}
 - PAN: ${companyProfile.pan || "ABCPG1234F"} | TAN: ${companyProfile.tan || "RCHG12345E"}
-- रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Grand Plaza, 4th Floor, Main Road, Ranchi, Jharkhand - 834001"}
+- रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Main Road, Sasaram, Bihar - 821115"}
 - हेल्पलाइन सपोर्ट: ${rules.supportEmail || "support@gcap.in"} | ${rules.supportPhone || "+91 98000 12345"}
 - UPI ID: ${rules.companyUpiId || "8603504808@axisbank"}
 - बैंक खाता: Axis Bank, A/C: ${rules.companyBankAccountNumber || "924010002662307"}, IFSC: ${rules.companyBankIfsc || "UTIB0001219"}
@@ -2588,7 +2595,7 @@ async function startServer() {
 GCap में काम कैसे होता है:
 1. खाता रजिस्ट्रेशन: मोबाइल नंबर और पासवर्ड से खाता बनता है।
 2. पैसा जमा (Deposit): कंपनी के UPI या बैंक खाते में पैसा ट्रांसफर करके UTR/रेफरेंस नंबर सबमिट करें। एडमिन अप्रूवल के बाद वॉलेट में कैश जमा हो जाता है।
-3. GP स्वैप (GP Points Swap): कैश बैलेंस को GP पॉइंट्स में बदलें (1 रुपया = 1 GP)। प्लान्स केवल GP से खरीदे जाते हैं।
+3. GP स्वैप (GP Points Swap): कैश बैलेंस को GP पॉइंट्स में बदलें (1 रुपया = 0.98 GP)। प्लान्स केवल GP से खरीदे जाते हैं।
 4. प्लान में निवेश: 641-दिन या 365-दिन प्लान में GP पॉइंट्स से निवेश करें।
 5. स्वचालित रिटर्न: हर 6 घंटे में रिटर्न स्वतः आपके वॉलेट में GP के रूप में क्रेडिट होता है।
 
@@ -2611,9 +2618,12 @@ GCap में काम कैसे होता है:
 - न्यूनतम निकासी: ₹200।
 
 कड़े नियम:
-1. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
-2. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।
-3. यदि यूज़र धन्यवाद, अलविदा, बाय, ठीक है या बात समाप्त करे, तो सम्मानजनक विदाई संदेश अवश्य दें: "🙏 GCap Capital चुनने के लिए आपका बहुत-बहुत धन्यवाद! आपका दिन शुभ और समृद्ध हो। अलविदा!"
+1. डिफ़ॉल्ट रूप से हमेशा शुद्ध और अत्यंत विनम्र हिंदी में उत्तर दें। यदि यूज़र किसी अन्य भाषा (जैसे अंग्रेज़ी) में सवाल पूछे, तो उसके साथ उसी भाषा में उत्तर दें।
+2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190JH2024PTC022718, PAN, TAN, रांची ऑफिस पता, एक्सिस बैंक खाता, UPI) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
+3. GCap के सॉफ्टवेयर में कोई भी काम कैसे करना है (जैसे: पैसे जमा/डिपॉजिट करना, GP स्वैप करना [₹1 = 0.98 GP], प्लान खरीदना/एक्टिवेट करना, बैंक विड्रॉल करना, पासवर्ड बदलना, रेफरल शेयर करना), उसका उत्तर हमेशा 1️⃣, 2️⃣, 3️⃣ करके चरण-दर-चरण (Step-by-Step) स्पष्ट दें।
+4. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
+5. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।
+6. यदि यूज़र धन्यवाद, अलविदा, बाय, ठीक है या बात समाप्त करे, तो सम्मानजनक विदाई संदेश अवश्य दें: "🙏 GCap Capital चुनने के लिए आपका बहुत-बहुत धन्यवाद! आपका दिन शुभ और समृद्ध हो। अलविदा!"
 `;
 
       // Try Gemini API first

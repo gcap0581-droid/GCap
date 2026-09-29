@@ -163,6 +163,8 @@ import {
   ArrowLeft,
   Bell,
   Bot,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 function dedupeAdminMessages(list: AdminMessage[]): AdminMessage[] {
@@ -260,7 +262,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -848,9 +850,9 @@ export default function App() {
       }
     };
 
-    // Run immediately, then poll every 8000ms as light fallback (SSE handles instant pushes)
+    // Run immediately, then poll every 30s as light fallback (SSE handles instant pushes silently)
     syncWithCentralDb();
-    const interval = setInterval(syncWithCentralDb, 8000);
+    const interval = setInterval(syncWithCentralDb, 30000);
 
     const handleResume = () => {
       if (document.visibilityState === 'visible') {
@@ -3380,10 +3382,10 @@ export default function App() {
     // Run immediately
     runCycleReconciliation();
 
-    // Recheck every 2 seconds
-    const interval = setInterval(runCycleReconciliation, 2000);
+    // Recheck every 30 seconds (avoids 2s state re-render loop)
+    const interval = setInterval(runCycleReconciliation, 30000);
     return () => clearInterval(interval);
-  }, [investments, rules, currentUser, isHi]);
+  }, [currentUser?.id]);
 
   // Fast-Forward / Simulation Handlers for 24h Lock and 6h Cycle
   const handleSimulateComplete24hLock = (investmentId: string) => {
@@ -5127,23 +5129,33 @@ export default function App() {
         actionTitle={suspendedActionTitle}
       />
 
-      {/* Floating GCap AI Voice & Text Assistant Button for Users */}
+      {/* Side-Docked Edge Trigger Button for GCap AI Assistant */}
       {currentUser && (
-        <button
-          id="btn-floating-gcap-assistant"
-          onClick={() => setIsAssistantModalOpen(true)}
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-2xl shadow-emerald-950/70 hover:shadow-emerald-500/50 border border-emerald-400/50 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-          title={isHi ? 'GCap AI सहायक (बोलकर या लिखकर पूछें)' : 'Ask GCap AI Assistant (Voice or Text)'}
-        >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-          </span>
-          <Bot className="w-5 h-5 text-white animate-pulse" />
-          <span className="text-xs font-bold tracking-wide">
-            {isHi ? 'GCap सहायक 🎙️' : 'GCap AI 🎙️'}
-          </span>
-        </button>
+        <div className="fixed bottom-24 right-0 z-40 flex items-center group">
+          <button
+            id="btn-floating-gcap-assistant"
+            onClick={() => setIsAssistantModalOpen(true)}
+            className="flex items-center gap-1.5 pl-2 pr-1.5 py-2 rounded-l-2xl bg-slate-900/95 hover:bg-emerald-950/95 text-emerald-300 shadow-2xl shadow-slate-950 border-l-2 border-y border-emerald-400/60 hover:border-emerald-300 backdrop-blur-md cursor-pointer transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 group-hover:pr-3"
+            title={isHi ? 'GCap AI सहायक (क्लिक करके खोलें)' : 'Ask GCap AI Assistant'}
+          >
+            {/* Arrow mark pointing out from edge */}
+            <ChevronLeft className="w-3.5 h-3.5 text-emerald-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+            
+            {/* Glowing Green Bindi / Pulse Dot */}
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+            </span>
+
+            {/* Small Bot Icon */}
+            <Bot className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform shrink-0" />
+
+            {/* Label expands on hover */}
+            <span className="text-[11px] font-bold tracking-tight text-emerald-200 whitespace-nowrap overflow-hidden max-w-0 group-hover:max-w-xs transition-all duration-300 ease-in-out">
+              {isHi ? 'GCap सहायक' : 'AI Help'}
+            </span>
+          </button>
+        </div>
       )}
 
       {/* GCap AI Voice & Text Assistant Modal */}
