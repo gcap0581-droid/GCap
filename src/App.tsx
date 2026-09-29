@@ -5046,6 +5046,7 @@ export default function App() {
         isOpen={isAgreementOpen}
         onClose={() => setIsAgreementOpen(false)}
         user={currentUser}
+        allUsers={getAllUsers()}
         rules={rules}
         plans={plans}
         language={language}

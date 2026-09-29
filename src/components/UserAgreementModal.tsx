@@ -26,6 +26,9 @@ import { getStoredCompanyProfile } from '../utils/companyStorage';
 import { getStoredPlans } from '../utils/plansStorage';
 import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
 
+import { getAllUsers, getAllUsersAsync } from '../utils/authStorage';
+import { getCachedFirestoreState } from '../lib/firestoreBridge';
+
 interface UserAgreementModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,14 +44,15 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
   isOpen,
   onClose,
   user: initialUser,
-  allUsers = [],
+  allUsers: propAllUsers = [],
   rules,
   plans = [],
   companyProfile: propCompanyProfile,
   language,
 }) => {
   const [docLang, setDocLang] = useState<Language>(language);
-  // Admin Sample User for Generic Previews (Replaces real user data in samples)
+  
+  // Admin Sample User for Generic Previews
   const SAMPLE_USER: UserProfile = {
     id: 'usr-sample-001',
     loginId: '9999999999',
@@ -60,27 +64,88 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
     joinedDate: new Date().toISOString().split('T')[0]
   };
 
-  const [activeUser, setActiveUser] = useState<UserProfile | null>(initialUser || (allUsers.length === 0 ? SAMPLE_USER : null));
+  // State for complete users list
+  const [loadedUsers, setLoadedUsers] = useState<UserProfile[]>(() => {
+    const rawLocal = getAllUsers();
+    const cachedFs = getCachedFirestoreState();
+    const fsUsers = (cachedFs && Array.isArray(cachedFs.users)) ? cachedFs.users : [];
+    
+    const map = new Map<string, UserProfile>();
+    (propAllUsers || []).forEach(u => { if (u && u.id) map.set(u.id, u); });
+    (rawLocal || []).forEach(u => { if (u && u.id) map.set(u.id, { ...map.get(u.id), ...u }); });
+    (fsUsers || []).forEach((u: any) => { if (u && u.id) map.set(u.id, { ...map.get(u.id), ...u }); });
+    
+    return Array.from(map.values()).filter(u => u.id !== SAMPLE_USER.id);
+  });
+
+  // Dedicated selected user ID state that never gets overridden unexpectedly
+  const [selectedUserId, setSelectedUserId] = useState<string>(() => {
+    return initialUser?.id || SAMPLE_USER.id;
+  });
+
+  // Track initialUser prop changes when modal opens
+  const lastOpenedWithRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialUser && initialUser.id && initialUser.id !== lastOpenedWithRef.current) {
+        setSelectedUserId(initialUser.id);
+        lastOpenedWithRef.current = initialUser.id;
+      }
+    } else {
+      lastOpenedWithRef.current = null;
+    }
+  }, [isOpen, initialUser]);
+
+  // Auto-refresh users list on modal open or prop change
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const map = new Map<string, UserProfile>();
+    (propAllUsers || []).forEach(u => { if (u && u.id) map.set(u.id, u); });
+    (getAllUsers() || []).forEach(u => { if (u && u.id) map.set(u.id, { ...map.get(u.id), ...u }); });
+    
+    const cachedFs = getCachedFirestoreState();
+    if (cachedFs && Array.isArray(cachedFs.users)) {
+      cachedFs.users.forEach((u: any) => { if (u && u.id) map.set(u.id, { ...map.get(u.id), ...u }); });
+    }
+
+    const merged = Array.from(map.values()).filter(u => u.id !== SAMPLE_USER.id);
+    setLoadedUsers(merged);
+
+    // Also fetch latest users async from Firestore/API without disrupting current user selection
+    getAllUsersAsync().then(asyncUsers => {
+      if (Array.isArray(asyncUsers) && asyncUsers.length > 0) {
+        const asyncMap = new Map<string, UserProfile>();
+        merged.forEach(u => asyncMap.set(u.id, u));
+        asyncUsers.forEach(u => { if (u && u.id) asyncMap.set(u.id, { ...asyncMap.get(u.id), ...u }); });
+        setLoadedUsers(Array.from(asyncMap.values()).filter(u => u.id !== SAMPLE_USER.id));
+      }
+    }).catch(() => {});
+  }, [isOpen, propAllUsers]);
+
+  // Combine Sample user + all real users
+  const adminUsersList = React.useMemo(() => {
+    const map = new Map<string, UserProfile>();
+    map.set(SAMPLE_USER.id, SAMPLE_USER);
+
+    (propAllUsers || []).forEach(u => { if (u && u.id) map.set(u.id, u); });
+    (loadedUsers || []).forEach(u => { if (u && u.id) map.set(u.id, u); });
+    (getAllUsers() || []).forEach(u => { if (u && u.id) map.set(u.id, u); });
+    if (initialUser && initialUser.id) map.set(initialUser.id, initialUser);
+
+    return Array.from(map.values());
+  }, [propAllUsers, loadedUsers, initialUser]);
+
+  // Current active user object derived from selectedUserId
+  const user: UserProfile = adminUsersList.find(u => u.id === selectedUserId) ||
+                            (initialUser && initialUser.id === selectedUserId ? initialUser : null) ||
+                            adminUsersList[0] ||
+                            SAMPLE_USER;
 
   // Fallback to stored company profile if prop not provided
   const profile: CompanyProfile = propCompanyProfile || getStoredCompanyProfile();
 
-  // Combine all users with sample user for Admin dropdown
-  const adminUsersList = [SAMPLE_USER, ...allUsers.filter(u => u.id !== SAMPLE_USER.id)];
-
-  // Sync active user when initialUser prop changes
-  React.useEffect(() => {
-    if (initialUser) {
-      setActiveUser(initialUser);
-    } else if (allUsers.length > 0 && !activeUser) {
-      // If no initial user, we default to the sample user for Admin Hub general view
-      setActiveUser(SAMPLE_USER);
-    }
-  }, [initialUser, allUsers]);
-
   if (!isOpen) return null;
-
-  const user = activeUser || SAMPLE_USER;
 
   const isHi = docLang === 'hi';
   const agreementId = `GCAP-AGR-${new Date().getFullYear()}-${user.id.slice(-6).toUpperCase()}`;
@@ -160,20 +225,20 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
 
           {/* Action Toolbar: User Selector (Admin), Language Toggle & Action Buttons */}
           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-900 flex-wrap sm:flex-nowrap">
-            {/* Left: User Selector for Admin */}
-            {allUsers.length > 0 ? (
+            {/* Left: User Selector for Admin / Multi-user */}
+            {adminUsersList.length > 0 ? (
               <div className="w-full sm:w-auto min-w-0">
                 <select
+                  id="agreement-user-select"
                   value={user.id}
                   onChange={(e) => {
-                    const target = adminUsersList.find((u) => u.id === e.target.value);
-                    if (target) setActiveUser(target);
+                    setSelectedUserId(e.target.value);
                   }}
-                  className="w-full sm:w-auto max-w-full sm:max-w-xs bg-slate-900 border border-slate-700/80 text-amber-300 text-xs rounded-xl px-3 py-1.5 font-bold focus:outline-none focus:ring-1 focus:ring-amber-500 truncate cursor-pointer"
+                  className="w-full sm:w-auto max-w-full sm:max-w-xs bg-slate-900 border border-amber-500/50 text-amber-300 text-xs rounded-xl px-3 py-1.5 font-bold focus:outline-none focus:ring-1 focus:ring-amber-500 truncate cursor-pointer shadow-sm"
                 >
                   {adminUsersList.map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.id === SAMPLE_USER.id ? '📋 ' : '👤 '}{u.name} ({u.loginId})
+                      {u.id === SAMPLE_USER.id ? '📋 ' : '👤 '}{u.name} ({u.loginId || u.phone || u.id})
                     </option>
                   ))}
                 </select>
