@@ -11,7 +11,10 @@
       "status": "ACTIVE",
       "passwordHash": "ad123",
       "password": "ad123",
-      "isOnline": false
+      "isOnline": false,
+      "lastActiveAt": "2026-09-29T17:03:02.332Z",
+      "lastLoginAt": "2026-09-29T16:28:23.536Z",
+      "lastLogoutAt": "2026-09-29T17:03:02.332Z"
     },
     {
       "id": "usr-1789384741169",
@@ -1966,13 +1969,15 @@
     "shortTerm6hRate": 0.04,
     "longTerm6hRate": 0.033,
     "supportEmail": "support@gcap.in",
-    "supportPhone": "+91 98000 12345",
+    "supportPhone": "+91 8603504808",
     "lastUpdated": "2026-09-29",
     "companyUpiId": "8603504808@axisbank",
     "companyBankAccountHolder": "GCap Assets & Wealth Management Private Limited",
     "companyBankName": "Axis Bank",
     "companyBankAccountNumber": "924010002662307",
-    "companyBankIfsc": "UTIB0001219"
+    "companyBankIfsc": "UTIB0001219",
+    "adminTxPassword": "adtra123",
+    "referralL3Percent": 1
   },
   "liveConfig": {
     "appVersion": "v2.5.2-MAIN-DB",
@@ -1993,7 +1998,15 @@
     "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
     "autoSyncIntervalSec": 3
   },
-  "bankDetails": {},
+  "bankDetails": {
+    "usr-admin-01": {
+      "accountHolder": "GCap System Administrator",
+      "accountNumber": "924010008662307",
+      "ifscCode": "UTIB0001219",
+      "bankName": "Axis Bank",
+      "upiId": "8603504808@axisbank"
+    }
+  },
   "treasury": {
     "balance": 5500000,
     "minAlertThreshold": 400000,
@@ -2037,40 +2050,40 @@
     "companyNameHi": "जीकैप प्राइवेट लिमिटेड",
     "tradeName": "GCAP PRIVATE LIMITED",
     "cin": "U66190BR2026OPC088307",
-    "pan": "AABCG1234F",
-    "tan": "MUMB10293E",
-    "gstin": "27AABCG1234F1Z5",
-    "incorporationDate": "2024-01-15",
-    "rocJurisdiction": "ROC Patna, Bihar",
+    "pan": "AAMCG4365Q",
+    "tan": "PTNG16977C",
+    "gstin": "",
+    "incorporationDate": "2026-09-05",
+    "rocJurisdiction": "ROC Sasaram, Bihar",
     "companyType": "Private Limited Company (Non-Govt)",
-    "authorizedCapital": "₹5,00,00,000",
+    "authorizedCapital": "₹55,00,00,000",
     "paidUpCapital": "₹1,00,00,000",
-    "registeredAddress": "Grand Plaza, Main Road, Sasaram, Bihar - 821115",
-    "corporateAddress": "Corporate Office: Main Road, Sasaram, Bihar - 821115",
+    "registeredAddress": " Khairi , Babhangawa, Shree Nagur, Near RRP School of Nursing,Sasaram, Bihar - 821113",
+    "corporateAddress": "Khairi , Babhangawa, Shree Nagur, Near RRP School of Nursing,Sasaram, Bihar - 821113",
     "city": "Sasaram",
     "state": "Bihar",
-    "pincode": "821115",
+    "pincode": "821113",
     "supportEmail": "support@gcap.in",
     "legalEmail": "legal@gcap.in",
-    "supportPhone": "+91 98000 12345",
+    "supportPhone": "+91 8603504808",
     "altPhone": "+91 6184 220011",
     "websiteUrl": "https://gcap.in",
     "authorizedSignatory": "Amit Kumar",
     "signatoryDesignation": "Director & Authorized Signatory",
-    "signatoryDin": "DIN: 08924192",
+    "signatoryDin": "DIN: 11964641",
     "sealCity": "SASARAM (BIHAR)",
     "bankName": "Axis Bank Ltd.",
     "bankAccountNumber": "924010008662307",
     "bankIfsc": "UTIB0001219",
-    "bankBranch": "Axis Commercial Branch",
+    "bankBranch": "Sasaram Rohtash Bihar ",
     "bankAccountType": "Current Account",
     "companyUpiId": "8603504808@axisbank",
     "companyBankAccountHolder": "GCAP PRIVATE LIMITED",
     "tagline": "ASSETS & WEALTH MANAGEMENT SYSTEM",
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
-    "lastUpdated": "2026-09-29"
+    "lastUpdated": "2026-09-29T16:36:26.572Z"
   },
-  "lastUpdated": "2026-09-29T15:53:23.266Z",
+  "lastUpdated": "2026-09-29T17:04:37.050Z",
   "deletedUserIds": [],
   "messages": [
     {

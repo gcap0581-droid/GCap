@@ -46,6 +46,7 @@ export interface FirestoreDatabaseState {
   messages: AdminMessage[];
   deletedUserIds: string[];
   companyLedger?: any[];
+  companyProfile?: any;
   presence?: Record<string, UserPresenceRecord>;
   lastUpdated: string;
 }
@@ -194,6 +195,7 @@ function parseSnapshotDocs(docs: any[]): FirestoreDatabaseState {
     messages: Array.isArray(map['messages']) ? map['messages'] : [],
     deletedUserIds: Array.isArray(map['deletedUserIds']) ? map['deletedUserIds'] : [],
     companyLedger: Array.isArray(map['companyLedger']) ? map['companyLedger'] : [],
+    companyProfile: map['companyProfile'] || null,
     presence: Object.keys(presenceMap).length > 0 ? presenceMap : ((typeof map['presence'] === 'object' && map['presence']) ? map['presence'] : {}),
     lastUpdated: (map['metadata'] && map['metadata'].lastUpdated) || new Date().toISOString(),
   };
@@ -340,6 +342,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       'messages',
       'deletedUserIds',
       'companyLedger',
+      'companyProfile',
       'presence',
       'metadata',
     ];
@@ -376,6 +379,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       messages: Array.isArray(docMap['messages']) ? docMap['messages'] : [],
       deletedUserIds: Array.isArray(docMap['deletedUserIds']) ? docMap['deletedUserIds'] : [],
       companyLedger: Array.isArray(docMap['companyLedger']) ? docMap['companyLedger'] : [],
+      companyProfile: docMap['companyProfile'] || null,
       presence: (typeof docMap['presence'] === 'object' && docMap['presence']) ? docMap['presence'] : {},
       lastUpdated: (docMap['metadata'] && docMap['metadata'].lastUpdated) || new Date().toISOString(),
     };
@@ -566,6 +570,10 @@ export async function saveDeletedUserIdsToFirestore(deletedIds: string[]): Promi
 
 export async function saveCompanyLedgerToFirestore(companyLedger: any[]): Promise<boolean> {
   return await saveDocToFirestore('companyLedger', companyLedger);
+}
+
+export async function saveCompanyProfileToFirestore(companyProfile: any): Promise<boolean> {
+  return await saveDocToFirestore('companyProfile', companyProfile);
 }
 
 export async function removeDeletedUserIdFromFirestore(target: string): Promise<void> {

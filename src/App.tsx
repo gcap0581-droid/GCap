@@ -106,6 +106,7 @@ import {
   saveInvestmentsToFirestore,
   saveTransactionsToFirestore,
   saveWalletsToFirestore,
+  saveCompanyProfileToFirestore,
   getCachedFirestoreState,
   updateFirestoreBridgeCache,
   updatePresenceInFirestore,
@@ -578,6 +579,9 @@ export default function App() {
       if (fs.liveConfig) {
         setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(fs.liveConfig) ? fs.liveConfig : prev));
         saveStoredLiveConfig(fs.liveConfig);
+      }
+      if (fs.companyProfile) {
+        saveStoredCompanyProfile(fs.companyProfile);
       }
 
       // 2. Synchronize Role Data
@@ -3199,6 +3203,11 @@ export default function App() {
 
   const handleSaveCompanyProfile = async (updatedProfile: CompanyProfile) => {
     saveStoredCompanyProfile(updatedProfile);
+
+    // Save directly to Firebase Firestore for instant global multi-device sync (Render, mobile, web)
+    saveCompanyProfileToFirestore(updatedProfile).catch((err) => {
+      console.warn('Failed to persist company profile to Firestore:', err);
+    });
     
     // Persist to central server
     try {

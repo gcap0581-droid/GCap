@@ -876,6 +876,7 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
       { id: "messages", data: db.messages || [] },
       { id: "deletedUserIds", data: db.deletedUserIds || [] },
       { id: "companyLedger", data: (db as any).companyLedger || [] },
+      { id: "companyProfile", data: (db as any).companyProfile || null },
       { id: "presence", data: presenceMap }
     ];
 
@@ -910,7 +911,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
     const docs = [
       "users", "wallets", "investments", "transactions", "plans", "rules", 
       "liveConfig", "bankDetails", "treasury", "treasuryLogs", "messages", 
-      "deletedUserIds", "companyLedger", "metadata"
+      "deletedUserIds", "companyLedger", "companyProfile", "metadata"
     ];
     
     const snaps = await Promise.all(docs.map(docId => getClientDoc(clientDoc(firestore, "gcap_database", docId))));
@@ -938,6 +939,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
       messages: snapMap["messages"].data()?.data || [],
       deletedUserIds: snapMap["deletedUserIds"].data()?.data || [],
       companyLedger: snapMap["companyLedger"]?.data()?.data || [],
+      companyProfile: snapMap["companyProfile"]?.data()?.data || null,
       lastUpdated: snapMap["metadata"].data()?.lastUpdated || new Date().toISOString()
     };
 
@@ -2269,6 +2271,10 @@ async function startServer() {
       lastUpdated: new Date().toISOString()
     };
     saveDb(db);
+    broadcastRealtimeEvent("COMPANY_PROFILE_UPDATED", db.companyProfile);
+    if (firestore) {
+      saveToFirestore(db).catch((err) => console.warn("[Firebase] Failed to save companyProfile to Firestore:", err));
+    }
     res.json({ success: true, profile: db.companyProfile });
   });
 

@@ -19,7 +19,13 @@ export const CENTRAL_SERVER_ORIGIN = getCentralServerOrigin();
 export function isDirectServerHost(): boolean {
   if (typeof window === 'undefined') return true;
   const host = window.location.hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.run.app');
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.run.app') ||
+    host.endsWith('.onrender.com') ||
+    host.endsWith('.render.com')
+  );
 }
 
 /**
