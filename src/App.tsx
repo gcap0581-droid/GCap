@@ -612,11 +612,12 @@ export default function App() {
         });
       }
 
+      if (fs.users && Array.isArray(fs.users) && fs.users.length > 0) {
+        syncServerUsersToLocal(fs.users);
+      }
+
       // 2. Synchronize Role Data
       if (currentUser?.role === 'ADMIN') {
-        if (fs.users && Array.isArray(fs.users)) {
-          syncServerUsersToLocal(fs.users);
-        }
         if (fs.transactions && Array.isArray(fs.transactions)) {
           setTransactions((prev) => {
             if (!Array.isArray(prev) || prev.length === 0) {
@@ -850,11 +851,12 @@ export default function App() {
           setStoredTreasury(state.treasury);
         }
 
+        if (state.users && Array.isArray(state.users) && state.users.length > 0) {
+          syncServerUsersToLocal(state.users);
+        }
+
         // Sync Role-Specific State
         if (currentUser.role === 'ADMIN') {
-          if (state.users && Array.isArray(state.users)) {
-            syncServerUsersToLocal(state.users);
-          }
           if (state.transactions && Array.isArray(state.transactions)) {
             setTransactions((prev) => {
               const map = new Map<string, Transaction>();

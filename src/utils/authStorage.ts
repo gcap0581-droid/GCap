@@ -1243,7 +1243,42 @@ export function adminUpdateUser(userId: string, updates: any): { success: boolea
 }
 
 export function syncServerUsersToLocal(users: UserProfile[]): void {
-    console.warn('syncServerUsersToLocal is deprecated.');
+  if (!Array.isArray(users) || users.length === 0) return;
+  const validUsers = filterBlacklisted(users.filter(u => u && u.id));
+  if (validUsers.length === 0) return;
+
+  const map = new Map<string, UserProfile>();
+  cachedUsers.forEach(u => { if (u && u.id) map.set(u.id, u); });
+  validUsers.forEach(u => {
+    if (u && u.id) {
+      const existing = map.get(u.id);
+      map.set(u.id, existing ? { ...existing, ...u } : u);
+    }
+  });
+
+  cachedUsers = Array.from(map.values());
+  try {
+    localStorage.setItem('gcap_users_v2', JSON.stringify(cachedUsers));
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
+  }
+
+  // Also sync current logged-in user if their profile was updated
+  const current = getCurrentUser();
+  if (current && current.id) {
+    const updatedCur = cachedUsers.find(u => u.id === current.id || (u.loginId && u.loginId === current.loginId));
+    if (updatedCur) {
+      const mergedCur = { ...current, ...updatedCur };
+      if (JSON.stringify(current) !== JSON.stringify(mergedCur)) {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(mergedCur));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('app_current_user_updated', { detail: mergedCur }));
+        }
+      }
+    }
+  }
 }
 
 // Automatic continuous presence synchronization across all devices & PWA
