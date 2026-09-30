@@ -1337,10 +1337,10 @@ function processServerSideCycles(db: ServerDB): boolean {
       const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);
       const rawEligibleCycles = countElapsedFixedSlots(firstSlabStart, now);
       const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
-      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles);
-      const rawTargetEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
       const currentEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
-      const targetEarned = Math.max(currentEarned, rawTargetEarned);
+      const cyclesFromEarned = cyclePayout > 0 ? Math.floor(currentEarned / cyclePayout) : 0;
+      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles, cyclesFromEarned);
+      const targetEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
 
       if (totalEligibleCycles > currentCompleted || currentEarned < targetEarned) {
         hasChanges = true;

@@ -443,7 +443,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             const calcInvEarned = userInvestments.reduce((sum, inv) => {
               const invEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
               const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
-              const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
+              const isShort = inv.planId === 'short-term' || inv.durationDays === 641 || inv.planId === 'SHORT_TERM_641D';
+              const currentRate = isShort ? 0.040 : 0.033;
+              const cycleReturn = inv.cycleReturnAmount || Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
               const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
               return sum + Math.max(invEarned, calcEarned);
             }, 0);
@@ -661,10 +663,14 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             </div>
 
                             {((inv.earnedSoFar || 0) > 0 || (inv.cyclesCompleted || 0) > 0 || (inv.completedCyclesCount || 0) > 0) && (() => {
-                              const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
-                              const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
-                              const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
-                              const displayEarned = Math.max(inv.earnedSoFar || inv.totalEarnedSoFar || 0, calcEarned);
+                              const rawCompleted = Math.max(inv.cyclesCompleted || 0, inv.completedCyclesCount || 0);
+                              const isShort = inv.planId === 'short-term' || inv.durationDays === 641 || inv.planId === 'SHORT_TERM_641D';
+                              const currentRate = isShort ? 0.040 : 0.033;
+                              const cycleReturn = inv.cycleReturnAmount || Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
+                              const storedEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
+                              const cyclesFromEarned = cycleReturn > 0 ? Math.floor(storedEarned / cycleReturn) : 0;
+                              const completedCycles = Math.max(rawCompleted, cyclesFromEarned);
+                              const displayEarned = Math.round(completedCycles * cycleReturn * 100) / 100;
                               return (
                                 <div className="flex items-center justify-between text-[10px] bg-slate-950/60 px-2 py-1 rounded border border-slate-800/60 font-mono">
                                   <span className="text-slate-400">{isHi ? 'पूर्ण चक्र:' : 'Cycles:'} <strong className="text-slate-200">{completedCycles}</strong></span>

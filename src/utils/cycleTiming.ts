@@ -165,10 +165,10 @@ export function reconcileAllInvestmentsWithTime(
       const rawEligibleCycles = countElapsedFixedSlots(firstSlabStart, now);
       
       const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
-      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles);
-      const rawExpectedEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
       const actualEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
-      const expectedEarned = Math.max(actualEarned, rawExpectedEarned);
+      const cyclesFromEarned = cyclePayout > 0 ? Math.floor(actualEarned / cyclePayout) : 0;
+      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles, cyclesFromEarned);
+      const expectedEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
 
       // UI Timer Logic: The next payout milestone is the next fixed slot after (now OR firstSlabStart)
       const nextEnd = getNextFixedCycleTimestamp(Math.max(now, firstSlabStart));

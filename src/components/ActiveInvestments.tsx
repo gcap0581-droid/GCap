@@ -264,7 +264,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const isMatured = (inv.royaltyStage === '1825D_ROYALTY' ? (inv.royaltyDaysCompleted || 0) >= 1825 : (inv.daysCompleted || 0) >= durationDays) || inv.isMatured;
             const isCompleted = inv.status === 'COMPLETED';
 
-            const completedCycles = Math.max(
+            const rawCompleted = Math.max(
               inv.completedCyclesCount || 0,
               inv.cyclesCompleted || 0
             );
@@ -275,8 +275,10 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
               ? inv.totalEarnedSoFar
               : 0;
 
-            const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
-            const planEarned = Math.round(Math.max(invEarned, calcEarned) * 100) / 100;
+            const cyclePayout = inv.cycleReturnAmount || cycleReturn;
+            const cyclesFromEarned = cyclePayout > 0 ? Math.floor(invEarned / cyclePayout) : 0;
+            const completedCycles = Math.max(rawCompleted, cyclesFromEarned);
+            const planEarned = Math.round(completedCycles * cyclePayout * 100) / 100;
             const planWithdrawn = inv.totalWithdrawn || 0;
             const planNetEarnings = Math.max(0, planEarned - planWithdrawn);
 
