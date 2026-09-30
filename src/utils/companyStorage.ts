@@ -42,6 +42,23 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
 };
 
 /**
+ * Safely merges incoming company profile updates without erasing custom non-empty fields
+ */
+export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<CompanyProfile> | null): CompanyProfile {
+  if (!incoming || typeof incoming !== 'object') return base || DEFAULT_COMPANY_PROFILE;
+  const merged = { ...(base || DEFAULT_COMPANY_PROFILE) };
+  
+  (Object.keys(incoming) as (keyof CompanyProfile)[]).forEach((key) => {
+    const val = incoming[key];
+    if (typeof val === 'string' && val.trim().length > 0) {
+      (merged as any)[key] = val;
+    }
+  });
+
+  return merged;
+}
+
+/**
  * Retrieves the stored company profile or returns default
  */
 export function getStoredCompanyProfile(): CompanyProfile {
@@ -63,10 +80,7 @@ export function getStoredCompanyProfile(): CompanyProfile {
       saveStoredCompanyProfile(parsed);
     }
 
-    return {
-      ...DEFAULT_COMPANY_PROFILE,
-      ...parsed,
-    };
+    return mergeCompanyProfiles(DEFAULT_COMPANY_PROFILE, parsed);
   } catch (err) {
     console.warn('Failed to parse stored company profile:', err);
     return DEFAULT_COMPANY_PROFILE;

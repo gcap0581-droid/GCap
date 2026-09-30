@@ -46,6 +46,12 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activePreview, setActivePreview] = useState<'LETTERHEAD' | 'LEGAL_BLOCK' | 'SEAL'>('LETTERHEAD');
 
+  React.useEffect(() => {
+    if (propCompanyProfile) {
+      setFormData({ ...propCompanyProfile });
+    }
+  }, [propCompanyProfile]);
+
   const handleChange = (field: keyof CompanyProfile, value: string) => {
     setFormData((prev) => ({
       ...prev,

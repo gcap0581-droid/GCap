@@ -1147,6 +1147,9 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
         if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
           const updatedCurrent = { ...current, ...updatedUser };
           localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('app_current_user_updated', { detail: updatedCurrent }));
+          }
         }
 
         return { success: true, user: updatedUser };
@@ -1225,6 +1228,9 @@ export function adminUpdateUser(userId: string, updates: any): { success: boolea
   if (current && (current.id === userId || current.loginId === userId || current.phone === userId)) {
     const updatedCurrent = { ...current, ...cleanUpdates };
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedCurrent));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app_current_user_updated', { detail: updatedCurrent }));
+    }
   }
 
   // Trigger server & firestore update in background

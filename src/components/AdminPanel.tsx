@@ -153,6 +153,7 @@ interface AdminPanelProps {
   externalActiveSubTab?: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER';
   onExternalActiveSubTabChange?: (tab: 'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER') => void;
   onConvertAdminFeeGpToRupees?: (gpAmount: number, destination: 'TREASURY' | 'ADMIN_WALLET') => void;
+  companyProfile?: CompanyProfile;
   onSaveCompanyProfile?: (profile: CompanyProfile) => void;
   onUpdateRules?: (rules: AppRules) => void;
 }
@@ -161,6 +162,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   adminUser,
   language,
   rules,
+  companyProfile,
   wallet,
   transactions,
   plans,
@@ -2145,6 +2147,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {activeSubTab === 'COMPANY_PROFILE' && (
         <AdminCompanyProfileTab
           language={language}
+          companyProfile={companyProfile}
           onSaveProfile={onSaveCompanyProfile}
         />
       )}

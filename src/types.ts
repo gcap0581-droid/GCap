@@ -196,6 +196,7 @@ export interface UserProfile {
   role: UserRole;
   phone: string;
   email?: string;
+  address?: string;
   password?: string;
   passwordHash?: string;
   referralCode?: string;

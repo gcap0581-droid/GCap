@@ -35,7 +35,7 @@ import {
 } from './utils/storage';
 import { getNextFixedCycleTimestamp, formatFixedSlotTime, countElapsedFixedSlots, reconcileAllInvestmentsWithTime } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
-import { getStoredCompanyProfile, saveStoredCompanyProfile } from './utils/companyStorage';
+import { getStoredCompanyProfile, saveStoredCompanyProfile, mergeCompanyProfiles } from './utils/companyStorage';
 import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers, adminUpdateUserAsync, sendUserHeartbeat, AUTH_USER_KEY } from './utils/authStorage';
 import {
   getStoredPlans,
@@ -253,6 +253,28 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [plans, setPlans] = useState<InvestmentPlan[]>(getStoredPlans());
   const [rules, setRules] = useState<AppRules | null>(null);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile>(() => getStoredCompanyProfile());
+
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      if (e?.detail) {
+        setCompanyProfile(e.detail);
+      }
+    };
+    window.addEventListener('gcap_company_profile_updated', handleProfileUpdated);
+    return () => window.removeEventListener('gcap_company_profile_updated', handleProfileUpdated);
+  }, []);
+
+  useEffect(() => {
+    const handleUserUpdate = (e: any) => {
+      const updated = e?.detail || getCurrentUser();
+      if (updated && currentUser && (updated.id === currentUser.id || updated.loginId === currentUser.loginId)) {
+        setCurrentUser((prev) => (prev ? { ...prev, ...updated } : updated));
+      }
+    };
+    window.addEventListener('app_current_user_updated', handleUserUpdate);
+    return () => window.removeEventListener('app_current_user_updated', handleUserUpdate);
+  }, [currentUser?.id, currentUser?.loginId]);
   const [treasury, setTreasury] = useState<CompanyTreasury | null>(() => getStoredTreasury());
   const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>(() => getStoredTreasuryLogs());
   const [backups, setBackups] = useState<BackupRecord[]>([]);
@@ -580,7 +602,14 @@ export default function App() {
         saveStoredLiveConfig(fs.liveConfig);
       }
       if (fs.companyProfile) {
-        saveStoredCompanyProfile(fs.companyProfile);
+        setCompanyProfile((prev) => {
+          const merged = mergeCompanyProfiles(prev, fs.companyProfile);
+          if (JSON.stringify(prev) !== JSON.stringify(merged)) {
+            saveStoredCompanyProfile(merged);
+            return merged;
+          }
+          return prev;
+        });
       }
 
       // 2. Synchronize Role Data
@@ -770,16 +799,22 @@ export default function App() {
         const state = await fetchCentralState(primarySyncId, currentUser.role);
         if (isCancelled || !state || !state.success) return;
 
-        // Sync Current User Profile in real-time to preserve dismissed modals across devices
+        // Sync Current User Profile in real-time to preserve dismissed modals and custom profile fields across devices
         if (state.user) {
           setCurrentUser((prev) => {
             if (!prev) return prev;
+            const mergedUser: UserProfile = {
+              ...prev,
+              ...state.user,
+              bankDetails: state.user.bankDetails || prev.bankDetails,
+              address: state.user.address || prev.address || '',
+            };
             const prevFiltered = { ...prev, isOnline: undefined, lastActiveAt: undefined };
-            const nextFiltered = { ...state.user, isOnline: undefined, lastActiveAt: undefined };
+            const nextFiltered = { ...mergedUser, isOnline: undefined, lastActiveAt: undefined };
             const isDifferent = JSON.stringify(prevFiltered) !== JSON.stringify(nextFiltered);
             if (isDifferent) {
-              localStorage.setItem('gcap_current_user', JSON.stringify(state.user));
-              return state.user;
+              localStorage.setItem('gcap_current_user', JSON.stringify(mergedUser));
+              return mergedUser;
             }
             return prev;
           });
@@ -798,6 +833,16 @@ export default function App() {
         if (state.liveConfig) {
           setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(state.liveConfig) ? state.liveConfig : prev));
           saveStoredLiveConfig(state.liveConfig);
+        }
+        if (state.companyProfile) {
+          setCompanyProfile((prev) => {
+            const merged = mergeCompanyProfiles(prev, state.companyProfile);
+            if (JSON.stringify(prev) !== JSON.stringify(merged)) {
+              saveStoredCompanyProfile(merged);
+              return merged;
+            }
+            return prev;
+          });
         }
 
         if (state.treasury) {
@@ -3231,6 +3276,7 @@ export default function App() {
   };
 
   const handleSaveCompanyProfile = async (updatedProfile: CompanyProfile) => {
+    setCompanyProfile(updatedProfile);
     saveStoredCompanyProfile(updatedProfile);
 
     // Save directly to Firebase Firestore for instant global multi-device sync (Render, mobile, web)
@@ -4679,6 +4725,7 @@ export default function App() {
               onDeleteMessage={handleDeleteAdminMessage}
               onRefreshMessages={refreshMessages}
               onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
+              companyProfile={companyProfile}
               onSaveCompanyProfile={handleSaveCompanyProfile}
             />
           </div>
@@ -4766,6 +4813,7 @@ export default function App() {
                 externalActiveSubTab={adminMobileTab}
                 onExternalActiveSubTabChange={(tab) => setTimeout(() => setAdminMobileTab(tab), 0)}
                 onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
+                companyProfile={companyProfile}
                 onSaveCompanyProfile={handleSaveCompanyProfile}
               />
             ) : (
@@ -5067,6 +5115,7 @@ export default function App() {
         onClose={() => setIsVoucherModalOpen(false)}
         transaction={selectedVoucherTxn}
         language={language}
+        companyProfile={companyProfile}
       />
 
       {/* Official Investment Plans & Govt TDS Refund Guides Modal */}
@@ -5088,6 +5137,7 @@ export default function App() {
         rules={rules}
         plans={plans}
         language={language}
+        companyProfile={companyProfile}
       />
 
       {/* Official GCap User Manual & Operations SOP Modal */}
@@ -5121,6 +5171,7 @@ export default function App() {
           investment={selectedCertificateInvestment}
           user={currentUser}
           language={language}
+          companyProfile={companyProfile}
         />
       )}
 

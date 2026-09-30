@@ -126,20 +126,34 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       upiId: upiId.trim(),
     };
 
+    // Build user profile updates object
+    const updates: {
+      email?: string;
+      address?: string;
+      password?: string;
+      passwordHash?: string;
+      bankDetails?: BankAccountDetails;
+    } = {};
+    let isPasswordChanged = false;
+
     if (activeMenu === 'BANK') {
       setStoredBankDetails(currentUser.id, bankDetails);
       apiSaveBankDetails(currentUser.id, bankDetails).catch(() => {});
+      updates.bankDetails = bankDetails;
     }
 
-    // Save user email & password
-    const updates: { email?: string; password?: string } = {};
-    let isPasswordChanged = false;
-
-    if (email.trim() !== currentUser.email && activeMenu === 'PERSONAL') {
-      updates.email = email.trim();
+    if (activeMenu === 'PERSONAL') {
+      if (email.trim() !== (currentUser.email || '')) {
+        updates.email = email.trim();
+      }
+      if (address.trim() !== (currentUser.address || '')) {
+        updates.address = address.trim();
+      }
     }
-    if (trimmedPass && activeMenu === 'SECURITY') {
+
+    if (activeMenu === 'SECURITY' && trimmedPass) {
       updates.password = trimmedPass;
+      updates.passwordHash = trimmedPass;
       isPasswordChanged = true;
     }
 
@@ -148,7 +162,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       if (res.success && res.user && onUpdateCurrentUser) {
         onUpdateCurrentUser(res.user);
       }
-      adminUpdateUserAsync(currentUser.id, updates).catch(() => {});
+      adminUpdateUserAsync(currentUser.id, updates).then((asyncRes) => {
+        if (asyncRes && asyncRes.success && asyncRes.user && onUpdateCurrentUser) {
+          onUpdateCurrentUser(asyncRes.user);
+        }
+      }).catch(() => {});
     }
 
     if (isPasswordChanged) {

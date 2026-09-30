@@ -31,6 +31,8 @@ interface StoredAccount {
   role: "ADMIN" | "STAFF" | "USER";
   phone: string;
   email?: string;
+  address?: string;
+  bankDetails?: BankAccountDetails;
   referralCode?: string;
   referredBy?: string;
   joinedDate?: string;
@@ -939,7 +941,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
       messages: snapMap["messages"].data()?.data || [],
       deletedUserIds: snapMap["deletedUserIds"].data()?.data || [],
       companyLedger: snapMap["companyLedger"]?.data()?.data || [],
-      companyProfile: snapMap["companyProfile"]?.data()?.data || null,
+      companyProfile: snapMap["companyProfile"]?.data()?.data ? { ...DEFAULT_COMPANY_PROFILE, ...snapMap["companyProfile"].data().data } : DEFAULT_COMPANY_PROFILE,
       lastUpdated: snapMap["metadata"].data()?.lastUpdated || new Date().toISOString()
     };
 
@@ -1723,6 +1725,11 @@ function ensureDb(): ServerDB {
     if (!parsed.companyProfile || typeof parsed.companyProfile !== 'object') {
       parsed.companyProfile = DEFAULT_COMPANY_PROFILE;
       needsSave = true;
+    } else {
+      parsed.companyProfile = {
+        ...DEFAULT_COMPANY_PROFILE,
+        ...parsed.companyProfile,
+      };
     }
 
     // Ensure Admin account exists and has the requested password
@@ -3761,7 +3768,13 @@ GCap में काम कैसे होता है:
 
     const db = ensureDb();
     db.bankDetails[userId] = details;
-    saveDb(db);
+
+    const targetUser = db.users.find(u => u.id === userId || u.loginId === userId || (u.phone && u.phone.includes(userId)));
+    if (targetUser) {
+      targetUser.bankDetails = details;
+    }
+
+    saveDb(db, true);
 
     broadcastRealtimeEvent("bank_details_updated", { userId, details, timestamp: Date.now() });
     broadcastRealtimeEvent("state_changed", { type: "BANK_DETAILS_UPDATE", timestamp: Date.now() });
@@ -4996,6 +5009,7 @@ GCap में काम कैसे होता है:
     if (updates.loginId !== undefined && updates.loginId.trim()) current.loginId = updates.loginId.trim();
     if (updates.phone !== undefined) current.phone = updates.phone.trim();
     if (updates.email !== undefined) current.email = updates.email.trim();
+    if (updates.address !== undefined) current.address = updates.address.trim();
     if (updates.password && updates.password.trim()) {
       current.passwordHash = updates.password.trim();
       current.password = updates.password.trim();
@@ -5013,8 +5027,11 @@ GCap में काम कैसे होता है:
     if (updates.shownLockCongratsIds !== undefined) current.shownLockCongratsIds = updates.shownLockCongratsIds;
 
     if (updates.bankDetails && typeof updates.bankDetails === 'object') {
+      current.bankDetails = updates.bankDetails;
       db.bankDetails[userId] = updates.bankDetails;
       if (current.id) db.bankDetails[current.id] = updates.bankDetails;
+      if (current.loginId) db.bankDetails[current.loginId] = updates.bankDetails;
+      if (current.phone) db.bankDetails[current.phone] = updates.bankDetails;
     }
 
     saveDb(db, true);

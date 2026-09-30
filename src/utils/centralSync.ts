@@ -10,6 +10,7 @@ import {
   BankAccountDetails,
   UserProfile,
   AdminMessage,
+  CompanyProfile,
   UserRole,
 } from '../types';
 import { normalizeInvestmentsList, getStoredInvestments } from './storage';
@@ -276,6 +277,7 @@ export interface CentralStateResponse {
   treasury?: CompanyTreasury;
   treasuryLogs?: TreasuryLog[];
   bankDetails?: BankAccountDetails | Record<string, BankAccountDetails> | null;
+  companyProfile?: CompanyProfile;
   messages?: AdminMessage[];
   lastUpdated: string;
   serverTime?: number;
