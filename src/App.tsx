@@ -325,7 +325,6 @@ export default function App() {
         : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
         ? inv.totalEarnedSoFar
         : 0;
-      if (invEarned > 0) return sum + invEarned;
       const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
       const currentRate = !isShort || !!inv.royaltyStage ? longTermRate : shortTermRate;
       const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
@@ -334,10 +333,10 @@ export default function App() {
         inv.cyclesCompleted || 0
       );
       const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
-      return sum + calcEarned;
+      return sum + Math.max(invEarned, calcEarned);
     }, 0) * 100) / 100;
 
-    const calcEarned = portfolioEarned > 0 ? portfolioEarned : (wallet.totalEarned || 0);
+    const calcEarned = (wallet.totalEarned || 0) > 0 ? (wallet.totalEarned || 0) : (portfolioEarned > 0 ? portfolioEarned : 0);
 
     if (Math.abs(calcEarned - (wallet.totalEarned || 0)) > 0.001) {
       return {

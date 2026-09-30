@@ -201,7 +201,7 @@ export function getUserInvestments(
   const phone10 = (uPhoneDigits.length >= 10 ? uPhoneDigits.slice(-10) : uPhoneDigits) ||
                   (cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits);
 
-  return sourceList.filter((inv) => {
+  const matched = sourceList.filter((inv) => {
     if (!inv) return false;
     const invUserId = String(inv.userId || '').toLowerCase().trim();
     const invLoginId = String(inv.userLoginId || '').toLowerCase().trim();
@@ -217,23 +217,15 @@ export function getUserInvestments(
     if (phone10 && invPhone10 && invPhone10 === phone10) return true;
     if (phone10 && (invUserId.includes(phone10) || invLoginId.includes(phone10))) return true;
 
-    // Special match for Amit Kumar (7564841400)
-    const isAmitUser =
-      userId.includes('7564841400') ||
-      userId.includes('1790000000555') ||
-      uLogin.includes('7564841400') ||
-      phone10.includes('7564841400');
-    const isAmitInv =
-      inv.id === 'inv-amit-7564841400-641' ||
-      invUserId.includes('7564841400') ||
-      invUserId.includes('1790000000555') ||
-      invLoginId.includes('7564841400') ||
-      invPhone10.includes('7564841400') ||
-      (inv.planUniqueId && inv.planUniqueId.includes('75641'));
-    if (isAmitUser && isAmitInv) return true;
-
     return false;
   });
+
+  // Deduplicate by inv.id to prevent duplicate plans showing up for any user
+  const uniqueMap = new Map<string, ActiveInvestment>();
+  for (const inv of matched) {
+    if (inv && inv.id) uniqueMap.set(inv.id, inv);
+  }
+  return Array.from(uniqueMap.values());
 }
 
 // Helper to update a user's wallet across all aliases in the map

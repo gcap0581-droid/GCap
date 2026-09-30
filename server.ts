@@ -1359,10 +1359,12 @@ function processServerSideCycles(db: ServerDB): boolean {
       }
 
       // Calculate total number of fixed 6-hour cycle slots (02:00, 08:00, 14:00, 20:00 IST) passed since 24h lock ended
-      const totalEligibleCycles = countElapsedFixedSlots(lockEnd, now);
+      const rawEligibleCycles = countElapsedFixedSlots(lockEnd, now);
       const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
-      const targetEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
+      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles);
+      const rawTargetEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
       const currentEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
+      const targetEarned = Math.max(currentEarned, rawTargetEarned);
 
       if (totalEligibleCycles > currentCompleted || currentEarned < targetEarned) {
         hasChanges = true;
@@ -1455,7 +1457,7 @@ function ensureDb(): ServerDB {
         cashBalance: 0,
         gpBalance: 0,
         totalInvested: 100000,
-        totalEarned: 0,
+        totalEarned: 40,
         royaltyEarned: 0,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
@@ -1877,9 +1879,9 @@ function ensureDb(): ServerDB {
         dailyReturnAmount: 160,
         durationDays: 641,
         daysCompleted: 0,
-        earnedSoFar: 0,
-        totalEarnedSoFar: 0,
-        unclaimedEarnings: 0,
+        earnedSoFar: 40,
+        totalEarnedSoFar: 40,
+        unclaimedEarnings: 40,
         claimedSoFar: 0,
         totalExpectedReturn: 102560,
         startDate: "2026-09-28T10:30:00.000Z",
@@ -1888,12 +1890,10 @@ function ensureDb(): ServerDB {
         activationTimestamp: 1790591400000,
         createdAt: 1790591400000,
         lockedUntilTimestamp: 1790677800000,
-        isInitialLockCompleted: false,
-        lockCongratulationsShown: false,
-        completedCyclesCount: 0,
-        cyclesCompleted: 0,
-        currentCycleStartTimestamp: 1790677800000,
-        currentCycleEndTimestamp: 1790699400000,
+        isInitialLockCompleted: true,
+        lockCongratulationsShown: true,
+        completedCyclesCount: 1,
+        cyclesCompleted: 1,
         totalWithdrawn: 0,
         cycleDurationHours: 6,
         cycleReturnAmount: 40

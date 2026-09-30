@@ -86,7 +86,6 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
       : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
       ? inv.totalEarnedSoFar
       : 0;
-    if (invEarned > 0) return sum + invEarned;
     const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
     const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
     const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
@@ -97,7 +96,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
       inv.cyclesCompleted || 0
     );
     const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
-    return sum + calcEarned;
+    return sum + Math.max(invEarned, calcEarned);
   }, 0) * 100) / 100;
 
   const totalWithdrawnSoFar = investments.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
@@ -277,7 +276,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
               : 0;
 
             const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
-            const planEarned = Math.round((invEarned > 0 ? invEarned : calcEarned) * 100) / 100;
+            const planEarned = Math.round(Math.max(invEarned, calcEarned) * 100) / 100;
             const planWithdrawn = inv.totalWithdrawn || 0;
             const planNetEarnings = Math.max(0, planEarned - planWithdrawn);
 
