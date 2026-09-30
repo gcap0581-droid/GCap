@@ -2009,9 +2009,9 @@ function ensureDb(): ServerDB {
         },
         {
           id: "led-1790688785634-811",
-          type: "INCOME",
+          type: "EXPENSE",
           amount: 200,
-          category: "अन्य आय",
+          category: "अन्य व्यय",
           description: "Rubber stamp",
           date: "2026-09-29",
           addedBy: "Admin",
@@ -2019,7 +2019,7 @@ function ensureDb(): ServerDB {
         },
         {
           id: "led-1790688743297-183",
-          type: "INCOME",
+          type: "EXPENSE",
           amount: 350,
           category: "प्रशासनिक शुल्क",
           description: "Stamp paper aggreement",
@@ -2059,6 +2059,26 @@ function ensureDb(): ServerDB {
         }
       ];
       needsSave = true;
+    }
+
+    if (Array.isArray((parsed as any).companyLedger)) {
+      (parsed as any).companyLedger.forEach((entry: any) => {
+        if (!entry) return;
+        if (entry.id === "led-1790688785634-811" || (entry.description && entry.description.toLowerCase().includes("rubber stamp"))) {
+          if (entry.type !== "EXPENSE" || entry.category !== "अन्य व्यय") {
+            entry.type = "EXPENSE";
+            entry.category = "अन्य व्यय";
+            needsSave = true;
+          }
+        }
+        if (entry.id === "led-1790688743297-183" || (entry.description && entry.description.toLowerCase().includes("stamp paper"))) {
+          if (entry.type !== "EXPENSE" || entry.category !== "प्रशासनिक शुल्क") {
+            entry.type = "EXPENSE";
+            entry.category = "प्रशासनिक शुल्क";
+            needsSave = true;
+          }
+        }
+      });
     }
 
     if (needsSave || !parsed.plans || !parsed.treasury || !parsed.rules) {
@@ -2107,6 +2127,19 @@ function saveDb(db: ServerDB, immediate: boolean = false): void {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     db.lastUpdated = new Date().toISOString();
+
+    if (Array.isArray((db as any).companyLedger)) {
+      (db as any).companyLedger = (db as any).companyLedger.map((e: any) => {
+        if (!e) return e;
+        if (e.id === "led-1790688785634-811" || (e.description && String(e.description).toLowerCase().includes("rubber stamp"))) {
+          return { ...e, type: "EXPENSE", category: "अन्य व्यय" };
+        }
+        if (e.id === "led-1790688743297-183" || (e.description && String(e.description).toLowerCase().includes("stamp paper"))) {
+          return { ...e, type: "EXPENSE", category: "प्रशासनिक शुल्क" };
+        }
+        return e;
+      });
+    }
     
     // Save locally instantly to ensure 100% data durability and memory match on server
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");

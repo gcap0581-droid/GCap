@@ -71,9 +71,9 @@ export const OFFICIAL_ALL_LEDGER_ENTRIES: LedgerEntry[] = [
   },
   {
     id: "led-1790688785634-811",
-    type: "INCOME",
+    type: "EXPENSE",
     amount: 200,
-    category: "अन्य आय",
+    category: "अन्य व्यय",
     description: "Rubber stamp",
     date: "2026-09-29",
     addedBy: "Admin",
@@ -81,7 +81,7 @@ export const OFFICIAL_ALL_LEDGER_ENTRIES: LedgerEntry[] = [
   },
   {
     id: "led-1790688743297-183",
-    type: "INCOME",
+    type: "EXPENSE",
     amount: 350,
     category: "प्रशासनिक शुल्क",
     description: "Stamp paper aggreement",
@@ -120,6 +120,20 @@ export const OFFICIAL_ALL_LEDGER_ENTRIES: LedgerEntry[] = [
     createdAt: "2026-09-24T16:49:52.567Z"
   }
 ];
+
+export function sanitizeLedgerEntries(entries: LedgerEntry[]): LedgerEntry[] {
+  if (!Array.isArray(entries)) return [];
+  return entries.map((e) => {
+    if (!e) return e;
+    if (e.id === "led-1790688785634-811" || (e.description && String(e.description).toLowerCase().includes("rubber stamp"))) {
+      return { ...e, type: "EXPENSE", category: "अन्य व्यय" };
+    }
+    if (e.id === "led-1790688743297-183" || (e.description && String(e.description).toLowerCase().includes("stamp paper"))) {
+      return { ...e, type: "EXPENSE", category: "प्रशासनिक शुल्क" };
+    }
+    return e;
+  });
+}
 
 export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
   const isHi = language === 'hi';
@@ -187,7 +201,7 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
     }
   }, [type, isHi]);
 
-  // Helper to merge lists ensuring no lost entries
+  // Helper to merge lists ensuring no lost entries and respecting latest user updates
   const mergeEntries = (lists: (LedgerEntry[] | undefined)[]): LedgerEntry[] => {
     const map = new Map<string, LedgerEntry>();
     
@@ -196,23 +210,24 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
       if (item && item.id) map.set(item.id, item);
     });
 
-    // Merge each list in priority order
+    // Merge each list in priority order (later lists override earlier defaults)
     lists.forEach(list => {
       if (Array.isArray(list)) {
         list.forEach(item => {
           if (item && item.id) {
-            const existing = map.get(item.id);
-            map.set(item.id, { ...existing, ...item });
+            map.set(item.id, { ...item });
           }
         });
       }
     });
 
-    return Array.from(map.values()).sort((a, b) => {
+    const merged = Array.from(map.values()).sort((a, b) => {
       const dateA = new Date(a.date || a.createdAt).getTime();
       const dateB = new Date(b.date || b.createdAt).getTime();
       return dateB - dateA;
     });
+
+    return sanitizeLedgerEntries(merged);
   };
 
   const applyLedgerState = (entries: LedgerEntry[]) => {
@@ -221,11 +236,12 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
       valid = OFFICIAL_ALL_LEDGER_ENTRIES;
     }
     
-    // Ensure all official entries are accounted for
+    valid = sanitizeLedgerEntries(valid);
+
+    // Use valid entries directly so user edits and deletions are fully respected
     const map = new Map<string, LedgerEntry>();
-    OFFICIAL_ALL_LEDGER_ENTRIES.forEach(e => map.set(e.id, e));
     valid.forEach(e => {
-      if (e?.id) map.set(e.id, { ...map.get(e.id), ...e });
+      if (e?.id) map.set(e.id, { ...e });
     });
 
     const finalEntries = Array.from(map.values()).sort((a, b) => {

@@ -151,6 +151,18 @@ export function cleanForFirestore<T>(input: T): any {
 }
 
 function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseState {
+  if (state && Array.isArray(state.companyLedger)) {
+    state.companyLedger = state.companyLedger.map((e: any) => {
+      if (!e) return e;
+      if (e.id === "led-1790688785634-811" || (e.description && String(e.description).toLowerCase().includes("rubber stamp"))) {
+        return { ...e, type: "EXPENSE", category: "अन्य व्यय" };
+      }
+      if (e.id === "led-1790688743297-183" || (e.description && String(e.description).toLowerCase().includes("stamp paper"))) {
+        return { ...e, type: "EXPENSE", category: "प्रशासनिक शुल्क" };
+      }
+      return e;
+    });
+  }
   return state;
 }
 
@@ -569,7 +581,17 @@ export async function saveDeletedUserIdsToFirestore(deletedIds: string[]): Promi
 }
 
 export async function saveCompanyLedgerToFirestore(companyLedger: any[]): Promise<boolean> {
-  return await saveDocToFirestore('companyLedger', companyLedger);
+  const cleanLedger = Array.isArray(companyLedger) ? companyLedger.map((e: any) => {
+    if (!e) return e;
+    if (e.id === "led-1790688785634-811" || (e.description && String(e.description).toLowerCase().includes("rubber stamp"))) {
+      return { ...e, type: "EXPENSE", category: "अन्य व्यय" };
+    }
+    if (e.id === "led-1790688743297-183" || (e.description && String(e.description).toLowerCase().includes("stamp paper"))) {
+      return { ...e, type: "EXPENSE", category: "प्रशासनिक शुल्क" };
+    }
+    return e;
+  }) : [];
+  return await saveDocToFirestore('companyLedger', cleanLedger);
 }
 
 export async function saveCompanyProfileToFirestore(companyProfile: any): Promise<boolean> {
