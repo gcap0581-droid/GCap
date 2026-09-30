@@ -437,8 +437,21 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             const isSuspended = u.status === 'SUSPENDED';
             const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
             const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
-            const userWallet = getWalletForUser(u.id, wallets, users);
+            const rawUserWallet = getWalletForUser(u.id, wallets, users);
             const userInvestments = getUserInvestments(u, investments, users);
+
+            const calcInvEarned = userInvestments.reduce((sum, inv) => {
+              const invEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
+              const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
+              const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
+              const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
+              return sum + Math.max(invEarned, calcEarned);
+            }, 0);
+
+            const userWallet = {
+              ...rawUserWallet,
+              totalEarned: Math.max(rawUserWallet.totalEarned || 0, calcInvEarned)
+            };
 
             const todayStr = new Date().toISOString().split('T')[0];
             const isNew =
@@ -647,12 +660,18 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                               </div>
                             </div>
 
-                            {((inv.earnedSoFar || 0) > 0 || (inv.cyclesCompleted || 0) > 0) && (
-                              <div className="flex items-center justify-between text-[10px] bg-slate-950/60 px-2 py-1 rounded border border-slate-800/60 font-mono">
-                                <span className="text-slate-400">{isHi ? 'पूर्ण चक्र:' : 'Cycles:'} <strong className="text-slate-200">{inv.cyclesCompleted || inv.completedCyclesCount || 0}</strong></span>
-                                <span className="text-emerald-400 font-bold">{isHi ? 'कमाई:' : 'Earned:'} +₹{(inv.earnedSoFar || inv.totalEarnedSoFar || 0).toLocaleString('en-IN')}</span>
-                              </div>
-                            )}
+                            {((inv.earnedSoFar || 0) > 0 || (inv.cyclesCompleted || 0) > 0 || (inv.completedCyclesCount || 0) > 0) && (() => {
+                              const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
+                              const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
+                              const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
+                              const displayEarned = Math.max(inv.earnedSoFar || inv.totalEarnedSoFar || 0, calcEarned);
+                              return (
+                                <div className="flex items-center justify-between text-[10px] bg-slate-950/60 px-2 py-1 rounded border border-slate-800/60 font-mono">
+                                  <span className="text-slate-400">{isHi ? 'पूर्ण चक्र:' : 'Cycles:'} <strong className="text-slate-200">{completedCycles}</strong></span>
+                                  <span className="text-emerald-400 font-bold">{isHi ? 'कमाई:' : 'Earned:'} +₹{displayEarned.toLocaleString('en-IN')}</span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}
@@ -769,8 +788,21 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                   const isSuspended = u.status === 'SUSPENDED';
                   const uPhone10 = (u.phone || "").replace(/[^0-9]/g, "").slice(-10);
                   const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
-                  const userWallet = getWalletForUser(u.id, wallets, users);
+                  const rawUserWallet = getWalletForUser(u.id, wallets, users);
                   const userInvestments = getUserInvestments(u, investments, users);
+
+                  const calcInvEarned = userInvestments.reduce((sum, inv) => {
+                    const invEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
+                    const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
+                    const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
+                    const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
+                    return sum + Math.max(invEarned, calcEarned);
+                  }, 0);
+
+                  const userWallet = {
+                    ...rawUserWallet,
+                    totalEarned: Math.max(rawUserWallet.totalEarned || 0, calcInvEarned)
+                  };
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">
