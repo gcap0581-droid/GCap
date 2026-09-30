@@ -12,7 +12,7 @@
       "passwordHash": "ad123",
       "password": "ad123",
       "isOnline": true,
-      "lastActiveAt": "2026-09-30T00:31:18.011Z",
+      "lastActiveAt": "2026-09-30T00:55:02.672Z",
       "lastLoginAt": "2026-09-30T00:23:25.516Z"
     },
     {
@@ -2168,7 +2168,7 @@
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
     "lastUpdated": "2026-09-30"
   },
-  "lastUpdated": "2026-09-30T00:33:42.960Z",
+  "lastUpdated": "2026-09-30T00:55:03.124Z",
   "deletedUserIds": [],
   "messages": [
     {
@@ -2211,23 +2211,25 @@
     },
     {
       "id": "led-1790688785634-811",
-      "type": "INCOME",
+      "type": "EXPENSE",
       "amount": 200,
       "category": "अन्य आय",
       "description": "Rubber stamp",
       "date": "2026-09-29",
       "addedBy": "Admin",
-      "createdAt": "2026-09-29T13:33:05.634Z"
+      "createdAt": "2026-09-29T13:33:05.634Z",
+      "updatedAt": "2026-09-30T00:42:32.409Z"
     },
     {
       "id": "led-1790688743297-183",
-      "type": "INCOME",
+      "type": "EXPENSE",
       "amount": 350,
       "category": "प्रशासनिक शुल्क",
       "description": "Stamp paper aggreement",
       "date": "2026-09-28",
       "addedBy": "Admin",
-      "createdAt": "2026-09-29T13:32:23.297Z"
+      "createdAt": "2026-09-29T13:32:23.297Z",
+      "updatedAt": "2026-09-30T00:42:17.642Z"
     },
     {
       "id": "led-1790268660436-292",
