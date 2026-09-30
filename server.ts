@@ -2321,6 +2321,7 @@ async function startServer() {
           let localUsers: StoredAccount[] = [];
           let localWallets: Record<string, any> = {};
           let localInvestments: any[] = [];
+          let localTransactions: any[] = [];
           let localLedger: any[] = [];
           let localTreasury: any = null;
           let localTreasuryLogs: any[] = [];
@@ -2330,6 +2331,7 @@ async function startServer() {
               if (Array.isArray(localRaw.users)) localUsers = localRaw.users;
               if (localRaw.wallets) localWallets = localRaw.wallets;
               if (Array.isArray(localRaw.investments)) localInvestments = localRaw.investments;
+              if (Array.isArray(localRaw.transactions)) localTransactions = localRaw.transactions;
               if (Array.isArray(localRaw.companyLedger)) localLedger = localRaw.companyLedger;
               if (localRaw.treasury) localTreasury = localRaw.treasury;
               if (Array.isArray(localRaw.treasuryLogs)) localTreasuryLogs = localRaw.treasuryLogs;
@@ -2418,6 +2420,22 @@ async function startServer() {
             }
           }
           remoteDb.wallets = mergedWallets;
+          
+          const txnMap = new Map<string, any>();
+          (localTransactions || []).forEach((t: any) => { if (t?.id) txnMap.set(t.id, t); });
+          (remoteDb.transactions || []).forEach((t: any) => {
+            if (t?.id) {
+              if (!txnMap.has(t.id)) {
+                txnMap.set(t.id, t);
+              } else {
+                txnMap.set(t.id, { ...txnMap.get(t.id), ...t });
+              }
+            }
+          });
+          remoteDb.transactions = Array.from(txnMap.values()).sort(
+            (a: any, b: any) => (b.timestamp || new Date(b.date || b.createdAt || 0).getTime()) - (a.timestamp || new Date(a.date || a.createdAt || 0).getTime())
+          );
+
           remoteDb.investments = Array.from(invMap.values());
 
           fs.writeFileSync(DB_FILE, JSON.stringify(remoteDb, null, 2), "utf-8");

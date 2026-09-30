@@ -810,9 +810,19 @@ export default function App() {
           if (state.users && Array.isArray(state.users)) {
             syncServerUsersToLocal(state.users);
           }
-          if (state.transactions) {
-            setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(state.transactions) ? state.transactions : prev));
-            setStoredTransactions(state.transactions);
+          if (state.transactions && Array.isArray(state.transactions)) {
+            setTransactions((prev) => {
+              const map = new Map<string, Transaction>();
+              (prev || []).forEach((t) => { if (t?.id) map.set(t.id, t); });
+              state.transactions.forEach((t: Transaction) => {
+                if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
+              });
+              const merged = Array.from(map.values()).sort(
+                (a, b) => (b.timestamp || new Date(b.date || 0).getTime()) - (a.timestamp || new Date(a.date || 0).getTime())
+              );
+              setStoredTransactions(merged);
+              return merged;
+            });
           }
           if (state.investments) {
             setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(state.investments) ? state.investments : prev));
@@ -2277,9 +2287,19 @@ export default function App() {
           saveStoredLiveConfig(state.liveConfig);
         }
         if (user.role === 'ADMIN') {
-          if (state.transactions) {
-            setTransactions(state.transactions);
-            setStoredTransactions(state.transactions);
+          if (state.transactions && Array.isArray(state.transactions)) {
+            setTransactions((prev) => {
+              const map = new Map<string, Transaction>();
+              (prev || []).forEach((t) => { if (t?.id) map.set(t.id, t); });
+              state.transactions.forEach((t: Transaction) => {
+                if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
+              });
+              const merged = Array.from(map.values()).sort(
+                (a, b) => (b.timestamp || new Date(b.date || 0).getTime()) - (a.timestamp || new Date(a.date || 0).getTime())
+              );
+              setStoredTransactions(merged);
+              return merged;
+            });
           }
           if (state.investments) {
             setInvestments(state.investments);
@@ -2297,9 +2317,19 @@ export default function App() {
             setWallet(state.wallet);
             setStoredWallet(state.wallet, user.id);
           }
-          if (state.transactions) {
-            setTransactions(state.transactions);
-            setStoredTransactions(state.transactions);
+          if (state.transactions && Array.isArray(state.transactions)) {
+            setTransactions((prev) => {
+              const map = new Map<string, Transaction>();
+              (prev || []).forEach((t) => { if (t?.id) map.set(t.id, t); });
+              state.transactions.forEach((t: Transaction) => {
+                if (t?.id) map.set(t.id, { ...map.get(t.id), ...t });
+              });
+              const merged = Array.from(map.values()).sort(
+                (a, b) => (b.timestamp || new Date(b.date || 0).getTime()) - (a.timestamp || new Date(a.date || 0).getTime())
+              );
+              setStoredTransactions(merged);
+              return merged;
+            });
           }
           if (state.investments) {
             setInvestments(state.investments);
