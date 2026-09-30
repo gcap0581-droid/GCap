@@ -450,7 +450,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
             const userWallet = {
               ...rawUserWallet,
-              totalEarned: Math.max(rawUserWallet.totalEarned || 0, calcInvEarned)
+              totalEarned: userInvestments.length > 0 ? calcInvEarned : (rawUserWallet.totalEarned || 0)
             };
 
             const todayStr = new Date().toISOString().split('T')[0];

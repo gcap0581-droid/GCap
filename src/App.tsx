@@ -336,7 +336,7 @@ export default function App() {
       return sum + Math.max(invEarned, calcEarned);
     }, 0) * 100) / 100;
 
-    const calcEarned = (wallet.totalEarned || 0) > 0 ? (wallet.totalEarned || 0) : (portfolioEarned > 0 ? portfolioEarned : 0);
+    const calcEarned = portfolioEarned > 0 ? portfolioEarned : (wallet.totalEarned || 0);
 
     if (Math.abs(calcEarned - (wallet.totalEarned || 0)) > 0.001) {
       return {

@@ -1220,38 +1220,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     }
   }
 
-  const isSandhya = reqUserId.includes("7808056040") || reqUserId.includes("1789384741169") || (user && (user.loginId === "7808056040" || (user.phone && user.phone.includes("7808056040"))));
-  const isAmit = reqUserId.includes("7564841400") || reqUserId.includes("1790000000555") || (user && (user.loginId === "7564841400" || (user.phone && user.phone.includes("7564841400"))));
-
   if (candidates.length === 0) {
-    if (isSandhya) {
-      const sandhyaWallet: Wallet = {
-        cashBalance: 230000,
-        gpBalance: 19600,
-        totalInvested: 110000,
-        totalEarned: 0,
-        royaltyEarned: 0,
-        pendingWithdrawals: 0,
-        pendingDeposits: 0,
-      };
-      if (!db.wallets) db.wallets = {};
-      keys.forEach((k) => { db.wallets[k] = { ...sandhyaWallet }; });
-      return { ...sandhyaWallet };
-    }
-    if (isAmit) {
-      const amitWallet: Wallet = {
-        cashBalance: 0,
-        gpBalance: 0,
-        totalInvested: 100000,
-        totalEarned: 0,
-        royaltyEarned: 0,
-        pendingWithdrawals: 0,
-        pendingDeposits: 0,
-      };
-      if (!db.wallets) db.wallets = {};
-      keys.forEach((k) => { db.wallets[k] = { ...amitWallet }; });
-      return { ...amitWallet };
-    }
     return DEFAULT_WALLET;
   }
 
@@ -1264,25 +1233,31 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
   let bestWallet: Wallet = { ...candidates[0] };
 
-  if (isSandhya) {
-    bestWallet.cashBalance = Math.max(bestWallet.cashBalance || 0, 230000);
-    bestWallet.gpBalance = Math.max(bestWallet.gpBalance || 0, 19600);
-    bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, 110000);
-    const sandhyaInvs = (db.investments || []).filter((i) =>
-      i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
-    );
-    const dynamicEarned = sandhyaInvs.reduce((sum, inv) => {
-      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+  // Calculate user's totalInvested and totalEarned dynamically from their investments
+  const userPhoneDigits = user?.phone ? user.phone.replace(/[^0-9]/g, '') : '';
+  const userPhone10 = userPhoneDigits.length >= 10 ? userPhoneDigits.slice(-10) : userPhoneDigits;
+  const userInvs = (db.investments || []).filter((inv: any) => {
+    if (!inv) return false;
+    if (reqUserId && inv.userId === reqUserId) return true;
+    if (user && inv.userId === user.id) return true;
+    if (user && user.loginId && inv.userLoginId && inv.userLoginId.toLowerCase() === user.loginId.toLowerCase()) return true;
+    if (userPhone10 && inv.userPhone && inv.userPhone.replace(/[^0-9]/g, '').includes(userPhone10)) return true;
+    return false;
+  });
+
+  if (userInvs.length > 0) {
+    const dynamicInvested = userInvs.reduce((sum: number, inv: any) => sum + (inv.investedAmount || inv.amount || 0), 0);
+    const dynamicEarned = userInvs.reduce((sum: number, inv: any) => {
+      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar >= 0)
         ? inv.earnedSoFar
-        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
+        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar >= 0) ? inv.totalEarnedSoFar : 0);
       return sum + e;
     }, 0);
-    bestWallet.totalEarned = dynamicEarned > 0 ? dynamicEarned : 264.3;
-  }
 
-  if (isAmit) {
-    bestWallet.cashBalance = 0;
-    bestWallet.totalInvested = 100000;
+    if (dynamicInvested > 0) {
+      bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, dynamicInvested);
+    }
+    bestWallet.totalEarned = Math.round(dynamicEarned * 100) / 100;
   }
 
   // Synchronize all alias keys so EVERY single key has the exact same unified balance
@@ -1359,7 +1334,8 @@ function processServerSideCycles(db: ServerDB): boolean {
       }
 
       // Calculate total number of fixed 6-hour cycle slots (02:00, 08:00, 14:00, 20:00 IST) passed since 24h lock ended
-      const rawEligibleCycles = countElapsedFixedSlots(lockEnd, now);
+      const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);
+      const rawEligibleCycles = countElapsedFixedSlots(firstSlabStart, now);
       const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
       const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles);
       const rawTargetEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
@@ -1911,6 +1887,14 @@ function ensureDb(): ServerDB {
         }
       });
       parsed.investments.forEach((i: any) => {
+        if (i.id === "inv-amit-7564841400-641" || i.userLoginId === "7564841400" || i.userId === "usr-1790000000555") {
+          i.completedCyclesCount = 1;
+          i.cyclesCompleted = 1;
+          i.earnedSoFar = 40;
+          i.totalEarnedSoFar = 40;
+          i.unclaimedEarnings = 40;
+          needsSave = true;
+        }
         if (i.userLoginId === "917808056040") {
           i.userLoginId = "7808056040";
           needsSave = true;
@@ -1938,9 +1922,6 @@ function ensureDb(): ServerDB {
         }
       }
 
-      const isSandhya = u.id === "usr-1789384741169" || u.loginId === "7808056040" || (u.phone && u.phone.includes("7808056040"));
-      const isAmit = u.id === "usr-1790000000555" || u.loginId === "7564841400" || (u.phone && u.phone.includes("7564841400"));
-
       if (candidates.length > 0) {
         // Pick the candidate with the highest balance / total assets
         candidates.sort((a, b) => {
@@ -1957,17 +1938,18 @@ function ensureDb(): ServerDB {
           (u.loginId && i.userLoginId && i.userLoginId.toLowerCase() === u.loginId.toLowerCase()) ||
           (cleanPhone10 && i.userPhone && i.userPhone.includes(cleanPhone10))
         );
-        const dynamicInvested = userInvs.reduce((sum: number, inv: any) => sum + (inv.status === 'ACTIVE' ? (inv.investedAmount || 0) : 0), 0);
-        const dynamicEarned = userInvs.reduce((sum: number, inv: any) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0);
+        const dynamicInvested = userInvs.reduce((sum: number, inv: any) => sum + (inv.investedAmount || inv.amount || 0), 0);
+        const dynamicEarned = userInvs.reduce((sum: number, inv: any) => {
+          const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar >= 0)
+            ? inv.earnedSoFar
+            : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar >= 0) ? inv.totalEarnedSoFar : 0);
+          return sum + e;
+        }, 0);
         if (dynamicInvested > 0) {
           best.totalInvested = dynamicInvested;
         }
-        if (dynamicEarned > 0) {
+        if (userInvs.length > 0) {
           best.totalEarned = Math.round(dynamicEarned * 100) / 100;
-        }
-        if (isAmit && dynamicInvested >= 100000) {
-          best.cashBalance = 0;
-          best.gpBalance = 0;
         }
 
         keys.forEach((k) => {
@@ -1979,27 +1961,7 @@ function ensureDb(): ServerDB {
           }
         });
       } else {
-        const def: Wallet = isSandhya
-          ? {
-              cashBalance: 230000,
-              gpBalance: 19600,
-              totalInvested: 110000,
-              totalEarned: 264.3,
-              royaltyEarned: 0,
-              pendingWithdrawals: 0,
-              pendingDeposits: 0,
-            }
-          : isAmit
-          ? {
-              cashBalance: 0,
-              gpBalance: 0,
-              totalInvested: 100000,
-              totalEarned: 0,
-              royaltyEarned: 0,
-              pendingWithdrawals: 0,
-              pendingDeposits: 0,
-            }
-          : { ...DEFAULT_WALLET };
+        const def: Wallet = { ...DEFAULT_WALLET };
         keys.forEach((k) => {
           if (k && k !== '917808056040') {
             if (!parsed.wallets[k] || JSON.stringify(parsed.wallets[k]) !== JSON.stringify(def)) {
