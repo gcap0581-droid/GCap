@@ -46,8 +46,17 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
  */
 export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<CompanyProfile> | null): CompanyProfile {
   if (!incoming || typeof incoming !== 'object') return base || DEFAULT_COMPANY_PROFILE;
-  const merged = { ...(base || DEFAULT_COMPANY_PROFILE) };
-  
+  const baseObj = base || DEFAULT_COMPANY_PROFILE;
+
+  // Merge order: Defaults -> Base -> Incoming (Incoming ALWAYS takes precedence)
+  const merged: CompanyProfile = {
+    ...DEFAULT_COMPANY_PROFILE,
+    ...baseObj,
+    ...incoming,
+    lastUpdated: incoming.lastUpdated || baseObj.lastUpdated || new Date().toISOString(),
+  };
+
+  // Guarantee every non-empty field in incoming overrides previous values
   (Object.keys(incoming) as (keyof CompanyProfile)[]).forEach((key) => {
     const val = incoming[key];
     if (typeof val === 'string' && val.trim().length > 0) {
@@ -69,17 +78,6 @@ export function getStoredCompanyProfile(): CompanyProfile {
       return DEFAULT_COMPANY_PROFILE;
     }
     const parsed = JSON.parse(raw);
-    
-    // Auto-migrate old name if it exists in storage
-    const oldNameKeyword = 'ASSETS & WEALTH MANAGEMENT';
-    if (parsed.companyName && parsed.companyName.toUpperCase().includes(oldNameKeyword)) {
-      parsed.companyName = 'GCAP PRIVATE LIMITED';
-      parsed.tradeName = 'GCAP PRIVATE LIMITED';
-      parsed.companyNameHi = 'जीकैप प्राइवेट लिमिटेड';
-      parsed.companyBankAccountHolder = 'GCAP PRIVATE LIMITED';
-      saveStoredCompanyProfile(parsed);
-    }
-
     return mergeCompanyProfiles(DEFAULT_COMPANY_PROFILE, parsed);
   } catch (err) {
     console.warn('Failed to parse stored company profile:', err);
@@ -94,7 +92,7 @@ export function saveStoredCompanyProfile(profile: CompanyProfile): void {
   try {
     const payload = {
       ...profile,
-      lastUpdated: new Date().toISOString().split('T')[0],
+      lastUpdated: new Date().toISOString(),
     };
     localStorage.setItem(COMPANY_PROFILE_STORAGE_KEY, JSON.stringify(payload));
 

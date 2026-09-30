@@ -3254,21 +3254,6 @@ export default function App() {
       console.warn('Failed to sync plans on rules update:', e);
     }
 
-    // Sync bank details to company profile
-    try {
-      const profile = getStoredCompanyProfile();
-      const updatedProfile = {
-        ...profile,
-        bankName: updatedRules.companyBankName || profile.bankName,
-        bankAccountNumber: updatedRules.companyBankAccountNumber || profile.bankAccountNumber,
-        bankIfsc: updatedRules.companyBankIfsc || profile.bankIfsc,
-        companyName: updatedRules.companyBankAccountHolder || profile.companyName,
-      };
-      saveStoredCompanyProfile(updatedProfile);
-    } catch (e) {
-      console.warn('Failed to sync company profile:', e);
-    }
-
     showToast(
       isHi ? 'नियम व शर्तें अपडेट हुईं' : 'Rules Updated',
       isHi
@@ -3277,7 +3262,11 @@ export default function App() {
     );
   };
 
-  const handleSaveCompanyProfile = async (updatedProfile: CompanyProfile) => {
+  const handleSaveCompanyProfile = async (rawProfile: CompanyProfile) => {
+    const updatedProfile = {
+      ...rawProfile,
+      lastUpdated: new Date().toISOString(),
+    };
     setCompanyProfile(updatedProfile);
     saveStoredCompanyProfile(updatedProfile);
 
