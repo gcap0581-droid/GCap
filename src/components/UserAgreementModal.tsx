@@ -22,7 +22,7 @@ import { Language, UserProfile, AppRules, InvestmentPlan, CompanyProfile, Active
 import { formatINR, getStoredInvestments, normalizeInvestmentsList } from '../utils/storage';
 import { getStoredRules } from '../utils/rulesStorage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
-import { getStoredCompanyProfile } from '../utils/companyStorage';
+import { getStoredCompanyProfile, mergeCompanyProfiles, DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
 import { getStoredPlans } from '../utils/plansStorage';
 import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
 
@@ -136,8 +136,12 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                             adminUsersList[0] ||
                             SAMPLE_USER;
 
-  // Fallback to stored company profile
-  const profile: CompanyProfile = propCompanyProfile || getStoredCompanyProfile();
+  // Fallback to prop, Firestore state, or local stored company profile
+  const profile: CompanyProfile = React.useMemo(() => {
+    const fsProfile = getCachedFirestoreState()?.companyProfile;
+    const localProfile = getStoredCompanyProfile();
+    return mergeCompanyProfiles(DEFAULT_COMPANY_PROFILE, propCompanyProfile || fsProfile || localProfile);
+  }, [propCompanyProfile, isOpen]);
 
   // Fetch all user investments and group by date
   const allInvs = React.useMemo(() => {

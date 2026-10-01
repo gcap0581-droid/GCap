@@ -98,23 +98,30 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   const [amount, setAmount] = useState<number>(maxWithdrawable);
   const [destinationType, setDestinationType] = useState<'UPI' | 'BANK'>('UPI');
-  const [upiId, setUpiId] = useState<string>('investor@okhdfcbank');
-  const [accountNo, setAccountNo] = useState<string>('918237465012');
-  const [ifsc, setIfsc] = useState<string>('HDFC0001234');
-  const [accountName, setAccountName] = useState<string>('Amit Kumar');
+  const [upiId, setUpiId] = useState<string>('');
+  const [accountNo, setAccountNo] = useState<string>('');
+  const [ifsc, setIfsc] = useState<string>('');
+  const [accountName, setAccountName] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   React.useEffect(() => {
     if (isOpen && currentUser) {
-      const saved = currentUser.bankDetails || getStoredBankDetails(currentUser.id);
+      const saved = currentUser.bankDetails ||
+        getStoredBankDetails(currentUser.id) ||
+        (currentUser.loginId ? getStoredBankDetails(currentUser.loginId) : null) ||
+        (currentUser.phone ? getStoredBankDetails(currentUser.phone) : null);
+
       if (saved) {
-        if (saved.upiId) setUpiId(saved.upiId);
-        if (saved.accountNumber) setAccountNo(saved.accountNumber);
-        if (saved.ifscCode) setIfsc(saved.ifscCode);
-        if (saved.accountHolder) setAccountName(saved.accountHolder);
+        setUpiId(saved.upiId || '');
+        setAccountNo(saved.accountNumber || '');
+        setIfsc(saved.ifscCode || '');
+        setAccountName(saved.accountHolder || currentUser.name || '');
       } else {
-        if (currentUser.name) setAccountName(currentUser.name);
+        setUpiId('');
+        setAccountNo('');
+        setIfsc('');
+        setAccountName(currentUser.name || '');
       }
       // Keep amount synchronized with real maxWithdrawable on open
       setAmount(maxWithdrawable);

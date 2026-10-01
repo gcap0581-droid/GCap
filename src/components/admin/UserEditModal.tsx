@@ -21,6 +21,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Language, UserProfile, UserRole, Wallet, BankAccountDetails, StaffPermissions } from '../../types';
+import { getStoredBankDetails } from '../../utils/storage';
 
 export interface UserEditModalProps {
   isOpen: boolean;
@@ -160,11 +161,12 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         setPermManageTreasury(user.permissions?.manageTreasury ?? false);
         setPermManageBroadcast(user.permissions?.manageBroadcast ?? false);
 
-        setAccountHolder(bankDetails?.accountHolder || user.name || '');
-        setAccountNumber(bankDetails?.accountNumber || '');
-        setIfscCode(bankDetails?.ifscCode || '');
-        setBankName(bankDetails?.bankName || '');
-        setUpiId(bankDetails?.upiId || '');
+        const effectiveBank = bankDetails || user.bankDetails || getStoredBankDetails(user.id) || (user.loginId ? getStoredBankDetails(user.loginId) : null) || (user.phone ? getStoredBankDetails(user.phone) : null);
+        setAccountHolder(effectiveBank?.accountHolder || user.name || '');
+        setAccountNumber(effectiveBank?.accountNumber || '');
+        setIfscCode(effectiveBank?.ifscCode || '');
+        setBankName(effectiveBank?.bankName || '');
+        setUpiId(effectiveBank?.upiId || '');
 
         setAdjAmount('');
         setAdjReason('');
@@ -325,7 +327,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           joinedDate: joinedDate.trim(),
           referralCode: referralCode.trim() || undefined,
           referredBy: referredBy.trim() || undefined,
-          bankDetails: (accountNumber.trim() || upiId.trim()) ? {
+          bankDetails: (accountNumber.trim() || upiId.trim() || bankName.trim() || ifscCode.trim()) ? {
             accountHolder: accountHolder.trim() || name.trim(),
             accountNumber: accountNumber.trim(),
             ifscCode: ifscCode.trim().toUpperCase(),

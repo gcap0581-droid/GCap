@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Language, UserProfile } from '../types';
+import { getStoredCompanyProfile } from '../utils/companyStorage';
 
 export interface ChatMessage {
   id: string;
@@ -211,7 +212,8 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
     q.includes('office') ||
     q.includes('address')
   ) {
-    return `🏛️ **GCap Capital आधिकारिक एवं वैधानिक विवरण:**\n\n• **कंपनी का नाम**: GCAP PRIVATE LIMITED\n• **CIN**: U66190BR2026OPC088307\n• **पैन (PAN)**: AABCG1234F | **टैन (TAN)**: MUMB10293E\n• **निदेशक / अधिकृत हस्ताक्षरकर्ता**: Amit Kumar\n• **पंजीकृत कार्यालय**: Grand Plaza, Main Road, Sasaram, Bihar - 821115\n• **हेल्पलाइन ईमेल**: support@gcap.in\n• **कस्टमर केयर फ़ोन**: +91 98000 12345\n\nGCap भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA) के अधीन पूरी तरह पंजीकृत एवं सुरक्षित परिसंपत्ति प्रबंधन संस्था है।`;
+    const prof = getStoredCompanyProfile();
+    return `🏛️ **${prof.companyName} आधिकारिक एवं वैधानिक विवरण:**\n\n• **कंपनी का नाम**: ${prof.companyName}\n• **CIN**: ${prof.cin || 'N/A'}\n• **पैन (PAN)**: ${prof.pan || 'N/A'} | **टैन (TAN)**: ${prof.tan || 'N/A'}\n• **निदेशक / अधिकृत हस्ताक्षरकर्ता**: ${prof.authorizedSignatory || 'Director'}\n• **पंजीकृत कार्यालय**: ${prof.registeredAddress}\n• **हेल्पलाइन ईमेल**: ${prof.supportEmail}\n• **कस्टमर केयर फ़ोन**: ${prof.supportPhone}\n\n${prof.companyName} भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA) के अधीन पूरी तरह पंजीकृत एवं सुरक्षित परिसंपत्ति प्रबंधन संस्था है।`;
   }
 
   // 9. Referral & Team Income

@@ -1,10 +1,12 @@
 import { UserProfile, Wallet } from '../types';
 import { subscribeToRealtimeEvents } from './realtimeSync';
 import { apiFetch } from './apiConfig';
+import { setStoredBankDetails } from './storage';
 import {
   fetchFullFirestoreState,
   saveUsersToFirestore,
   saveWalletsToFirestore,
+  saveBankDetailsToFirestore,
   saveDeletedUserIdsToFirestore,
   removeDeletedUserIdFromFirestore,
   subscribeToFirestoreState,
@@ -1123,6 +1125,31 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
   }
   if (cleanUpdates.passwordHash && !cleanUpdates.password) {
     cleanUpdates.password = cleanUpdates.passwordHash;
+  }
+
+  if (cleanUpdates.bankDetails && typeof cleanUpdates.bankDetails === 'object') {
+    const target = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);
+    const aliases = new Set<string>([userId]);
+    if (target) {
+      if (target.id) aliases.add(target.id);
+      if (target.loginId) aliases.add(target.loginId);
+      if (target.phone) {
+        const p = target.phone.replace(/[^0-9]/g, '');
+        if (p) aliases.add(p);
+        if (p.length >= 10) aliases.add(p.slice(-10));
+      }
+    }
+    aliases.forEach((aliasKey) => {
+      setStoredBankDetails(aliasKey, cleanUpdates.bankDetails);
+    });
+
+    fetchFullFirestoreState().then((fsState) => {
+      const currentBankMap = fsState?.bankDetails || {};
+      aliases.forEach((aliasKey) => {
+        currentBankMap[aliasKey] = cleanUpdates.bankDetails;
+      });
+      saveBankDetailsToFirestore(currentBankMap).catch(() => {});
+    }).catch(() => {});
   }
 
   try {

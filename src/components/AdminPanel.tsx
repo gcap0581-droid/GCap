@@ -55,7 +55,7 @@ import {
   StaffPermissions,
   CompanyProfile,
 } from '../types';
-import { formatINR } from '../utils/storage';
+import { formatINR, getStoredBankDetails } from '../utils/storage';
 import { DEFAULT_ALERT_THRESHOLD } from '../utils/treasuryStorage';
 import {
   getAllUsers,
@@ -2233,6 +2233,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onClose={() => setUserModalOpen(false)}
         user={selectedUser}
         wallet={selectedUser ? getWalletForUser(selectedUser.id, walletsMap, usersList) : undefined}
+        bankDetails={selectedUser ? (selectedUser.bankDetails || getStoredBankDetails(selectedUser.id)) : undefined}
         initialTab={userModalInitialTab}
         onSave={handleSaveUser}
         language={language}
@@ -2260,6 +2261,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         rules={rules}
         plans={plans}
         language={language}
+        companyProfile={companyProfile}
       />
 
       <AdminApprovalPasswordModal
