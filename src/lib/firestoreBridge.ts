@@ -20,6 +20,7 @@ import {
   AdminMessage,
 } from '../types';
 import { DEFAULT_GCAP_RULES } from '../utils/rulesStorage';
+import { DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
 
 export interface UserPresenceRecord {
   userId: string;
@@ -163,6 +164,18 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
       return e;
     });
   }
+
+  if (state) {
+    if (!state.companyProfile || state.companyProfile.pan === 'AABCG1234F' || (state.companyProfile.registeredAddress && state.companyProfile.registeredAddress.includes('Grand Plaza'))) {
+      state.companyProfile = DEFAULT_COMPANY_PROFILE;
+    } else {
+      state.companyProfile = {
+        ...DEFAULT_COMPANY_PROFILE,
+        ...state.companyProfile,
+      };
+    }
+  }
+
   return state;
 }
 

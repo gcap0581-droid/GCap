@@ -373,13 +373,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           ...(cleanDigits ? { [cleanDigits]: event.wallet! } : {}),
           ...(clean10 ? { [clean10]: event.wallet! } : {}),
         }));
-      } else if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
+      } else if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED' || event.type === 'USER_STATUS_CHANGED' || event.type === 'USER_ADDED' || event.type === 'USER_DELETED') {
         refreshUsers(false);
       }
     });
 
+    // 5. Periodic presence re-evaluation interval (keeps badges 100% accurate in real-time)
+    const presenceTimer = setInterval(() => {
+      setUsersList((prev) => enrichUsersWithPresence(prev));
+    }, 4000);
+
     return () => {
       clearTimeout(tInit);
+      clearInterval(presenceTimer);
       unsubscribeStorage();
       unsubscribeFirestore();
       unsubscribeRealtime();

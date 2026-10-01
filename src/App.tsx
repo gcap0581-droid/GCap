@@ -35,7 +35,7 @@ import {
 } from './utils/storage';
 import { getNextFixedCycleTimestamp, formatFixedSlotTime, countElapsedFixedSlots, reconcileAllInvestmentsWithTime } from './utils/cycleTiming';
 import { getStoredRules, saveStoredRules, resetRulesToDefault } from './utils/rulesStorage';
-import { getStoredCompanyProfile, saveStoredCompanyProfile, mergeCompanyProfiles } from './utils/companyStorage';
+import { getStoredCompanyProfile, saveStoredCompanyProfile, mergeCompanyProfiles, DEFAULT_COMPANY_PROFILE } from './utils/companyStorage';
 import { getCurrentUser, logoutUser, syncServerUsersToLocal, getAllUsers, adminUpdateUserAsync, sendUserHeartbeat, AUTH_USER_KEY } from './utils/authStorage';
 import {
   getStoredPlans,
@@ -602,14 +602,12 @@ export default function App() {
         saveStoredLiveConfig(fs.liveConfig);
       }
       if (fs.companyProfile) {
-        setCompanyProfile((prev) => {
-          const merged = mergeCompanyProfiles(prev, fs.companyProfile);
-          if (JSON.stringify(prev) !== JSON.stringify(merged)) {
-            saveStoredCompanyProfile(merged);
-            return merged;
-          }
-          return prev;
-        });
+        const cleanFsProfile = (fs.companyProfile.pan === 'AABCG1234F' || (fs.companyProfile.registeredAddress && fs.companyProfile.registeredAddress.includes('Grand Plaza')))
+          ? DEFAULT_COMPANY_PROFILE
+          : fs.companyProfile;
+        const merged = mergeCompanyProfiles(getStoredCompanyProfile(), cleanFsProfile);
+        setCompanyProfile((prev) => (JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev));
+        saveStoredCompanyProfile(merged);
       }
 
       if (fs.users && Array.isArray(fs.users) && fs.users.length > 0) {
@@ -836,14 +834,12 @@ export default function App() {
           saveStoredLiveConfig(state.liveConfig);
         }
         if (state.companyProfile) {
-          setCompanyProfile((prev) => {
-            const merged = mergeCompanyProfiles(prev, state.companyProfile);
-            if (JSON.stringify(prev) !== JSON.stringify(merged)) {
-              saveStoredCompanyProfile(merged);
-              return merged;
-            }
-            return prev;
-          });
+          const cleanStateProfile = (state.companyProfile.pan === 'AABCG1234F' || (state.companyProfile.registeredAddress && state.companyProfile.registeredAddress.includes('Grand Plaza')))
+            ? DEFAULT_COMPANY_PROFILE
+            : state.companyProfile;
+          const merged = mergeCompanyProfiles(getStoredCompanyProfile(), cleanStateProfile);
+          setCompanyProfile((prev) => (JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev));
+          saveStoredCompanyProfile(merged);
         }
 
         if (state.treasury) {
@@ -2475,7 +2471,7 @@ export default function App() {
   }, [currentUser, isHi]);
 
   // =========================================================================
-  // REAL-TIME USER PRESENCE (Heartbeat, Activity & Browser Unload Signal)
+  // REAL-TIME USER PRESENCE (Heartbeat, Activity & Instant Offline Beacon)
   // =========================================================================
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -2483,15 +2479,15 @@ export default function App() {
     // Send heartbeat immediately on load/login
     sendUserHeartbeat(currentUser.id);
 
-    // Heartbeat every 15 seconds to keep Online status active in Admin Panel & worldwide
+    // Heartbeat every 10 seconds to keep Online status active in Admin Panel & worldwide
     const hbInterval = setInterval(() => {
       sendUserHeartbeat(currentUser.id);
-    }, 15000);
+    }, 10000);
 
     let lastActivityPing = Date.now();
     const handleUserActivity = () => {
       const now = Date.now();
-      if (now - lastActivityPing > 10000) {
+      if (now - lastActivityPing > 5000) {
         lastActivityPing = now;
         sendUserHeartbeat(currentUser.id);
       }
@@ -2503,11 +2499,31 @@ export default function App() {
       }
     };
 
+    const sendOfflineBeacon = () => {
+      try {
+        if (navigator.sendBeacon) {
+          const blob = new Blob([JSON.stringify({ userId: currentUser.id })], { type: 'application/json' });
+          navigator.sendBeacon('/api/auth/offline', blob);
+        } else {
+          fetch('/api/auth/offline', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id }),
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Ignore beacon errors
+      }
+    };
+
     const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
     activityEvents.forEach((ev) => {
       window.addEventListener(ev, handleUserActivity, { passive: true });
     });
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', sendOfflineBeacon);
+    window.addEventListener('pagehide', sendOfflineBeacon);
 
     return () => {
       clearInterval(hbInterval);
@@ -2515,6 +2531,8 @@ export default function App() {
         window.removeEventListener(ev, handleUserActivity);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', sendOfflineBeacon);
+      window.removeEventListener('pagehide', sendOfflineBeacon);
     };
   }, [currentUser?.id]);
 

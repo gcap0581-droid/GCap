@@ -306,7 +306,7 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
   if (!Array.isArray(users)) return [];
   const presenceMap = getCachedFirestoreState()?.presence || {};
   const now = Date.now();
-  const ONLINE_THRESHOLD_MS = 180 * 1000; // Generous 3 minutes to avoid micro-flicker
+  const ONLINE_THRESHOLD_MS = 35 * 1000; // Accurate 35 seconds threshold
 
   const currentUser = getCurrentUser();
 
@@ -340,15 +340,19 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
 
     if (isCurrentLoggedInUser) {
       isOnline = true;
-    } else if (liveEntry && liveEntry.isOnline) {
-      if (!liveEntry.lastActiveAt || (now - liveEntry.lastActiveAt) < ONLINE_THRESHOLD_MS) {
+    } else if (liveEntry) {
+      if (liveEntry.isOnline === false) {
+        isOnline = false;
+      } else if (liveEntry.lastActiveAt && (now - liveEntry.lastActiveAt) < ONLINE_THRESHOLD_MS) {
         isOnline = true;
       }
-    } else if (u.isOnline === true && (!activeTs || (now - activeTs) < ONLINE_THRESHOLD_MS)) {
-      isOnline = true;
-    } else if (prec && prec.isOnline === true && (!precTs || (now - precTs) < ONLINE_THRESHOLD_MS)) {
-      isOnline = true;
-    } else if (activeTs && (now - activeTs) < ONLINE_THRESHOLD_MS && (!logoutTs || activeTs > logoutTs)) {
+    } else if (prec) {
+      if (prec.isOnline === false) {
+        isOnline = false;
+      } else if (precTs && (now - precTs) < ONLINE_THRESHOLD_MS) {
+        isOnline = true;
+      }
+    } else if (u.isOnline === true && activeTs && (now - activeTs) < ONLINE_THRESHOLD_MS && (!logoutTs || activeTs > logoutTs)) {
       isOnline = true;
     }
 

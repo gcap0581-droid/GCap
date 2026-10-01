@@ -941,7 +941,13 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
       messages: snapMap["messages"].data()?.data || [],
       deletedUserIds: snapMap["deletedUserIds"].data()?.data || [],
       companyLedger: snapMap["companyLedger"]?.data()?.data || [],
-      companyProfile: snapMap["companyProfile"]?.data()?.data ? { ...DEFAULT_COMPANY_PROFILE, ...snapMap["companyProfile"].data().data } : DEFAULT_COMPANY_PROFILE,
+      companyProfile: (() => {
+        const snapP = snapMap["companyProfile"]?.data()?.data;
+        if (!snapP || snapP.pan === 'AABCG1234F' || (snapP.registeredAddress && snapP.registeredAddress.includes('Grand Plaza'))) {
+          return DEFAULT_COMPANY_PROFILE;
+        }
+        return { ...DEFAULT_COMPANY_PROFILE, ...snapP };
+      })(),
       lastUpdated: snapMap["metadata"].data()?.lastUpdated || new Date().toISOString()
     };
 
@@ -1722,7 +1728,7 @@ function ensureDb(): ServerDB {
       ];
     }
     
-    if (!parsed.companyProfile || typeof parsed.companyProfile !== 'object') {
+    if (!parsed.companyProfile || typeof parsed.companyProfile !== 'object' || parsed.companyProfile.pan === 'AABCG1234F' || (parsed.companyProfile.registeredAddress && parsed.companyProfile.registeredAddress.includes('Grand Plaza'))) {
       parsed.companyProfile = DEFAULT_COMPANY_PROFILE;
       needsSave = true;
     } else {
@@ -5264,10 +5270,11 @@ GCap में काम कैसे होता है:
         broadcastRealtimeEvent("transactions_updated", { transactions: db.transactions, timestamp: Date.now() });
       }
 
-      // Presence Reaper: Check for users who haven't sent a heartbeat in > 3 minutes
+      // Presence Reaper: Check for users who haven't sent a heartbeat in > 35 seconds
       const nowTs = Date.now();
-      const ONLINE_THRESHOLD_MS = 180 * 1000;
+      const ONLINE_THRESHOLD_MS = 35 * 1000;
       let presenceChanged = false;
+      const changedUserIds: string[] = [];
       if (Array.isArray(db.users)) {
         for (const u of db.users) {
           if (u.isOnline === true) {
@@ -5276,12 +5283,21 @@ GCap में काम कैसे होता है:
               u.isOnline = false;
               u.lastLogoutAt = u.lastActiveAt || new Date().toISOString();
               presenceChanged = true;
+              changedUserIds.push(u.id);
             }
           }
         }
       }
       if (presenceChanged) {
-        saveDb(db);
+        saveDb(db, true);
+        changedUserIds.forEach((uid) => {
+          broadcastRealtimeEvent("user_status_changed", {
+            userId: uid,
+            isOnline: false,
+            lastLogoutAt: new Date().toISOString(),
+            timestamp: Date.now(),
+          });
+        });
         broadcastRealtimeEvent("users_updated", {
           users: db.users.map(({ passwordHash: _, ...p }: any) => p),
           timestamp: Date.now(),
@@ -5290,7 +5306,7 @@ GCap में काम कैसे होता है:
     } catch (e) {
       console.warn("[Server Cycle Error]:", e);
     }
-  }, 15000);
+  }, 5000);
 
   const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`GCap Full-Stack Main Database Server running on port ${PORT}`);
