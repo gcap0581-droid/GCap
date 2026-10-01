@@ -37,6 +37,15 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 }) => {
   const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'ANNOUNCEMENT' | 'ALERT'>('ALL');
   const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
+  const [localReadIds, setLocalReadIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = localStorage.getItem('gcap_read_notif_ids_v1');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [pushPermission, setPushPermission] = useState<NotificationPermission>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       return Notification.permission;
@@ -62,14 +71,40 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
     }
   };
 
-  if (!isOpen) return null;
-
   const isHi = language === 'hi';
 
   const isMessageRead = (msg: AdminMessage) => {
+    if (!msg || !msg.id) return false;
+    if (localReadIds.has(msg.id)) return true;
     if (!currentUserId) return false;
     return Array.isArray(msg.readByUserIds) && msg.readByUserIds.includes(currentUserId);
   };
+
+  const handleRead = (msgId: string) => {
+    setLocalReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(msgId);
+      try {
+        localStorage.setItem('gcap_read_notif_ids_v1', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+    onMarkAsRead(msgId);
+  };
+
+  const handleReadAll = () => {
+    setLocalReadIds((prev) => {
+      const next = new Set(prev);
+      messages.forEach((m) => next.add(m.id));
+      try {
+        localStorage.setItem('gcap_read_notif_ids_v1', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+    onMarkAllAsRead();
+  };
+
+  if (!isOpen) return null;
 
   const unreadCount = messages.filter((m) => !isMessageRead(m)).length;
 
@@ -222,7 +257,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
 
           {unreadCount > 0 && (
             <button
-              onClick={onMarkAllAsRead}
+              onClick={handleReadAll}
               className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 cursor-pointer shrink-0 transition-colors"
             >
               <CheckCheck className="w-3.5 h-3.5" />
@@ -286,7 +321,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   {!isMessageRead(selectedMessage) ? (
                     <button
                       onClick={() => {
-                        onMarkAsRead(selectedMessage.id);
+                        handleRead(selectedMessage.id);
                         setSelectedMessage({
                           ...selectedMessage,
                           readByUserIds: [
@@ -301,8 +336,8 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                       <span>{isHi ? 'पढ़ा हुआ मार्क करें' : 'Mark as Read'}</span>
                     </button>
                   ) : (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1">
-                      <CheckCheck className="w-3.5 h-3.5" />
+                    <span className="text-xs text-emerald-400 flex items-center gap-1 font-bold">
+                      <CheckCheck className="w-4 h-4 text-emerald-400" />
                       <span>{isHi ? 'आप इसे पढ़ चुके हैं' : 'Read'}</span>
                     </span>
                   )}
@@ -346,9 +381,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                   key={msg.id}
                   onClick={() => {
                     setSelectedMessage(msg);
-                    if (!isRead) {
-                      onMarkAsRead(msg.id);
-                    }
+                    handleRead(msg.id);
                   }}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                     !isRead

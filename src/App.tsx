@@ -1257,6 +1257,17 @@ export default function App() {
     }
   }, [messages, currentUser, isMessageForCurrentUser, activePopupMessage]);
 
+  // Persistent tracking of read notification IDs (including auto-generated admin alerts)
+  const [readNotifIds, setReadNotifIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = localStorage.getItem('gcap_read_notif_ids_v1');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
   // User-facing visible messages & Admin transaction notification feed
   const userVisibleMessages = useMemo(() => {
     if (currentUser?.role === 'ADMIN') {
@@ -1265,9 +1276,11 @@ export default function App() {
 
       const pendingDeposits = transactions.filter((t) => t.type === 'DEPOSIT' && t.status === 'PENDING');
       for (const d of pendingDeposits) {
+        const notifId = `notif-dep-${d.id}`;
+        const isRead = readNotifIds.has(notifId);
         const refStr = d.referenceId || d.note || 'N/A';
         adminAlerts.push({
-          id: `notif-dep-${d.id}`,
+          id: notifId,
           title: `💰 Deposit Request: ₹${d.amount.toLocaleString()}`,
           titleHi: `💰 डिपॉजिट का नया अनुरोध: ₹${d.amount.toLocaleString()}`,
           content: `User: ${d.userName || d.userId || 'User'} submitted deposit request. Ref/UTR: ${refStr}. Please approve in Admin Panel.`,
@@ -1279,14 +1292,17 @@ export default function App() {
           targetType: 'ALL',
           showPopup: false,
           senderName: 'User Transaction System',
+          readByUserIds: isRead && currentUser?.id ? [currentUser.id] : [],
         });
       }
 
       const pendingWithdrawals = transactions.filter((t) => t.type === 'WITHDRAWAL' && t.status === 'PENDING');
       for (const w of pendingWithdrawals) {
+        const notifId = `notif-wth-${w.id}`;
+        const isRead = readNotifIds.has(notifId);
         const destStr = w.destinationDetails || w.method || w.note || 'UPI/Bank';
         adminAlerts.push({
-          id: `notif-wth-${w.id}`,
+          id: notifId,
           title: `🏦 Withdrawal Request: ₹${w.amount.toLocaleString()}`,
           titleHi: `🏦 निकासी का नया अनुरोध: ₹${w.amount.toLocaleString()}`,
           content: `User: ${w.userName || w.userId || 'User'} requested withdrawal of ₹${w.amount.toLocaleString()}. Destination: ${destStr}.`,
@@ -1298,6 +1314,7 @@ export default function App() {
           targetType: 'ALL',
           showPopup: false,
           senderName: 'User Transaction System',
+          readByUserIds: isRead && currentUser?.id ? [currentUser.id] : [],
         });
       }
 
@@ -1306,10 +1323,12 @@ export default function App() {
         .filter((t) => (t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || (t.type as string) === 'WITHDRAW') && t.status !== 'PENDING')
         .slice(0, 30);
       for (const t of recentCompleted) {
+        const notifId = `notif-done-${t.id}`;
+        const isRead = readNotifIds.has(notifId);
         const isDep = t.type === 'DEPOSIT';
         const isApprove = t.status === 'APPROVED' || t.status === 'SUCCESS';
         adminAlerts.push({
-          id: `notif-done-${t.id}`,
+          id: notifId,
           title: isDep ? `✅ Deposit Credited: ₹${t.amount.toLocaleString('en-IN')}` : `💸 Withdrawal Sent: ₹${t.amount.toLocaleString('en-IN')}`,
           titleHi: isDep ? `✅ पैसा जमा सफल: ₹${t.amount.toLocaleString('en-IN')}` : `💸 निकासी ट्रांसफर सफल: ₹${t.amount.toLocaleString('en-IN')}`,
           content: `User: ${t.userName || t.userPhone || 'User'}. Status: ${isApprove ? 'Approved' : t.status}. Ref: ${t.referenceId || 'N/A'}.`,
@@ -1321,6 +1340,7 @@ export default function App() {
           targetType: 'ALL',
           showPopup: false,
           senderName: 'Transaction Ledger',
+          readByUserIds: isRead && currentUser?.id ? [currentUser.id] : [],
         });
       }
 
@@ -1328,14 +1348,29 @@ export default function App() {
     }
 
     const list = dedupeAdminMessages(messages);
-    return list.filter((m) => {
-      if (!currentUser) return false;
-      return isMessageForCurrentUser(m);
-    });
-  }, [messages, currentUser, isMessageForCurrentUser, transactions]);
+    return list
+      .filter((m) => {
+        if (!currentUser) return false;
+        return isMessageForCurrentUser(m);
+      })
+      .map((m) => {
+        if (currentUser && readNotifIds.has(m.id)) {
+          return {
+            ...m,
+            readByUserIds: Array.isArray(m.readByUserIds)
+              ? m.readByUserIds.includes(currentUser.id)
+                ? m.readByUserIds
+                : [...m.readByUserIds, currentUser.id]
+              : [currentUser.id],
+          };
+        }
+        return m;
+      });
+  }, [messages, currentUser, isMessageForCurrentUser, transactions, readNotifIds]);
 
   const unreadMessagesCount = userVisibleMessages.filter((m) => {
     if (!currentUser) return false;
+    if (readNotifIds.has(m.id)) return false;
     return !(Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUser.id));
   }).length;
 
@@ -1377,7 +1412,15 @@ export default function App() {
 
   const handleMarkMessageAsRead = async (msgId: string) => {
     if (currentUser) {
-      await apiMarkMessageRead(msgId, currentUser.id);
+      setReadNotifIds((prev) => {
+        const next = new Set(prev);
+        next.add(msgId);
+        try {
+          localStorage.setItem('gcap_read_notif_ids_v1', JSON.stringify(Array.from(next)));
+        } catch {}
+        return next;
+      });
+      apiMarkMessageRead(msgId, currentUser.id).catch(() => {});
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msgId
@@ -1437,6 +1480,14 @@ export default function App() {
 
   const handleMarkAllMessagesAsRead = async () => {
     if (currentUser) {
+      setReadNotifIds((prev) => {
+        const next = new Set(prev);
+        userVisibleMessages.forEach((m) => next.add(m.id));
+        try {
+          localStorage.setItem('gcap_read_notif_ids_v1', JSON.stringify(Array.from(next)));
+        } catch {}
+        return next;
+      });
       for (const msg of userVisibleMessages) {
         if (!msg.readByUserIds?.includes(currentUser.id)) {
           apiMarkMessageRead(msg.id, currentUser.id).catch(console.warn);
