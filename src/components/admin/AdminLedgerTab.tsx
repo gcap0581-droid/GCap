@@ -1002,9 +1002,9 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
                         </td>
 
                         {/* Description */}
-                        <td className="p-3 text-slate-300 max-w-xs truncate" title={item.description}>
+                        <td className="p-3 text-slate-200 text-xs break-words leading-relaxed max-w-sm">
                           {item.description ? (
-                            <span className="font-medium text-slate-300">{item.description}</span>
+                            <span className="font-medium text-slate-200">{item.description}</span>
                           ) : (
                             <span className="italic text-slate-600 font-medium">{isHi ? 'कोई विवरण नहीं' : 'No remarks'}</span>
                           )}

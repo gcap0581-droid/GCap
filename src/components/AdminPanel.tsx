@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Award,
   TrendingUp,
@@ -241,6 +241,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   });
 
   const isLowBalance = treasury && treasury.balance < (treasury.minAlertThreshold || DEFAULT_ALERT_THRESHOLD);
+
+  // Persistent tracking of seen treasury payment/deposit requests
+  const [treasurySeenTxnIds, setTreasurySeenTxnIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = localStorage.getItem('gcap_treasury_seen_txn_ids_v1');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const pendingTreasuryRequests = useMemo(() => {
+    return transactions.filter(
+      (t) => t.status === 'PENDING' || t.status === 'APPROVED_PENDING_TRANSFER'
+    );
+  }, [transactions]);
+
+  const unseenTreasuryRequestsCount = useMemo(() => {
+    return pendingTreasuryRequests.filter((t) => !treasurySeenTxnIds.has(t.id)).length;
+  }, [pendingTreasuryRequests, treasurySeenTxnIds]);
+
+  const markTreasuryRequestsAsSeen = useCallback(() => {
+    if (pendingTreasuryRequests.length === 0) return;
+    setTreasurySeenTxnIds((prev) => {
+      const next = new Set(prev);
+      pendingTreasuryRequests.forEach((t) => next.add(t.id));
+      try {
+        localStorage.setItem('gcap_treasury_seen_txn_ids_v1', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  }, [pendingTreasuryRequests]);
+
+  useEffect(() => {
+    if (activeSubTab === 'TREASURY' && unseenTreasuryRequestsCount > 0) {
+      markTreasuryRequestsAsSeen();
+    }
+  }, [activeSubTab, unseenTreasuryRequestsCount, markTreasuryRequestsAsSeen]);
 
   // Staff Permissions Enforcement
   const isStaff = adminUser?.role === 'STAFF';
@@ -1134,24 +1173,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {canManageTreasury && (
                   <button
                     id="tab-admin-treasury"
-                    onClick={() => setActiveSubTab('TREASURY')}
+                    onClick={() => {
+                      markTreasuryRequestsAsSeen();
+                      setActiveSubTab('TREASURY');
+                    }}
                     className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
-                      activeSubTab === 'TREASURY'
+                      unseenTreasuryRequestsCount > 0
+                        ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-amber-950/50 border-rose-500/80 text-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.4)] ring-2 ring-rose-500/40 animate-pulse'
+                        : activeSubTab === 'TREASURY'
                         ? 'bg-teal-500/10 border-teal-500/50 text-teal-300 shadow-[0_0_15px_rgba(20,184,166,0.15)]'
                         : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <div className={`p-1.5 rounded-lg border ${activeSubTab === 'TREASURY' ? 'bg-teal-500/20 border-teal-500/30 text-teal-300' : 'bg-slate-800 border-slate-700 text-teal-400'}`}>
+                      <div className={`p-1.5 rounded-lg border ${
+                        unseenTreasuryRequestsCount > 0
+                          ? 'bg-rose-500/30 border-rose-500/50 text-rose-300 animate-bounce'
+                          : activeSubTab === 'TREASURY'
+                          ? 'bg-teal-500/20 border-teal-500/30 text-teal-300'
+                          : 'bg-slate-800 border-slate-700 text-teal-400'
+                      }`}>
                         <Building2 className="w-4 h-4" />
                       </div>
-                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TREASURY' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
-                        RESERVES
-                      </span>
+                      {unseenTreasuryRequestsCount > 0 ? (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full font-mono bg-rose-500 text-white shadow-md shadow-rose-950 animate-pulse flex items-center gap-1">
+                          <span>💰 {unseenTreasuryRequestsCount}</span>
+                          <span>{isHi ? 'अनुरोध' : 'REQ'}</span>
+                        </span>
+                      ) : (
+                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'TREASURY' ? 'bg-teal-500/30 text-teal-200' : 'bg-slate-800 text-slate-400'}`}>
+                          RESERVES
+                        </span>
+                      )}
                     </div>
                     <div className="leading-tight pt-1">
-                      <h4 className="text-sm font-black tracking-tight">{isHi ? 'ट्रेजरी' : 'Treasury'}</h4>
-                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{isHi ? 'कंपनी का खजाना' : 'Company Reserve'}</p>
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className="text-sm font-black tracking-tight">{isHi ? 'ट्रेजरी' : 'Treasury'}</h4>
+                        {unseenTreasuryRequestsCount > 0 && (
+                          <span className="text-[10px] font-black text-rose-400 animate-pulse">
+                            {unseenTreasuryRequestsCount} {isHi ? 'नए रिक्वेस्ट' : 'New'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">
+                        {unseenTreasuryRequestsCount > 0
+                          ? (isHi ? `🔔 ${unseenTreasuryRequestsCount} नए पेमेंट अनुरोध पेंडिंग` : `🔔 ${unseenTreasuryRequestsCount} New Payment Requests`)
+                          : (isHi ? 'कंपनी का खजाना' : 'Company Reserve')}
+                      </p>
                     </div>
                   </button>
                 )}
@@ -1842,7 +1910,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <span className="text-slate-500">{new Date(t.timestamp).toLocaleString()}</span>
                           </div>
                           {(isHi && t.noteHi) || t.note ? (
-                            <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-md">
+                            <p className="text-xs text-slate-200 mt-1 break-words leading-relaxed font-medium bg-slate-900/60 p-2 rounded-lg border border-slate-800/80">
                               {isHi && t.noteHi ? t.noteHi : t.note}
                             </p>
                           ) : null}

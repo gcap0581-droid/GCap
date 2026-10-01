@@ -329,7 +329,7 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                       </td>
 
                       {/* Notes */}
-                      <td className="py-3.5 px-4 text-slate-400 max-w-xs truncate">
+                      <td className="py-3.5 px-4 text-slate-200 text-xs break-words leading-relaxed max-w-sm">
                         {isHi && t.noteHi ? t.noteHi : t.note}
                       </td>
 
