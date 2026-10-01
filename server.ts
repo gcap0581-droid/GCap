@@ -2466,6 +2466,100 @@ async function startServer() {
     })();
   }
 
+  // Cross-Cluster Peer-to-Peer Synchronization (Syncs Render instance with AI Studio Primary Backend)
+  const PRIMARY_SYNC_URLS = [
+    "https://ais-dev-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/central/state?role=ADMIN",
+    "https://ais-pre-uh2lixxuk2xqat24sbmmqm-80829483615.asia-east1.run.app/api/central/state?role=ADMIN",
+  ];
+
+  async function syncWithPrimaryCluster() {
+    for (const url of PRIMARY_SYNC_URLS) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(url, {
+          headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const remote = await res.json().catch(() => null);
+          if (remote && remote.success) {
+            const currentDb = ensureDb();
+            let hasChanged = false;
+
+            // 1. Sync Company Profile
+            if (remote.companyProfile && typeof remote.companyProfile === 'object') {
+              if (JSON.stringify(currentDb.companyProfile) !== JSON.stringify(remote.companyProfile)) {
+                currentDb.companyProfile = {
+                  ...currentDb.companyProfile,
+                  ...remote.companyProfile,
+                };
+                hasChanged = true;
+              }
+            }
+
+            // 2. Sync Rules
+            if (remote.rules && typeof remote.rules === 'object') {
+              if (JSON.stringify(currentDb.rules) !== JSON.stringify(remote.rules)) {
+                currentDb.rules = { ...currentDb.rules, ...remote.rules };
+                hasChanged = true;
+              }
+            }
+
+            // 3. Sync Plans
+            if (Array.isArray(remote.plans) && remote.plans.length > 0) {
+              if (JSON.stringify(currentDb.plans) !== JSON.stringify(remote.plans)) {
+                currentDb.plans = remote.plans;
+                hasChanged = true;
+              }
+            }
+
+            // 4. Merge Users safely
+            if (Array.isArray(remote.users) && remote.users.length > 0) {
+              const uMap = new Map<string, StoredAccount>();
+              currentDb.users.forEach((u: StoredAccount) => { if (u?.id) uMap.set(u.id, u); });
+              remote.users.forEach((ru: any) => {
+                if (ru?.id) {
+                  const exist = uMap.get(ru.id);
+                  if (exist) {
+                    uMap.set(ru.id, { ...exist, ...ru, passwordHash: exist.passwordHash || ru.passwordHash });
+                  } else {
+                    uMap.set(ru.id, ru);
+                    hasChanged = true;
+                  }
+                }
+              });
+              currentDb.users = Array.from(uMap.values());
+            }
+
+            // 5. Merge Wallets safely
+            if (remote.wallets && typeof remote.wallets === 'object') {
+              Object.keys(remote.wallets).forEach((k) => {
+                if (!currentDb.wallets[k]) {
+                  currentDb.wallets[k] = remote.wallets[k];
+                  hasChanged = true;
+                }
+              });
+            }
+
+            if (hasChanged) {
+              saveDb(currentDb, true);
+              console.log("[Cluster Peer Sync] Synced latest data from AI Studio Primary successfully!");
+            }
+            break; // Sync succeeded
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  // Initial startup sync & periodic 15s peer refresh for Render instances
+  syncWithPrimaryCluster().catch(() => {});
+  setInterval(() => {
+    syncWithPrimaryCluster().catch(() => {});
+  }, 15000);
+
   // SSE Real-time stream endpoint
   app.get("/api/realtime/stream", (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");

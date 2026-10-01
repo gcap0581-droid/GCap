@@ -12,7 +12,7 @@
       "passwordHash": "ad123",
       "password": "ad123",
       "isOnline": true,
-      "lastActiveAt": "2026-10-01T01:42:47.006Z",
+      "lastActiveAt": "2026-10-01T02:23:01.099Z",
       "lastLoginAt": "2026-10-01T00:44:47.485Z"
     },
     {
@@ -72,7 +72,7 @@
   ],
   "wallets": {
     "usr-1789384741169": {
-      "cashBalance": 230000,
+      "cashBalance": 0,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 2251.6,
@@ -81,7 +81,7 @@
       "pendingDeposits": 0
     },
     "1789384741169": {
-      "cashBalance": 230000,
+      "cashBalance": 0,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 2251.6,
@@ -90,7 +90,7 @@
       "pendingDeposits": 0
     },
     "7808056040": {
-      "cashBalance": 230000,
+      "cashBalance": 0,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 2251.6,
@@ -99,7 +99,7 @@
       "pendingDeposits": 0
     },
     "9384741169": {
-      "cashBalance": 230000,
+      "cashBalance": 0,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 2251.6,
@@ -144,7 +144,7 @@
       "pendingDeposits": 0
     },
     "Sandhya": {
-      "cashBalance": 230000,
+      "cashBalance": 0,
       "gpBalance": 19600,
       "totalInvested": 110000,
       "totalEarned": 2251.6,
@@ -180,7 +180,7 @@
       "pendingDeposits": 0
     },
     "01": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -189,7 +189,7 @@
       "pendingDeposits": 0
     },
     "admin-01": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -435,6 +435,21 @@
     }
   ],
   "transactions": [
+    {
+      "id": "txn-adm-adj-1790819874339-1432",
+      "userId": "usr-1789384741169",
+      "userLoginId": "7808056040",
+      "userName": "Sandhya",
+      "userPhone": "+91 7808056040",
+      "type": "WITHDRAWAL",
+      "amount": 230000,
+      "date": "2026-10-01T01:57:54.339Z",
+      "timestamp": 1790819874339,
+      "status": "SUCCESS",
+      "referenceId": "ADM31069674",
+      "note": "Admin (GCap System Administrator) deducted ₹230000 from Cash Balance. Reason: Reset",
+      "noteHi": "एडमिन द्वारा ₹230000 नकद बैलेंस में घटाया (Debit) गया। कारण: Reset"
+    },
     {
       "id": "txn-cyc-inv-amit-7564841400-641-5",
       "userId": "usr-1790000000555",
@@ -2139,13 +2154,15 @@
     "shortTerm6hRate": 0.04,
     "longTerm6hRate": 0.033,
     "supportEmail": "support@gcap.in",
-    "supportPhone": "+91 98000 12345",
-    "lastUpdated": "2026-10-01",
+    "supportPhone": "+91 8503504808",
+    "lastUpdated": "2026-09-30",
     "companyUpiId": "8603504808@axisbank",
     "companyBankAccountHolder": "GCap Assets & Wealth Management Private Limited",
     "companyBankName": "Axis Bank",
     "companyBankAccountNumber": "924010002662307",
-    "companyBankIfsc": "UTIB0001219"
+    "companyBankIfsc": "UTIB0001219",
+    "adminTxPassword": "adtra123",
+    "referralL3Percent": 1
   },
   "liveConfig": {
     "appVersion": "v2.5.2-MAIN-DB",
@@ -2175,9 +2192,22 @@
     "totalTransferredToUsers": 100000,
     "collectedFeeGpBalance": 0,
     "totalFeeGpConverted": 0,
-    "lastUpdated": "2026-10-01T00:44:33.077Z"
+    "lastUpdated": "2026-09-30T14:41:21.113Z"
   },
   "treasuryLogs": [
+    {
+      "id": "tlog-1790819874339-3537",
+      "timestamp": 1790819874339,
+      "date": "2026-10-01T01:57:54.339Z",
+      "type": "ADMIN_ADD",
+      "amount": 230000,
+      "balanceBefore": 5500000,
+      "balanceAfter": 5730000,
+      "reason": "Funds reclaimed from user Sandhya (+91 7808056040) to Company Main Balance: ₹230000",
+      "reasonHi": "यूज़र Sandhya (+91 7808056040) से फंड कंपनी मुख्य बैलेंस में वापस रिकवर: ₹230000",
+      "actor": "GCap System Administrator",
+      "referenceId": "REC78743586"
+    },
     {
       "id": "tr-log-amit-100k",
       "type": "USER_FUND_ADD_DEDUCT",
@@ -2323,7 +2353,7 @@
     "signatoryDesignation": "Director & Authorized Signatory",
     "signatoryDin": "DIN: 11964641",
     "sealCity": "SASARAM (BIHAR)",
-    "bankName": "Axis Bank Ltd.",
+    "bankName": "Amit Kumar (GCAP Authorised Person)",
     "bankAccountNumber": "924010008662307",
     "bankIfsc": "UTIB0001219",
     "bankBranch": "Axis Commercial Branch",
@@ -2332,7 +2362,7 @@
     "companyBankAccountHolder": "GCAP PRIVATE LIMITED",
     "tagline": "ASSETS & WEALTH MANAGEMENT SYSTEM",
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
-    "lastUpdated": "2026-09-30T16:31:07.308Z"
+    "lastUpdated": "2026-10-01T01:53:26.819Z"
   },
-  "lastUpdated": "2026-10-01T01:42:47.006Z"
+  "lastUpdated": "2026-10-01T02:23:01.462Z"
 }

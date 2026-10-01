@@ -305,6 +305,7 @@ export function formatDatabaseToCentralResponse(
       treasury: fs.treasury || undefined,
       treasuryLogs: fs.treasuryLogs || [],
       bankDetails: fs.bankDetails || {},
+      companyProfile: fs.companyProfile || undefined,
       messages: fs.messages || [],
       lastUpdated: fs.lastUpdated,
       serverTime: Date.now(),
@@ -419,6 +420,7 @@ export function formatDatabaseToCentralResponse(
       rules: fs.rules || undefined,
       liveConfig: fs.liveConfig || undefined,
       bankDetails: userBank,
+      companyProfile: fs.companyProfile || undefined,
       messages: userMsgs,
       lastUpdated: fs.lastUpdated,
       serverTime: Date.now(),
@@ -1082,10 +1084,14 @@ export async function apiAdminAdjustUserWallet(
       const result = await res.json().catch(() => null);
       if (result && result.success) {
         if (result.wallet) {
+          const cachedFs = getCachedFirestoreState();
+          const { aliases } = findUserAndAllAliases(userId, cachedFs?.users || []);
+          const aliasWallets: Record<string, Wallet> = {};
+          aliases.forEach((a) => {
+            if (a) aliasWallets[a] = result.wallet!;
+          });
           updateFirestoreBridgeCache({
-            wallets: {
-              [userId]: result.wallet
-            },
+            wallets: aliasWallets,
             ...(result.treasury ? { treasury: result.treasury } : {})
           });
 

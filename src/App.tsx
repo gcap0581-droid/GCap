@@ -724,7 +724,7 @@ export default function App() {
         );
         if (hasFirestoreWallet) {
           const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
-          if (myWallet && (myWallet.cashBalance > 0 || myWallet.gpBalance > 0 || myWallet.totalInvested > 0 || myWallet.totalEarned > 0)) {
+          if (myWallet) {
             setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
             setStoredWallet(myWallet, currentUser.id);
           }

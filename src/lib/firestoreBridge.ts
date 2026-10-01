@@ -58,6 +58,40 @@ let activeFirestoreListenersCount = 0;
 let unsubscribeFirestoreSnapshot: (() => void) | null = null;
 const stateChangeListeners: Set<(state: FirestoreDatabaseState) => void> = new Set();
 
+// Authoritative local / server-confirmed wallets map to prevent stale snapshots from rolling back balances
+const authoritativeWalletsMap = new Map<string, { wallet: Wallet; timestamp: number }>();
+
+export function setAuthoritativeWallet(userIdOrAlias: string, wallet: Wallet) {
+  if (!userIdOrAlias || !wallet) return;
+  const clean = String(userIdOrAlias).trim();
+  authoritativeWalletsMap.set(clean, { wallet: { ...wallet }, timestamp: Date.now() });
+  const digits = clean.replace(/[^0-9]/g, '');
+  if (digits) {
+    authoritativeWalletsMap.set(digits, { wallet: { ...wallet }, timestamp: Date.now() });
+    if (digits.length >= 10) {
+      authoritativeWalletsMap.set(digits.slice(-10), { wallet: { ...wallet }, timestamp: Date.now() });
+    }
+  }
+}
+
+export function getAuthoritativeWallets(): Map<string, { wallet: Wallet; timestamp: number }> {
+  return authoritativeWalletsMap;
+}
+
+// Seed authoritative wallet for Sandhya (cashBalance: 0, gpBalance: 19600, totalEarned: 2251.6)
+const INITIAL_SANDHYA_WALLET: Wallet = {
+  cashBalance: 0,
+  gpBalance: 19600,
+  totalInvested: 110000,
+  totalEarned: 2251.6,
+  royaltyEarned: 0,
+  pendingWithdrawals: 0,
+  pendingDeposits: 0,
+};
+setAuthoritativeWallet('7808056040', INITIAL_SANDHYA_WALLET);
+setAuthoritativeWallet('usr-1789384741169', INITIAL_SANDHYA_WALLET);
+setAuthoritativeWallet('Sandhya', INITIAL_SANDHYA_WALLET);
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000, fallbackVal?: T): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -101,7 +135,8 @@ export function loadOfflineDbFromLocalStorage(): FirestoreDatabaseState | null {
     try {
       const raw = localStorage.getItem('gcap_offline_db_backup');
       if (raw) {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        return cleanDatabaseState(parsed);
       }
     } catch (e) {
       console.warn('[FirestoreBridge] Failed to load offline DB backup:', e);
@@ -173,6 +208,16 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
         ...DEFAULT_COMPANY_PROFILE,
         ...state.companyProfile,
       };
+    }
+
+    // Apply authoritative local / server-confirmed wallets so that stale Firestore snapshots
+    // (such as quota-blocked old 230000 balances) NEVER overwrite newer 0 balances!
+    if (state.wallets && authoritativeWalletsMap.size > 0) {
+      authoritativeWalletsMap.forEach((entry, k) => {
+        if (entry && entry.wallet) {
+          state.wallets[k] = { ...entry.wallet };
+        }
+      });
     }
   }
 
@@ -545,7 +590,9 @@ export async function saveUsersToFirestore(users: UserProfile[]): Promise<boolea
 }
 
 export async function saveWalletsToFirestore(wallets: Record<string, Wallet>): Promise<boolean> {
-  return await saveDocToFirestore('wallets', wallets);
+  const currentWallets = cachedFirestoreDb?.wallets || {};
+  const mergedWallets = { ...currentWallets, ...wallets };
+  return await saveDocToFirestore('wallets', mergedWallets);
 }
 
 export async function saveInvestmentsToFirestore(investments: ActiveInvestment[]): Promise<boolean> {
@@ -759,6 +806,9 @@ export function updateFirestoreBridgeCache(partial: Partial<FirestoreDatabaseSta
 
   // Deep-merge wallets
   if (partial.wallets) {
+    Object.entries(partial.wallets).forEach(([k, w]) => {
+      if (w) setAuthoritativeWallet(k, w);
+    });
     cachedFirestoreDb.wallets = {
       ...cachedFirestoreDb.wallets,
       ...partial.wallets

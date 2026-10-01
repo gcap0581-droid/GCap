@@ -355,8 +355,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       if (!fs) return;
       if (fs.wallets && typeof fs.wallets === 'object') {
         setWalletsMap((prev) => ({
-          ...prev,
           ...fs.wallets,
+          ...prev, // Keep prev so user-adjusted balances are not clobbered by stale snapshots
         }));
       }
     });
