@@ -3307,7 +3307,7 @@ export default function App() {
     // Sync company bank details to rules state so all user modals update live
     const updatedRules: AppRules = {
       ...rules,
-      companyBankAccountHolder: updatedProfile.companyName || rules.companyBankAccountHolder,
+      companyBankAccountHolder: updatedProfile.companyBankAccountHolder || updatedProfile.companyName || rules.companyBankAccountHolder,
       companyBankName: updatedProfile.bankName || rules.companyBankName,
       companyBankAccountNumber: updatedProfile.bankAccountNumber || rules.companyBankAccountNumber,
       companyBankIfsc: updatedProfile.bankIfsc || rules.companyBankIfsc,
@@ -5048,6 +5048,7 @@ export default function App() {
         onClose={() => setIsDepositOpen(false)}
         language={language}
         rules={rules}
+        companyProfile={companyProfile}
         onDepositSuccess={handleDepositSuccess}
       />
 

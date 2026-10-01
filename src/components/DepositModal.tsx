@@ -13,15 +13,17 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Language, AppRules } from '../types';
+import { Language, AppRules, CompanyProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { getStoredRules } from '../utils/rulesStorage';
+import { getStoredCompanyProfile } from '../utils/companyStorage';
 
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
   rules?: AppRules;
+  companyProfile?: CompanyProfile;
   onDepositSuccess: (amount: number, method: string, referenceId: string) => void;
 }
 
@@ -30,6 +32,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onClose,
   language,
   rules,
+  companyProfile: propCompanyProfile,
   onDepositSuccess,
 }) => {
   const isHi = language === 'hi';
@@ -47,12 +50,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   if (!isOpen) return null;
 
   const quickAmounts = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000].filter((v, i, a) => a.indexOf(v) === i);
-  const companyUpiId = rules?.companyUpiId || 'gcap.pay@hdfcbank';
+  const profile = propCompanyProfile || getStoredCompanyProfile();
+  const companyUpiId = profile.companyUpiId || rules?.companyUpiId || '8603504808@axisbank';
   const companyBank = {
-    name: rules?.companyBankAccountHolder || 'GCAP PRIVATE LIMITED',
-    bank: rules?.companyBankName || 'Axis Bank Ltd.',
-    accountNumber: rules?.companyBankAccountNumber || '924010008662307',
-    ifsc: rules?.companyBankIfsc || 'UTIB0001219',
+    name: profile.companyBankAccountHolder || rules?.companyBankAccountHolder || profile.companyName || 'GCAP PRIVATE LIMITED',
+    bank: profile.bankName || rules?.companyBankName || 'Axis Bank Ltd.',
+    accountNumber: profile.bankAccountNumber || rules?.companyBankAccountNumber || '924010008662307',
+    ifsc: profile.bankIfsc || rules?.companyBankIfsc || 'UTIB0001219',
   };
 
   const upiUrl = `upi://pay?pa=${companyUpiId}&pn=${encodeURIComponent(companyBank.name)}&am=${amount}&cu=INR`;

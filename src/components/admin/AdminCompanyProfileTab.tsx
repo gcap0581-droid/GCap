@@ -45,14 +45,16 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const [formData, setFormData] = useState<CompanyProfile>({ ...initialProfile });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activePreview, setActivePreview] = useState<'LETTERHEAD' | 'LEGAL_BLOCK' | 'SEAL'>('LETTERHEAD');
+  const isDirtyRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (propCompanyProfile) {
+    if (propCompanyProfile && !isDirtyRef.current) {
       setFormData({ ...propCompanyProfile });
     }
   }, [propCompanyProfile]);
 
   const handleChange = (field: keyof CompanyProfile, value: string) => {
+    isDirtyRef.current = true;
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -61,13 +63,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    isDirtyRef.current = false;
     if (onSaveProfile) {
       onSaveProfile(formData);
     } else {
       saveStoredCompanyProfile(formData);
     }
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3500);
+    setTimeout(() => setSaveSuccess(false), 4500);
   };
 
   const handleReset = () => {
@@ -554,6 +557,22 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="sm:col-span-2">
+                <label className="block text-slate-300 font-bold mb-1">
+                  {isHi ? 'खाता धारक का नाम (Account Holder / Beneficiary Name):' : 'Account Holder / Beneficiary Name:'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.companyBankAccountHolder || ''}
+                  onChange={(e) => handleChange('companyBankAccountHolder', e.target.value)}
+                  placeholder="e.g. GCAP AUTHORIZED PERSON या GCAP PRIVATE LIMITED"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-bold text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {isHi ? '💡 यह नाम यूज़र्स को पैसे जमा (Deposit) करते समय और बैंक ट्रांसफर में "खाता धारक" के रूप में दिखाई देगा।' : '💡 This name appears to users as the Account Holder Name during deposit & bank transfer.'}
+                </p>
+              </div>
+
               <div>
                 <label className="block text-slate-300 font-bold mb-1">
                   {isHi ? 'बैंक का नाम (Bank Name):' : 'Bank Name:'}
@@ -562,7 +581,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.bankName || ''}
                   onChange={(e) => handleChange('bankName', e.target.value)}
-                  placeholder="e.g. HDFC Bank Ltd."
+                  placeholder="e.g. Axis Bank Ltd."
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
               </div>
@@ -622,14 +641,26 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
           </div>
 
           {/* Bottom Save Bar */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="submit"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-amber-500/30 cursor-pointer flex items-center gap-2 active:scale-95"
-            >
-              <Save className="w-4 h-4" />
-              <span>{isHi ? 'कंपनी प्रोफ़ाइल सुरक्षित करें (Save Profile)' : 'Save Company Profile'}</span>
-            </button>
+          <div className="space-y-3 pt-2">
+            {saveSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>
+                  {isHi
+                    ? '✅ कंपनी प्रोफ़ाइल व बैंक विवरण सेव हो गए! अब सभी यूज़र्स को डिपॉजिट करते समय यही नया बैंक खाता व UPI दिखेगा।'
+                    : '✅ Company Profile & Bank Saved! Users will now see this updated bank account & UPI during deposits.'}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-sm transition-all shadow-xl shadow-amber-500/30 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isHi ? 'कंपनी प्रोफ़ाइल सुरक्षित करें (Save Profile)' : 'Save Company Profile'}</span>
+              </button>
+            </div>
           </div>
         </form>
 
