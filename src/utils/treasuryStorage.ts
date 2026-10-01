@@ -7,9 +7,9 @@ const TREASURY_LOGS_STORAGE_KEY = 'gcap_treasury_logs_v1';
 export const DEFAULT_ALERT_THRESHOLD = 500000; // ₹5,00,000 threshold for low balance alert
 
 export const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 5500000,
+  balance: 5730000,
   minAlertThreshold: 400000,
-  totalInjected: 5600000,
+  totalInjected: 5830000,
   totalDeducted: 100000,
   totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,

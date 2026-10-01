@@ -12,7 +12,7 @@
       "passwordHash": "ad123",
       "password": "ad123",
       "isOnline": true,
-      "lastActiveAt": "2026-10-01T14:56:16.576Z",
+      "lastActiveAt": "2026-10-01T15:34:13.396Z",
       "lastLoginAt": "2026-10-01T14:15:37.789Z"
     },
     {
@@ -171,7 +171,7 @@
       "pendingDeposits": 0
     },
     "usr-admin-01": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -180,7 +180,7 @@
       "pendingDeposits": 0
     },
     "01": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -189,7 +189,7 @@
       "pendingDeposits": 0
     },
     "admin-01": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -198,7 +198,7 @@
       "pendingDeposits": 0
     },
     "Admin": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -207,7 +207,7 @@
       "pendingDeposits": 0
     },
     "919800012345": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -216,7 +216,7 @@
       "pendingDeposits": 0
     },
     "9800012345": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -315,7 +315,7 @@
       "pendingDeposits": 0
     },
     "admin": {
-      "cashBalance": 5500000,
+      "cashBalance": 5730000,
       "gpBalance": 0,
       "totalInvested": 0,
       "totalEarned": 0,
@@ -342,7 +342,7 @@
       "daysCompleted": 0,
       "earnedSoFar": 2200,
       "totalEarnedSoFar": 2200,
-      "unclaimedEarnings": 2200,
+      "unclaimedEarnings": 2120,
       "claimedSoFar": 0,
       "totalExpectedReturn": 102560,
       "startDate": "2026-09-16T15:23:23.901Z",
@@ -378,7 +378,7 @@
       "daysCompleted": 0,
       "earnedSoFar": 181.5,
       "totalEarnedSoFar": 181.5,
-      "unclaimedEarnings": 181.5,
+      "unclaimedEarnings": 174.9,
       "claimedSoFar": 0,
       "totalExpectedReturn": 4818,
       "startDate": "2026-09-16T17:44:24.512Z",
@@ -443,10 +443,10 @@
       "userPhone": "+91 7808056040",
       "type": "RETURN_PAYOUT",
       "amount": 40,
-      "date": "2026-10-01T14:56:16.201Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.064Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC29614664",
+      "referenceId": "CYC57305136",
       "note": "6-Hour Cycle #55 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
       "noteHi": "6 घंटे के चक्र #55 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
     },
@@ -458,10 +458,10 @@
       "userPhone": "+91 7564841400",
       "type": "RETURN_PAYOUT",
       "amount": 40,
-      "date": "2026-10-01T14:56:16.202Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.064Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC19701672",
+      "referenceId": "CYC29408870",
       "note": "6-Hour Cycle #7 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
       "noteHi": "6 घंटे के चक्र #7 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
     },
@@ -473,10 +473,10 @@
       "userPhone": "+91 7564841400",
       "type": "RETURN_PAYOUT",
       "amount": 40,
-      "date": "2026-10-01T14:56:16.202Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.064Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC54952583",
+      "referenceId": "CYC71007566",
       "note": "6-Hour Cycle #8 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
       "noteHi": "6 घंटे के चक्र #8 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
     },
@@ -488,10 +488,10 @@
       "userPhone": "+91 7808056040",
       "type": "RETURN_PAYOUT",
       "amount": 3.3,
-      "date": "2026-10-01T14:56:16.202Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.064Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC48991768",
+      "referenceId": "CYC99385017",
       "note": "6-Hour Cycle #55 return of ₹3.3 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
       "noteHi": "6 घंटे के चक्र #55 का रिटर्न ₹3.3 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)"
     },
@@ -503,10 +503,10 @@
       "userPhone": "+91 7808056040",
       "type": "RETURN_PAYOUT",
       "amount": 3.3,
-      "date": "2026-10-01T14:56:16.202Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.064Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC45905734",
+      "referenceId": "CYC33390864",
       "note": "6-Hour Cycle #54 return of ₹3.3 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
       "noteHi": "6 घंटे के चक्र #54 का रिटर्न ₹3.3 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)"
     },
@@ -518,10 +518,10 @@
       "userPhone": "+91 7808056040",
       "type": "RETURN_PAYOUT",
       "amount": 40,
-      "date": "2026-10-01T14:56:16.201Z",
-      "timestamp": 1790866576200,
+      "date": "2026-10-01T14:57:16.063Z",
+      "timestamp": 1790866636063,
       "status": "SUCCESS",
-      "referenceId": "CYC81621844",
+      "referenceId": "CYC30940682",
       "note": "6-Hour Cycle #54 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
       "noteHi": "6 घंटे के चक्र #54 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
     },
@@ -2393,14 +2393,14 @@
   },
   "bankDetails": {},
   "treasury": {
-    "balance": 5500000,
+    "balance": 5730000,
     "minAlertThreshold": 400000,
-    "totalInjected": 5600000,
+    "totalInjected": 5830000,
     "totalDeducted": 100000,
     "totalTransferredToUsers": 100000,
     "collectedFeeGpBalance": 0,
     "totalFeeGpConverted": 0,
-    "lastUpdated": "2026-10-01T14:15:10.214Z"
+    "lastUpdated": "2026-10-01T15:17:57.051Z"
   },
   "treasuryLogs": [
     {
@@ -2481,7 +2481,7 @@
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
     "lastUpdated": "2026-09-30T16:31:07.308Z"
   },
-  "lastUpdated": "2026-10-01T14:56:36.302Z",
+  "lastUpdated": "2026-10-01T15:34:15.017Z",
   "deletedUserIds": [],
   "messages": [
     {

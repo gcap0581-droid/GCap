@@ -539,9 +539,9 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
 };
 
 const INITIAL_TREASURY: CompanyTreasury = {
-  balance: 5500000,
+  balance: 5730000,
   minAlertThreshold: 400000,
-  totalInjected: 5600000,
+  totalInjected: 5830000,
   totalDeducted: 100000,
   totalTransferredToUsers: 100000,
   collectedFeeGpBalance: 0,
@@ -1085,7 +1085,7 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
 
     sandhyaWalletKeys.forEach((k) => {
       loadedDb.wallets[k] = {
-        cashBalance: 230000,
+        cashBalance: 0,
         gpBalance: 19600,
         totalInvested: 110000,
         totalEarned: resolvedEarned,
@@ -1428,7 +1428,7 @@ function ensureDb(): ServerDB {
     }
     if (!fs.existsSync(DB_FILE)) {
       const initialSandhyaWallet: Wallet = {
-        cashBalance: 230000,
+        cashBalance: 0,
         gpBalance: 19600,
         totalInvested: 110000,
         totalEarned: 44.2,
@@ -1706,6 +1706,18 @@ function ensureDb(): ServerDB {
         }
       }
       parsed.treasuryLogs = flatLogs;
+    }
+
+    // Self-healing treasury balance reconciliation with latest audit log
+    if (parsed.treasuryLogs && parsed.treasuryLogs.length > 0 && typeof parsed.treasuryLogs[0].balanceAfter === 'number') {
+      const latestLogBalance = parsed.treasuryLogs[0].balanceAfter;
+      if (typeof parsed.treasury?.balance !== 'number' || parsed.treasury.balance < latestLogBalance) {
+        if (!parsed.treasury) parsed.treasury = { ...INITIAL_TREASURY };
+        parsed.treasury.balance = latestLogBalance;
+        parsed.treasury.totalInjected = Math.max(parsed.treasury.totalInjected || 0, latestLogBalance + (parsed.treasury.totalDeducted || 0));
+        parsed.treasury.lastUpdated = new Date().toISOString();
+        needsSave = true;
+      }
     }
     if (!parsed.messages || !Array.isArray(parsed.messages)) {
       parsed.messages = [
@@ -2533,12 +2545,32 @@ async function startServer() {
               currentDb.users = Array.from(uMap.values());
             }
 
-            // 5. Merge Wallets safely
+            // 5. Sync Treasury and TreasuryLogs safely
+            if (remote.treasury && typeof remote.treasury === 'object') {
+              const remoteBal = Number(remote.treasury.balance || 0);
+              const localBal = Number(currentDb.treasury?.balance || 0);
+              if (remoteBal !== localBal || JSON.stringify(currentDb.treasury) !== JSON.stringify(remote.treasury)) {
+                currentDb.treasury = { ...currentDb.treasury, ...remote.treasury };
+                hasChanged = true;
+              }
+            }
+
+            if (Array.isArray(remote.treasuryLogs) && remote.treasuryLogs.length > 0) {
+              if (JSON.stringify(currentDb.treasuryLogs) !== JSON.stringify(remote.treasuryLogs)) {
+                currentDb.treasuryLogs = remote.treasuryLogs;
+                hasChanged = true;
+              }
+            }
+
+            // 6. Sync Wallets safely
             if (remote.wallets && typeof remote.wallets === 'object') {
-              Object.keys(remote.wallets).forEach((k) => {
-                if (!currentDb.wallets[k]) {
-                  currentDb.wallets[k] = remote.wallets[k];
-                  hasChanged = true;
+              Object.entries(remote.wallets).forEach(([k, rw]: [string, any]) => {
+                if (rw && typeof rw === 'object') {
+                  const localW = currentDb.wallets[k];
+                  if (!localW || JSON.stringify(localW) !== JSON.stringify(rw)) {
+                    currentDb.wallets[k] = { ...rw };
+                    hasChanged = true;
+                  }
                 }
               });
             }
@@ -4066,6 +4098,7 @@ GCap में काम कैसे होता है:
       const prevBal = db.treasury.balance || 0;
       db.treasury.balance = prevBal + reclaimAmt;
       db.treasury.totalTransferredToUsers = Math.max(0, (db.treasury.totalTransferredToUsers || 0) - reclaimAmt);
+      db.treasury.lastUpdated = new Date().toISOString();
       const treasuryLog = {
         id: `tlog-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
         timestamp: Date.now(),
