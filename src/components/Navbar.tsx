@@ -160,7 +160,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <img
                   src={PRIMARY_COMPANY_LOGO}
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/assets/images/logo.jpg';
+                    const img = e.currentTarget as HTMLImageElement;
+                    if (!img.dataset.triedFallback1) {
+                      img.dataset.triedFallback1 = 'true';
+                      img.src = '/assets/images/gcap-luxury-gold-3d.jpg';
+                    } else if (!img.dataset.triedFallback2) {
+                      img.dataset.triedFallback2 = 'true';
+                      img.src = '/assets/images/logo.jpg';
+                    } else if (!img.dataset.triedFallback3) {
+                      img.dataset.triedFallback3 = 'true';
+                      img.src = '/logo.jpg';
+                    }
                   }}
                   alt="GCap Logo"
                   className="w-full h-full object-cover"

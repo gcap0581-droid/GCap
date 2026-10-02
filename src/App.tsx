@@ -2474,50 +2474,85 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes (180,000 ms)
+    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
     let timerId: ReturnType<typeof setTimeout>;
+
+    const updateLastActive = () => {
+      try {
+        localStorage.setItem('gcap_last_active_ts', String(Date.now()));
+      } catch {}
+    };
 
     const triggerAutoLogout = () => {
       const uid = currentUser?.id;
       logoutUser(uid);
       setCurrentUser(null);
+      try {
+        localStorage.removeItem('gcap_last_active_ts');
+      } catch {}
       showToast(
         isHi ? '⏳ 3 मिनट की निष्क्रियता के कारण स्वतः लॉगआउट' : '⏳ Auto Logged Out (3m Inactivity)',
         isHi
-          ? '3 मिनट तक कोई गतिविधि न होने के कारण आपका खाता सुरक्षा कारणों से स्वतः लॉगआउट हो गया है।'
+          ? '3 मिनट तक कोई गतिविधि न होने या ऐप बंद/बैकग्राउंड में रहने के कारण सुरक्षा कारणों से आपका खाता स्वतः लॉगआउट हो गया है।'
           : 'Your session has ended automatically due to 3 minutes of inactivity.'
       );
     };
 
-    const resetTimer = () => {
+    const checkInactivity = () => {
+      const lastTsRaw = localStorage.getItem('gcap_last_active_ts');
+      const lastTs = lastTsRaw ? parseInt(lastTsRaw, 10) : Date.now();
+      const elapsed = Date.now() - lastTs;
+      if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+        triggerAutoLogout();
+      } else {
+        clearTimeout(timerId);
+        const remaining = INACTIVITY_TIMEOUT_MS - elapsed;
+        timerId = setTimeout(triggerAutoLogout, Math.max(1000, remaining));
+      }
+    };
+
+    const handleUserInteraction = () => {
+      updateLastActive();
       clearTimeout(timerId);
       timerId = setTimeout(triggerAutoLogout, INACTIVITY_TIMEOUT_MS);
     };
 
-    const activityEvents = [
-      'mousedown',
-      'mousemove',
-      'keydown',
-      'scroll',
-      'touchstart',
-      'touchmove',
-      'click',
-      'pointerdown',
-      'wheel',
-    ];
+    // Initial checks
+    const lastTsRaw = localStorage.getItem('gcap_last_active_ts');
+    if (lastTsRaw) {
+      const elapsed = Date.now() - parseInt(lastTsRaw, 10);
+      if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+        triggerAutoLogout();
+        return;
+      }
+    }
+    updateLastActive();
+    checkInactivity();
+
+    const activityEvents = ['touchstart', 'click', 'keydown', 'pointerdown'];
 
     activityEvents.forEach((ev) => {
-      window.addEventListener(ev, resetTimer, { passive: true });
+      window.addEventListener(ev, handleUserInteraction, { passive: true });
     });
 
-    // Start timer on login / mount
-    resetTimer();
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkInactivity();
+      } else {
+        updateLastActive();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
 
     return () => {
       clearTimeout(timerId);
       activityEvents.forEach((ev) => {
-        window.removeEventListener(ev, resetTimer);
+        window.removeEventListener(ev, handleUserInteraction);
       });
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
     };
   }, [currentUser, isHi]);
 
