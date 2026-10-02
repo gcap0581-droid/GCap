@@ -166,6 +166,7 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react';
 
 function dedupeAdminMessages(list: AdminMessage[]): AdminMessage[] {
@@ -1401,6 +1402,16 @@ export default function App() {
     return !(Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUser.id));
   }).length;
 
+  // USER REQUIREMENT: Dashboard notice card is visible ONLY while unread.
+  // The moment the user clicks or views it, it is marked as read and immediately vanishes from the screen!
+  const unreadNoticeMessage = useMemo(() => {
+    return userVisibleMessages.find((m) => {
+      if (!currentUser) return false;
+      if (readNotifIds.has(m.id)) return false;
+      return !(Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUser.id));
+    });
+  }, [userVisibleMessages, currentUser, readNotifIds]);
+
   const handleSendAdminMessage = async (msg: Partial<AdminMessage>): Promise<boolean> => {
     try {
       const res = await apiSendAdminMessage({
@@ -1468,6 +1479,7 @@ export default function App() {
   const handleDismissPopupMessage = async () => {
     if (activePopupMessage) {
       const msgId = activePopupMessage.id;
+      handleMarkMessageAsRead(msgId);
 
       if (currentUser) {
         const currentList = currentUser.dismissedPopupMsgIds || [];
@@ -4222,13 +4234,13 @@ export default function App() {
             onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
           />
 
-          {/* Prominent Company Announcement & Notice Card */}
-          {userVisibleMessages.length > 0 && (
+          {/* Prominent Company Announcement & Notice Card - Shown ONLY while unread */}
+          {unreadNoticeMessage && (
             <div
               id="desktop-company-notice-card"
               onClick={() => {
-                const latestMsg = userVisibleMessages[0];
-                setActivePopupMessage(latestMsg);
+                setActivePopupMessage(unreadNoticeMessage);
+                handleMarkMessageAsRead(unreadNoticeMessage.id);
               }}
               className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/40 hover:border-amber-400 shadow-xl shadow-amber-950/20 transition-all cursor-pointer flex items-center justify-between gap-4 group"
             >
@@ -4241,31 +4253,42 @@ export default function App() {
                     <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider">
                       {isHi ? '📢 कंपनी आधिकारिक सूचना' : '📢 Official Notice'}
                     </span>
-                    {unreadMessagesCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px] animate-pulse">
-                        {unreadMessagesCount} {isHi ? 'नया' : 'NEW'}
-                      </span>
-                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px] animate-pulse">
+                      {isHi ? 'नया' : 'NEW'}
+                    </span>
                     <span className="text-xs text-slate-400 font-mono">
-                      {new Date(userVisibleMessages[0].timestamp).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN')}
+                      {new Date(unreadNoticeMessage.timestamp).toLocaleDateString(isHi ? 'hi-IN' : 'en-IN')}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">•</span>
                     <span className="text-xs text-amber-300 font-semibold">
-                      {userVisibleMessages[0].senderName || 'GCap Official Admin'}
+                      {unreadNoticeMessage.senderName || 'GCap Official Admin'}
                     </span>
                   </div>
                   <h4 className="text-sm sm:text-base font-bold text-white truncate mt-1 group-hover:text-amber-300 transition-colors">
-                    {isHi && userVisibleMessages[0].titleHi ? userVisibleMessages[0].titleHi : userVisibleMessages[0].title}
+                    {isHi && unreadNoticeMessage.titleHi ? unreadNoticeMessage.titleHi : unreadNoticeMessage.title}
                   </h4>
                   <p className="text-xs text-slate-300 truncate mt-0.5">
-                    {isHi && userVisibleMessages[0].contentHi ? userVisibleMessages[0].contentHi : userVisibleMessages[0].content}
+                    {isHi && unreadNoticeMessage.contentHi ? unreadNoticeMessage.contentHi : unreadNoticeMessage.content}
                   </p>
                 </div>
               </div>
 
-              <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
-                <span>{isHi ? 'पूरा संदेश पढ़ें' : 'Read Notice'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
+                  <span>{isHi ? 'पूरा संदेश पढ़ें' : 'Read Notice'}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+                <button
+                  type="button"
+                  title={isHi ? 'हटाएं (Dismiss)' : 'Dismiss'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMarkMessageAsRead(unreadNoticeMessage.id);
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
           )}
@@ -4949,13 +4972,13 @@ export default function App() {
                       onOpenWithdraw={() => checkSuspendedAction(() => setIsWithdrawOpen(true), isHi ? 'निकासी (Withdrawal)' : 'Withdrawal')}
                     />
 
-                    {/* Prominent Company Announcement & Notice Card (Mobile) */}
-                    {userVisibleMessages.length > 0 && (
+                    {/* Prominent Company Announcement & Notice Card (Mobile) - Shown ONLY while unread */}
+                    {unreadNoticeMessage && (
                       <div
                         id="mobile-company-notice-card"
                         onClick={() => {
-                          const latestMsg = userVisibleMessages[0];
-                          setActivePopupMessage(latestMsg);
+                          setActivePopupMessage(unreadNoticeMessage);
+                          handleMarkMessageAsRead(unreadNoticeMessage.id);
                         }}
                         className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/40 hover:border-amber-400 shadow-lg shadow-amber-950/20 transition-all cursor-pointer flex items-center justify-between gap-3 group active:scale-[0.99]"
                       >
@@ -4968,24 +4991,35 @@ export default function App() {
                               <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] uppercase tracking-wider">
                                 {isHi ? '📢 कंपनी सूचना' : '📢 Notice'}
                               </span>
-                              {unreadMessagesCount > 0 && (
-                                <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[8px] animate-pulse">
-                                  {unreadMessagesCount} {isHi ? 'नया' : 'NEW'}
-                                </span>
-                              )}
+                              <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[8px] animate-pulse">
+                                {isHi ? 'नया' : 'NEW'}
+                              </span>
                             </div>
                             <h4 className="text-xs font-bold text-white truncate mt-1 group-hover:text-amber-300 transition-colors">
-                              {isHi && userVisibleMessages[0].titleHi ? userVisibleMessages[0].titleHi : userVisibleMessages[0].title}
+                              {isHi && unreadNoticeMessage.titleHi ? unreadNoticeMessage.titleHi : unreadNoticeMessage.title}
                             </h4>
                             <p className="text-[10px] text-slate-300 truncate mt-0.5">
-                              {isHi && userVisibleMessages[0].contentHi ? userVisibleMessages[0].contentHi : userVisibleMessages[0].content}
+                              {isHi && unreadNoticeMessage.contentHi ? unreadNoticeMessage.contentHi : unreadNoticeMessage.content}
                             </p>
                           </div>
                         </div>
 
-                        <div className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 text-[10px] font-bold">
-                          <span>{isHi ? 'देखें' : 'View'}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 text-[10px] font-bold">
+                            <span>{isHi ? 'देखें' : 'View'}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </div>
+                          <button
+                            type="button"
+                            title={isHi ? 'हटाएं (Dismiss)' : 'Dismiss'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkMessageAsRead(unreadNoticeMessage.id);
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     )}
