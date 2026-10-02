@@ -1232,14 +1232,16 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     return DEFAULT_WALLET;
   }
 
-  // Pick candidate wallet with highest total assets to ensure non-zero wallet is never overridden by an empty/uninitialized key
-  candidates.sort((a, b) => {
-    const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
-    const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-    return valB - valA;
-  });
-
-  let bestWallet: Wallet = { ...candidates[0] };
+  // Combine all candidate wallets by taking the maximum of each positive accumulator field so balances never regress
+  let bestWallet: Wallet = {
+    cashBalance: Math.max(...candidates.map((c) => c.cashBalance || 0)),
+    gpBalance: Math.max(...candidates.map((c) => c.gpBalance || 0)),
+    totalInvested: Math.max(...candidates.map((c) => c.totalInvested || 0)),
+    totalEarned: Math.max(...candidates.map((c) => c.totalEarned || 0)),
+    royaltyEarned: Math.max(...candidates.map((c) => c.royaltyEarned || 0)),
+    pendingDeposits: Math.max(...candidates.map((c) => c.pendingDeposits || 0)),
+    pendingWithdrawals: Math.max(...candidates.map((c) => c.pendingWithdrawals || 0)),
+  };
 
   // Calculate user's totalInvested and totalEarned dynamically from their investments
   const userPhoneDigits = user?.phone ? user.phone.replace(/[^0-9]/g, '') : '';
@@ -1265,7 +1267,9 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     if (dynamicInvested > 0) {
       bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, dynamicInvested);
     }
-    bestWallet.totalEarned = Math.round(dynamicEarned * 100) / 100;
+    if (dynamicEarned > 0) {
+      bestWallet.totalEarned = Math.max(bestWallet.totalEarned || 0, Math.round(dynamicEarned * 100) / 100);
+    }
   }
 
   // Synchronize all alias keys so EVERY single key has the exact same unified balance
@@ -1431,7 +1435,7 @@ function ensureDb(): ServerDB {
         cashBalance: 0,
         gpBalance: 19600,
         totalInvested: 110000,
-        totalEarned: 44.2,
+        totalEarned: 2251.6,
         royaltyEarned: 0,
         pendingWithdrawals: 0,
         pendingDeposits: 0,
@@ -1973,8 +1977,8 @@ function ensureDb(): ServerDB {
         if (dynamicInvested > 0) {
           best.totalInvested = dynamicInvested;
         }
-        if (userInvs.length > 0) {
-          best.totalEarned = Math.round(dynamicEarned * 100) / 100;
+        if (dynamicEarned > 0) {
+          best.totalEarned = Math.max(best.totalEarned || 0, Math.round(dynamicEarned * 100) / 100);
         }
 
         keys.forEach((k) => {
@@ -4488,7 +4492,7 @@ GCap में काम कैसे होता है:
     }
 
     const nowTs = Date.now();
-    const ONLINE_THRESHOLD_MS = 60 * 1000;
+    const ONLINE_THRESHOLD_MS = 120 * 1000;
 
     const delSet = new Set((db.deletedUserIds || []).map((x: string) => String(x).toLowerCase().trim()));
     const validUsers = db.users.filter((u: any) => {
@@ -5397,9 +5401,9 @@ GCap में काम कैसे होता है:
         broadcastRealtimeEvent("transactions_updated", { transactions: db.transactions, timestamp: Date.now() });
       }
 
-      // Presence Reaper: Check for users who haven't sent a heartbeat in > 35 seconds
+      // Presence Reaper: Check for users who haven't sent a heartbeat in > 120 seconds
       const nowTs = Date.now();
-      const ONLINE_THRESHOLD_MS = 35 * 1000;
+      const ONLINE_THRESHOLD_MS = 120 * 1000;
       let presenceChanged = false;
       const changedUserIds: string[] = [];
       if (Array.isArray(db.users)) {

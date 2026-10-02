@@ -131,35 +131,17 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
       totalWithdrawn: 0,
     };
   } else {
-    // Pick the candidate wallet with the highest total assets/value to prevent picking uninitialized alias keys
-    candidates.sort((a, b) => {
-      const valA = (a.cashBalance || 0) + (a.gpBalance || 0) + (a.totalInvested || 0) + (a.totalEarned || 0) + (a.pendingDeposits || 0);
-      const valB = (b.cashBalance || 0) + (b.gpBalance || 0) + (b.totalInvested || 0) + (b.totalEarned || 0) + (b.pendingDeposits || 0);
-      if (valB !== valA) {
-        return valB - valA;
-      }
-      // Tie-breaker 1: Prefer wallet with higher GP balance (result of Cash -> GP swap)
-      const gpA = a.gpBalance || 0;
-      const gpB = b.gpBalance || 0;
-      if (gpB !== gpA) {
-        return gpB - gpA;
-      }
-      // Tie-breaker 2: Prefer wallet with more total invested or total earned
-      const earnedA = (a.totalInvested || 0) + (a.totalEarned || 0) + (a.royaltyEarned || 0);
-      const earnedB = (b.totalInvested || 0) + (b.totalEarned || 0) + (b.royaltyEarned || 0);
-      if (earnedB !== earnedA) {
-        return earnedB - earnedA;
-      }
-      return 0;
-    });
-
-    bestWallet = { ...candidates[0] };
-  }
-
-  const cleanId = String(userId || '').trim().replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
-
-  if (cleanId.includes('7564841400') || cleanId.includes('1790000000555')) {
-    bestWallet.totalEarned = 40;
+    // Merge best non-decreasing values across all alias keys so balance never drops due to uninitialized or stale keys
+    bestWallet = {
+      cashBalance: Math.max(...candidates.map((c) => c.cashBalance || 0)),
+      gpBalance: Math.max(...candidates.map((c) => c.gpBalance || 0)),
+      totalInvested: Math.max(...candidates.map((c) => c.totalInvested || 0)),
+      totalEarned: Math.max(...candidates.map((c) => c.totalEarned || 0)),
+      royaltyEarned: Math.max(...candidates.map((c) => c.royaltyEarned || 0)),
+      pendingWithdrawals: Math.max(...candidates.map((c) => c.pendingWithdrawals || 0)),
+      pendingDeposits: Math.max(...candidates.map((c) => c.pendingDeposits || 0)),
+      totalWithdrawn: Math.max(...candidates.map((c) => c.totalWithdrawn || 0)),
+    };
   }
 
   // Self-heal: propagate bestWallet to all alias keys in the wallets object

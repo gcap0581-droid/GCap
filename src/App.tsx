@@ -476,7 +476,16 @@ export default function App() {
               }
             } else {
               if (state.wallet) {
-                setWallet(state.wallet);
+                setWallet((prev) => {
+                  if (!prev) return state.wallet;
+                  const stableWallet: Wallet = {
+                    ...state.wallet,
+                    totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
+                    totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
+                    royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+                  };
+                  return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
+                });
                 setStoredWallet(state.wallet);
               }
               if (state.transactions) {
@@ -725,7 +734,16 @@ export default function App() {
         if (hasFirestoreWallet) {
           const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
           if (myWallet) {
-            setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(myWallet) ? myWallet : prev));
+            setWallet((prev) => {
+              if (!prev) return myWallet;
+              const stableWallet: Wallet = {
+                ...myWallet,
+                totalEarned: Math.max(prev.totalEarned || 0, myWallet.totalEarned || 0),
+                totalInvested: Math.max(prev.totalInvested || 0, myWallet.totalInvested || 0),
+                royaltyEarned: Math.max(prev.royaltyEarned || 0, myWallet.royaltyEarned || 0),
+              };
+              return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
+            });
             setStoredWallet(myWallet, currentUser.id);
           }
         }
@@ -880,7 +898,16 @@ export default function App() {
         } else {
           // Regular User
           if (state.wallet) {
-            setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(state.wallet) ? state.wallet : prev));
+            setWallet((prev) => {
+              if (!prev) return state.wallet;
+              const stableWallet: Wallet = {
+                ...state.wallet,
+                totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
+                totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
+                royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+              };
+              return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
+            });
             setStoredWallet(state.wallet, currentUser.id);
           }
           if (state.transactions) {
@@ -2609,7 +2636,6 @@ export default function App() {
     });
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', sendOfflineBeacon);
-    window.addEventListener('pagehide', sendOfflineBeacon);
 
     return () => {
       clearInterval(hbInterval);
@@ -2618,7 +2644,6 @@ export default function App() {
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', sendOfflineBeacon);
-      window.removeEventListener('pagehide', sendOfflineBeacon);
     };
   }, [currentUser?.id]);
 

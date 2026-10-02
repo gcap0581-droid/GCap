@@ -306,7 +306,7 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
   if (!Array.isArray(users)) return [];
   const presenceMap = getCachedFirestoreState()?.presence || {};
   const now = Date.now();
-  const ONLINE_THRESHOLD_MS = 35 * 1000; // Accurate 35 seconds threshold
+  const ONLINE_THRESHOLD_MS = 120 * 1000; // Reliable 2-minute online window
 
   const currentUser = getCurrentUser();
 
