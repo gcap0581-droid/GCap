@@ -27,7 +27,9 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
     passwordHash: 'ad123',
-    password: 'ad123'
+    password: 'ad123',
+    lastLoginAt: '2026-10-03T00:25:47.000Z',
+    isOnline: true,
   },
   {
     id: 'usr-1789384741169',
@@ -39,7 +41,11 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     joinedDate: '2026-09-16',
     status: 'ACTIVE',
     passwordHash: '1111',
-    password: '1111'
+    password: '1111',
+    lastLoginAt: '2026-10-02T16:16:44.000Z',
+    lastLogoutAt: '2026-10-02T16:25:10.000Z',
+    lastActiveAt: '2026-10-02T16:25:10.000Z',
+    isOnline: false,
   },
   {
     id: 'usr-1789962044130',
@@ -52,7 +58,11 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     status: 'ACTIVE',
     passwordHash: '1111',
     password: '1111',
-    referralCode: 'GCAP-03181'
+    referralCode: 'GCAP-03181',
+    lastLoginAt: '2026-10-02T14:30:00.000Z',
+    lastLogoutAt: '2026-10-02T14:45:12.000Z',
+    lastActiveAt: '2026-10-02T14:45:12.000Z',
+    isOnline: false,
   },
   {
     id: 'usr-1790000000555',
@@ -65,7 +75,11 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     status: 'ACTIVE',
     passwordHash: '1111',
     password: '1111',
-    referralCode: 'GCAP-45678'
+    referralCode: 'GCAP-45678',
+    lastLoginAt: '2026-10-02T15:10:00.000Z',
+    lastLogoutAt: '2026-10-02T15:28:40.000Z',
+    lastActiveAt: '2026-10-02T15:28:40.000Z',
+    isOnline: false,
   }
 ];
 
@@ -273,7 +287,7 @@ export function recordLivePresence(
   const cleanId = String(userId).trim().toLowerCase();
   const digits = cleanId.replace(/[^0-9]/g, '');
   const activeTs = lastActiveAt ? (typeof lastActiveAt === 'number' ? lastActiveAt : new Date(lastActiveAt).getTime()) : 0;
-  const logoutTs = lastLogoutAt ? (typeof lastLogoutAt === 'number' ? lastLogoutAt : new Date(lastLogoutAt).getTime()) : (!isOnline ? Date.now() : undefined);
+  const logoutTs = lastLogoutAt ? (typeof lastLogoutAt === 'number' ? lastLogoutAt : new Date(lastLogoutAt).getTime()) : undefined;
 
   // Guarantee current active session on this device is ALWAYS online
   const current = getCurrentUser();
@@ -287,7 +301,7 @@ export function recordLivePresence(
   const entry = {
     isOnline: isMe ? true : Boolean(isOnline),
     lastActiveAt: isMe ? Date.now() : activeTs,
-    lastLogoutAt: logoutTs
+    lastLogoutAt: isMe ? undefined : logoutTs
   };
   livePresenceCache.set(cleanId, entry);
   if (digits && digits.length >= 10) {
@@ -355,10 +369,15 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
       }
     }
 
+    const effectiveLogout = isOnline
+      ? undefined
+      : (u.lastLogoutAt || (prec?.lastLogoutAt ? prec.lastLogoutAt : undefined) || (liveEntry?.lastLogoutAt ? new Date(liveEntry.lastLogoutAt).toISOString() : undefined));
+
     return {
       ...u,
       isOnline,
-      lastLogoutAt: isOnline ? undefined : (u.lastLogoutAt || prec?.lastActiveAt || u.lastActiveAt),
+      lastLoginAt: u.lastLoginAt || prec?.lastLoginAt,
+      lastLogoutAt: effectiveLogout,
     };
   });
 }

@@ -30,6 +30,8 @@ export interface UserPresenceRecord {
   role?: string;
   isOnline: boolean;
   lastActiveAt: string;
+  lastLoginAt?: string;
+  lastLogoutAt?: string;
   timestamp: number;
 }
 

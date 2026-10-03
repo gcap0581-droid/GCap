@@ -325,6 +325,8 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "ad123",
     password: "ad123",
+    lastLoginAt: "2026-10-03T00:25:47.000Z",
+    isOnline: true,
   },
   {
     id: "usr-1789384741169",
@@ -337,6 +339,10 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "1111",
     password: "1111",
+    lastLoginAt: "2026-10-02T16:16:44.000Z",
+    lastLogoutAt: "2026-10-02T16:25:10.000Z",
+    lastActiveAt: "2026-10-02T16:25:10.000Z",
+    isOnline: false,
   },
   {
     id: "usr-1789962044130",
@@ -350,6 +356,10 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "1111",
     password: "1111",
+    lastLoginAt: "2026-10-02T14:30:00.000Z",
+    lastLogoutAt: "2026-10-02T14:45:12.000Z",
+    lastActiveAt: "2026-10-02T14:45:12.000Z",
+    isOnline: false,
   },
   {
     id: "usr-1790000000555",
@@ -363,6 +373,10 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     status: "ACTIVE",
     passwordHash: "1111",
     password: "1111",
+    lastLoginAt: "2026-10-02T15:10:00.000Z",
+    lastLogoutAt: "2026-10-02T15:28:40.000Z",
+    lastActiveAt: "2026-10-02T15:28:40.000Z",
+    isOnline: false,
   }
 ];
 
@@ -5421,7 +5435,9 @@ GCap में काम कैसे होता है:
             const uTs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
             if (!uTs || uTs > nowTs || (nowTs - uTs) > ONLINE_THRESHOLD_MS) {
               u.isOnline = false;
-              u.lastLogoutAt = u.lastActiveAt || new Date().toISOString();
+              if (!u.lastLogoutAt) {
+                u.lastLogoutAt = u.lastActiveAt || new Date().toISOString();
+              }
               presenceChanged = true;
               changedUserIds.push(u.id);
             }
@@ -5431,10 +5447,11 @@ GCap में काम कैसे होता है:
       if (presenceChanged) {
         saveDb(db, true);
         changedUserIds.forEach((uid) => {
+          const userObj = db.users.find((x) => x.id === uid);
           broadcastRealtimeEvent("user_status_changed", {
             userId: uid,
             isOnline: false,
-            lastLogoutAt: new Date().toISOString(),
+            lastLogoutAt: userObj?.lastLogoutAt,
             timestamp: Date.now(),
           });
         });
