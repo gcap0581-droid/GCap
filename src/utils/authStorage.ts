@@ -42,18 +42,6 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     password: '1111'
   },
   {
-    id: 'usr-1789457522655',
-    loginId: '9661670322',
-    name: 'Puja kumari',
-    role: 'USER',
-    phone: '+91 9661670322',
-    email: 'puja@gmail.com',
-    joinedDate: '2026-09-16',
-    status: 'ACTIVE',
-    passwordHash: '12345',
-    password: '12345'
-  },
-  {
     id: 'usr-1789962044130',
     loginId: '8409803181',
     name: 'Rahul',
@@ -84,7 +72,6 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
 const PROTECTED_CORE_KEYS = new Set([
   'usr-admin-01', 'admin', '9800012345',
   'usr-1789384741169', '7808056040',
-  'usr-1789457522655', '9661670322',
   'usr-1789962044130', '8409803181',
   'usr-1790000000555', '9123456789', '7564841400'
 ]);
@@ -92,7 +79,7 @@ const PROTECTED_CORE_KEYS = new Set([
 const DELETED_USER_IDS_KEY = 'gcap_deleted_user_ids_v1';
 
 function loadInitialDeletedUserIds(): Set<string> {
-  const set = new Set<string>();
+  const set = new Set<string>(['usr-1789457522655', '9661670322', '+91 9661670322', '+919661670322']);
   if (typeof window !== 'undefined') {
     try {
       const raw = localStorage.getItem(DELETED_USER_IDS_KEY);
@@ -185,7 +172,9 @@ export function isUserDeleted(u: UserProfile | string): boolean {
   if (!u) return false;
   if (typeof u === 'string') {
     const clean = u.trim().toLowerCase();
-    return deletedUserIdsSet.has(clean);
+    const digits = clean.replace(/[^0-9]/g, '');
+    const p10 = digits.slice(-10);
+    return deletedUserIdsSet.has(clean) || (p10 ? deletedUserIdsSet.has(p10) : false);
   }
   const uId = String(u.id || '').trim().toLowerCase();
   const uLoginId = String(u.loginId || '').trim().toLowerCase();
@@ -195,7 +184,9 @@ export function isUserDeleted(u: UserProfile | string): boolean {
   if (PROTECTED_CORE_KEYS.has(uId) || (uPhone10 && PROTECTED_CORE_KEYS.has(uPhone10))) return false;
 
   return deletedUserIdsSet.has(uId) ||
-         (uLoginId && deletedUserIdsSet.has(uLoginId));
+         (uLoginId && deletedUserIdsSet.has(uLoginId)) ||
+         (uPhone && deletedUserIdsSet.has(uPhone)) ||
+         (uPhone10 && deletedUserIdsSet.has(uPhone10));
 }
 
 export function mergeUsers(existingUsers: UserProfile[], incomingUsers: UserProfile[]): UserProfile[] {
@@ -281,21 +272,23 @@ export function recordLivePresence(
   if (!userId) return;
   const cleanId = String(userId).trim().toLowerCase();
   const digits = cleanId.replace(/[^0-9]/g, '');
-  const activeTs = lastActiveAt ? (typeof lastActiveAt === 'number' ? lastActiveAt : new Date(lastActiveAt).getTime()) : (isOnline ? Date.now() : 0);
+  const activeTs = lastActiveAt ? (typeof lastActiveAt === 'number' ? lastActiveAt : new Date(lastActiveAt).getTime()) : 0;
   const logoutTs = lastLogoutAt ? (typeof lastLogoutAt === 'number' ? lastLogoutAt : new Date(lastLogoutAt).getTime()) : (!isOnline ? Date.now() : undefined);
 
   // Guarantee current active session on this device is ALWAYS online
   const current = getCurrentUser();
-  if (current) {
-    const cId = String(current.id || '').trim().toLowerCase();
-    const cLogin = String(current.loginId || '').trim().toLowerCase();
-    const cPhone10 = String(current.phone || '').replace(/[^0-9]/g, '').slice(-10);
-    if (cleanId === cId || (cLogin && cleanId === cLogin) || (cPhone10 && digits && digits.endsWith(cPhone10))) {
-      isOnline = true;
-    }
-  }
+  const isMe = Boolean(
+    current &&
+    (cleanId === String(current.id || '').trim().toLowerCase() ||
+     cleanId === String(current.loginId || '').trim().toLowerCase() ||
+     (current.phone && digits && digits.endsWith(String(current.phone).replace(/[^0-9]/g, '').slice(-10))))
+  );
 
-  const entry = { isOnline, lastActiveAt: isOnline ? Math.max(activeTs, Date.now()) : activeTs, lastLogoutAt: logoutTs };
+  const entry = {
+    isOnline: isMe ? true : Boolean(isOnline),
+    lastActiveAt: isMe ? Date.now() : activeTs,
+    lastLogoutAt: logoutTs
+  };
   livePresenceCache.set(cleanId, entry);
   if (digits && digits.length >= 10) {
     livePresenceCache.set(digits.slice(-10), entry);
@@ -306,7 +299,8 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
   if (!Array.isArray(users)) return [];
   const presenceMap = getCachedFirestoreState()?.presence || {};
   const now = Date.now();
-  const ONLINE_THRESHOLD_MS = 120 * 1000; // Reliable 2-minute online window
+  // Real-time live window: User must have sent an active ping within the last 25 seconds
+  const ONLINE_THRESHOLD_MS = 25 * 1000;
 
   const currentUser = getCurrentUser();
 
@@ -315,6 +309,7 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
     const uLoginId = String(u.loginId || '').trim().toLowerCase();
     const uPhone10 = String(u.phone || '').replace(/[^0-9]/g, '').slice(-10);
 
+    // 1. The user using THIS active browser window right now is 100% LIVE
     const isCurrentLoggedInUser = Boolean(
       currentUser &&
       (uId === String(currentUser.id || '').trim().toLowerCase() ||
@@ -322,6 +317,16 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
        (uPhone10 && uPhone10 === String(currentUser.phone || '').replace(/[^0-9]/g, '').slice(-10)))
     );
 
+    if (isCurrentLoggedInUser) {
+      return {
+        ...u,
+        isOnline: true,
+        lastActiveAt: new Date(now).toISOString(),
+        lastLogoutAt: undefined,
+      };
+    }
+
+    // 2. For ANY other remote user: They are ONLY online if their real heartbeat timestamp is strictly within the last 25 seconds
     const liveEntry =
       livePresenceCache.get(uId) ||
       (uLoginId ? livePresenceCache.get(uLoginId) : undefined) ||
@@ -334,26 +339,20 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
 
     const activeTs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
     const logoutTs = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
-    const precTs = prec ? (prec.timestamp || (prec.lastActiveAt ? new Date(prec.lastActiveAt).getTime() : 0)) : 0;
+    const liveActiveTs = liveEntry?.lastActiveAt || 0;
+    const precActiveTs = prec?.lastActiveAt ? new Date(prec.lastActiveAt).getTime() : 0;
+
+    // Pick the most recent authentic heartbeat timestamp from liveEntry, prec, or u
+    const latestHeartbeat = Math.max(activeTs, liveActiveTs, precActiveTs);
 
     let isOnline = false;
-
-    if (isCurrentLoggedInUser) {
-      isOnline = true;
-    } else if (liveEntry) {
-      if (liveEntry.isOnline === false) {
-        isOnline = false;
-      } else if (liveEntry.lastActiveAt && (now - liveEntry.lastActiveAt) < ONLINE_THRESHOLD_MS) {
-        isOnline = true;
+    // Check if heartbeat is strictly fresh (within 25 seconds) and NOT in the future, and user hasn't logged out since
+    if (latestHeartbeat > 0 && latestHeartbeat <= now && (now - latestHeartbeat) <= ONLINE_THRESHOLD_MS) {
+      if (!logoutTs || latestHeartbeat > logoutTs) {
+        if (liveEntry?.isOnline !== false && prec?.isOnline !== false) {
+          isOnline = true;
+        }
       }
-    } else if (prec) {
-      if (prec.isOnline === false) {
-        isOnline = false;
-      } else if (precTs && (now - precTs) < ONLINE_THRESHOLD_MS) {
-        isOnline = true;
-      }
-    } else if (u.isOnline === true && activeTs && (now - activeTs) < ONLINE_THRESHOLD_MS && (!logoutTs || activeTs > logoutTs)) {
-      isOnline = true;
     }
 
     return {
@@ -1366,9 +1365,7 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('beforeunload', reportOffline);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      reportOffline();
-    } else if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible') {
       onUserActivity();
     }
   });

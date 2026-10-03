@@ -56,6 +56,8 @@ interface StoredAccount {
   lastLoginAt?: string;
   lastLogoutAt?: string;
   lastActiveAt?: string;
+  device?: string;
+  lastDevice?: string;
 }
 
 interface Wallet {
@@ -337,18 +339,6 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     password: "1111",
   },
   {
-    id: "usr-1789457522655",
-    loginId: "9661670322",
-    name: "Puja kumari",
-    role: "USER",
-    phone: "+91 9661670322",
-    email: "puja@gmail.com",
-    joinedDate: "2026-09-16",
-    status: "ACTIVE",
-    passwordHash: "12345",
-    password: "12345",
-  },
-  {
     id: "usr-1789962044130",
     loginId: "8409803181",
     name: "Rahul",
@@ -619,9 +609,9 @@ try {
               const docData = docSnap.data()?.data;
               if (docId === "deletedUserIds" && Array.isArray(docData)) {
                 if (!db.deletedUserIds) db.deletedUserIds = [];
-                const PROTECTED_PHONES = new Set(['7808056040', '9661670322', '8409803181', '9800012345', '9123456789', '7564841400']);
-                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '9661670322', '8409803181', '9123456789', '7564841400']);
-                const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789457522655', 'usr-1789962044130', 'usr-1790000000555']);
+                const PROTECTED_PHONES = new Set(['7808056040', '8409803181', '9800012345', '9123456789', '7564841400']);
+                const PROTECTED_LOGINS = new Set(['admin', '7808056040', '8409803181', '9123456789', '7564841400']);
+                const PROTECTED_IDS = new Set(['usr-admin-01', 'usr-1789384741169', 'usr-1789962044130', 'usr-1790000000555']);
 
                 const cleanedIncoming = docData.filter((id: string) => {
                   if (!id) return false;
@@ -726,7 +716,7 @@ try {
 
                   if (db.users) {
                     const nowP = Date.now();
-                    const ONLINE_THRESHOLD_MS = 120 * 1000;
+                    const ONLINE_THRESHOLD_MS = 25 * 1000;
                     db.users = db.users.map((u: any) => {
                       const uPhone10 = String(u.phone || '').replace(/[^0-9]/g, '').slice(-10);
                       const p = presenceMap[u.id] || (u.loginId ? presenceMap[u.loginId] : undefined) || (uPhone10 ? presenceMap[uPhone10] : undefined);
@@ -734,7 +724,7 @@ try {
                         let isPOnline = Boolean(p.isOnline);
                         if (isPOnline) {
                           const pTs = p.timestamp || (p.lastActiveAt ? new Date(p.lastActiveAt).getTime() : 0);
-                          if (!pTs || (nowP - pTs) >= ONLINE_THRESHOLD_MS) {
+                          if (!pTs || pTs > nowP || (nowP - pTs) > ONLINE_THRESHOLD_MS) {
                             isPOnline = false;
                           }
                         }
@@ -860,7 +850,13 @@ async function saveToFirestore(db: ServerDB): Promise<void> {
     const validUsersForFs = (db.users || []).filter((u: any) => {
       if (!u || !u.id) return false;
       const uId = String(u.id).toLowerCase().trim();
+      const uLogin = String(u.loginId || "").toLowerCase().trim();
+      const uPhone = String(u.phone || "").replace(/[^0-9]/g, "");
+      const uPhone10 = uPhone.slice(-10);
       if (delSet.has(uId)) return false;
+      if (uLogin && delSet.has(uLogin)) return false;
+      if (uPhone && delSet.has(uPhone)) return false;
+      if (uPhone10 && delSet.has(uPhone10)) return false;
       return true;
     });
 
@@ -4492,7 +4488,7 @@ GCap में काम कैसे होता है:
     }
 
     const nowTs = Date.now();
-    const ONLINE_THRESHOLD_MS = 120 * 1000;
+    const ONLINE_THRESHOLD_MS = 25 * 1000;
 
     const delSet = new Set((db.deletedUserIds || []).map((x: string) => String(x).toLowerCase().trim()));
     const validUsers = db.users.filter((u: any) => {
@@ -4513,15 +4509,12 @@ GCap में काम कैसे होता है:
       const activeTs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
       const logoutTs = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
 
+      // Real live status: strictly requires an actual ping within the last 25 seconds
       let isOnline = false;
-      if (logoutTs > activeTs) {
-        isOnline = false;
-      } else if (u.isOnline === true) {
-        if (!activeTs || (nowTs - activeTs) < ONLINE_THRESHOLD_MS) {
+      if (activeTs > 0 && activeTs <= nowTs && (nowTs - activeTs) <= ONLINE_THRESHOLD_MS) {
+        if (!logoutTs || activeTs > logoutTs) {
           isOnline = true;
         }
-      } else if (activeTs && (nowTs - activeTs) < ONLINE_THRESHOLD_MS && !logoutTs) {
-        isOnline = true;
       }
 
       return {
@@ -4776,6 +4769,22 @@ GCap में काम कैसे होता है:
 
     if (target) {
       const nowIso = new Date().toISOString();
+      const userAgent = String(req.headers["user-agent"] || req.body?.userAgent || "");
+      let dev = target.device || "Mobile Device";
+      if (/android/i.test(userAgent)) {
+        dev = "Android Smartphone (Google Chrome Mobile)";
+      } else if (/iphone|ipad|ipod/i.test(userAgent)) {
+        dev = "Apple iPhone / iOS (Safari/Chrome)";
+      } else if (/windows/i.test(userAgent)) {
+        dev = "Windows PC / Laptop";
+      } else if (/macintosh|mac os x/i.test(userAgent)) {
+        dev = "Apple Mac (macOS)";
+      } else if (/linux/i.test(userAgent)) {
+        dev = "Linux Device";
+      }
+      target.device = dev;
+      target.lastDevice = dev;
+
       const wasOffline = !target.isOnline;
       target.isOnline = true;
       target.lastActiveAt = nowIso;
@@ -5401,16 +5410,16 @@ GCap में काम कैसे होता है:
         broadcastRealtimeEvent("transactions_updated", { transactions: db.transactions, timestamp: Date.now() });
       }
 
-      // Presence Reaper: Check for users who haven't sent a heartbeat in > 120 seconds
+      // Presence Reaper: Check for users who haven't sent a heartbeat in > 25 seconds
       const nowTs = Date.now();
-      const ONLINE_THRESHOLD_MS = 120 * 1000;
+      const ONLINE_THRESHOLD_MS = 25 * 1000;
       let presenceChanged = false;
       const changedUserIds: string[] = [];
       if (Array.isArray(db.users)) {
         for (const u of db.users) {
           if (u.isOnline === true) {
             const uTs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
-            if (!uTs || (nowTs - uTs) >= ONLINE_THRESHOLD_MS) {
+            if (!uTs || uTs > nowTs || (nowTs - uTs) > ONLINE_THRESHOLD_MS) {
               u.isOnline = false;
               u.lastLogoutAt = u.lastActiveAt || new Date().toISOString();
               presenceChanged = true;

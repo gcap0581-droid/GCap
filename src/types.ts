@@ -214,6 +214,8 @@ export interface UserProfile {
   lastLoginAt?: string;
   lastLogoutAt?: string;
   lastActiveAt?: string;
+  device?: string;
+  lastDevice?: string;
 }
 
 export type TreasuryLogType =
