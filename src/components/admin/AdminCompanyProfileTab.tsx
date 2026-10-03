@@ -289,7 +289,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.pan || ''}
                   onChange={(e) => handleChange('pan', e.target.value)}
-                  placeholder="e.g. AABCG1234F"
+                  placeholder="e.g. AANCG4365Q"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 uppercase"
                 />
               </div>
@@ -302,7 +302,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.tan || ''}
                   onChange={(e) => handleChange('tan', e.target.value)}
-                  placeholder="e.g. MUMB10293E"
+                  placeholder="e.g. PTNG16977C"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 uppercase"
                 />
               </div>
@@ -315,7 +315,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.gstin || ''}
                   onChange={(e) => handleChange('gstin', e.target.value)}
-                  placeholder="e.g. 27AABCG1234F1Z5"
+                  placeholder="e.g. 10AANCG4365Q1Z5"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 uppercase"
                 />
               </div>
@@ -366,7 +366,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   rows={2}
                   value={formData.registeredAddress || ''}
                   onChange={(e) => handleChange('registeredAddress', e.target.value)}
-                  placeholder="e.g. Grand Plaza, Main Road, Sasaram, Bihar - 821115"
+                  placeholder="e.g. Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500 resize-none"
                 />
               </div>

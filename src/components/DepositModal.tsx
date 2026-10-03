@@ -36,10 +36,11 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onDepositSuccess,
 }) => {
   const isHi = language === 'hi';
-  const minDeposit = rules ? rules.minDeposit : 100;
+  const minDeposit = rules && rules.minDeposit >= 10000 ? rules.minDeposit : 10000;
   // Unlimited upper deposit limit support
   const maxDeposit = rules && rules.maxDeposit ? rules.maxDeposit : 100000000;
-  const [amount, setAmount] = useState<number>(Math.max(minDeposit, 1000));
+  const [amountInput, setAmountInput] = useState<string>(String(Math.max(minDeposit, 10000)));
+  const amount = parseFloat(amountInput) || 0;
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'NETBANKING' | 'CARD'>('UPI');
   const [utrNumber, setUtrNumber] = useState<string>('');
   const [copiedBank, setCopiedBank] = useState(false);
@@ -49,7 +50,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
   if (!isOpen) return null;
 
-  const quickAmounts = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000].filter((v, i, a) => a.indexOf(v) === i);
+  const quickAmounts = [10000, 25000, 50000, 100000, 250000, 500000, 1000000].filter((v, i, a) => a.indexOf(v) === i);
   const profile = propCompanyProfile || getStoredCompanyProfile();
   const companyUpiId = profile.companyUpiId || rules?.companyUpiId || '8603504808@axisbank';
   const companyBank = {
@@ -176,11 +177,12 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               <input
                 id="input-deposit-amount"
                 type="number"
-                min={100}
-                max={100000000}
-                step={100}
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                step="any"
+                value={amountInput}
+                onChange={(e) => {
+                  setAmountInput(e.target.value);
+                  setError('');
+                }}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-9 pr-4 text-white font-mono text-xl font-bold focus:outline-none focus:border-emerald-500 transition-colors"
                 placeholder="5000"
               />
@@ -197,7 +199,10 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                   key={amt}
                   type="button"
                   id={`btn-deposit-chip-${amt}`}
-                  onClick={() => setAmount(amt)}
+                  onClick={() => {
+                    setAmountInput(String(amt));
+                    setError('');
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
                     amount === amt
                       ? 'bg-emerald-600 text-white font-bold'

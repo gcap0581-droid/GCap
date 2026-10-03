@@ -48,16 +48,17 @@ export const SwapModal: React.FC<SwapModalProps> = ({
   
   const maxAvailable = direction === 'CASH_TO_GP' ? wallet.cashBalance : (wallet.gpBalance || 0);
   
-  const [amount, setAmount] = useState<number>(Math.min(maxAvailable, 1000));
+  const [amountInput, setAmountInput] = useState<string>(String(Math.min(maxAvailable, 1000)));
+  const amount = parseFloat(amountInput) || 0;
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   React.useEffect(() => {
-    // Reset amount when direction or wallet changes
+    // Reset amount when direction or wallet changes on open
     const maxVal = direction === 'CASH_TO_GP' ? wallet.cashBalance : (wallet.gpBalance || 0);
-    setAmount(Math.min(maxVal, 1000));
+    setAmountInput(maxVal > 0 ? String(Math.min(maxVal, 1000)) : '0');
     setError('');
-  }, [direction, wallet.cashBalance, wallet.gpBalance, isOpen]);
+  }, [direction, isOpen]);
 
   if (!isOpen) return null;
 
@@ -242,7 +243,7 @@ export const SwapModal: React.FC<SwapModalProps> = ({
               </label>
               <button
                 type="button"
-                onClick={() => setAmount(maxAvailable)}
+                onClick={() => setAmountInput(String(maxAvailable))}
                 className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer"
               >
                 {isHi ? 'अधिकतम (Max)' : 'Max Balance'}
@@ -255,11 +256,10 @@ export const SwapModal: React.FC<SwapModalProps> = ({
               </span>
               <input
                 type="number"
-                min={1}
-                max={maxAvailable}
-                value={amount || ''}
+                step="any"
+                value={amountInput}
                 onChange={(e) => {
-                  setAmount(Number(e.target.value));
+                  setAmountInput(e.target.value);
                   setError('');
                 }}
                 placeholder={isHi ? 'संख्या दर्ज करें' : 'Enter value'}
@@ -275,7 +275,7 @@ export const SwapModal: React.FC<SwapModalProps> = ({
                     key={q}
                     type="button"
                     onClick={() => {
-                      setAmount(q);
+                      setAmountInput(String(q));
                       setError('');
                     }}
                     className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${

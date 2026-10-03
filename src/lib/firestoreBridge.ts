@@ -691,8 +691,9 @@ export async function savePresenceToFirestore(presence: Record<string, UserPrese
  * Instantly syncs any user's online / offline status across all devices worldwide via Firestore.
  */
 export async function updatePresenceInFirestore(
-  user: UserProfile | { id: string; name?: string; loginId?: string; phone?: string; role?: string },
-  isOnline: boolean = true
+  user: UserProfile | { id: string; name?: string; loginId?: string; phone?: string; role?: string; lastActiveAt?: string; lastLoginAt?: string },
+  isOnline: boolean = true,
+  isManualLogout: boolean = false
 ): Promise<void> {
   if (!user || !user.id) return;
   const now = Date.now();
@@ -701,6 +702,10 @@ export async function updatePresenceInFirestore(
   const uLoginId = user.loginId ? String(user.loginId).trim() : '';
   const uPhone = user.phone ? String(user.phone).replace(/[^0-9]/g, '').slice(-10) : '';
 
+  const logoutTimestamp = !isOnline
+    ? (isManualLogout ? nowIso : (user.lastActiveAt || user.lastLoginAt || nowIso))
+    : undefined;
+
   const record: UserPresenceRecord = {
     userId: uId,
     loginId: uLoginId || undefined,
@@ -708,7 +713,9 @@ export async function updatePresenceInFirestore(
     name: user.name ? String(user.name) : 'User',
     role: user.role ? String(user.role) : 'USER',
     isOnline,
-    lastActiveAt: nowIso,
+    lastActiveAt: isOnline ? nowIso : (user.lastActiveAt || nowIso),
+    lastLoginAt: user.lastLoginAt || (isOnline ? nowIso : undefined),
+    lastLogoutAt: logoutTimestamp,
     timestamp: now,
   };
 

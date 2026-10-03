@@ -261,7 +261,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
                 <div>
                   <span className="text-[11px] text-slate-400 block">{isHi ? 'अर्निंग (1 से 5 तारीख):' : 'Earnings (1st - 5th):'}</span>
-                  <span className="text-lg font-bold font-display text-purple-400">{formatINR(unclaimedReturnsTotal > 0 ? unclaimedReturnsTotal : (wallet.totalEarned || 0))}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold font-display text-purple-400">{formatINR(wallet.totalEarned || 0)}</span>
+                    {unclaimedReturnsTotal > 0 && (
+                      <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        +{formatINR(unclaimedReturnsTotal)} {isHi ? 'अनक्लेम्ड' : 'Unclaimed'}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-display">
                   1-5th

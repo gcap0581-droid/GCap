@@ -107,7 +107,7 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
     };
   }
 
-  const { aliases } = findUserAndAllAliases(userId, users);
+  const { user, aliases } = findUserAndAllAliases(userId, users);
 
   const candidates: Wallet[] = [];
 
@@ -131,16 +131,22 @@ export function getWalletForUser(userId: string, wallets: Record<string, Wallet>
       totalWithdrawn: 0,
     };
   } else {
-    // Merge best non-decreasing values across all alias keys so balance never drops due to uninitialized or stale keys
+    // Prefer candidate wallet corresponding to user.id or user.loginId key if present
+    const primaryCandidate = (user && user.id && wallets[user.id])
+      ? wallets[user.id]
+      : (user && user.loginId && wallets[user.loginId])
+      ? wallets[user.loginId]
+      : candidates[0];
+
     bestWallet = {
-      cashBalance: Math.max(...candidates.map((c) => c.cashBalance || 0)),
-      gpBalance: Math.max(...candidates.map((c) => c.gpBalance || 0)),
-      totalInvested: Math.max(...candidates.map((c) => c.totalInvested || 0)),
-      totalEarned: Math.max(...candidates.map((c) => c.totalEarned || 0)),
-      royaltyEarned: Math.max(...candidates.map((c) => c.royaltyEarned || 0)),
-      pendingWithdrawals: Math.max(...candidates.map((c) => c.pendingWithdrawals || 0)),
-      pendingDeposits: Math.max(...candidates.map((c) => c.pendingDeposits || 0)),
-      totalWithdrawn: Math.max(...candidates.map((c) => c.totalWithdrawn || 0)),
+      cashBalance: typeof primaryCandidate.cashBalance === 'number' ? primaryCandidate.cashBalance : 0,
+      gpBalance: typeof primaryCandidate.gpBalance === 'number' ? primaryCandidate.gpBalance : 0,
+      totalInvested: typeof primaryCandidate.totalInvested === 'number' ? primaryCandidate.totalInvested : 0,
+      totalEarned: typeof primaryCandidate.totalEarned === 'number' ? primaryCandidate.totalEarned : 0,
+      royaltyEarned: typeof primaryCandidate.royaltyEarned === 'number' ? primaryCandidate.royaltyEarned : 0,
+      pendingWithdrawals: typeof primaryCandidate.pendingWithdrawals === 'number' ? primaryCandidate.pendingWithdrawals : 0,
+      pendingDeposits: typeof primaryCandidate.pendingDeposits === 'number' ? primaryCandidate.pendingDeposits : 0,
+      totalWithdrawn: typeof primaryCandidate.totalWithdrawn === 'number' ? primaryCandidate.totalWithdrawn : 0,
     };
   }
 

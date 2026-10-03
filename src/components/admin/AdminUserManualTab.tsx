@@ -28,6 +28,7 @@ import {
   Coins,
 } from 'lucide-react';
 import { AppRules, InvestmentPlan, Language } from '../../types';
+import { getStoredCompanyProfile } from '../../utils/companyStorage';
 import { formatINR } from '../../utils/storage';
 import { getStoredRules } from '../../utils/rulesStorage';
 import { getStoredPlans } from '../../utils/plansStorage';
@@ -46,6 +47,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
   onBackToHub,
 }) => {
   const isHi = language === 'hi';
+  const profile = getStoredCompanyProfile();
   const manualPrintRef = useRef<HTMLDivElement>(null);
 
   const activeRules = rules || getStoredRules();
@@ -441,63 +443,193 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800 print:border-slate-300 shadow-xl">
-            <table className="w-full text-xs text-left border-collapse">
+          {/* Mobile Card-Based Parameter List (Prevents text jumping/cramping on mobile phones) */}
+          <div className="block sm:hidden print:hidden space-y-3">
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>GP स्वैप दर (Swap Rate)</span>
+                </div>
+                <span className="font-mono text-xs font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
+                  ₹1 = {gpRate} GP
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                कैश जमा स्वीकृत होने के उपरांत तुरंत ₹1 = {gpRate} GP दर से बिना किसी अतिरिक्त चार्ज के GP में बदलें।
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>प्रारंभिक सुरक्षा लॉक (Initial Lock)</span>
+                </div>
+                <span className="font-mono text-xs font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 shrink-0">
+                  24 घंटे
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                नया प्लान शुरू करने के पहले 24 घंटे सुरक्षा जांच चलती है। 24 घंटे बाद ही पहला 6h रिटर्न बनता है।
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>रिटर्न पेआउट चक्र (Payout Slot)</span>
+                </div>
+                <span className="font-mono text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+                  हर 6 घंटे
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                06:00, 12:00, 18:00, 24:00 के निश्चित स्लॉट्स पर रिटर्न क्लेम हेतु तैयार होता है।
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <ArrowUpRight className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>मासिक विथड्रॉल विंडो</span>
+                </div>
+                <span className="font-mono text-xs font-black text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20 shrink-0">
+                  1 से 5 तारीख
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                बैंक निकासी के आवेदन केवल माह की पहली 5 तारीखों में ही स्वीकार किए जाते हैं।
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <Wallet className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>न्यूनतम निकासी राशि (Min Withdraw)</span>
+                </div>
+                <span className="font-mono text-xs font-black text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 shrink-0">
+                  {formatINR(activeRules?.minWithdrawal ?? 100)}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                वॉलेट में न्यूनतम निर्धारित राशि उपलब्ध होने पर विथड्रॉल बटन सक्रिय होगा।
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold text-white text-xs">
+                  <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>मूलधन गारंटी (Capital Refund)</span>
+                </div>
+                <span className="font-mono text-xs font-black text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 shrink-0">
+                  100% वापसी (641 दिन)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                641 दिन परिपक्वता पर आपका पूरा निवेशित मूलधन कैश बैलेंस में 100% वापस क्रेडिट होता है।
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop, Tablet & Print Formatted Table (Strictly Top-Aligned) */}
+          <div className="hidden sm:block print:block overflow-x-auto rounded-2xl border border-slate-800 print:border-slate-300 shadow-xl">
+            <table className="w-full text-xs text-left border-collapse table-fixed">
               <thead className="bg-slate-900 print:bg-slate-200 text-slate-200 print:text-black font-black uppercase text-[11px] tracking-wider">
                 <tr>
-                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300">मापदंड (Policy Parameter)</th>
-                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300">निर्धारित सीमा / वैल्यू</th>
-                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300">विवरण व यूज़र के लिए निर्देश</th>
+                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300 w-[32%] align-top">मापदंड (Policy Parameter)</th>
+                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300 w-[28%] align-top">निर्धारित सीमा / वैल्यू</th>
+                  <th className="p-3.5 border-b border-slate-800 print:border-slate-300 w-[40%] align-top">विवरण व यूज़र के लिए निर्देश</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80 print:divide-slate-300 text-slate-300 print:text-slate-800">
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    <span>GP स्वैप दर (Swap Rate)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>GP स्वैप दर (Swap Rate)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-amber-400 print:text-amber-800 font-black">₹1 = {gpRate} GP Point</td>
-                  <td className="p-3.5">कैश जमा स्वीकृत होने के उपरांत बिना किसी अतिरिक्त चार्ज के तुरंत 1:1 दर से GP में बदलें।</td>
+                  <td className="p-3.5 align-top font-mono text-amber-400 print:text-amber-800 font-black">
+                    ₹1 = {gpRate} GP Point
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    कैश जमा स्वीकृत होने के उपरांत बिना किसी अतिरिक्त चार्ज के तुरंत ₹1 = {gpRate} GP दर से GP में बदलें।
+                  </td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-cyan-400" />
-                    <span>प्रारंभिक सुरक्षा लॉक (Initial Lock)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>प्रारंभिक सुरक्षा लॉक (Initial Lock)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-cyan-400 print:text-cyan-800 font-black">24 घंटे (Strict 24 Hours)</td>
-                  <td className="p-3.5">नया प्लान शुरू करने के पहले 24 घंटे सुरक्षा जांच चलती है। 24 घंटे बाद ही पहला 6h रिटर्न बनता है।</td>
+                  <td className="p-3.5 align-top font-mono text-cyan-400 print:text-cyan-800 font-black">
+                    24 घंटे (Strict 24 Hours)
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    नया प्लान शुरू करने के पहले 24 घंटे सुरक्षा जांच चलती है। 24 घंटे बाद ही पहला 6h रिटर्न बनता है।
+                  </td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-emerald-400" />
-                    <span>रिटर्न पेआउट चक्र (Payout Slot)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>रिटर्न पेआउट चक्र (Payout Slot)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-emerald-400 print:text-emerald-800 font-black">प्रति 6 घंटे (Every 6 Hours)</td>
-                  <td className="p-3.5">06:00, 12:00, 18:00, 24:00 के निश्चित स्लॉट्स पर रिटर्न क्लेम हेतु तैयार होता है।</td>
+                  <td className="p-3.5 align-top font-mono text-emerald-400 print:text-emerald-800 font-black">
+                    प्रति 6 घंटे (Every 6 Hours)
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    06:00, 12:00, 18:00, 24:00 के निश्चित स्लॉट्स पर रिटर्न क्लेम हेतु तैयार होता है।
+                  </td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <ArrowUpRight className="w-4 h-4 text-purple-400" />
-                    <span>मासिक विथड्रॉल विंडो (Withdrawal Window)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <ArrowUpRight className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span>मासिक विथड्रॉल विंडो (Withdrawal Window)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-purple-400 print:text-purple-800 font-black">1st से 5th तारीख (Monthly)</td>
-                  <td className="p-3.5">बैंक निकासी के आवेदन केवल माह की पहली 5 तारीखों में ही स्वीकार किए जाते हैं।</td>
+                  <td className="p-3.5 align-top font-mono text-purple-400 print:text-purple-800 font-black">
+                    1st से 5th तारीख (Monthly)
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    बैंक निकासी के आवेदन केवल माह की पहली 5 तारीखों में ही स्वीकार किए जाते हैं।
+                  </td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-rose-400" />
-                    <span>न्यूनतम निकासी राशि (Min Withdraw)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <Wallet className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>न्यूनतम निकासी राशि (Min Withdraw)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-white print:text-black font-black">{formatINR(activeRules?.minWithdrawal ?? 100)}</td>
-                  <td className="p-3.5">वॉलेट में न्यूनतम निर्धारित राशि उपलब्ध होने पर विथड्रॉल बटन सक्रिय होगा।</td>
+                  <td className="p-3.5 align-top font-mono text-white print:text-black font-black">
+                    {formatINR(activeRules?.minWithdrawal ?? 100)}
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    वॉलेट में न्यूनतम निर्धारित राशि उपलब्ध होने पर विथड्रॉल बटन सक्रिय होगा।
+                  </td>
                 </tr>
                 <tr className="hover:bg-slate-900/50">
-                  <td className="p-3.5 font-bold flex items-center gap-2">
-                    <Award className="w-4 h-4 text-amber-400" />
-                    <span>मूलधन गारंटी (Capital Refund)</span>
+                  <td className="p-3.5 align-top">
+                    <div className="flex items-center gap-2 font-bold text-white print:text-black">
+                      <Award className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>मूलधन गारंटी (Capital Refund)</span>
+                    </div>
                   </td>
-                  <td className="p-3.5 font-mono text-amber-300 print:text-amber-800 font-black">100% वापसी (641 दिन)</td>
-                  <td className="p-3.5">641 दिन परिपक्वता पर आपका पूरा निवेशित मूलधन कैश बैलेंस में 100% वापस क्रेडिट होता है।</td>
+                  <td className="p-3.5 align-top font-mono text-amber-300 print:text-amber-800 font-black">
+                    100% वापसी (641 दिन)
+                  </td>
+                  <td className="p-3.5 align-top leading-relaxed">
+                    641 दिन परिपक्वता पर आपका पूरा निवेशित मूलधन कैश बैलेंस में 100% वापस क्रेडिट होता है।
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -628,19 +760,20 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
         </div>
 
         {/* Corporate Signatory & Official Footer */}
-        <div className="pt-8 border-t-2 border-slate-800 print:border-slate-300 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-400 print:text-slate-700">
-          <div className="space-y-1 text-center sm:text-left">
-            <div className="font-black text-sm text-white print:text-black">GCAP PRIVATE LIMITED</div>
-            <div>कॉर्पोरेट ईमेल: <span className="text-emerald-400 print:text-black font-mono">support@gcapasset.com</span></div>
-            <div>हेल्पलाइन टोल-फ्री: <span className="text-amber-300 print:text-black font-mono">1800-GCAP-HELP (1800-4227-4357)</span></div>
-            <div className="text-[10px] text-slate-500">पंजीकृत कार्यालय: Corporate Tower, Financial District, Cyberabad</div>
+        <div className="pt-8 border-t-2 border-slate-800 print:border-slate-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs text-slate-400 print:text-slate-700">
+          <div className="space-y-1 text-left max-w-md">
+            <div className="font-black text-sm text-white print:text-black tracking-tight">{profile.companyName}</div>
+            <div>कॉर्पोरेट ईमेल: <span className="text-emerald-400 print:text-black font-mono font-semibold">{profile.supportEmail || 'support@gcap.in'}</span></div>
+            <div>हेल्पलाइन फोन: <span className="text-amber-300 print:text-black font-mono font-semibold">{profile.supportPhone || '+91 8503504808'}</span></div>
+            <div className="text-[10px] text-slate-400 print:text-slate-600 leading-snug">पंजीकृत कार्यालय: {profile.registeredAddress}</div>
+            <div className="text-[10px] text-slate-500 font-mono">CIN: {profile.cin} • PAN: {profile.pan}</div>
           </div>
 
-          <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0">
-            <div className="w-40 border-b border-slate-600 print:border-black mb-2 mx-auto sm:ml-auto" />
-            <div className="font-black text-sm text-amber-400 print:text-black">अधिकृत हस्ताक्षरकर्ता (Authorized Signatory)</div>
-            <div className="text-[11px] text-slate-300 print:text-slate-800 font-semibold">Chief Compliance & Operations Officer</div>
-            <div className="text-[10px] text-emerald-400 print:text-slate-600 font-mono">GCap Official System Seal Verified</div>
+          <div className="text-left md:text-right border-t md:border-t-0 pt-4 md:pt-0 w-full md:w-auto">
+            <div className="w-40 border-b border-slate-600 print:border-black mb-2 md:ml-auto" />
+            <div className="font-black text-xs sm:text-sm text-amber-400 print:text-black">{profile.authorizedSignatory || 'Amit Kumar'}</div>
+            <div className="text-[11px] text-slate-300 print:text-slate-800 font-semibold">{profile.signatoryDesignation || 'Director & Authorized Signatory'}</div>
+            <div className="text-[10px] text-emerald-400 print:text-slate-600 font-mono mt-0.5">GCap Official System Seal Verified</div>
           </div>
         </div>
 

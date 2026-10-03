@@ -1082,19 +1082,21 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
 
     if (!loadedDb.wallets) loadedDb.wallets = {};
     const sandhyaWalletKeys = ["usr-1789384741169", "1789384741169", "7808056040", "9384741169", "Sandhya"];
-    const sandhyaInvs = (loadedDb.investments || []).filter((i) =>
-      i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
-    );
-    const sandhyaEarned = sandhyaInvs.reduce((sum, inv) => {
-      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
-        ? inv.earnedSoFar
-        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
-      return sum + e;
-    }, 0);
-    const resolvedEarned = sandhyaEarned > 0 ? sandhyaEarned : 264.3;
+    const existingSandhyaWallet = sandhyaWalletKeys.map((k) => loadedDb.wallets[k]).find((w) => w && (typeof w.cashBalance === 'number' || typeof w.gpBalance === 'number'));
 
-    sandhyaWalletKeys.forEach((k) => {
-      loadedDb.wallets[k] = {
+    if (!existingSandhyaWallet) {
+      const sandhyaInvs = (loadedDb.investments || []).filter((i) =>
+        i.userId === 'usr-1789384741169' || i.userLoginId === '7808056040' || i.userPhone?.includes('7808056040')
+      );
+      const sandhyaEarned = sandhyaInvs.reduce((sum, inv) => {
+        const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
+          ? inv.earnedSoFar
+          : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0) ? inv.totalEarnedSoFar : 0);
+        return sum + e;
+      }, 0);
+      const resolvedEarned = sandhyaEarned > 0 ? sandhyaEarned : 264.3;
+
+      const defaultSandhyaWallet = {
         cashBalance: 0,
         gpBalance: 19600,
         totalInvested: 110000,
@@ -1103,7 +1105,13 @@ async function loadFromFirestore(): Promise<ServerDB | null> {
         pendingWithdrawals: 0,
         pendingDeposits: 0,
       };
-    });
+
+      sandhyaWalletKeys.forEach((k) => {
+        if (!loadedDb.wallets[k]) {
+          loadedDb.wallets[k] = { ...defaultSandhyaWallet };
+        }
+      });
+    }
 
     return loadedDb as ServerDB;
   } catch (err) {
@@ -1242,18 +1250,32 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     return DEFAULT_WALLET;
   }
 
-  // Combine all candidate wallets by taking the maximum of each positive accumulator field so balances never regress
+  // Pick candidate wallet: prefer canonical user.id / user.loginId key if present
+  let primaryCandidate: Wallet | undefined;
+  if (user && user.id && db.wallets && db.wallets[user.id]) {
+    primaryCandidate = db.wallets[user.id];
+  } else if (user && user.loginId && db.wallets && db.wallets[user.loginId]) {
+    primaryCandidate = db.wallets[user.loginId];
+  } else {
+    primaryCandidate = candidates[0];
+  }
+
+  if (!primaryCandidate) {
+    return DEFAULT_WALLET;
+  }
+
   let bestWallet: Wallet = {
-    cashBalance: Math.max(...candidates.map((c) => c.cashBalance || 0)),
-    gpBalance: Math.max(...candidates.map((c) => c.gpBalance || 0)),
-    totalInvested: Math.max(...candidates.map((c) => c.totalInvested || 0)),
-    totalEarned: Math.max(...candidates.map((c) => c.totalEarned || 0)),
-    royaltyEarned: Math.max(...candidates.map((c) => c.royaltyEarned || 0)),
-    pendingDeposits: Math.max(...candidates.map((c) => c.pendingDeposits || 0)),
-    pendingWithdrawals: Math.max(...candidates.map((c) => c.pendingWithdrawals || 0)),
+    cashBalance: typeof primaryCandidate.cashBalance === 'number' ? primaryCandidate.cashBalance : 0,
+    gpBalance: typeof primaryCandidate.gpBalance === 'number' ? primaryCandidate.gpBalance : 0,
+    totalInvested: typeof primaryCandidate.totalInvested === 'number' ? primaryCandidate.totalInvested : 0,
+    totalEarned: typeof primaryCandidate.totalEarned === 'number' ? primaryCandidate.totalEarned : 0,
+    royaltyEarned: typeof primaryCandidate.royaltyEarned === 'number' ? primaryCandidate.royaltyEarned : 0,
+    pendingDeposits: typeof primaryCandidate.pendingDeposits === 'number' ? primaryCandidate.pendingDeposits : 0,
+    pendingWithdrawals: typeof primaryCandidate.pendingWithdrawals === 'number' ? primaryCandidate.pendingWithdrawals : 0,
+    totalWithdrawn: typeof primaryCandidate.totalWithdrawn === 'number' ? primaryCandidate.totalWithdrawn : 0,
   };
 
-  // Calculate user's totalInvested and totalEarned dynamically from their investments
+  // Calculate user's totalInvested and totalEarned dynamically ONLY if wallet has 0/uninitialized values
   const userPhoneDigits = user?.phone ? user.phone.replace(/[^0-9]/g, '') : '';
   const userPhone10 = userPhoneDigits.length >= 10 ? userPhoneDigits.slice(-10) : userPhoneDigits;
   const userInvs = (db.investments || []).filter((inv: any) => {
@@ -1274,11 +1296,11 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
       return sum + e;
     }, 0);
 
-    if (dynamicInvested > 0) {
-      bestWallet.totalInvested = Math.max(bestWallet.totalInvested || 0, dynamicInvested);
+    if (bestWallet.totalInvested === 0 && dynamicInvested > 0) {
+      bestWallet.totalInvested = dynamicInvested;
     }
-    if (dynamicEarned > 0) {
-      bestWallet.totalEarned = Math.max(bestWallet.totalEarned || 0, Math.round(dynamicEarned * 100) / 100);
+    if (bestWallet.totalEarned === 0 && (bestWallet.totalWithdrawn || 0) === 0 && dynamicEarned > 0) {
+      bestWallet.totalEarned = Math.round(dynamicEarned * 100) / 100;
     }
   }
 
@@ -2868,7 +2890,7 @@ GCap में काम कैसे होता है:
 
 कड़े नियम:
 1. डिफ़ॉल्ट रूप से हमेशा शुद्ध और अत्यंत विनम्र हिंदी में उत्तर दें। यदि यूज़र किसी अन्य भाषा (जैसे अंग्रेज़ी) में सवाल पूछे, तो उसके साथ उसी भाषा में उत्तर दें।
-2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190BR2026OPC088307, PAN AABCG1234F, TAN MUMB10293E, सासाराम बिहार ऑफिस पता, अधिकृत निदेशक Amit Kumar, एक्सिस बैंक खाता, UPI 8603504808@axisbank) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
+2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190BR2026OPC088307, PAN AANCG4365Q, TAN PTNG16977C, सासाराम बिहार ऑफिस पता, अधिकृत निदेशक Amit Kumar, एक्सिस बैंक खाता, UPI 8603504808@axisbank) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
 3. GCap के सॉफ्टवेयर में कोई भी काम कैसे करना है (जैसे: पैसे जमा/डिपॉजिट करना, GP स्वैप करना [₹1 = 0.98 GP], प्लान खरीदना/एक्टिवेट करना, बैंक विड्रॉल करना, पासवर्ड बदलना, रेफरल शेयर करना), उसका उत्तर हमेशा 1️⃣, 2️⃣, 3️⃣ करके चरण-दर-चरण (Step-by-Step) स्पष्ट दें।
 4. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
 5. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।

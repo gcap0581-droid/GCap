@@ -96,7 +96,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       ? royaltyEarning
       : cashEarning;
 
-  const [amount, setAmount] = useState<number>(maxWithdrawable);
+  const [amountInput, setAmountInput] = useState<string>('');
+  const amount = parseFloat(amountInput) || 0;
+
   const [destinationType, setDestinationType] = useState<'UPI' | 'BANK'>('UPI');
   const [upiId, setUpiId] = useState<string>('');
   const [accountNo, setAccountNo] = useState<string>('');
@@ -105,28 +107,47 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
-  React.useEffect(() => {
-    if (isOpen && currentUser) {
-      const saved = currentUser.bankDetails ||
-        getStoredBankDetails(currentUser.id) ||
-        (currentUser.loginId ? getStoredBankDetails(currentUser.loginId) : null) ||
-        (currentUser.phone ? getStoredBankDetails(currentUser.phone) : null);
+  const prevIsOpenRef = React.useRef<boolean>(false);
+  const prevSourceRef = React.useRef<WithdrawalSource>(withdrawalSource);
 
-      if (saved) {
-        setUpiId(saved.upiId || '');
-        setAccountNo(saved.accountNumber || '');
-        setIfsc(saved.ifscCode || '');
-        setAccountName(saved.accountHolder || currentUser.name || '');
-      } else {
-        setUpiId('');
-        setAccountNo('');
-        setIfsc('');
-        setAccountName(currentUser.name || '');
+  React.useEffect(() => {
+    const justOpened = isOpen && !prevIsOpenRef.current;
+    const sourceChanged = withdrawalSource !== prevSourceRef.current;
+    prevIsOpenRef.current = isOpen;
+    prevSourceRef.current = withdrawalSource;
+
+    if (isOpen) {
+      if (justOpened || sourceChanged) {
+        const newMax =
+          withdrawalSource === 'EARNING'
+            ? totalEarning
+            : withdrawalSource === 'ROYALTY'
+            ? royaltyEarning
+            : cashEarning;
+        setAmountInput(newMax > 0 ? String(newMax) : '0');
       }
-      // Keep amount synchronized with real maxWithdrawable on open
-      setAmount(maxWithdrawable);
+
+      if (currentUser) {
+        const saved =
+          currentUser.bankDetails ||
+          getStoredBankDetails(currentUser.id) ||
+          (currentUser.loginId ? getStoredBankDetails(currentUser.loginId) : null) ||
+          (currentUser.phone ? getStoredBankDetails(currentUser.phone) : null);
+
+        if (saved) {
+          setUpiId(saved.upiId || '');
+          setAccountNo(saved.accountNumber || '');
+          setIfsc(saved.ifscCode || '');
+          setAccountName(saved.accountHolder || currentUser.name || '');
+        } else {
+          setUpiId('');
+          setAccountNo('');
+          setIfsc('');
+          setAccountName(currentUser.name || '');
+        }
+      }
     }
-  }, [isOpen, currentUser, withdrawalSource]);
+  }, [isOpen, withdrawalSource, currentUser, totalEarning, royaltyEarning, cashEarning]);
 
   if (!isOpen) return null;
 
@@ -149,7 +170,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setWithdrawalSource(src);
     setError('');
     const newMax = src === 'EARNING' ? totalEarning : src === 'ROYALTY' ? royaltyEarning : cashEarning;
-    setAmount(newMax);
+    setAmountInput(newMax > 0 ? String(newMax) : '0');
   };
 
   const handleWithdraw = () => {
@@ -547,13 +568,15 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               <input
                 id="input-withdraw-amount"
                 type="number"
-                min={minWithdrawal}
-                max={maxWithdrawable}
-                step={100}
-                value={amount}
+                step="any"
+                value={amountInput}
                 disabled={!activeWindowValid}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onChange={(e) => {
+                  setAmountInput(e.target.value);
+                  setError('');
+                }}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-9 pr-4 text-white font-mono text-xl font-bold focus:outline-none focus:border-purple-500 transition-colors"
+                placeholder="0"
               />
             </div>
 
@@ -569,8 +592,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   key={idx}
                   type="button"
                   disabled={!activeWindowValid || maxWithdrawable <= 0}
-                  onClick={() => setAmount(Math.floor(maxWithdrawable * p.factor))}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    const calc = Math.round((maxWithdrawable * p.factor) * 100) / 100;
+                    setAmountInput(String(calc));
+                    setError('');
+                  }}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:bg-purple-600 active:text-white"
                 >
                   {p.label}
                 </button>

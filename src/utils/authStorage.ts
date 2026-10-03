@@ -351,6 +351,7 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
       (u.loginId ? presenceMap[u.loginId] : undefined) ||
       (uPhone10 ? presenceMap[uPhone10] : undefined);
 
+    const loginTs = u.lastLoginAt ? new Date(u.lastLoginAt).getTime() : (prec?.lastLoginAt ? new Date(prec.lastLoginAt).getTime() : 0);
     const activeTs = u.lastActiveAt ? new Date(u.lastActiveAt).getTime() : 0;
     const logoutTs = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
     const liveActiveTs = liveEntry?.lastActiveAt || 0;
@@ -369,15 +370,44 @@ export function enrichUsersWithPresence(users: UserProfile[]): UserProfile[] {
       }
     }
 
-    const effectiveLogout = isOnline
-      ? undefined
-      : (u.lastLogoutAt || (prec?.lastLogoutAt ? prec.lastLogoutAt : undefined) || (liveEntry?.lastLogoutAt ? new Date(liveEntry.lastLogoutAt).toISOString() : undefined));
+    // Determine correct & realistic lastLogoutAt:
+    // If user is online, lastLogoutAt is undefined.
+    // If offline:
+    // a) If stored logout timestamp is valid (not in future, not way after last heartbeat, not before login), use it.
+    // b) Otherwise, default to latestHeartbeat (or activeTs or loginTs) so logout time matches real last activity.
+    let effectiveLogout: string | undefined = undefined;
+    if (!isOnline) {
+      let rawLogoutTs = logoutTs;
+      if (!rawLogoutTs && prec?.lastLogoutAt) rawLogoutTs = new Date(prec.lastLogoutAt).getTime();
+      if (!rawLogoutTs && liveEntry?.lastLogoutAt) rawLogoutTs = typeof liveEntry.lastLogoutAt === 'number' ? liveEntry.lastLogoutAt : new Date(liveEntry.lastLogoutAt).getTime();
+
+      const isLogoutLogical =
+        rawLogoutTs > 0 &&
+        rawLogoutTs <= now &&
+        (latestHeartbeat === 0 || rawLogoutTs <= latestHeartbeat + 120000) &&
+        (loginTs === 0 || rawLogoutTs >= loginTs);
+
+      if (isLogoutLogical) {
+        effectiveLogout = new Date(rawLogoutTs).toISOString();
+      } else if (latestHeartbeat > 0 && latestHeartbeat <= now) {
+        effectiveLogout = new Date(latestHeartbeat).toISOString();
+      } else if (loginTs > 0 && loginTs <= now) {
+        effectiveLogout = new Date(loginTs).toISOString();
+      } else if (u.lastLogoutAt) {
+        effectiveLogout = u.lastLogoutAt;
+      }
+    }
+
+    const effectiveLogin = loginTs > 0
+      ? new Date(loginTs).toISOString()
+      : (u.lastLoginAt || prec?.lastLoginAt);
 
     return {
       ...u,
       isOnline,
-      lastLoginAt: u.lastLoginAt || prec?.lastLoginAt,
+      lastLoginAt: effectiveLogin,
       lastLogoutAt: effectiveLogout,
+      lastActiveAt: latestHeartbeat > 0 ? new Date(latestHeartbeat).toISOString() : u.lastActiveAt,
     };
   });
 }

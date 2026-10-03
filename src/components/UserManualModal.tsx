@@ -26,6 +26,7 @@ import { AppRules, InvestmentPlan, Language } from '../types';
 import { formatINR } from '../utils/storage';
 import { getStoredRules } from '../utils/rulesStorage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
+import { getStoredCompanyProfile } from '../utils/companyStorage';
 import { getStoredPlans } from '../utils/plansStorage';
 
 interface UserManualModalProps {
@@ -363,41 +364,41 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-slate-800 shadow-xl">
-              <table className="w-full text-xs text-left border-collapse">
+              <table className="w-full text-xs text-left border-collapse table-fixed">
                 <thead className="bg-slate-900 text-slate-300 font-extrabold uppercase">
                   <tr>
-                    <th className="p-3 border-b border-slate-800">{docLang === 'hi' ? 'विशेषता / मापदंड' : 'System Policy / Property'}</th>
-                    <th className="p-3 border-b border-slate-800">{docLang === 'hi' ? 'लाइव सीमा / विवरण' : 'Enforced Limit / Dynamic Value'}</th>
+                    <th className="p-3 border-b border-slate-800 w-[55%] align-top">{docLang === 'hi' ? 'विशेषता / मापदंड' : 'System Policy / Property'}</th>
+                    <th className="p-3 border-b border-slate-800 w-[45%] align-top">{docLang === 'hi' ? 'लाइव सीमा / विवरण' : 'Enforced Limit / Dynamic Value'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'GP स्वैप दर (Swap Exchange Rate)' : 'GP Swap Exchange Rate'}</td>
-                    <td className="p-3 font-mono text-emerald-400 font-bold">₹1.00 = {gpRate} GP</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'GP स्वैप दर (Swap Exchange Rate)' : 'GP Swap Exchange Rate'}</td>
+                    <td className="p-3 font-mono text-emerald-400 font-bold align-top">₹1.00 = {gpRate} GP</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'प्रारंभिक सत्यापन अवधि' : 'Initial Countdown Verification Lock'}</td>
-                    <td className="p-3 font-mono text-cyan-400 font-bold">24 {docLang === 'hi' ? 'घंटे' : 'Hours'}</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'प्रारंभिक सत्यापन अवधि' : 'Initial Countdown Verification Lock'}</td>
+                    <td className="p-3 font-mono text-cyan-400 font-bold align-top">24 {docLang === 'hi' ? 'घंटे' : 'Hours'}</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'न्यूनतम बैंक निकासी सीमा' : 'Minimum Bank Withdrawal Limit'}</td>
-                    <td className="p-3 font-mono text-amber-400 font-bold">{formatINR(activeRules?.minWithdrawal ?? 100)}</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'न्यूनतम बैंक निकासी सीमा' : 'Minimum Bank Withdrawal Limit'}</td>
+                    <td className="p-3 font-mono text-amber-400 font-bold align-top">{formatINR(activeRules?.minWithdrawal ?? 100)}</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'न्यूनतम निवेश राशि (Long Term)' : 'Minimum Investment (Long Term)'}</td>
-                    <td className="p-3 font-mono text-white font-bold">{formatINR(10000)}</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'न्यूनतम निवेश राशि (Long Term)' : 'Minimum Investment (Long Term)'}</td>
+                    <td className="p-3 font-mono text-white font-bold align-top">{formatINR(10000)}</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'रेफरल बोनस (स्तर L1)' : 'Direct Referral Reward (Level L1)'}</td>
-                    <td className="p-3 font-mono text-teal-300 font-bold">{activeRules?.referralL1Percent ?? 5}%</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'रेफरल बोनस (स्तर L1)' : 'Direct Referral Reward (Level L1)'}</td>
+                    <td className="p-3 font-mono text-teal-300 font-bold align-top">{activeRules?.referralL1Percent ?? 5}%</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'सरकारी टीडीएस कर दर' : 'Govt TDS Withholding Rate'}</td>
-                    <td className="p-3 font-mono text-rose-300 font-bold">{activeRules?.tdsPercent ?? 5}%</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'सरकारी टीडीएस कर दर' : 'Govt TDS Withholding Rate'}</td>
+                    <td className="p-3 font-mono text-rose-300 font-bold align-top">{activeRules?.tdsPercent ?? 5}%</td>
                   </tr>
-                  <tr>
-                    <td className="p-3 font-semibold">{docLang === 'hi' ? 'प्लेटफ़ॉर्म एडमिन चार्ज' : 'Standard Administration Charge'}</td>
-                    <td className="p-3 font-mono text-rose-400 font-bold">{activeRules?.adminFeePercent ?? 2}%</td>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="p-3 font-semibold align-top">{docLang === 'hi' ? 'प्लेटफ़ॉर्म एडमिन चार्ज' : 'Standard Administration Charge'}</td>
+                    <td className="p-3 font-mono text-rose-400 font-bold align-top">{activeRules?.adminFeePercent ?? 2}%</td>
                   </tr>
                 </tbody>
               </table>
@@ -465,16 +466,22 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
           </div>
 
           {/* Support Helpline Footer */}
-          <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-            <div className="space-y-0.5 text-center sm:text-left">
-            <div className="font-black text-xs text-white">GCAP PRIVATE LIMITED</div>
-              <div>Email: support@gcapasset.com | Toll-Free: 1800-GCAP-HELP (1800-4227-4357)</div>
-            </div>
-            <div className="text-center sm:text-right">
-              <div className="font-bold text-amber-400">Authorized Signatory</div>
-              <div className="text-[10px] text-slate-500">Chief Compliance & Operations Officer</div>
-            </div>
-          </div>
+          {(() => {
+            const profile = getStoredCompanyProfile();
+            return (
+              <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] text-slate-400">
+                <div className="space-y-0.5 text-left">
+                  <div className="font-black text-xs text-white">{profile.companyName}</div>
+                  <div>Email: <span className="text-emerald-400 font-mono font-semibold">{profile.supportEmail || 'support@gcap.in'}</span> | Phone: <span className="text-amber-300 font-mono font-semibold">{profile.supportPhone || '+91 8503504808'}</span></div>
+                  <div className="text-[10px] text-slate-500">Address: {profile.registeredAddress}</div>
+                </div>
+                <div className="text-left sm:text-right shrink-0">
+                  <div className="font-bold text-amber-400">{profile.authorizedSignatory || 'Amit Kumar'}</div>
+                  <div className="text-[10px] text-slate-500">{profile.signatoryDesignation || 'Director & Authorized Signatory'}</div>
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
 

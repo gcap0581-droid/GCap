@@ -738,8 +738,8 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
                         <div className="text-[10px] text-slate-600 font-mono">CIN: {profile.cin || 'U66190BR2026OPC088307'}</div>
                       </div>
                     </div>
-                    <div className="text-right text-[10px] text-slate-500 font-medium">
-                      SASARAM, BIHAR - 821115
+                    <div className="text-right text-[10px] text-slate-500 font-medium font-mono">
+                      {profile.sealCity || 'SASARAM, BIHAR - 821113'}
                     </div>
                   </div>
                   <div className="text-[11px] text-slate-500 italic mt-2 text-center">

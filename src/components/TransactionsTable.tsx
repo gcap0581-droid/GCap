@@ -291,7 +291,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                         </div>
                       )}
 
-                      {tx.type === 'WITHDRAWAL' && onViewVoucher && (
+                      {tx.type === 'WITHDRAWAL' && (tx.status === 'SUCCESS' || tx.status === 'APPROVED') && onViewVoucher && (
                         <button
                           onClick={() => onViewVoucher(tx)}
                           className="mt-1 px-2 py-0.5 rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 font-bold text-[10px] flex items-center gap-0.5 transition-all cursor-pointer"
@@ -428,7 +428,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                             </span>
                           )}
 
-                          {tx.type === 'WITHDRAWAL' && onViewVoucher && (
+                          {tx.type === 'WITHDRAWAL' && (tx.status === 'SUCCESS' || tx.status === 'APPROVED') && onViewVoucher && (
                             <button
                               onClick={() => onViewVoucher(tx)}
                               className="px-2 py-0.5 rounded bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"

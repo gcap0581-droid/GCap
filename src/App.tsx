@@ -333,45 +333,8 @@ export default function App() {
 
   const isHi = language === 'hi';
 
-  // Unified dynamic wallet computation ensuring Nikasi (Withdrawal) page balance ALWAYS matches Portfolio page calculations 100%
-  const effectiveWallet: Wallet | null = useMemo(() => {
-    if (!wallet) return null;
-    const activeInvs = investments.filter((i) => i.status === 'ACTIVE');
-    if (activeInvs.length === 0) return wallet;
-
-    const shortTermRate = rules?.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040;
-    const longTermRate = rules?.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033;
-
-    const portfolioEarned = Math.round(activeInvs.reduce((sum, inv) => {
-      const invEarned = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar > 0)
-        ? inv.earnedSoFar
-        : (typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar > 0)
-        ? inv.totalEarnedSoFar
-        : 0;
-      const isShort = (inv.planId === 'short-term' || inv.planId === 'SHORT_TERM_641D') && inv.investedAmount >= 100000;
-      const currentRate = !isShort || !!inv.royaltyStage ? longTermRate : shortTermRate;
-      const cycleReturn = Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
-      const completedCycles = Math.max(
-        inv.completedCyclesCount || 0,
-        inv.cyclesCompleted || 0
-      );
-      const calcEarned = completedCycles > 0 ? (completedCycles * (inv.cycleReturnAmount || cycleReturn)) : 0;
-      return sum + Math.max(invEarned, calcEarned);
-    }, 0) * 100) / 100;
-
-    const calcEarned = portfolioEarned > 0 ? portfolioEarned : (wallet.totalEarned || 0);
-
-    if (Math.abs(calcEarned - (wallet.totalEarned || 0)) > 0.001) {
-      return {
-        ...wallet,
-        totalEarned: calcEarned,
-      };
-    }
-    return wallet;
-  }, [wallet, investments, rules]);
-
-  // Use effectiveWallet directly for rendering across all views
-  const displayWallet = effectiveWallet || wallet;
+  // Canonical wallet representation for all rendering views across the portal
+  const displayWallet = wallet;
 
   // Midnight Auto-Backup Lifecycle
   useEffect(() => {
@@ -478,16 +441,20 @@ export default function App() {
             } else {
               if (state.wallet) {
                 setWallet((prev) => {
-                  if (!prev) return state.wallet;
+                  const uid = currentUser?.id;
+                  if (!prev) {
+                    setStoredWallet(state.wallet, uid);
+                    return state.wallet;
+                  }
                   const stableWallet: Wallet = {
                     ...state.wallet,
                     totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
                     totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
                     royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
                   };
+                  setStoredWallet(stableWallet, uid);
                   return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
                 });
-                setStoredWallet(state.wallet);
               }
               if (state.transactions) {
                 setTransactions(state.transactions);

@@ -180,33 +180,23 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                   onTabChange('wallet');
                 }
               }}
-              className={`flex items-center gap-1 bg-slate-950/80 border ${
-                hasRoyaltyStarted
-                  ? 'border-amber-500/50 bg-amber-950/30'
-                  : 'border-slate-800 hover:border-amber-500/40'
-              } rounded-lg px-2 py-1 cursor-pointer transition-colors`}
+              className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 rounded-lg px-2 py-1 cursor-pointer transition-colors"
               title={
                 isAdmin
                   ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Treasury Balance')
-                  : hasRoyaltyStarted
-                  ? (isHi ? 'कुल रॉयल्टी कमाई' : 'Total Royalty Earnings')
                   : (isHi ? 'कुल कमाई (Total Earnings)' : 'Total Earnings')
               }
             >
-              {hasRoyaltyStarted && !isAdmin ? (
-                <span className="text-xs leading-none">👑</span>
-              ) : !isAdmin ? (
+              {!isAdmin ? (
                 <span className="text-xs leading-none">💰</span>
               ) : (
                 <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
               )}
-              <span className={`text-xs font-mono font-bold ${hasRoyaltyStarted && !isAdmin ? 'text-amber-400' : !isAdmin ? 'text-emerald-300' : 'text-emerald-400'}`}>
+              <span className="text-xs font-mono font-bold text-emerald-300">
                 {formatINR(
                   isAdmin
                     ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0))
-                    : hasRoyaltyStarted
-                    ? (wallet?.royaltyEarned || 0)
-                    : (wallet?.totalEarned || 0)
+                    : ((wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0))
                 )}
               </span>
             </div>

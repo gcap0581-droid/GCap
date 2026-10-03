@@ -61,7 +61,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                 {isHi ? 'आधिकारिक भुगतान वाउचर' : 'Official Payment Voucher / Receipt'}
               </h3>
               <p className="text-[11px] text-slate-400">
-                {isHi ? 'सरकारी TDS एवं 0.02% एडमिन शुल्क कटौती विवरण पत्र' : 'Govt TDS & 0.02% Admin Charge Tax Deduction Slip'}
+                {isHi ? `सरकारी TDS एवं ${adminPercent}% एडमिन शुल्क कटौती विवरण पत्र` : `Govt TDS & ${adminPercent}% Admin Charge Tax Deduction Slip`}
               </p>
             </div>
           </div>
@@ -233,7 +233,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
                         {isHi ? 'प्लेटफॉर्म एडमिन शुल्क (Admin Charge)' : 'Platform Admin Service Fee'}
                       </div>
                       <div className="text-[10px] text-amber-400/80 print:text-amber-800 font-sans">
-                        {isHi ? '0.02% एडमिन प्रोसेसिंग एवं बैंकिंग मैनेजमेंट शुल्क' : '0.02% Admin Processing & Maintenance Fee'}
+                        {isHi ? `${adminPercent}% एडमिन प्रोसेसिंग एवं बैंकिंग मैनेजमेंट शुल्क` : `${adminPercent}% Admin Processing & Maintenance Fee`}
                       </div>
                     </td>
                     <td className="p-3 text-right text-amber-400 print:text-amber-800 font-bold">
