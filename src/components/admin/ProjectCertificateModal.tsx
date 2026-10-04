@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X, Printer, Award, ShieldCheck, CheckCircle2, Sparkles, Building2, RefreshCw } from 'lucide-react';
+import { X, Printer, Award, ShieldCheck, CheckCircle2, Sparkles, Building2, Download, MessageCircle } from 'lucide-react';
 import { Language } from '../../types';
 import { formatINR } from '../../utils/storage';
 import { getStoredCompanyProfile } from '../../utils/companyStorage';
 import { OfficialCorporateSealBadge } from '../OfficialCorporateSealBadge';
+import { printDocument, downloadDocumentAsHtml } from '../../utils/printHelper';
+import { sendWhatsAppAlert } from '../../utils/whatsappHelper';
 
 interface ProjectCertificateModalProps {
   isOpen: boolean;
@@ -22,7 +24,6 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
   const isHi = language === 'hi';
 
   // Sample data states for admin testing
-  // Generic Sample data for Admin preview
   const [investorName, setInvestorName] = useState('SAMPLE INVESTOR NAME');
   const [investorId, setInvestorId] = useState('GCAP-SMP-99412');
   const [projectName, setProjectName] = useState('GCAP 641-DAY PRIME GROWTH SCHEME');
@@ -31,10 +32,28 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
   const [maturityDate, setMaturityDate] = useState(new Date().toLocaleDateString('hi-IN'));
   const [certId, setCertId] = useState('GCAP-CERT-SAMPLE-001');
 
-  const totalPayout = principalAmount + totalRoiPaid;
-
   const handlePrint = () => {
-    window.print();
+    printDocument('printable-project-certificate', `GCap-Certificate-${certId}`);
+  };
+
+  const handleDownload = () => {
+    downloadDocumentAsHtml('printable-project-certificate', `GCap-Certificate-${certId}.html`);
+  };
+
+  const handleWhatsAppShare = () => {
+    const message = `*👑 ${profile.companyName || 'GCAP CAPITAL'} — आधिकारिक प्रोजेक्ट समापन प्रमाण पत्र*\n\n` +
+      `बधाई हो *${investorName}*! 🎉\n\n` +
+      `आपके निवेश प्रोजेक्ट की अवधि शत-प्रतिशत पूर्ण हो गई है:\n\n` +
+      `📋 *प्रोजेक्ट:* ${projectName}\n` +
+      `💵 *मूलधन निवेश:* ${formatINR(principalAmount)}\n` +
+      `📈 *कुल प्राप्त रिटर्न:* +${formatINR(totalRoiPaid)}\n` +
+      `💎 *100% वापस मूलधन:* ${formatINR(principalAmount)} (सुरक्षित वापस)\n` +
+      `📅 *समापन तिथि:* ${maturityDate}\n` +
+      `📜 *सत्यापित प्रमाणपत्र संख्या:* ${certId}\n\n` +
+      `🏛️ CIN: ${profile.cin || 'U67190MH2023PTC109824'}\n\n` +
+      `धन्यवाद,\n*GCAP Executive Board*`;
+
+    sendWhatsAppAlert({ message });
   };
 
   return (
@@ -42,13 +61,13 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
       <div className="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] print:max-w-none print:w-full print:h-auto print:border-none print:shadow-none print:bg-white print:text-black">
         
         {/* Modal Top Bar (Hidden on Print) */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/90 print:hidden">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-950/90 print:hidden gap-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-sm sm:text-base font-bold text-white">
                 {isHi ? 'प्रोजेक्ट समापन प्रमाण पत्र नमूना (Certificate Sample)' : 'Project Completion Certificate Sample'}
               </h3>
               <p className="text-[11px] text-slate-400">
@@ -57,13 +76,31 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={handleWhatsAppShare}
+              className="px-3 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-green-950/40 active:scale-95"
+              title={isHi ? 'व्हाट्सएप पर प्रमाण पत्र शेयर करें' : 'Share Certificate on WhatsApp'}
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span className="hidden sm:inline">{isHi ? 'WhatsApp शेयर' : 'WhatsApp'}</span>
+            </button>
+
             <button
               onClick={handlePrint}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+              className="px-3 sm:px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-amber-500/20 active:scale-95"
             >
               <Printer className="w-4 h-4" />
-              <span>{isHi ? 'प्रमाण पत्र प्रिंट करें' : 'Print Certificate'}</span>
+              <span>{isHi ? 'प्रिंट करें' : 'Print'}</span>
+            </button>
+
+            <button
+              onClick={handleDownload}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-900/30 active:scale-95"
+              title={isHi ? 'HTML / PDF फ़ाइल डाउनलोड करें' : 'Download Document'}
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">{isHi ? 'डाउनलोड' : 'Download'}</span>
             </button>
 
             <button
@@ -121,10 +158,10 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
         </div>
 
         {/* CERTIFICATE PRINTABLE CONTENT */}
-        <div className="p-6 overflow-y-auto bg-slate-950 text-slate-100 print:bg-white print:text-black print:p-10">
+        <div id="printable-project-certificate" className="p-4 sm:p-6 overflow-y-auto bg-slate-950 text-slate-100 print:bg-white print:text-black print:p-10">
           
           {/* Certificate Outer Gold Border Frame */}
-          <div className="relative p-6 sm:p-10 border-4 border-amber-500/60 print:border-amber-600 rounded-3xl bg-slate-900/90 print:bg-white shadow-2xl space-y-6 text-center">
+          <div className="relative p-5 sm:p-10 border-4 border-amber-500/60 print:border-amber-600 rounded-3xl bg-slate-900/90 print:bg-white shadow-2xl space-y-6 text-center">
             
             {/* Corner Decorative Ornaments */}
             <div className="absolute top-3 left-3 w-8 h-8 border-t-2 border-l-2 border-amber-400 print:border-amber-600"></div>
@@ -168,7 +205,7 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
 
             {/* Main Title Badge */}
             <div className="py-2 px-6 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-500/40 to-amber-500/20 print:bg-amber-100 border border-amber-500/50 inline-block">
-              <h2 className="text-xl sm:text-2xl font-black text-amber-300 print:text-amber-900 uppercase tracking-wide">
+              <h2 className="text-lg sm:text-2xl font-black text-amber-300 print:text-amber-900 uppercase tracking-wide">
                 {isHi ? '📜 प्रोजेक्ट समापन एवं 100% मूलधन वापसी प्रमाण पत्र' : 'OFFICIAL CERTIFICATE OF PROJECT COMPLETION'}
               </h2>
             </div>
@@ -179,7 +216,7 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                 This official certificate confirms that
               </p>
               
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white print:text-black tracking-tight border-b-2 border-amber-500/40 print:border-amber-600 pb-1 inline-block">
+              <h3 className="text-xl sm:text-3xl font-extrabold text-white print:text-black tracking-tight border-b-2 border-amber-500/40 print:border-amber-600 pb-1 inline-block">
                 {investorName}
               </h3>
               
@@ -245,7 +282,6 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
               {/* Security QR Code */}
               <div className="flex items-center gap-3 text-left">
                 <div className="w-16 h-16 bg-white p-1 rounded-xl border border-amber-500/40 shrink-0 flex items-center justify-center">
-                  {/* Digital QR Code Placeholder SVG */}
                   <svg viewBox="0 0 100 100" className="w-full h-full text-slate-950">
                     <rect width="100" height="100" fill="white" />
                     <rect x="10" y="10" width="25" height="25" fill="black" />
@@ -301,21 +337,35 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
         </div>
 
         {/* Modal Bottom Actions (Hidden on Print) */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/90 flex items-center justify-between print:hidden">
-          <p className="text-xs text-slate-400">
-            💡 {isHi ? 'एडमिन किसी भी प्रोजेक्ट पूर्णता प्रमाण पत्र का प्रिंट निकाल सकता है।' : 'Admin can view and print official certificates for completed projects.'}
+        <div className="p-4 border-t border-slate-800 bg-slate-950/90 flex flex-col sm:flex-row items-center justify-between gap-3 print:hidden">
+          <p className="text-xs text-slate-400 text-center sm:text-left">
+            💡 {isHi ? 'एडमिन किसी भी प्रोजेक्ट पूर्णता प्रमाण पत्र का प्रिंट, PDF या 1-क्लिक WhatsApp शेयर कर सकता है।' : 'Admin can view, print, download PDF or 1-Click WhatsApp share official certificates.'}
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+            <button
+              onClick={handleWhatsAppShare}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-green-950/50 active:scale-95"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>{isHi ? '📲 WhatsApp शेयर' : '📲 Share WhatsApp'}</span>
+            </button>
             <button
               onClick={handlePrint}
-              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-amber-500/20"
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-amber-500/20 active:scale-95"
             >
               <Printer className="w-4 h-4" />
               <span>{isHi ? 'प्रमाण पत्र प्रिंट करें' : 'Print Certificate'}</span>
             </button>
             <button
+              onClick={handleDownload}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-900/30 active:scale-95"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isHi ? 'PDF / डाउनलोड' : 'Download'}</span>
+            </button>
+            <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer active:scale-95"
             >
               {isHi ? 'बंद करें' : 'Close'}
             </button>

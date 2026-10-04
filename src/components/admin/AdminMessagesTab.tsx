@@ -21,10 +21,12 @@ import {
   Loader2,
   RotateCcw,
   Edit3,
+  MessageCircle,
 } from 'lucide-react';
 import { AdminMessage, Language, UserProfile, Wallet, ActiveInvestment } from '../../types';
 import { translateEnglishToHindi } from '../../utils/translate';
 import { apiSyncAdminMessagesBatch } from '../../utils/centralSync';
+import { sendWhatsAppAlert, createBroadcastWhatsAppAlert } from '../../utils/whatsappHelper';
 
 interface AdminMessagesTabProps {
   language: Language;
@@ -934,23 +936,41 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
             />
           </div>
 
-          {/* Submit / Broadcast Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-400 hover:to-teal-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" />
-            <span>
-              {isSubmitting
-                ? isHi
-                  ? 'प्रसारित हो रहा है...'
-                  : 'Broadcasting...'
-                : isHi
-                ? '🚀 संदेश तुरंत लाइव भेजें (Broadcast Now)'
-                : '🚀 Broadcast Message Now'}
-            </span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* 1-Click WhatsApp Broadcast Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const effectiveTitle = (isHi && titleHi) ? titleHi : title || 'GCAP महत्वपूर्ण सूचना';
+                const effectiveBody = (isHi && contentHi) ? contentHi : content || 'GCAP Global Asset Portal की ओर से विशेष सूचना।';
+                const targetPhone = selectedUserId ? users.find(u => u.id === selectedUserId)?.phone : undefined;
+                sendWhatsAppAlert(createBroadcastWhatsAppAlert(effectiveTitle, effectiveBody, targetPhone));
+              }}
+              className="px-4 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-green-950/40 active:scale-95"
+              title={isHi ? 'व्हाट्सएप पर डायरेक्ट सूचना भेजें' : 'Send via 1-Click WhatsApp'}
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>{isHi ? '📲 WhatsApp ब्रॉडकास्ट' : '📲 WhatsApp Broadcast'}</span>
+            </button>
+
+            {/* Submit / In-App Broadcast Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 hover:from-amber-400 hover:to-teal-400 text-slate-950 font-black text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            >
+              <Send className="w-4 h-4" />
+              <span>
+                {isSubmitting
+                  ? isHi
+                    ? 'प्रसारित हो रहा है...'
+                    : 'Broadcasting...'
+                  : isHi
+                  ? '🚀 लाइव भेजें (In-App)'
+                  : '🚀 Broadcast (In-App)'}
+              </span>
+            </button>
+          </div>
         </div>
       </form>
 

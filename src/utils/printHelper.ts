@@ -11,6 +11,8 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
     return;
   }
 
+  const contentHtml = element.innerHTML;
+
   try {
     // Check if an existing print iframe exists and remove it
     const existingIframe = document.getElementById('gcap-print-frame');
@@ -43,8 +45,6 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
       stylesHtml += node.outerHTML;
     });
 
-    const contentHtml = element.innerHTML;
-
     iframeDoc.open();
     iframeDoc.write(`
       <!DOCTYPE html>
@@ -58,12 +58,12 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
         <style>
           @page {
             size: A4;
-            margin: 12mm 12mm 12mm 12mm;
+            margin: 10mm 10mm 10mm 10mm;
           }
           @media print {
             body {
               background-color: #ffffff !important;
-              color: #0f172a !important;
+              color: #000000 !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
               margin: 0 !important;
@@ -95,9 +95,13 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
         <script>
           window.onload = function() {
             setTimeout(function() {
-              window.focus();
-              window.print();
-            }, 300);
+              try {
+                window.focus();
+                window.print();
+              } catch(e) {
+                console.error(e);
+              }
+            }, 350);
           };
         </script>
       </body>
@@ -111,9 +115,14 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
       } catch {
-        window.print();
+        // Fallback for mobile browser security
+        try {
+          window.print();
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }, 400);
+    }, 450);
 
     // Clean up iframe after 60 seconds
     setTimeout(() => {
@@ -121,7 +130,11 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
     }, 60000);
   } catch (error) {
     console.warn('Iframe print error, falling back to window.print()', error);
-    window.print();
+    try {
+      window.print();
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
 
@@ -141,8 +154,8 @@ export function downloadDocumentAsHtml(elementId: string, filename: string = 'GC
   <title>${filename.replace(/\.html$/i, '')}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @page { size: A4; margin: 12mm; }
-    body { background-color: #ffffff; color: #0f172a; padding: 24px; font-family: system-ui, sans-serif; }
+    @page { size: A4; margin: 10mm; }
+    body { background-color: #ffffff; color: #0f172a; padding: 20px; font-family: system-ui, sans-serif; }
     @media print {
       body { padding: 0; }
       .no-print { display: none !important; }
@@ -151,7 +164,7 @@ export function downloadDocumentAsHtml(elementId: string, filename: string = 'GC
 </head>
 <body>
   <div class="no-print" style="margin-bottom: 20px; padding: 12px; background: #f1f5f9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-    <span style="font-weight: bold; font-size: 14px; color: #0f172a;">📄 GCap Official Printable Document</span>
+    <span style="font-weight: bold; font-size: 14px; color: #0f172a;">📄 GCap Official Printable Certificate / Document</span>
     <button onclick="window.print()" style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">🖨️ Print / Save as PDF</button>
   </div>
   ${contentHtml}

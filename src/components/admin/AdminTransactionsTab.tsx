@@ -13,9 +13,11 @@ import {
   AlertTriangle,
   Building2,
   Zap,
+  MessageCircle,
 } from 'lucide-react';
 import { Language, Transaction, TransactionType } from '../../types';
 import { formatINR } from '../../utils/storage';
+import { sendWhatsAppAlert, createDepositWhatsAppAlert, createWithdrawalWhatsAppAlert } from '../../utils/whatsappHelper';
 
 interface AdminTransactionsTabProps {
   transactions: Transaction[];
@@ -434,6 +436,21 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                               </button>
                             )
                           )}
+
+                          {/* 1-Click WhatsApp Alert Button */}
+                          <button
+                            onClick={() => {
+                              if (t.type === 'DEPOSIT') {
+                                sendWhatsAppAlert(createDepositWhatsAppAlert(t, t.userName));
+                              } else {
+                                sendWhatsAppAlert(createWithdrawalWhatsAppAlert(t, t.userName));
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-green-950/80 hover:bg-green-900/90 text-green-400 border border-green-700/60 text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
+                            title={isHi ? '1-क्लिक व्हाट्सएप रसीद / अलर्ट भेजें' : 'Send 1-Click WhatsApp Alert'}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                          </button>
 
                           <button
                             onClick={() => onEditTransaction(t)}

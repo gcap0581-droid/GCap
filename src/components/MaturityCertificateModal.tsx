@@ -1,11 +1,12 @@
 import React from 'react';
-import { X, Printer, Award, ShieldCheck, CheckCircle2, Download, Building2, User, Calendar, DollarSign, RefreshCw } from 'lucide-react';
+import { X, Printer, Award, ShieldCheck, CheckCircle2, Download, Building2, User, Calendar, DollarSign, RefreshCw, MessageCircle } from 'lucide-react';
 import { ActiveInvestment, Language, UserProfile, CompanyProfile } from '../types';
 import { formatINR } from '../utils/storage';
 import { printDocument, downloadDocumentAsHtml } from '../utils/printHelper';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
 import { getStoredRules } from '../utils/rulesStorage';
 import { OfficialCorporateSealBadge } from './OfficialCorporateSealBadge';
+import { sendWhatsAppAlert, createMaturityCertificateWhatsAppAlert } from '../utils/whatsappHelper';
 
 interface MaturityCertificateModalProps {
   isOpen: boolean;
@@ -73,6 +74,11 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
     downloadDocumentAsHtml('certificate-print-canvas', `GCap-Certificate-${certNumber}.html`);
   };
 
+  const handleWhatsAppShare = () => {
+    const alertData = createMaturityCertificateWhatsAppAlert(investment, user);
+    sendWhatsAppAlert(alertData);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md overflow-y-auto print:p-0 print:bg-white print:fixed print:inset-0">
       <div className="relative w-full max-w-3xl bg-slate-900 border-2 border-amber-500/60 rounded-3xl shadow-2xl overflow-hidden print:border-4 print:border-amber-700 print:bg-white print:text-black print:shadow-none print:w-full print:max-w-none print:rounded-none">
@@ -86,6 +92,16 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
             </h3>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              id="btn-whatsapp-cert"
+              onClick={handleWhatsAppShare}
+              className="py-1.5 px-3.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-green-950/40 active:scale-95"
+              title={isHi ? 'व्हाट्सएप पर प्रमाण पत्र शेयर करें' : 'Share on WhatsApp'}
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>{isHi ? 'WhatsApp शेयर' : 'WhatsApp'}</span>
+            </button>
+
             <button
               id="btn-print-cert"
               onClick={handlePrint}
