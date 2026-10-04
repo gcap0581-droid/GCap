@@ -13,6 +13,16 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
+html {
+  font-size: 114%;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 118%;
+  }
+}
+
 html, body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;

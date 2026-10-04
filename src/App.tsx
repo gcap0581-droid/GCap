@@ -5341,35 +5341,6 @@ export default function App() {
         actionTitle={suspendedActionTitle}
       />
 
-      {/* Side-Docked Edge Trigger Button for GCap AI Assistant */}
-      {currentUser && (
-        <div className="fixed bottom-24 right-0 z-40 flex items-center group">
-          <button
-            id="btn-floating-gcap-assistant"
-            onClick={() => setIsAssistantModalOpen(true)}
-            className="flex items-center gap-1.5 pl-2 pr-1.5 py-2 rounded-l-2xl bg-slate-900/95 hover:bg-emerald-950/95 text-emerald-300 shadow-2xl shadow-slate-950 border-l-2 border-y border-emerald-400/60 hover:border-emerald-300 backdrop-blur-md cursor-pointer transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 group-hover:pr-3"
-            title={isHi ? 'GCap AI सहायक (क्लिक करके खोलें)' : 'Ask GCap AI Assistant'}
-          >
-            {/* Arrow mark pointing out from edge */}
-            <ChevronLeft className="w-3.5 h-3.5 text-emerald-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
-            
-            {/* Glowing Green Bindi / Pulse Dot */}
-            <span className="relative flex h-2.5 w-2.5 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-            </span>
-
-            {/* Small Bot Icon */}
-            <Bot className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform shrink-0" />
-
-            {/* Label expands on hover */}
-            <span className="text-[11px] font-bold tracking-tight text-emerald-200 whitespace-nowrap overflow-hidden max-w-0 group-hover:max-w-xs transition-all duration-300 ease-in-out">
-              {isHi ? 'GCap सहायक' : 'AI Help'}
-            </span>
-          </button>
-        </div>
-      )}
-
       {/* GCap AI Voice & Text Assistant Modal */}
       <GcapAssistantModal
         isOpen={isAssistantModalOpen}
