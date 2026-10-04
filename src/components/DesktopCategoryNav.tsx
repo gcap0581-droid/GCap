@@ -6,9 +6,6 @@ import {
   Wallet,
   Calculator,
   ShieldCheck,
-  Tag,
-  Star,
-  Zap,
 } from 'lucide-react';
 import { DesktopCategoryTab, Language } from '../types';
 
@@ -53,7 +50,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
       subHi: '2.2% से 3.5% दैनिक लाभ',
       icon: Flame,
       badge: 'TOP ROI',
-      badgeColor: 'bg-amber-500 text-slate-950 font-black',
+      badgeColor: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black',
     },
     {
       id: 'investments',
@@ -63,7 +60,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
       subHi: 'सक्रिय निवेश व रिटर्न',
       icon: TrendingUp,
       badge: activeInvestmentsCount > 0 ? `${activeInvestmentsCount} Active` : undefined,
-      badgeColor: 'bg-emerald-500 text-slate-950 font-black',
+      badgeColor: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black',
     },
     {
       id: 'wallet',
@@ -81,7 +78,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
       subHi: 'रिटर्न व मुनाफा जांचें',
       icon: Calculator,
       badge: 'ESTIMATE',
-      badgeColor: 'bg-teal-500 text-slate-950 font-bold',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold',
     },
     {
       id: 'rules',
@@ -91,13 +88,13 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
       subHi: '100% मूलधन सुरक्षा गारंटी',
       icon: ShieldCheck,
       badge: 'ASSURED',
-      badgeColor: 'bg-cyan-400 text-slate-950 font-black',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-black',
     },
   ];
 
   return (
-    <div className="w-full bg-slate-900/90 border border-slate-800/90 rounded-2xl p-1.5 sm:p-2 shadow-lg backdrop-blur-md">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+    <div className="w-full bg-slate-950/80 border border-white/[0.08] rounded-2xl p-1.5 sm:p-2 shadow-xl shadow-black/40 backdrop-blur-xl">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isActive = activeTab === cat.id;
@@ -107,23 +104,23 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
               key={cat.id}
               id={`desktop-category-tab-${cat.id}`}
               onClick={() => onTabChange(cat.id)}
-              className={`relative flex flex-col items-start p-2.5 sm:p-3 rounded-xl transition-all cursor-pointer text-left group overflow-hidden ${
+              className={`relative flex flex-col items-start p-3 rounded-xl transition-all duration-200 cursor-pointer text-left group overflow-hidden active:scale-95 ${
                 isActive
-                  ? 'bg-gradient-to-r from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/50 shadow-md shadow-amber-950/20'
-                  : 'hover:bg-slate-800/60 border border-transparent hover:border-slate-700/60'
+                  ? 'bg-gradient-to-b from-amber-500/20 via-slate-900/90 to-slate-950/90 border border-amber-500/50 shadow-lg shadow-amber-950/30'
+                  : 'hover:bg-slate-900/60 border border-transparent hover:border-slate-800'
               }`}
             >
-              {/* Active Indicator Line */}
+              {/* Active Indicator Top Edge Glow */}
               {isActive && (
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 to-amber-500 shadow-sm" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
               )}
 
-              <div className="flex items-center justify-between w-full mb-1">
+              <div className="flex items-center justify-between w-full mb-1.5">
                 <div
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  className={`p-2 rounded-xl transition-all ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/30'
-                      : 'bg-slate-800 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
+                      ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 shadow-md shadow-amber-500/40'
+                      : 'bg-slate-800/80 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -131,7 +128,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
 
                 {cat.badge && (
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono uppercase tracking-wider ${
+                    className={`text-[9px] px-2 py-0.5 rounded-full font-mono uppercase tracking-wider shadow-sm ${
                       cat.badgeColor || 'bg-slate-800 text-slate-300'
                     }`}
                   >
@@ -142,7 +139,7 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
 
               <div className="mt-0.5 w-full">
                 <div
-                  className={`text-xs sm:text-sm font-bold tracking-tight truncate ${
+                  className={`text-xs sm:text-sm font-extrabold tracking-tight truncate ${
                     isActive ? 'text-amber-300' : 'text-slate-200 group-hover:text-white'
                   }`}
                 >

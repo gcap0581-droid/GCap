@@ -3,16 +3,8 @@ import {
   Menu,
   Wallet as WalletIcon,
   PlusCircle,
-  Globe,
-  Smartphone,
-  Monitor,
-  Search,
-  Zap,
   Award,
-  LogOut,
-  ChevronDown,
   Bell,
-  RefreshCw,
 } from 'lucide-react';
 import {
   Language,
@@ -62,72 +54,34 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   wallet,
   treasury,
-  investments,
   language,
-  onLanguageChange,
-  viewMode,
-  onViewModeChange,
-  onOpenDeposit,
-  onOpenWithdraw,
-  onOpenRules,
-  onOpenReferral,
-  onSimulateDay,
-  isSimulating,
   currentUser,
-  onLogout,
   isAdminHubActive = false,
-  onToggleAdminHub,
-  desktopTab,
   onDesktopTabChange,
-  onSearchQuery,
   onOpenMenuDrawer,
   onOpenProfile,
   unreadMessagesCount = 0,
   onOpenNotifications,
   onSelectAdminSubTab,
-  onRefreshApp,
+  onOpenDeposit,
   onGoHome,
-  onOpenAssistant,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
-  const [searchVal, setSearchVal] = useState('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleManualRefresh = () => {
-    setIsRefreshing(true);
-    if (onRefreshApp) {
-      onRefreshApp();
-    } else {
-      window.location.reload();
-    }
-    setTimeout(() => setIsRefreshing(false), 1200);
-  };
-
-  const hasRoyaltyStarted = !isAdmin && (
-    (wallet?.royaltyEarned !== undefined && wallet.royaltyEarned > 0) ||
-    (investments && investments.some(i => i.status === 'ACTIVE' && i.royaltyStage === '1825D_ROYALTY'))
-  );
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onSearchQuery) onSearchQuery(searchVal);
-    if (onDesktopTabChange) onDesktopTabChange('plans');
-  };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-900/60 text-white shadow-xl w-full">
+    <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-2xl border-b border-white/[0.08] text-white shadow-2xl shadow-black/60 w-full transition-all">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
           
           {/* Left: Menu Button (Drawer trigger) & Brand Logo */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Main Menu Button (Always visible on mobile & desktop if logged in) */}
+            {/* Main Menu Button */}
             {currentUser && (
               <button
                 id="btn-main-menu-drawer"
                 onClick={onOpenMenuDrawer}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-95"
+                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 flex items-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-amber-500/20 active:scale-95"
                 title={isHi ? 'मुख्य मेन्यू खोलें' : 'Open Menu'}
               >
                 <Menu className="w-5 h-5 text-amber-400" />
@@ -137,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* GCap Brand - Click navigates to Home Page from any screen */}
+            {/* GCap Brand */}
             <button
               id="btn-nav-brand-home"
               onClick={() => {
@@ -152,10 +106,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }
                 }
               }}
-              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none hover:opacity-85 transition-all active:scale-95 px-1 py-0.5 rounded-lg focus:outline-none"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none hover:opacity-90 transition-all active:scale-95 px-1 py-0.5 rounded-xl focus:outline-none"
               title={isHi ? 'मुख्य होम पेज पर जाएँ' : 'Go to Home Page'}
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-950 shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.25)] flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden border border-amber-400/60 bg-slate-950 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.35)] flex items-center justify-center">
                 <img
                   src={PRIMARY_COMPANY_LOGO}
                   onError={(e) => {
@@ -175,19 +129,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="font-black text-xl sm:text-2xl tracking-tight text-white">
+              <span className="font-black text-xl sm:text-2xl tracking-tight text-white font-display">
                 GCap
               </span>
             </button>
           </div>
 
-          {/* Center Search Bar Removed */}
           <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"></div>
 
-          {/* Right Actions: Wallet Pill, Deposit, View Switcher */}
+          {/* Right Actions: Wallet Pill, Deposit, Profile & Notifications */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
-            {/* Compact Wallet Pill: Shows Total Earnings for normal users, Company Balance for Admin */}
+            {/* Compact Wallet Pill */}
             {currentUser && (
               <div
                 onClick={() => {
@@ -197,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onDesktopTabChange('wallet');
                   }
                 }}
-                className="flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-inner cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-slate-900/95 to-slate-950/95 border border-emerald-500/30 hover:border-amber-400/50 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-md shadow-black/40 cursor-pointer transition-all active:scale-95"
                 title={
                   isAdmin
                     ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance')
@@ -210,12 +163,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 )}
                 <div className="leading-none">
-                  <span className="text-[9px] text-slate-400 block font-medium hidden sm:block">
+                  <span className="text-[9px] text-slate-400 block font-semibold hidden sm:block">
                     {isAdmin
                       ? (isHi ? 'कंपनी बैलेंस' : 'Company Balance')
                       : (isHi ? 'कुल कमाई' : 'Total Earnings')}
                   </span>
-                  <span className="text-xs sm:text-sm font-bold font-mono text-emerald-300">
+                  <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-300">
                     {formatINR(
                       isAdmin
                         ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0))
@@ -231,17 +184,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-nav-deposit-quick"
                 onClick={onOpenDeposit}
-                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow cursor-pointer transition-all active:scale-95"
+                className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-900/40 cursor-pointer transition-all active:scale-95"
               >
                 <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
               </button>
-            )}
-
-            {/* In-App 1-Tap Live Refresh / Sync Button Removed from Header */}
-            {currentUser && (
-              /* Refresh button is only inside Navigation Menu */
-              null
             )}
 
             {/* User Profile Detail Button with integrated Notifications Bell */}
@@ -249,10 +196,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-nav-profile-notifications"
                 onClick={onOpenProfile || onOpenNotifications}
-                className="relative flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition-all cursor-pointer shadow-sm active:scale-95"
+                className="relative flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/80 to-slate-900/80 hover:from-cyan-900/80 hover:to-slate-800/80 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition-all cursor-pointer shadow-md shadow-black/40 active:scale-95"
                 title={isHi ? 'प्रोफ़ाइल विवरण एवं सूचनाएं' : 'Profile Details & Notifications'}
               >
-                <div className="w-5.5 h-5.5 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="w-5.5 h-5.5 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-extrabold text-xs shrink-0 border border-cyan-500/30">
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <span className="hidden sm:inline max-w-[110px] truncate font-bold">{currentUser.name || (isHi ? 'प्रोफ़ाइल' : 'Profile')}</span>
@@ -281,9 +228,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Static Admin Indicator */}
             {isAdmin && (
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-md shadow-emerald-950/20"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-amber-500/40 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 text-amber-300 shadow-md shadow-amber-950/30"
               >
-                <Award className="w-3.5 h-3.5 text-emerald-400" />
+                <Award className="w-3.5 h-3.5 text-amber-400" />
                 <span>{isHi ? '👑 मुख्य एडमिन' : '👑 Master Admin'}</span>
               </div>
             )}
