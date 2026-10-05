@@ -395,3 +395,38 @@ export interface AdminMessage {
   readByUserIds?: string[]; // user IDs who have read the message
   dismissedByUserIds?: string[]; // user IDs who dismissed the popup
 }
+
+export type WhatsAppAlertType =
+  | 'DEPOSIT_ALERT'
+  | 'WITHDRAWAL_ALERT'
+  | 'PAYMENT_VOUCHER'
+  | 'MATURITY_CERTIFICATE'
+  | 'BROADCAST_NOTICE'
+  | 'SECURITY_ALERT'
+  | 'ROYALTY_REWARD'
+  | 'CUSTOM_TEST';
+
+export interface WhatsAppDispatchLog {
+  id: string;
+  type: WhatsAppAlertType;
+  title: string;
+  recipientPhone: string;
+  recipientName?: string;
+  recipientRole?: 'ADMIN' | 'INVESTOR' | 'USER';
+  messageBody: string;
+  timestamp: number;
+  dateStr: string;
+  status: 'DISPATCHED' | 'TEST_SAMPLE';
+  referenceId?: string;
+  amount?: number;
+}
+
+export interface MetaCloudApiConfig {
+  enabled: boolean;
+  phoneNumberId: string;
+  wabaId: string;
+  accessToken: string;
+  verifiedDisplayName?: string; // e.g. "GCAP PRIVATE LIMITED"
+}
+
+

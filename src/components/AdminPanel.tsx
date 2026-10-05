@@ -37,6 +37,7 @@ import {
   BarChart3,
   Key,
   Sparkles,
+  MessageCircle,
 } from 'lucide-react';
 import {
   AppRules,
@@ -88,6 +89,7 @@ import { AdminCompanyProfileTab } from './admin/AdminCompanyProfileTab';
 import { AdminCompanySealTab } from './admin/AdminCompanySealTab';
 import { AdminCompanyLogoTab } from './admin/AdminCompanyLogoTab';
 import { AdminMessagesTab } from './admin/AdminMessagesTab';
+import { AdminWhatsAppHubTab } from './admin/AdminWhatsAppHubTab';
 import { AdminUserManualTab } from './admin/AdminUserManualTab';
 import { AdminDeductionsTab } from './admin/AdminDeductionsTab';
 import { AdminLedgerTab } from './admin/AdminLedgerTab';
@@ -209,7 +211,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER' | 'WHATSAPP_HUB'
   >('OVERVIEW');
 
   const activeSubTab = externalActiveSubTab || internalActiveSubTab;
@@ -1178,6 +1180,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </button>
                 )}
+
+                {/* WHATSAPP HUB & TEST SUITE */}
+                <button
+                  id="tab-admin-whatsapp-hub"
+                  onClick={() => setActiveSubTab('WHATSAPP_HUB')}
+                  className={`p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    activeSubTab === 'WHATSAPP_HUB'
+                      ? 'bg-green-500/15 border-green-500/60 text-green-300 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
+                      : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`p-1.5 rounded-lg border ${activeSubTab === 'WHATSAPP_HUB' ? 'bg-green-500/20 border-green-500/30 text-green-300' : 'bg-slate-800 border-slate-700 text-green-400'}`}>
+                      <MessageCircle className="w-4 h-4 fill-current" />
+                    </div>
+                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${activeSubTab === 'WHATSAPP_HUB' ? 'bg-green-500/30 text-green-200' : 'bg-slate-800 text-green-400'}`}>
+                      WHATSAPP
+                    </span>
+                  </div>
+                  <div className="leading-tight pt-1">
+                    <h4 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
+                      <span>{isHi ? '📲 WhatsApp हब' : '📲 WhatsApp Hub'}</span>
+                    </h4>
+                    <p className="text-[10px] sm:text-xs text-green-300/80 font-medium group-hover:text-green-200 transition-colors mt-0.5">
+                      {isHi ? 'टेस्ट सैंपल व रिकॉर्ड' : 'Samples & Audit Logs'}
+                    </p>
+                  </div>
+                </button>
 
                 {/* TREASURY */}
                 {canManageTreasury && (
@@ -2286,6 +2316,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           transactions={transactions}
           treasury={treasury}
           wallets={walletsMap}
+        />
+      )}
+
+      {/* TAB 15: WHATSAPP HUB & TEST SUITE */}
+      {activeSubTab === 'WHATSAPP_HUB' && (
+        <AdminWhatsAppHubTab
+          language={language}
+          companyProfile={companyProfile || undefined}
+          onSaveCompanyProfile={onSaveCompanyProfile}
         />
       )}
 

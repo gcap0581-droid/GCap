@@ -1,16 +1,122 @@
 /**
  * GCap 1-Click WhatsApp Alert & Notification Dispatcher (100% Free - Zero Cost)
  * Sends pre-formatted, professional corporate transaction receipts, alerts, and notifications.
+ * Automatically maintains persistent dispatch audit ledger & records.
  */
 
 import { formatINR } from './storage';
 import { getStoredCompanyProfile } from './companyStorage';
 import { getStoredRules } from './rulesStorage';
-import { Transaction, UserProfile, ActiveInvestment } from '../types';
+import { Transaction, UserProfile, ActiveInvestment, WhatsAppDispatchLog, WhatsAppAlertType, MetaCloudApiConfig } from '../types';
 
 export interface WhatsAppAlertOptions {
   phone?: string;
   message: string;
+  type?: WhatsAppAlertType;
+  title?: string;
+  recipientName?: string;
+  recipientRole?: 'ADMIN' | 'INVESTOR' | 'USER';
+  amount?: number;
+  referenceId?: string;
+  status?: 'DISPATCHED' | 'TEST_SAMPLE';
+}
+
+const WHATSAPP_LOGS_STORAGE_KEY = 'gcap_whatsapp_audit_dispatch_logs_v1';
+const META_CLOUD_API_STORAGE_KEY = 'gcap_meta_cloud_api_config_v1';
+
+export const DEFAULT_META_CONFIG: MetaCloudApiConfig = {
+  enabled: false,
+  phoneNumberId: '',
+  wabaId: '',
+  accessToken: '',
+  verifiedDisplayName: 'GCAP PRIVATE LIMITED',
+};
+
+/**
+ * Retrieves stored Meta WhatsApp Cloud API credentials
+ */
+export function getMetaCloudApiConfig(): MetaCloudApiConfig {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(META_CLOUD_API_STORAGE_KEY) : null;
+    if (!raw) return DEFAULT_META_CONFIG;
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_META_CONFIG, ...parsed };
+  } catch {
+    return DEFAULT_META_CONFIG;
+  }
+}
+
+/**
+ * Saves Meta WhatsApp Cloud API credentials
+ */
+export function saveMetaCloudApiConfig(config: MetaCloudApiConfig): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(META_CLOUD_API_STORAGE_KEY, JSON.stringify(config));
+    }
+  } catch (err) {
+    console.error('Failed to save Meta Cloud API config', err);
+  }
+}
+
+/**
+ * Retrieves all stored WhatsApp dispatch audit logs
+ */
+export function getStoredWhatsAppLogs(): WhatsAppDispatchLog[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(WHATSAPP_LOGS_STORAGE_KEY) : null;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('Failed to load WhatsApp logs', err);
+    return [];
+  }
+}
+
+/**
+ * Saves a new WhatsApp dispatch record to the audit ledger
+ */
+export function recordWhatsAppDispatchLog(logData: Partial<WhatsAppDispatchLog>): WhatsAppDispatchLog {
+  const newLog: WhatsAppDispatchLog = {
+    id: logData.id || `WA-LOG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    type: logData.type || 'CUSTOM_TEST',
+    title: logData.title || 'WhatsApp Message',
+    recipientPhone: logData.recipientPhone || '',
+    recipientName: logData.recipientName || 'User',
+    recipientRole: logData.recipientRole || 'ADMIN',
+    messageBody: logData.messageBody || '',
+    timestamp: logData.timestamp || Date.now(),
+    dateStr: logData.dateStr || new Date().toLocaleString('hi-IN'),
+    status: logData.status || 'DISPATCHED',
+    referenceId: logData.referenceId,
+    amount: logData.amount,
+  };
+
+  try {
+    const existing = getStoredWhatsAppLogs();
+    const updated = [newLog, ...existing].slice(0, 300); // keep up to 300 logs
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(WHATSAPP_LOGS_STORAGE_KEY, JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.error('Failed to persist WhatsApp log', err);
+  }
+
+  return newLog;
+}
+
+/**
+ * Clears stored WhatsApp audit logs
+ */
+export function clearWhatsAppLogs(): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(WHATSAPP_LOGS_STORAGE_KEY);
+    }
+  } catch (err) {
+    console.error('Failed to clear WhatsApp logs', err);
+  }
 }
 
 /**
@@ -48,11 +154,11 @@ export function getAdminWhatsAppAlertNumber(): string {
 }
 
 /**
- * Triggers 1-Click WhatsApp Dispatch
+ * Triggers 1-Click WhatsApp Dispatch & automatically records the audit log
  */
 export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
   try {
-    const { phone, message } = options;
+    const { phone, message, type, title, recipientName, recipientRole, amount, referenceId, status } = options;
     const cleanPhone = formatPhoneNumberForWhatsApp(phone);
     const encodedText = encodeURIComponent(message);
     
@@ -62,6 +168,19 @@ export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
     } else {
       url = `https://api.whatsapp.com/send?text=${encodedText}`;
     }
+
+    // Record audit log
+    recordWhatsAppDispatchLog({
+      type: type || 'CUSTOM_TEST',
+      title: title || 'WhatsApp Alert',
+      recipientPhone: phone || 'Default Receiver',
+      recipientName: recipientName || 'Investor / Admin',
+      recipientRole: recipientRole || 'ADMIN',
+      messageBody: message,
+      amount,
+      referenceId,
+      status: status || 'DISPATCHED',
+    });
 
     // Attempt direct window open
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -106,6 +225,12 @@ export function createAdminDepositAlertMessage(
   return {
     phone: adminPhone,
     message,
+    type: 'DEPOSIT_ALERT',
+    title: 'डिपॉजिट अनुरोध अलर्ट',
+    recipientName: userName || 'Admin',
+    recipientRole: 'ADMIN',
+    amount: tx.amount,
+    referenceId: tx.referenceId || tx.id,
   };
 }
 
@@ -142,6 +267,12 @@ export function createAdminWithdrawalAlertMessage(
   return {
     phone: adminPhone,
     message,
+    type: 'WITHDRAWAL_ALERT',
+    title: 'निकासी अनुरोध अलर्ट',
+    recipientName: userName || 'Admin',
+    recipientRole: 'ADMIN',
+    amount: gross,
+    referenceId: tx.referenceId || tx.id,
   };
 }
 
@@ -173,6 +304,12 @@ export function createDepositWhatsAppAlert(
   return {
     phone: userPhone || tx.userPhone,
     message,
+    type: 'DEPOSIT_ALERT',
+    title: 'डिपॉजिट पुष्टि रसीद',
+    recipientName: name,
+    recipientRole: 'INVESTOR',
+    amount: tx.amount,
+    referenceId: tx.referenceId || tx.id,
   };
 }
 
@@ -208,6 +345,12 @@ export function createWithdrawalWhatsAppAlert(
   return {
     phone: userPhone || tx.userPhone,
     message,
+    type: 'PAYMENT_VOUCHER',
+    title: 'भुगतान वाउचर रसीद',
+    recipientName: name,
+    recipientRole: 'INVESTOR',
+    amount: gross,
+    referenceId: tx.id,
   };
 }
 
@@ -239,6 +382,12 @@ export function createMaturityCertificateWhatsAppAlert(
   return {
     phone: user?.phone,
     message,
+    type: 'MATURITY_CERTIFICATE',
+    title: 'प्रोजेक्ट समापन व मूलधन वापसी प्रमाण पत्र',
+    recipientName: name,
+    recipientRole: 'INVESTOR',
+    amount: investment.investedAmount,
+    referenceId: investment.certificateNumber || investment.id,
   };
 }
 
@@ -257,11 +406,266 @@ export function createBroadcastWhatsAppAlert(
     `*${title}*\n\n` +
     `${content}\n\n` +
     `──────────────────\n` +
-    `📞 *हेल्पलाइन:* ${profile.supportPhone || '+91 98000 12345'}\n` +
+    `📞 *हेल्पलाइन:* ${profile.supportPhone || '+91 8503504808'}\n` +
     `🌐 *वेबसाइट पोर्टल:* GCAP Global Asset Portal`;
 
   return {
     phone: userPhone,
     message,
+    type: 'BROADCAST_NOTICE',
+    title: `ब्रॉडकास्ट: ${title}`,
+    recipientName: 'समस्त निवेशक / ऑल यूज़र्स',
+    recipientRole: 'INVESTOR',
   };
 }
+
+/**
+ * =========================================================================
+ * ALL 7 TYPES OF TEST SAMPLES (Live Testing & Simulator Suite)
+ * =========================================================================
+ */
+
+export interface WhatsAppSampleDefinition {
+  id: WhatsAppAlertType;
+  nameHi: string;
+  nameEn: string;
+  description: string;
+  icon: string;
+  generateAlert: (targetPhone?: string) => WhatsAppAlertOptions;
+}
+
+export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
+  {
+    id: 'DEPOSIT_ALERT',
+    nameHi: '1. नया डिपॉजिट अनुरोध अलर्ट (Admin Alert)',
+    nameEn: '1. New Deposit Request Alert (To Admin)',
+    description: 'जब कोई निवेशक नया डिपॉजिट करता है, एडमिन को त्वरित स्वीकृति हेतु जाने वाला मैसेज।',
+    icon: '💵',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*🚨 [टेस्ट सैंपल] नया डिपॉजिट भुगतान अलर्ट (New Deposit Alert)*\n\n` +
+        `*🏛️ कंपनी:* ${companyName}\n\n` +
+        `👤 *निवेशक का नाम:* AMIT KUMAR\n` +
+        `🆔 *यूज़र आईडी:* GCAP-99412\n` +
+        `📱 *मोबाइल नंबर:* +91 98000 12345\n` +
+        `💵 *जमा राशि (Amount):* *₹50,000.00*\n` +
+        `💳 *भुगतान विधि:* UPI (PhonePe / GPay)\n` +
+        `🏷️ *UTR / Ref No:* 429183049102\n` +
+        `🔢 *लेनदेन आईडी:* GCAP-TX-774912\n` +
+        `📅 *दिनांक व समय:* ${new Date().toLocaleString('hi-IN')}\n\n` +
+        `🔒 *कार्रवाई आवश्यक:* कृपया एडमिन पैनल में जाकर पेमेंट स्लिप जांचें और अप्रूव करें।\n\n` +
+        `*GCAP Global Asset Management Portal*`;
+
+      return {
+        phone,
+        message,
+        type: 'DEPOSIT_ALERT',
+        title: '[टेस्ट सैंपल] नया डिपॉजिट अलर्ट',
+        recipientName: 'एडमिनिस्ट्रेटर',
+        recipientRole: 'ADMIN',
+        amount: 50000,
+        referenceId: '429183049102',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'WITHDRAWAL_ALERT',
+    nameHi: '2. नया निकासी अनुरोध अलर्ट (Admin Alert)',
+    nameEn: '2. New Withdrawal Request Alert (To Admin)',
+    description: 'जब कोई निवेशक निकासी डालता है, एडमिन को बैंक ट्रांसफर हेतु जाने वाला मैसेज।',
+    icon: '💸',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*🚨 [टेस्ट सैंपल] नया निकासी अनुरोध अलर्ट (New Withdrawal Request)*\n\n` +
+        `*🏛️ कंपनी:* ${companyName}\n\n` +
+        `👤 *निवेशक का नाम:* ROHIT VERMA\n` +
+        `🆔 *यूज़र आईडी:* GCAP-38102\n` +
+        `📱 *मोबाइल नंबर:* +91 98765 43210\n` +
+        `💰 *कुल निकासी (Gross):* ₹10,000.00\n` +
+        `📉 *TDS कटौती (5%):* ₹500.00\n` +
+        `💳 *नेट भुगतेय राशि (Net Payable):* *₹9,500.00*\n` +
+        `🏦 *भुगतान माध्यम:* UPI: rohit@oksbi\n` +
+        `🔢 *अनुरोध आईडी:* GCAP-WTH-992104\n` +
+        `📅 *दिनांक व समय:* ${new Date().toLocaleString('hi-IN')}\n\n` +
+        `🔒 *कार्रवाई:* कृपया एडमिन पैनल में जाकर फंड ट्रांसफर करें और अप्रूव करें।\n\n` +
+        `*GCAP Payout Management*`;
+
+      return {
+        phone,
+        message,
+        type: 'WITHDRAWAL_ALERT',
+        title: '[टेस्ट सैंपल] नया निकासी अलर्ट',
+        recipientName: 'एडमिनिस्ट्रेटर',
+        recipientRole: 'ADMIN',
+        amount: 10000,
+        referenceId: 'GCAP-WTH-992104',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'PAYMENT_VOUCHER',
+    nameHi: '3. आधिकारिक भुगतान वाउचर रसीद (To Investor)',
+    nameEn: '3. Official Payout Voucher (To Investor)',
+    description: 'भुगतान पूरा होने पर निवेशक को जाने वाला विस्तृत वाउचर एवं टैक्स कटौती प्रमाण।',
+    icon: '🧾',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*🏛️ ${companyName} — आधिकारिक भुगतान वाउचर (Withdrawal Voucher)*\n\n` +
+        `नमस्ते *AMIT KUMAR*,\n\n` +
+        `आपकी निकासी (Withdrawal) का आधिकारिक विवरण निम्नलिखित है:\n\n` +
+        `💰 *कुल निकासी (Gross Amount):* ₹25,000.00\n` +
+        `📉 *TDS कटौती (5% Govt TDS):* ₹1,250.00\n` +
+        `💳 *शुद्ध प्राप्त राशि (Net Paid Amount):* *₹23,750.00*\n` +
+        `📊 *वर्तमान स्थिति (Status):* ✅ खाते में भेजा गया (SUCCESS)\n` +
+        `🔢 *वाउचर क्रमांक (Voucher No):* VOUCHER-2026-99381\n` +
+        `🏦 *भुगतान माध्यम:* HDFC Bank A/C ****8921\n` +
+        `📅 *समय:* ${new Date().toLocaleString('hi-IN')}\n\n` +
+        `🛡️ *पुष्टि:* राशि आपके बैंक खाते में सुरक्षित क्रेडिट की गई है।\n\n` +
+        `शुभकामनाएं,\n*GCAP Payout Department*`;
+
+      return {
+        phone,
+        message,
+        type: 'PAYMENT_VOUCHER',
+        title: '[टेस्ट सैंपल] भुगतान वाउचर रसीद',
+        recipientName: 'AMIT KUMAR',
+        recipientRole: 'INVESTOR',
+        amount: 25000,
+        referenceId: 'VOUCHER-2026-99381',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'MATURITY_CERTIFICATE',
+    nameHi: '4. प्रोजेक्ट समाप्ति एवं 100% मूलधन प्रमाण पत्र',
+    nameEn: '4. Project Maturity & 100% Principal Refund Certificate',
+    description: 'प्लान चक्र पूरा होने पर 100% मूलधन सुरक्षित वापसी का बधाई पत्र।',
+    icon: '👑',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*👑 ${companyName} — प्रोजेक्ट समापन एवं 100% मूलधन वापसी प्रमाण पत्र*\n\n` +
+        `बधाई हो *AMIT KUMAR*! 🎉\n\n` +
+        `आपने अपनी निवेश योजना को शत-प्रतिशत सफलता के साथ पूर्ण कर लिया है:\n\n` +
+        `📋 *प्रोजेक्ट का नाम:* GCAP VIP Wealth Builder (30 Days)\n` +
+        `💵 *मूलधन निवेश (Principal):* ₹1,00,000.00\n` +
+        `📈 *कुल प्राप्त रिटर्न (Total Returns):* ₹1,48,000.00\n` +
+        `💎 *100% मूलधन स्थिति:* ✅ 100% सुरक्षित वापस (Refunded to Wallet)\n` +
+        `📜 *प्रमाण पत्र आईडी:* GCAP-CERT-994120\n\n` +
+        `🏛️ *डिजिटल सील:* CIN: ${profile.cin || 'U66190BR2026OPC088307'}\n\n` +
+        `GCAP पर भरोसा करने के लिए बहुत-बहुत धन्यवाद!\n*GCAP Executive Board*`;
+
+      return {
+        phone,
+        message,
+        type: 'MATURITY_CERTIFICATE',
+        title: '[टेस्ट सैंपल] प्रोजेक्ट समाप्ति प्रमाण पत्र',
+        recipientName: 'AMIT KUMAR',
+        recipientRole: 'INVESTOR',
+        amount: 100000,
+        referenceId: 'GCAP-CERT-994120',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'BROADCAST_NOTICE',
+    nameHi: '5. कंपनी आधिकारिक महत्वपूर्ण सूचना (Broadcast)',
+    nameEn: '5. Corporate Important Announcement Broadcast',
+    description: 'सभी निवेशकों को सामूहिक नोटिस या महत्वपूर्ण घोषणा का मैसेज।',
+    icon: '📢',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*📢 ${companyName} — आधिकारिक महत्वपूर्ण सूचना*\n\n` +
+        `*मासिक निकासी विंडो और नए प्रोजेक्ट्स का शुभारंभ*\n\n` +
+        `सभी सम्मानित निवेशकों को सूचित किया जाता है कि मासिक अर्निंग निकासी विंडो 1 से 5 तारीख तक सक्रिय है। साथ ही नए हाई-रिटर्न 6-Hour कम्पाउंडिंग प्रोजेक्ट्स लाइव हो चुके हैं।\n\n` +
+        `──────────────────\n` +
+        `📞 *हेल्पलाइन:* ${profile.supportPhone || '+91 8503504808'}\n` +
+        `🌐 *वेबसाइट पोर्टल:* https://gcap.in`;
+
+      return {
+        phone,
+        message,
+        type: 'BROADCAST_NOTICE',
+        title: '[टेस्ट सैंपल] आधिकारिक ब्रॉडकास्ट सूचना',
+        recipientName: 'समस्त निवेशक',
+        recipientRole: 'INVESTOR',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'ROYALTY_REWARD',
+    nameHi: '6. रॉयल्टी व रेफरल इंसेंटिव क्रेडिट अलर्ट',
+    nameEn: '6. Royalty & Referral Reward Credit Alert',
+    description: 'रॉयल्टी क्लब या रेफरल इंसेंटिव वॉलेट में जुड़ने पर जाने वाला बधाई अलर्ट।',
+    icon: '🎁',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*🎁 ${companyName} — रॉयल्टी बोनस क्रेडिट अलर्ट*\n\n` +
+        `बधाई हो *AMIT KUMAR*! 🌟\n\n` +
+        `आपके खाते में रॉयल्टी क्लब रिवॉर्ड सफलतापूर्वक क्रेडिट कर दिया गया है:\n\n` +
+        `💎 *रॉयल्टी बोनस राशि:* *₹12,500.00*\n` +
+        `📊 *रॉयल्टी स्तर:* लेवल 2 सुपर क्लब\n` +
+        `📅 *क्रेडिट तिथि:* ${new Date().toLocaleDateString('hi-IN')}\n\n` +
+        `आप इसे 6 से 10 तारीख की रॉयल्टी निकासी विंडो में कभी भी निकाल सकते हैं।\n\n` +
+        `धन्यवाद,\n*GCAP Wealth Partner Program*`;
+
+      return {
+        phone,
+        message,
+        type: 'ROYALTY_REWARD',
+        title: '[टेस्ट सैंपल] रॉयल्टी बोनस अलर्ट',
+        recipientName: 'AMIT KUMAR',
+        recipientRole: 'INVESTOR',
+        amount: 12500,
+        referenceId: 'ROYALTY-2026-992',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+  {
+    id: 'SECURITY_ALERT',
+    nameHi: '7. खाता सुरक्षा व लॉगिन अलर्ट (Security Alert)',
+    nameEn: '7. Account Security & Login Alert',
+    description: 'नए डिवाइस लॉगिन या सुरक्षा सत्यापन हेतु निवेशक को अलर्ट।',
+    icon: '🛡️',
+    generateAlert: (targetPhone) => {
+      const profile = getStoredCompanyProfile();
+      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const phone = targetPhone || getAdminWhatsAppAlertNumber();
+      const message = `*🛡️ ${companyName} — खाता सुरक्षा अलर्ट*\n\n` +
+        `नमस्ते *AMIT KUMAR*,\n\n` +
+        `आपके GCAP खाते में नया सफल लॉगिन दर्ज किया गया है:\n\n` +
+        `📱 *डिवाइस:* Android Chrome Mobile\n` +
+        `🌐 *आईपी लोकेशन:* India (Secured SSL)\n` +
+        `⏰ *समय:* ${new Date().toLocaleString('hi-IN')}\n\n` +
+        `यदि यह लॉगिन आपने नहीं किया है, तो कृपया तुरंत एडमिन हेल्पलाइन ${profile.supportPhone || '+91 8503504808'} पर संपर्क करें।\n\n` +
+        `*GCAP Security & Compliance Wing*`;
+
+      return {
+        phone,
+        message,
+        type: 'SECURITY_ALERT',
+        title: '[टेस्ट सैंपल] खाता सुरक्षा अलर्ट',
+        recipientName: 'AMIT KUMAR',
+        recipientRole: 'INVESTOR',
+        status: 'TEST_SAMPLE',
+      };
+    },
+  },
+];
