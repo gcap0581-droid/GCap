@@ -448,9 +448,9 @@ export default function App() {
                   }
                   const stableWallet: Wallet = {
                     ...state.wallet,
-                    totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
-                    totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
-                    royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+                    totalEarned: typeof state.wallet.totalEarned === 'number' ? state.wallet.totalEarned : (prev.totalEarned || 0),
+                    totalInvested: typeof state.wallet.totalInvested === 'number' ? state.wallet.totalInvested : (prev.totalInvested || 0),
+                    royaltyEarned: typeof state.wallet.royaltyEarned === 'number' ? state.wallet.royaltyEarned : (prev.royaltyEarned || 0),
                   };
                   setStoredWallet(stableWallet, uid);
                   return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
@@ -706,9 +706,9 @@ export default function App() {
               if (!prev) return myWallet;
               const stableWallet: Wallet = {
                 ...myWallet,
-                totalEarned: Math.max(prev.totalEarned || 0, myWallet.totalEarned || 0),
-                totalInvested: Math.max(prev.totalInvested || 0, myWallet.totalInvested || 0),
-                royaltyEarned: Math.max(prev.royaltyEarned || 0, myWallet.royaltyEarned || 0),
+                totalEarned: typeof myWallet.totalEarned === 'number' ? myWallet.totalEarned : (prev.totalEarned || 0),
+                totalInvested: typeof myWallet.totalInvested === 'number' ? myWallet.totalInvested : (prev.totalInvested || 0),
+                royaltyEarned: typeof myWallet.royaltyEarned === 'number' ? myWallet.royaltyEarned : (prev.royaltyEarned || 0),
               };
               return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
             });
@@ -870,9 +870,9 @@ export default function App() {
               if (!prev) return state.wallet;
               const stableWallet: Wallet = {
                 ...state.wallet,
-                totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
-                totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
-                royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+                totalEarned: typeof state.wallet.totalEarned === 'number' ? state.wallet.totalEarned : (prev.totalEarned || 0),
+                totalInvested: typeof state.wallet.totalInvested === 'number' ? state.wallet.totalInvested : (prev.totalInvested || 0),
+                royaltyEarned: typeof state.wallet.royaltyEarned === 'number' ? state.wallet.royaltyEarned : (prev.royaltyEarned || 0),
               };
               return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
             });
@@ -949,6 +949,43 @@ export default function App() {
       unsubscribeRealtime();
     };
   }, [currentUser?.id, currentUser?.role]);
+
+  // Self-heal investor wallet if totalEarned ever diverges from actual active investment returns
+  useEffect(() => {
+    if (!currentUser || currentUser.role === 'ADMIN' || !investments || investments.length === 0) return;
+    const cleanPhone10 = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, '').slice(-10) : '';
+    const userInvs = investments.filter(
+      (inv) =>
+        inv &&
+        (inv.userId === currentUser.id ||
+          (currentUser.loginId && inv.userLoginId === currentUser.loginId) ||
+          (cleanPhone10 && inv.userPhone && inv.userPhone.includes(cleanPhone10)))
+    );
+    if (userInvs.length === 0) return;
+
+    const dynamicShortEarned = userInvs
+      .filter((inv) => inv.royaltyStage !== '1825D_ROYALTY')
+      .reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0);
+    const dynamicWithdrawn = userInvs.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
+    const expectedAvailable = Math.max(0, dynamicShortEarned - dynamicWithdrawn);
+
+    if (
+      wallet &&
+      dynamicShortEarned > 0 &&
+      (wallet.totalEarned > dynamicShortEarned * 1.2 || wallet.totalEarned === 0)
+    ) {
+      setWallet((prev) => {
+        if (!prev) return prev;
+        const healed: Wallet = {
+          ...prev,
+          totalEarned: Math.round(expectedAvailable * 100) / 100,
+        };
+        setStoredWallet(healed, currentUser.id);
+        apiUpdateWallet(currentUser.id, healed).catch(console.warn);
+        return healed;
+      });
+    }
+  }, [currentUser, investments, wallet?.totalEarned]);
 
   // Message Helper: Check if a message matches current user
   const isMessageForCurrentUser = useCallback((msg: AdminMessage) => {
