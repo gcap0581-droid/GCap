@@ -262,7 +262,16 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                 <div>
                   <span className="text-[11px] text-slate-400 block">{isHi ? 'अर्निंग (1 से 5 तारीख):' : 'Earnings (1st - 5th):'}</span>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-lg font-black font-display text-purple-300">{formatINR(wallet.totalEarned || 0)}</span>
+                    <span className="text-lg font-black font-display text-purple-300">
+                      {formatINR(
+                        Math.max(
+                          0,
+                          (wallet.totalEarned || 0) > (wallet.totalWithdrawn || 0) && (wallet.totalWithdrawn || 0) > 0
+                            ? (wallet.totalEarned || 0) - (wallet.totalWithdrawn || 0)
+                            : (wallet.totalEarned || 0)
+                        )
+                      )}
+                    </span>
                   </div>
                 </div>
                 <span className="text-[10px] px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">

@@ -171,9 +171,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-300">
                     {formatINR(
-                      isCompanyView
-                        ? (treasury?.balance !== undefined ? treasury.balance : 0)
-                        : ((wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0))
+                      (() => {
+                        if (isCompanyView) {
+                          return treasury?.balance !== undefined ? treasury.balance : 0;
+                        }
+                        const grossEarned = (wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0);
+                        const withdrawn = wallet?.totalWithdrawn || 0;
+                        if (withdrawn > 0 && grossEarned >= withdrawn) {
+                          return Math.max(0, grossEarned - withdrawn);
+                        }
+                        return Math.max(0, grossEarned);
+                      })()
                     )}
                   </span>
                 </div>
