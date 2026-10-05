@@ -23,6 +23,8 @@ import {
 import {
   getStoredWallet,
   setStoredWallet,
+  computeAuthoritativeWallet,
+  mergeTransactionsSafely,
   getStoredInvestments,
   setStoredInvestments,
   getStoredTransactions,
@@ -114,7 +116,7 @@ import {
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
 import { INVESTMENT_PLANS } from './utils/plansStorage';
-import { createWithdrawalWhatsAppAlert, sendWhatsAppAlert } from './utils/whatsappHelper';
+import { createDepositWhatsAppAlert, createWithdrawalWhatsAppAlert, sendWhatsAppAlert } from './utils/whatsappHelper';
 import { Navbar } from './components/Navbar';
 import { WalletCard } from './components/WalletCard';
 import { RoiCalculator } from './components/RoiCalculator';
@@ -464,40 +466,27 @@ export default function App() {
             }
             if (currentUser.role === 'ADMIN') {
               if (state.transactions) {
-                setTransactions(state.transactions);
-                setStoredTransactions(state.transactions);
+                setTransactions((prev) => {
+                  const merged = mergeTransactionsSafely(state.transactions, prev);
+                  setStoredTransactions(merged);
+                  return JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev;
+                });
               }
               if (state.investments) {
                 setInvestments(state.investments);
                 setStoredInvestments(state.investments);
               }
             } else {
-              if (state.wallet) {
-                setWallet((prev) => {
-                  const uid = currentUser?.id;
-                  if (!prev) {
-                    setStoredWallet(state.wallet, uid);
-                    return state.wallet;
-                  }
-                  const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
-                  const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-                  const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-                  const totalWit = typeof state.wallet.totalWithdrawn === 'number' ? state.wallet.totalWithdrawn : 0;
-                  const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
-
-                  const stableWallet: Wallet = {
-                    ...state.wallet,
-                    totalEarned: authEarned,
-                    royaltyEarned: royaltyGen,
-                    totalInvested: state.wallet.totalInvested !== undefined ? state.wallet.totalInvested : (prev.totalInvested || 0),
-                  };
-                  setStoredWallet(stableWallet, uid);
-                  return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
+              if (state.transactions) {
+                setTransactions((prev) => {
+                  const merged = mergeTransactionsSafely(state.transactions, prev);
+                  setStoredTransactions(merged);
+                  return JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev;
                 });
               }
-              if (state.transactions) {
-                setTransactions(state.transactions);
-                setStoredTransactions(state.transactions);
+              if (state.wallet) {
+                const authW = computeAuthoritativeWallet(currentUser?.id, currentUser);
+                setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(authW) ? authW : prev));
               }
               if (state.investments) {
                 const myInvs = filterUserInvestments(state.investments, currentUser);
@@ -557,7 +546,10 @@ export default function App() {
                   apiCreateTransaction(txn, txn.userId).catch(console.warn);
                 });
                 setTransactions((prev) => {
-                  const updated = [...res.newTransactions, ...prev];
+                  const existingIds = new Set((prev || []).map((t) => t.id));
+                  const trulyNew = res.newTransactions.filter((t) => !existingIds.has(t.id));
+                  if (trulyNew.length === 0) return prev;
+                  const updated = [...trulyNew, ...(prev || [])];
                   setStoredTransactions(updated);
                   return updated;
                 });
@@ -743,26 +735,8 @@ export default function App() {
           aliases.some((a) => a && fs.wallets && fs.wallets[a] !== undefined)
         );
         if (hasFirestoreWallet) {
-          const myWallet = getWalletForUser(currentUser.id, fs.wallets || {}, combinedUsers);
-          if (myWallet) {
-            setWallet((prev) => {
-              if (!prev) return myWallet;
-              const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
-              const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-              const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-              const totalWit = typeof myWallet.totalWithdrawn === 'number' ? myWallet.totalWithdrawn : 0;
-              const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
-
-              const stableWallet: Wallet = {
-                ...myWallet,
-                totalEarned: authEarned,
-                royaltyEarned: royaltyGen,
-                totalInvested: myWallet.totalInvested !== undefined ? myWallet.totalInvested : (prev.totalInvested || 0),
-              };
-              setStoredWallet(stableWallet, currentUser.id);
-              return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
-            });
-          }
+          const authW = computeAuthoritativeWallet(currentUser.id, currentUser);
+          setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(authW) ? authW : prev));
         }
         if (fs.transactions) {
           const { aliases } = findUserAndAllAliases(currentUser.id, combinedUsers);
@@ -796,8 +770,11 @@ export default function App() {
 
             return isDirectMatch || isNoteMatch;
           });
-          setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(myTxns) ? myTxns : prev));
-          setStoredTransactions(myTxns);
+          setTransactions((prev) => {
+            const merged = mergeTransactionsSafely(myTxns, prev);
+            setStoredTransactions(merged);
+            return JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev;
+          });
         }
         if (fs.investments) {
           const myInvs = filterUserInvestments(fs.investments, currentUser);
@@ -887,7 +864,8 @@ export default function App() {
         }
 
         // Sync Role-Specific State
-        if (currentUser.role === 'ADMIN') {
+        const isCompanyView = Boolean(adminViewMode === 'ADMIN_HUB' && (currentUser.role === 'ADMIN' || currentUser.role === 'STAFF'));
+        if (isCompanyView) {
           if (state.transactions && Array.isArray(state.transactions)) {
             setTransactions((prev) => {
               const map = new Map<string, Transaction>();
@@ -913,29 +891,35 @@ export default function App() {
             setMessages((prev) => dedupeAdminMessages([...state.messages, ...prev]));
           }
         } else {
-          // Regular User
+          // Regular User or Admin viewing Personal Investor Panel
           if (state.wallet) {
-            setWallet((prev) => {
-              if (!prev) return state.wallet;
-              const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
-              const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-              const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
-              const totalWit = typeof state.wallet.totalWithdrawn === 'number' ? state.wallet.totalWithdrawn : 0;
-              const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
-
-              const stableWallet: Wallet = {
-                ...state.wallet,
-                totalEarned: authEarned,
-                royaltyEarned: royaltyGen,
-                totalInvested: state.wallet.totalInvested !== undefined ? state.wallet.totalInvested : (prev.totalInvested || 0),
-              };
-              setStoredWallet(stableWallet, currentUser.id);
-              return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
-            });
+            const authW = computeAuthoritativeWallet(currentUser.id, currentUser);
+            setWallet((prev) => (JSON.stringify(prev) !== JSON.stringify(authW) ? authW : prev));
           }
-          if (state.transactions) {
-            setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(state.transactions) ? state.transactions : prev));
-            setStoredTransactions(state.transactions);
+          if (state.transactions && Array.isArray(state.transactions)) {
+            const allSysUsers = getAllUsers();
+            const { aliases } = findUserAndAllAliases(currentUser.id, allSysUsers);
+            const cleanLogin = (currentUser.loginId || '').toLowerCase().trim();
+            const cleanPhone = (currentUser.phone || '').replace(/[^0-9]/g, "");
+            const phone10 = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+            const myTxns = state.transactions.filter((t) => {
+              if (!t) return false;
+              const tUserId = (t.userId || '').toLowerCase().trim();
+              const tUserLoginId = (t.userLoginId || '').toLowerCase().trim();
+              const tUserPhone = (t.userPhone || '').replace(/[^0-9]/g, "");
+              const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+
+              const isDirect = tUserId === currentUser.id.toLowerCase() || (cleanLogin && tUserLoginId === cleanLogin) || (phone10 && tPhone10 === phone10);
+              const isAlias = aliases.some(a => a && (tUserId === a.toLowerCase() || tUserLoginId === a.toLowerCase()));
+              return isDirect || isAlias;
+            });
+
+            setTransactions((prev) => {
+              const merged = mergeTransactionsSafely(myTxns, prev);
+              setStoredTransactions(merged);
+              return JSON.stringify(prev) !== JSON.stringify(merged) ? merged : prev;
+            });
           }
           if (state.investments) {
             const myInvs = filterUserInvestments(state.investments, currentUser);
@@ -1837,11 +1821,17 @@ export default function App() {
       setTreasuryLogs(getStoredTreasuryLogs());
       apiUpdateTreasury(depositRes.treasury).catch(console.warn);
 
+      try {
+        sendWhatsAppAlert(createDepositWhatsAppAlert({ ...updatedTxn, status: 'APPROVED' }, updatedTxn.userName, updatedTxn.userPhone));
+      } catch (waErr) {
+        console.warn('Deposit Approval WhatsApp error:', waErr);
+      }
+
       showToast(
-        isHi ? '✅ पेमेंट स्वीकार हुआ (कंपनी बैलेंस बढ़ा)!' : '✅ Payment Approved (Company Balance Increased)!',
+        isHi ? '✅ पेमेंट स्वीकार हुआ (WhatsApp भेजा गया)!' : '✅ Payment Approved & WhatsApp Sent!',
         isHi
-          ? `कंपनी मुख्य बैलेंस में +₹${updatedTxn.amount.toLocaleString('en-IN')} जुड़े। अब "फंड ट्रांसफर करें" पर क्लिक करें।`
-          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} added to Company Main Balance. Click "Transfer Funds" to credit user.`
+          ? `कंपनी मुख्य बैलेंस में +₹${updatedTxn.amount.toLocaleString('en-IN')} जुड़े। यूज़र को व्हाट्सएप संदेश भेजा गया।`
+          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} added. WhatsApp alert dispatched to user.`
       );
       return;
     }
@@ -1890,11 +1880,17 @@ export default function App() {
         language: isHi ? 'hi' : 'en',
       });
 
+      try {
+        sendWhatsAppAlert(createDepositWhatsAppAlert({ ...updatedTxn, status: 'SUCCESS' }, updatedTxn.userName, updatedTxn.userPhone));
+      } catch (waErr) {
+        console.warn('Deposit Transfer WhatsApp error:', waErr);
+      }
+
       showToast(
-        isHi ? '🚀 यूज़र को फंड ट्रांसफर सफल!' : '🚀 Funds Transferred to User!',
+        isHi ? '🚀 यूज़र को फंड ट्रांसफर सफल व WhatsApp भेजा गया!' : '🚀 Funds Transferred & WhatsApp Dispatched!',
         isHi
-          ? `कंपनी मुख्य बैलेंस से -₹${updatedTxn.amount.toLocaleString('en-IN')} डिडक्ट होकर यूज़र ${updatedTxn.userName} के वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} जमा हुए।`
-          : `₹${updatedTxn.amount.toLocaleString('en-IN')} transferred from Company Main Balance to user wallet.`
+          ? `यूज़र ${updatedTxn.userName} के वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} जमा हुए और व्हाट्सएप पुष्टि भेजी गई।`
+          : `₹${updatedTxn.amount.toLocaleString('en-IN')} transferred and WhatsApp alert sent.`
       );
       return;
     }
@@ -1931,16 +1927,36 @@ export default function App() {
         language: isHi ? 'hi' : 'en',
       });
 
+      try {
+        sendWhatsAppAlert(createDepositWhatsAppAlert({ ...updatedTxn, status: 'SUCCESS' }, updatedTxn.userName, updatedTxn.userPhone));
+      } catch (waErr) {
+        console.warn('Direct Deposit WhatsApp error:', waErr);
+      }
+
       showToast(
-        isHi ? '✅ डिपॉजिट स्वीकृत व ट्रांसफर्ड!' : '✅ Deposit Approved & Transferred!',
+        isHi ? '✅ डिपॉजिट स्वीकृत व ट्रांसफर्ड (WhatsApp भेजा गया)!' : '✅ Deposit Approved & Transferred (WhatsApp Sent)!',
         isHi
           ? `यूज़र ${updatedTxn.userName} के वॉलेट में +₹${updatedTxn.amount.toLocaleString('en-IN')} जमा हुए।`
-          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} credited to user wallet.`
+          : `+₹${updatedTxn.amount.toLocaleString('en-IN')} credited and WhatsApp alert sent.`
       );
       return;
     } 
     
-    // Rule: Withdrawal Approval deducts from Company Main Balance
+    // Rule: Withdrawal Approval (Step 1: PENDING -> APPROVED)
+    else if (prevTxn && prevTxn.status === 'PENDING' && (updatedTxn.status === 'APPROVED' || updatedTxn.status === 'APPROVED_PENDING_TRANSFER') && updatedTxn.type === 'WITHDRAWAL') {
+      try {
+        sendWhatsAppAlert(createWithdrawalWhatsAppAlert({ ...updatedTxn, status: 'APPROVED' }, updatedTxn.userName, updatedTxn.userPhone));
+      } catch (waErr) {
+        console.warn('Withdrawal Approval WhatsApp error:', waErr);
+      }
+      showToast(
+        isHi ? '✅ निकासी स्वीकृत व WhatsApp भेजा गया!' : '✅ Withdrawal Approved & WhatsApp Dispatched!',
+        isHi ? `यूज़र ${updatedTxn.userName} की निकासी स्वीकृत हुई।` : `Withdrawal approved for ${updatedTxn.userName}.`
+      );
+      return;
+    }
+
+    // Rule: Withdrawal Transfer / Success (Step 2 or Direct PENDING -> SUCCESS)
     else if ((!prevTxn || prevTxn.status !== 'SUCCESS') && updatedTxn.status === 'SUCCESS' && updatedTxn.type === 'WITHDRAWAL') {
       const amount = updatedTxn.grossAmount || updatedTxn.amount;
       const payoutResult = deductForUserPayout(
@@ -1965,7 +1981,7 @@ export default function App() {
         const userPayoutAlert = createWithdrawalWhatsAppAlert(
           {
             ...updatedTxn,
-            status: 'APPROVED',
+            status: 'SUCCESS',
           },
           updatedTxn.userName,
           updatedTxn.userPhone
@@ -1976,10 +1992,10 @@ export default function App() {
       }
 
       showToast(
-        isHi ? '✅ निकासी अप्रूव व ट्रांसफर सफल (WhatsApp भेजा गया)!' : '✅ Withdrawal Approved & Transferred (WhatsApp Dispatched)!',
+        isHi ? '✅ निकासी ट्रांसफर सफल व WhatsApp वाउचर भेजा गया!' : '✅ Withdrawal Transferred & WhatsApp Voucher Dispatched!',
         isHi
-          ? `यूज़र ${updatedTxn.userName} की ₹${amount.toLocaleString('en-IN')} की निकासी अप्रूव हुई और व्हाट्सएप वाउचर भेजा गया।`
-          : `Withdrawal for ₹${amount.toLocaleString('en-IN')} approved, deducted from Treasury, and WhatsApp voucher dispatched.`
+          ? `यूज़र ${updatedTxn.userName} की ₹${amount.toLocaleString('en-IN')} की निकासी ट्रांसफर हुई और व्हाट्सएप वाउचर भेजा गया।`
+          : `Withdrawal for ₹${amount.toLocaleString('en-IN')} transferred and WhatsApp voucher dispatched.`
       );
       return;
     } 
@@ -3629,7 +3645,10 @@ export default function App() {
             apiCreateTransaction(txn, txn.userId).catch(console.warn);
           });
           setTransactions((prev) => {
-            const updatedTxns = [...res.newTransactions, ...prev];
+            const existingIds = new Set((prev || []).map((t) => t.id));
+            const trulyNew = res.newTransactions.filter((t) => !existingIds.has(t.id));
+            if (trulyNew.length === 0) return prev;
+            const updatedTxns = [...trulyNew, ...(prev || [])];
             setStoredTransactions(updatedTxns);
             saveTransactionsToFirestore(updatedTxns).catch(console.warn);
             return updatedTxns;

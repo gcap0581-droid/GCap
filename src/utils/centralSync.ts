@@ -13,7 +13,7 @@ import {
   CompanyProfile,
   UserRole,
 } from '../types';
-import { normalizeInvestmentsList, getStoredInvestments } from './storage';
+import { normalizeInvestmentsList, getStoredInvestments, getStoredTransactions, computeAuthoritativeWallet } from './storage';
 import { apiFetch, isDirectServerHost } from './apiConfig';
 import { recordDeletedUserId, isUserDeleted } from './authStorage';
 import {
@@ -92,72 +92,11 @@ export function findUserAndAllAliases(userId: string, users: UserProfile[]): { u
   return { user: user || null, aliases: Array.from(aliases).filter(a => Boolean(a) && a !== '917808056040') };
 }
 
-// Helper to get a user's wallet with robust alias lookup
+// Helper to get a user's wallet with robust alias lookup and live authoritative reconciliation
 export function getWalletForUser(userId: string, wallets: Record<string, Wallet>, users: UserProfile[]): Wallet {
-  if (!wallets || typeof wallets !== 'object') {
-    return {
-      cashBalance: 0,
-      gpBalance: 0,
-      totalInvested: 0,
-      totalEarned: 0,
-      royaltyEarned: 0,
-      pendingWithdrawals: 0,
-      pendingDeposits: 0,
-      totalWithdrawn: 0,
-    };
-  }
-
-  const { user, aliases } = findUserAndAllAliases(userId, users);
-
-  const candidates: Wallet[] = [];
-
-  for (const alias of aliases) {
-    if (alias && wallets[alias]) {
-      candidates.push(wallets[alias]);
-    }
-  }
-
-  let bestWallet: Wallet;
-
-  if (candidates.length === 0) {
-    bestWallet = {
-      cashBalance: 0,
-      gpBalance: 0,
-      totalInvested: 0,
-      totalEarned: 0,
-      royaltyEarned: 0,
-      pendingWithdrawals: 0,
-      pendingDeposits: 0,
-      totalWithdrawn: 0,
-    };
-  } else {
-    // Prefer candidate wallet corresponding to user.id or user.loginId key if present
-    const primaryCandidate = (user && user.id && wallets[user.id])
-      ? wallets[user.id]
-      : (user && user.loginId && wallets[user.loginId])
-      ? wallets[user.loginId]
-      : candidates[0];
-
-    bestWallet = {
-      cashBalance: typeof primaryCandidate.cashBalance === 'number' ? primaryCandidate.cashBalance : 0,
-      gpBalance: typeof primaryCandidate.gpBalance === 'number' ? primaryCandidate.gpBalance : 0,
-      totalInvested: typeof primaryCandidate.totalInvested === 'number' ? primaryCandidate.totalInvested : 0,
-      totalEarned: typeof primaryCandidate.totalEarned === 'number' ? primaryCandidate.totalEarned : 0,
-      royaltyEarned: typeof primaryCandidate.royaltyEarned === 'number' ? primaryCandidate.royaltyEarned : 0,
-      pendingWithdrawals: typeof primaryCandidate.pendingWithdrawals === 'number' ? primaryCandidate.pendingWithdrawals : 0,
-      pendingDeposits: typeof primaryCandidate.pendingDeposits === 'number' ? primaryCandidate.pendingDeposits : 0,
-      totalWithdrawn: typeof primaryCandidate.totalWithdrawn === 'number' ? primaryCandidate.totalWithdrawn : 0,
-    };
-  }
-
-  // Self-heal: propagate bestWallet to all alias keys in the wallets object
-  for (const alias of aliases) {
-    if (alias) {
-      wallets[alias] = { ...bestWallet };
-    }
-  }
-
-  return { ...bestWallet };
+  const { user } = findUserAndAllAliases(userId, users);
+  const targetId = user?.id || user?.loginId || user?.phone || userId;
+  return computeAuthoritativeWallet(targetId, user);
 }
 
 // Helper to get all active/completed investments for a specific user using robust alias resolution
@@ -521,15 +460,40 @@ export async function apiCreateTransaction(
   userId: string,
   wallet?: Wallet
 ): Promise<{ success: boolean; transaction?: Transaction; wallet?: Wallet; error?: string }> {
-  if (wallet) {
+  // 1. Instantly append transaction & wallet to local memory cache & localStorage so zero-latency reads contain it
+  try {
     const { aliases } = findUserAndAllAliases(userId, []);
     const walletsMap: Record<string, Wallet> = {};
-    aliases.forEach(alias => {
-      if (alias) walletsMap[alias] = wallet;
-    });
-    updateFirestoreBridgeCache({
-      wallets: walletsMap,
-    });
+    if (wallet) {
+      aliases.forEach(alias => {
+        if (alias) walletsMap[alias] = wallet;
+      });
+    }
+    const fs = await fetchFullFirestoreState();
+    if (fs) {
+      const currentTxns = fs.transactions || [];
+      const map = new Map<string, Transaction>();
+      const key = transaction.id || transaction.referenceId;
+      if (key) map.set(key, transaction);
+      currentTxns.forEach((t) => {
+        if (t) {
+          const k = t.id || t.referenceId;
+          if (k && !map.has(k)) map.set(k, t);
+        }
+      });
+      const merged = Array.from(map.values()).sort((a, b) => {
+        const timeA = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+        const timeB = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+        return timeB - timeA;
+      });
+      updateFirestoreBridgeCache({
+        transactions: merged,
+        ...(wallet ? { wallets: walletsMap } : {}),
+      });
+      saveTransactionsToFirestore(merged).catch(() => {});
+    }
+  } catch (e) {
+    console.warn('[apiCreateTransaction] Early cache sync note:', e);
   }
 
   try {

@@ -439,21 +439,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             const uPhoneClean = (u.phone || "").replace(/[^0-9]/g, "");
             const rawUserWallet = getWalletForUser(u.id, wallets, users);
             const userInvestments = getUserInvestments(u, investments, users);
-
-            const calcInvEarned = userInvestments.reduce((sum, inv) => {
-              const invEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
-              const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
-              const isShort = inv.planId === 'short-term' || inv.durationDays === 641 || inv.planId === 'SHORT_TERM_641D';
-              const currentRate = isShort ? 0.040 : 0.033;
-              const cycleReturn = inv.cycleReturnAmount || Math.round(((inv.investedAmount * currentRate) / 100) * 100) / 100;
-              const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
-              return sum + Math.max(invEarned, calcEarned);
-            }, 0);
-
-            const userWallet = {
-              ...rawUserWallet,
-              totalEarned: userInvestments.length > 0 ? calcInvEarned : (rawUserWallet.totalEarned || 0)
-            };
+            const userWallet = rawUserWallet;
 
             const todayStr = new Date().toISOString().split('T')[0];
             const isNew =
@@ -797,18 +783,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                   const rawUserWallet = getWalletForUser(u.id, wallets, users);
                   const userInvestments = getUserInvestments(u, investments, users);
 
-                  const calcInvEarned = userInvestments.reduce((sum, inv) => {
-                    const invEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
-                    const completedCycles = inv.cyclesCompleted || inv.completedCyclesCount || 0;
-                    const cycleReturn = inv.cycleReturnAmount || (inv.investedAmount >= 100000 ? 40 : 13.2);
-                    const calcEarned = completedCycles > 0 ? (completedCycles * cycleReturn) : 0;
-                    return sum + Math.max(invEarned, calcEarned);
-                  }, 0);
-
-                  const userWallet = {
-                    ...rawUserWallet,
-                    totalEarned: Math.max(rawUserWallet.totalEarned || 0, calcInvEarned)
-                  };
+                  const userWallet = rawUserWallet;
 
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">

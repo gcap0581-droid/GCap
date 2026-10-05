@@ -177,14 +177,12 @@ export function reconcileAllInvestmentsWithTime(
       const nextEnd = getNextFixedCycleTimestamp(Math.max(now, firstSlabStart));
       const nextStart = nextEnd - 6 * 3600 * 1000;
 
-      const needsCycleUpdate = totalEligibleCycles > currentCompleted;
-      const needsEarningsUpdate = actualEarned < expectedEarned;
-      const needsTimestampFix = !inv.currentCycleEndTimestamp || inv.currentCycleEndTimestamp <= now || inv.currentCycleEndTimestamp !== nextEnd;
+      const missingCycles = Math.max(0, totalEligibleCycles - currentCompleted);
+      const earningsDelta = Math.max(0, Math.round((expectedEarned - actualEarned) * 100) / 100);
+      const isLockStateChanged = !inv.isInitialLockCompleted && now >= lockEnd;
 
-      if (needsCycleUpdate || needsEarningsUpdate || needsTimestampFix || !inv.isInitialLockCompleted) {
+      if (missingCycles > 0 || earningsDelta > 0 || isLockStateChanged) {
         hasChanges = true;
-        const missingCycles = Math.max(0, totalEligibleCycles - currentCompleted);
-        const earningsDelta = Math.max(0, Math.round((expectedEarned - actualEarned) * 100) / 100);
 
         const updatedInv = {
           ...inv,
@@ -213,10 +211,11 @@ export function reconcileAllInvestmentsWithTime(
             }
           }
 
-          // Generate transactions for newly credited cycles
+          // Generate stable deterministic transactions for newly credited cycles
           for (let c = 1; c <= missingCycles; c++) {
             const cycleNum = currentCompleted + c;
             const txnId = `txn-cyc-auto-${inv.id}-${cycleNum}`;
+            const deterministicRef = 'CYC' + String(Math.abs((inv.id + '-' + cycleNum).split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0))).slice(-8).padStart(8, '0');
             newTransactions.push({
               id: txnId,
               userId: inv.userId,
@@ -228,7 +227,7 @@ export function reconcileAllInvestmentsWithTime(
               date: new Date().toISOString(),
               timestamp: now,
               status: 'SUCCESS',
-              referenceId: 'CYC' + Math.floor(10000000 + Math.random() * 90000000),
+              referenceId: deterministicRef,
               note: isRoyaltyPlan
                 ? `6-Hour Cycle #${cycleNum} return of ₹${cyclePayout} credited to Royalty Earning (${inv.planName})`
                 : `6-Hour Cycle #${cycleNum} return of ₹${cyclePayout} credited to Total Earning (${inv.planName})`,
@@ -241,6 +240,7 @@ export function reconcileAllInvestmentsWithTime(
 
         return updatedInv;
       }
+      return inv;
     } else {
       // In 24h initial lock phase
       const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);

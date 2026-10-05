@@ -88,6 +88,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
+  const isCompanyView = isAdminHubActive && isAdmin;
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -174,7 +175,7 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
           {currentUser && (
             <div
               onClick={() => {
-                if (isAdmin) {
+                if (isCompanyView) {
                   onTabChange('TREASURY');
                 } else {
                   onTabChange('wallet');
@@ -182,20 +183,20 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
               }}
               className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 rounded-lg px-2 py-1 cursor-pointer transition-colors"
               title={
-                isAdmin
+                isCompanyView
                   ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Treasury Balance')
                   : (isHi ? 'कुल कमाई (Total Earnings)' : 'Total Earnings')
               }
             >
-              {!isAdmin ? (
+              {!isCompanyView ? (
                 <span className="text-xs leading-none">💰</span>
               ) : (
                 <WalletIcon className="w-3.5 h-3.5 text-emerald-400" />
               )}
               <span className="text-xs font-mono font-bold text-emerald-300">
                 {formatINR(
-                  isAdmin
-                    ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0))
+                  isCompanyView
+                    ? (treasury?.balance !== undefined ? treasury.balance : 0)
                     : ((wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0))
                 )}
               </span>

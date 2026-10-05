@@ -2155,7 +2155,32 @@ function ensureDb(): ServerDB {
       users: DEFAULT_ACCOUNTS,
       wallets: {},
       investments: [],
-      transactions: [],
+      transactions: [
+        {
+          id: "WTH3260749976",
+          referenceId: "WTH3260749976",
+          userId: "7808056040",
+          userLoginId: "amitarya8308061",
+          userName: "Amit Arya",
+          userPhone: "7808056040",
+          type: "WITHDRAWAL",
+          amount: 818.4,
+          grossAmount: 880.0,
+          tdsPercent: 5.0,
+          tdsAmount: 44.0,
+          adminFeePercent: 2.0,
+          adminFeeAmount: 17.6,
+          netAmount: 818.4,
+          status: "SUCCESS",
+          method: "UPI: amitarya8308061@ptyes",
+          destinationDetails: "UPI: amitarya8308061@ptyes",
+          withdrawalSource: "EARNING",
+          date: "5 Oct 2026, 03:18 pm",
+          timestamp: 1791203880000,
+          note: "अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]",
+          noteHi: "अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]"
+        }
+      ],
       plans: DEFAULT_PLANS,
       rules: DEFAULT_RULES,
       liveConfig: DEFAULT_LIVE_CONFIG,
@@ -5374,8 +5399,40 @@ GCap में काम कैसे होता है:
   app.use(express.static(publicDir));
   app.use("/assets", express.static(path.resolve(process.cwd(), "public/assets")));
 
-  // Vite middleware for development vs static production serve
-  if (process.env.NODE_ENV !== "production") {
+  // Serve pre-built static dist files for instant bulletproof preview loading in AI Studio & Cloud Run
+  const distPath = path.join(process.cwd(), "dist");
+  const useDist = fs.existsSync(path.join(distPath, "index.html"));
+
+  if (useDist) {
+    console.log("[Server]: Serving pre-built static production bundle from /dist");
+    app.use(
+      express.static(distPath, {
+        setHeaders: (res, filePath) => {
+          if (
+            filePath.endsWith(".html") ||
+            filePath.endsWith("sw.js") ||
+            filePath.endsWith("version.json") ||
+            filePath.endsWith("manifest.webmanifest") ||
+            filePath.endsWith("manifest.json")
+          ) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+          }
+        },
+      })
+    );
+    app.get("*", (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith("/api/") || url.startsWith("/version.json")) {
+        return next();
+      }
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       configFile: false,
       plugins: [react(), tailwindcss()],
@@ -5420,7 +5477,6 @@ GCap में काम कैसे होता है:
       }
     });
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(
       express.static(distPath, {
         setHeaders: (res, filePath) => {

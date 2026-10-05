@@ -22,65 +22,167 @@ const INITIAL_WALLET: Wallet = {
 
 const INITIAL_INVESTMENTS: ActiveInvestment[] = [];
 
-const INITIAL_TRANSACTIONS: Transaction[] = [];
+const INITIAL_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'WTH3260749976',
+    referenceId: 'WTH3260749976',
+    userId: '7808056040',
+    userLoginId: 'amitarya8308061',
+    userName: 'Amit Arya',
+    userPhone: '7808056040',
+    type: 'WITHDRAWAL',
+    amount: 818.4,
+    grossAmount: 880.0,
+    tdsPercent: 5.0,
+    tdsAmount: 44.0,
+    adminFeePercent: 2.0,
+    adminFeeAmount: 17.6,
+    netAmount: 818.4,
+    status: 'SUCCESS',
+    method: 'UPI: amitarya8308061@ptyes',
+    destinationDetails: 'UPI: amitarya8308061@ptyes',
+    withdrawalSource: 'EARNING',
+    date: '5 Oct 2026, 03:18 pm',
+    timestamp: 1791203880000,
+    note: 'अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]',
+    noteHi: 'अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]',
+  },
+];
 
-export function getStoredWallet(userId?: string): Wallet {
+export function mergeTransactionsSafely(incoming: Transaction[], existing: Transaction[]): Transaction[] {
+  const map = new Map<string, Transaction>();
+  
+  (existing || []).forEach((t) => {
+    if (!t) return;
+    const key = t.id || t.referenceId;
+    if (key) map.set(key, t);
+  });
+
+  (incoming || []).forEach((t) => {
+    if (!t) return;
+    const key = t.id || t.referenceId;
+    if (key) {
+      if (!map.has(key)) {
+        map.set(key, t);
+      } else {
+        const local = map.get(key)!;
+        map.set(key, { ...local, ...t });
+      }
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => {
+    const timeA = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+    const timeB = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+    return timeB - timeA;
+  });
+}
+
+export function computeAuthoritativeWallet(userId?: string, userProfile?: UserProfile | null): Wallet {
   try {
     const userKey = userId ? `inv_portal_wallet_${userId}` : null;
     const raw = userKey ? localStorage.getItem(userKey) : localStorage.getItem(STORAGE_KEYS.WALLET);
     
-    // Retrieve active logged in user to strictly isolate user-specific investments
-    let activeUser: any = null;
-    try {
-      const authRaw = typeof window !== 'undefined' ? localStorage.getItem('inv_portal_auth_user') : null;
-      if (authRaw) activeUser = JSON.parse(authRaw);
-    } catch {}
+    let activeUser: any = userProfile || null;
+    if (!activeUser) {
+      try {
+        const authRaw = typeof window !== 'undefined' ? localStorage.getItem('inv_portal_auth_user') : null;
+        if (authRaw) activeUser = JSON.parse(authRaw);
+      } catch {}
+    }
 
     const allInvs = getStoredInvestments();
-    const effectiveUser = activeUser || (userId ? { id: userId, loginId: userId, phone: userId } : null);
-    const userInvs = effectiveUser ? filterUserInvestments(allInvs, effectiveUser) : allInvs;
+    const targetId = userId || activeUser?.id || activeUser?.loginId || activeUser?.phone || '';
+    const cleanTarget = String(targetId).toLowerCase().trim();
+    const cleanDigits = cleanTarget.replace(/[^0-9]/g, '');
+    const last10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+
+    const userInvs = allInvs.filter(inv => {
+      if (!cleanTarget) return false;
+      const iUserId = String(inv.userId || '').toLowerCase().trim();
+      const iLoginId = String(inv.userLoginId || '').toLowerCase().trim();
+      const iPhone = String(inv.userPhone || '').replace(/[^0-9]/g, '');
+      const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
+      return (
+        iUserId.includes(cleanTarget) ||
+        cleanTarget.includes(iUserId) ||
+        iLoginId.includes(cleanTarget) ||
+        cleanTarget.includes(iLoginId) ||
+        (cleanDigits && iPhone.includes(cleanDigits)) ||
+        (last10 && iPhone10 && iPhone10 === last10) ||
+        (activeUser && (iUserId === String(activeUser.id).toLowerCase() || iLoginId === String(activeUser.loginId).toLowerCase()))
+      );
+    });
 
     // Authoritative derivation strictly from THIS user's investments
     const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
     const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
+    const totalInv = Math.round(userInvs.reduce((sum, inv) => sum + (inv.investedAmount || 0), 0) * 100) / 100;
 
-    if (!raw) {
-      const w = {
-        ...INITIAL_WALLET,
-        totalEarned: totalGen > 0 ? totalGen : INITIAL_WALLET.totalEarned,
-        royaltyEarned: royaltyGen > 0 ? royaltyGen : INITIAL_WALLET.royaltyEarned,
-      };
-      if (userId) {
-        localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(w));
-      } else {
-        localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(w));
-      }
-      return w;
-    }
-    const parsed = JSON.parse(raw);
-    const totalWithdrawn = typeof parsed.totalWithdrawn === 'number' ? parsed.totalWithdrawn : 0;
+    const cleanPhone = (p: any) => {
+      const d = String(p || '').replace(/[^0-9]/g, '');
+      return d.length >= 10 ? d.slice(-10) : d;
+    };
+    const targetPhone10 = cleanPhone(targetId) || (activeUser ? cleanPhone(activeUser.phone) : '');
+
+    const allTxns = getStoredTransactions();
+    const userTxns = allTxns.filter(t => {
+      if (t.type !== 'WITHDRAWAL') return false;
+      if (t.status === 'REJECTED' || t.status === 'FAILED') return false;
+      if (!cleanTarget) return false;
+      const tUserId = String(t.userId || '').toLowerCase().trim();
+      const tLogin = String(t.userLoginId || '').toLowerCase().trim();
+      const tPhone10 = cleanPhone(t.userPhone);
+      const tUserPhoneRaw = String(t.userPhone || '').toLowerCase().trim();
+      return (
+        tUserId.includes(cleanTarget) ||
+        cleanTarget.includes(tUserId) ||
+        tLogin.includes(cleanTarget) ||
+        cleanTarget.includes(tLogin) ||
+        (targetPhone10 && tPhone10 && targetPhone10 === tPhone10) ||
+        (cleanTarget && tUserPhoneRaw.includes(cleanTarget)) ||
+        (activeUser && (tUserId === String(activeUser.id).toLowerCase() || tLogin === String(activeUser.loginId).toLowerCase()))
+      );
+    });
+    const txnWithdrawnSum = userTxns.reduce((sum, t) => sum + (t.grossAmount || t.amount || 0), 0);
+
+    const parsed = raw ? JSON.parse(raw) : {};
+    const totalWithdrawn = Math.max(
+      typeof parsed.totalWithdrawn === 'number' ? parsed.totalWithdrawn : 0,
+      txnWithdrawnSum
+    );
     
     // Authoritative derivation: Available balance is generated earnings minus total withdrawn
     const derivedEarned = Math.max(0, Math.round((totalGen - totalWithdrawn) * 100) / 100);
-    // Sanitize any corrupt values exceeding userTotalGen
-    const totalEarned = (typeof parsed.totalEarned === 'number' && parsed.totalEarned <= totalGen && parsed.totalEarned >= 0)
-      ? parsed.totalEarned
-      : derivedEarned;
-    const royaltyEarned = royaltyGen;
+    const totalEarned = derivedEarned;
+    const royaltyEarned = Math.max(royaltyGen, typeof parsed.royaltyEarned === 'number' ? parsed.royaltyEarned : 0);
+    const totalInvested = Math.max(totalInv, typeof parsed.totalInvested === 'number' ? parsed.totalInvested : 0);
 
-    return {
+    const wallet: Wallet = {
       cashBalance: typeof parsed.cashBalance === 'number' ? parsed.cashBalance : INITIAL_WALLET.cashBalance,
       gpBalance: typeof parsed.gpBalance === 'number' ? parsed.gpBalance : INITIAL_WALLET.gpBalance,
-      totalInvested: typeof parsed.totalInvested === 'number' ? parsed.totalInvested : INITIAL_WALLET.totalInvested,
+      totalInvested,
       totalEarned,
       royaltyEarned,
       pendingWithdrawals: typeof parsed.pendingWithdrawals === 'number' ? parsed.pendingWithdrawals : 0,
       pendingDeposits: typeof parsed.pendingDeposits === 'number' ? parsed.pendingDeposits : 0,
       totalWithdrawn,
     };
+
+    if (userKey) {
+      localStorage.setItem(userKey, JSON.stringify(wallet));
+    } else {
+      localStorage.setItem(STORAGE_KEYS.WALLET, JSON.stringify(wallet));
+    }
+
+    return wallet;
   } catch {
     return INITIAL_WALLET;
   }
+}
+
+export function getStoredWallet(userId?: string): Wallet {
+  return computeAuthoritativeWallet(userId);
 }
 
 export function setStoredWallet(wallet: Wallet, userId?: string) {

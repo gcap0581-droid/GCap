@@ -7,6 +7,7 @@ import {
   Receipt,
   CheckCircle2,
   Clock,
+  Zap,
   XCircle,
   AlertCircle,
   Filter,
@@ -40,20 +41,48 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
   const companyProfile = getStoredCompanyProfile();
 
+  // On user panel, transactions passed from App.tsx are already filtered using findUserAndAllAliases.
+  // If transactions length is under 50, use it directly to guarantee no user transactions (like withdrawals) are falsely dropped!
+  const userTransactions = React.useMemo(() => {
+    if (!transactions) return [];
+    if (!user || transactions.length < 50) return transactions;
+
+    const uId = String(user.id || '').toLowerCase().trim();
+    const uLogin = String(user.loginId || '').toLowerCase().trim();
+    const uPhone = String(user.phone || '').replace(/[^0-9]/g, '');
+    const uPhone10 = uPhone.length >= 10 ? uPhone.slice(-10) : uPhone;
+
+    return transactions.filter((t) => {
+      if (!t) return false;
+      const tUserId = String(t.userId || '').toLowerCase().trim();
+      const tUserLoginId = String(t.userLoginId || '').toLowerCase().trim();
+      const tUserPhone = String(t.userPhone || '').replace(/[^0-9]/g, '');
+      const tPhone10 = tUserPhone.length >= 10 ? tUserPhone.slice(-10) : tUserPhone;
+      const tNote = (String(t.note || '') + ' ' + String(t.noteHi || '') + ' ' + String(t.destinationDetails || '')).toLowerCase();
+
+      const matchesId = Boolean(uId && tUserId && (tUserId === uId || tUserId.includes(uId) || uId.includes(tUserId)));
+      const matchesLogin = Boolean(uLogin && tUserLoginId && (tUserLoginId === uLogin || tUserLoginId === uId || uLogin === tUserId));
+      const matchesPhone = Boolean((uPhone10 && tPhone10 && tPhone10 === uPhone10) || (uPhone10 && tUserId.includes(uPhone10)));
+      const matchesNote = Boolean((uLogin && uLogin.length >= 4 && tNote.includes(uLogin)) || (uPhone10 && uPhone10.length >= 6 && tNote.includes(uPhone10)));
+
+      return matchesId || matchesLogin || matchesPhone || matchesNote;
+    });
+  }, [transactions, user]);
+
   // Stats for statement PDF
-  const successDeposits = transactions
+  const successDeposits = userTransactions
     .filter((t) => t.type === 'DEPOSIT' && t.status === 'SUCCESS')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const successWithdrawals = transactions
+  const successWithdrawals = userTransactions
     .filter((t) => t.type === 'WITHDRAWAL' && t.status === 'SUCCESS')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalInvestments = transactions
+  const totalInvestments = userTransactions
     .filter((t) => t.type === 'INVEST')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalReturnsPaid = transactions
+  const totalReturnsPaid = userTransactions
     .filter((t) => t.type === 'RETURN_PAYOUT' && t.status === 'SUCCESS')
     .reduce((sum, t) => sum + t.amount, 0);
 
@@ -65,11 +94,29 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   const userLoginId = user?.loginId || 'N/A';
   const userPhone = user?.phone || 'N/A';
 
-  const filteredTransactions = transactions.filter((t) => {
-    if (filter === 'ALL') return true;
-    if (filter === 'PENDING') return t.status === 'PENDING';
-    return t.type === filter;
-  });
+  const filteredTransactions = React.useMemo(() => {
+    const list = (userTransactions || []).filter((t) => {
+      if (!t) return false;
+      if (filter === 'ALL') return true;
+      if (filter === 'PENDING') return t.status === 'PENDING';
+      return t.type === filter;
+    });
+
+    // Priority Sort: Major user transactions (WITHDRAWAL, DEPOSIT, INVEST, SWAP_GP, or PENDING) sit at the top of ALL tab,
+    // so automated cycle payouts never flood or bury user withdrawals and deposits!
+    return list.sort((a, b) => {
+      const isMajorA = a.status === 'PENDING' || a.type === 'WITHDRAWAL' || a.type === 'DEPOSIT' || a.type === 'INVEST' || a.type === 'SWAP_GP';
+      const isMajorB = b.status === 'PENDING' || b.type === 'WITHDRAWAL' || b.type === 'DEPOSIT' || b.type === 'INVEST' || b.type === 'SWAP_GP';
+
+      if (isMajorA !== isMajorB) {
+        return isMajorB ? 1 : -1;
+      }
+
+      const timeA = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+      const timeB = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+      return timeB - timeA;
+    });
+  }, [userTransactions, filter]);
 
   const getTypeIcon = (tx: Transaction) => {
     switch (tx.type) {
@@ -268,9 +315,10 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                         </span>
                       )}
 
-                      {tx.status === 'SUCCESS' && (
+                      {(tx.status === 'SUCCESS' || tx.status === 'APPROVED' || tx.status === 'APPROVED_PENDING_TRANSFER') && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                          <span>{isHi ? 'सत्यापित' : 'Success'}</span>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>{isHi ? 'सफल' : 'Success'}</span>
                         </span>
                       )}
                       {tx.status === 'PENDING' && (
@@ -384,10 +432,10 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                       </td>
 
                       <td className="py-3.5 px-3">
-                        {tx.status === 'SUCCESS' && (
+                        {(tx.status === 'SUCCESS' || tx.status === 'APPROVED' || tx.status === 'APPROVED_PENDING_TRANSFER') && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/15 px-2.5 py-1 rounded-full border border-emerald-500/30">
                             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>{isHi ? 'सत्यापित (Success)' : 'Success'}</span>
+                            <span>{isHi ? 'सफल' : 'Success'}</span>
                           </span>
                         )}
                         {tx.status === 'PENDING' && (

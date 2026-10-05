@@ -14,9 +14,44 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/src/index.css" />
+    <style>
+      html, body {
+        background-color: #030712 !important;
+        color: #f8fafc;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        width: 100%;
+        overflow-x: hidden;
+      }
+      #root:empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #030712;
+      }
+      @keyframes gcap-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.95); }
+      }
+    </style>
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased select-none font-sans overflow-x-hidden min-h-screen">
-    <div id="root"></div>
+  <body class="bg-slate-950 text-slate-100 antialiased select-none font-sans overflow-x-hidden min-h-screen" style="background-color: #030712;">
+    <div id="root">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100%; background: #030712; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; box-sizing: border-box;">
+        <div style="width: 58px; height: 58px; border-radius: 18px; background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(59,130,246,0.2)); border: 1px solid rgba(245,158,11,0.5); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: #fbbf24; margin-bottom: 16px; box-shadow: 0 0 25px rgba(245,158,11,0.25); animation: gcap-pulse 2s infinite ease-in-out;">
+          G
+        </div>
+        <div style="font-size: 17px; font-weight: 800; color: #f8fafc; letter-spacing: 0.5px; margin-bottom: 8px;">GCap Capital</div>
+        <div style="font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+          लोड हो रहा है...
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

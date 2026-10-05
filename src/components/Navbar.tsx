@@ -68,6 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
+  const isCompanyView = isAdminHubActive && isAdmin;
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-2xl border-b border-white/[0.08] text-white shadow-2xl shadow-black/60 w-full transition-all">
@@ -144,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {currentUser && (
               <div
                 onClick={() => {
-                  if (isAdmin && onSelectAdminSubTab) {
+                  if (isCompanyView && onSelectAdminSubTab) {
                     onSelectAdminSubTab('TREASURY');
                   } else if (onDesktopTabChange) {
                     onDesktopTabChange('wallet');
@@ -152,26 +153,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }}
                 className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-slate-900/95 to-slate-950/95 border border-emerald-500/30 hover:border-amber-400/50 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-md shadow-black/40 cursor-pointer transition-all active:scale-95"
                 title={
-                  isAdmin
+                  isCompanyView
                     ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance')
                     : (isHi ? 'कुल कमाई (Total Earnings)' : 'Total Earnings')
                 }
               >
-                {!isAdmin ? (
+                {!isCompanyView ? (
                   <span className="text-sm shrink-0 leading-none">💰</span>
                 ) : (
                   <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 )}
                 <div className="leading-none">
                   <span className="text-[9px] text-slate-400 block font-semibold hidden sm:block">
-                    {isAdmin
+                    {isCompanyView
                       ? (isHi ? 'कंपनी बैलेंस' : 'Company Balance')
                       : (isHi ? 'कुल कमाई' : 'Total Earnings')}
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-300">
                     {formatINR(
-                      isAdmin
-                        ? (treasury?.balance !== undefined ? treasury.balance : (wallet?.cashBalance || 0))
+                      isCompanyView
+                        ? (treasury?.balance !== undefined ? treasury.balance : 0)
                         : ((wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0))
                     )}
                   </span>

@@ -159,21 +159,22 @@ export function getAdminWhatsAppAlertNumber(): string {
 export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
   try {
     const { phone, message, type, title, recipientName, recipientRole, amount, referenceId, status } = options;
-    const cleanPhone = formatPhoneNumberForWhatsApp(phone);
+    const targetPhone = phone || (recipientRole === 'ADMIN' ? getAdminWhatsAppAlertNumber() : '');
+    const cleanPhone = formatPhoneNumberForWhatsApp(targetPhone);
     const encodedText = encodeURIComponent(message);
     
     let url = '';
     if (cleanPhone) {
-      url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`;
+      url = `https://wa.me/${cleanPhone}?text=${encodedText}`;
     } else {
-      url = `https://api.whatsapp.com/send?text=${encodedText}`;
+      url = `https://wa.me/?text=${encodedText}`;
     }
 
     // Record audit log
     recordWhatsAppDispatchLog({
       type: type || 'CUSTOM_TEST',
       title: title || 'WhatsApp Alert',
-      recipientPhone: phone || 'Default Receiver',
+      recipientPhone: targetPhone || 'Default Receiver',
       recipientName: recipientName || 'Investor / Admin',
       recipientRole: recipientRole || 'ADMIN',
       messageBody: message,
@@ -182,11 +183,18 @@ export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
       status: status || 'DISPATCHED',
     });
 
-    // Attempt direct window open
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      // Fallback navigation if popup blocked
-      window.location.href = url;
+    if (typeof window !== 'undefined') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          if (document.body.contains(a)) document.body.removeChild(a);
+        } catch (e) {}
+      }, 500);
     }
     return true;
   } catch (error) {
