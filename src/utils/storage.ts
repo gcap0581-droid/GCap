@@ -28,13 +28,27 @@ export function getStoredWallet(userId?: string): Wallet {
   try {
     const userKey = userId ? `inv_portal_wallet_${userId}` : null;
     const raw = userKey ? localStorage.getItem(userKey) : localStorage.getItem(STORAGE_KEYS.WALLET);
-    const invs = getStoredInvestments();
-    const totalGenerated = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
+    
+    // Retrieve active logged in user to strictly isolate user-specific investments
+    let activeUser: any = null;
+    try {
+      const authRaw = typeof window !== 'undefined' ? localStorage.getItem('inv_portal_auth_user') : null;
+      if (authRaw) activeUser = JSON.parse(authRaw);
+    } catch {}
+
+    const allInvs = getStoredInvestments();
+    const effectiveUser = activeUser || (userId ? { id: userId, loginId: userId, phone: userId } : null);
+    const userInvs = effectiveUser ? filterUserInvestments(allInvs, effectiveUser) : allInvs;
+
+    // Authoritative derivation strictly from THIS user's investments
+    const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
+    const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
 
     if (!raw) {
       const w = {
         ...INITIAL_WALLET,
-        totalEarned: totalGenerated > 0 ? totalGenerated : INITIAL_WALLET.totalEarned,
+        totalEarned: totalGen > 0 ? totalGen : INITIAL_WALLET.totalEarned,
+        royaltyEarned: royaltyGen > 0 ? royaltyGen : INITIAL_WALLET.royaltyEarned,
       };
       if (userId) {
         localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(w));
@@ -45,14 +59,21 @@ export function getStoredWallet(userId?: string): Wallet {
     }
     const parsed = JSON.parse(raw);
     const totalWithdrawn = typeof parsed.totalWithdrawn === 'number' ? parsed.totalWithdrawn : 0;
-    const totalEarned = Math.max(0, Math.round((totalGenerated - totalWithdrawn) * 100) / 100);
+    
+    // Authoritative derivation: Available balance is generated earnings minus total withdrawn
+    const derivedEarned = Math.max(0, Math.round((totalGen - totalWithdrawn) * 100) / 100);
+    // Sanitize any corrupt values exceeding userTotalGen
+    const totalEarned = (typeof parsed.totalEarned === 'number' && parsed.totalEarned <= totalGen && parsed.totalEarned >= 0)
+      ? parsed.totalEarned
+      : derivedEarned;
+    const royaltyEarned = royaltyGen;
 
     return {
       cashBalance: typeof parsed.cashBalance === 'number' ? parsed.cashBalance : INITIAL_WALLET.cashBalance,
       gpBalance: typeof parsed.gpBalance === 'number' ? parsed.gpBalance : INITIAL_WALLET.gpBalance,
       totalInvested: typeof parsed.totalInvested === 'number' ? parsed.totalInvested : INITIAL_WALLET.totalInvested,
       totalEarned,
-      royaltyEarned: typeof parsed.royaltyEarned === 'number' ? parsed.royaltyEarned : INITIAL_WALLET.royaltyEarned,
+      royaltyEarned,
       pendingWithdrawals: typeof parsed.pendingWithdrawals === 'number' ? parsed.pendingWithdrawals : 0,
       pendingDeposits: typeof parsed.pendingDeposits === 'number' ? parsed.pendingDeposits : 0,
       totalWithdrawn,
@@ -161,11 +182,17 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
     // Single Authoritative Source of Truth:
     // If an authoritative earned amount is already saved on item (from Central Database), preserve it exactly.
     // Do not overwrite it with completedCycles * cycleReturn which can distort manual additions / exact amounts.
-    const dbEarned = (typeof item.earnedSoFar === 'number' && item.earnedSoFar > 0)
+    const maxAllowedReturn = cycleReturn * 4 * (duration || 365);
+    let dbEarned = (typeof item.earnedSoFar === 'number' && item.earnedSoFar > 0)
       ? item.earnedSoFar
       : (typeof item.totalEarnedSoFar === 'number' && item.totalEarnedSoFar > 0)
       ? item.totalEarnedSoFar
       : (completedCycles > 0 ? (completedCycles * cycleReturn) : 0);
+
+    // Sanitize corrupted simulation data if dbEarned exceeds max possible return
+    if (dbEarned > maxAllowedReturn) {
+      dbEarned = Math.min(completedCycles > 0 ? (completedCycles * cycleReturn) : maxAllowedReturn, maxAllowedReturn);
+    }
     const earnedSoFar = Math.round(dbEarned * 100) / 100;
 
     const unclaimedEarnings = (typeof item.unclaimedEarnings === 'number' && item.unclaimedEarnings > 0)
@@ -250,13 +277,12 @@ export function filterUserInvestments(allInvestments: ActiveInvestment[], user: 
     const iPhone = (i.userPhone || '').replace(/[^0-9]/g, "");
     const iPhone10 = iPhone.length >= 10 ? iPhone.slice(-10) : iPhone;
 
-    return (
+    return Boolean(
       (userIdLower && iUserId === userIdLower) ||
       (loginIdLower && iLoginId === loginIdLower) ||
       (phone10 && iPhone10 === phone10) ||
       (userIdLower && phone10 && iUserId.includes(phone10)) ||
-      (phone10 && iUserId.includes(phone10)) ||
-      !i.userId
+      (phone10 && iUserId.includes(phone10))
     );
   });
 }

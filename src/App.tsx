@@ -114,6 +114,7 @@ import {
 import { subscribeToRealtimeEvents, playRealtimeChime } from './utils/realtimeSync';
 import { apiFetch } from './utils/apiConfig';
 import { INVESTMENT_PLANS } from './utils/plansStorage';
+import { createWithdrawalWhatsAppAlert, sendWhatsAppAlert } from './utils/whatsappHelper';
 import { Navbar } from './components/Navbar';
 import { WalletCard } from './components/WalletCard';
 import { RoiCalculator } from './components/RoiCalculator';
@@ -245,11 +246,43 @@ export default function App() {
   });
   const investments = normalizeInvestmentsList(rawInvestments);
   const setInvestments = useCallback((val: ActiveInvestment[] | ((prev: ActiveInvestment[]) => ActiveInvestment[])) => {
-    if (typeof val === 'function') {
-      setRawInvestments((prev) => normalizeInvestmentsList(val(prev)));
-    } else {
-      setRawInvestments(normalizeInvestmentsList(val));
-    }
+    setRawInvestments((prev) => {
+      const incoming = typeof val === 'function' ? val(prev) : val;
+      if (!Array.isArray(incoming)) return [];
+      if (!Array.isArray(prev) || prev.length === 0) return normalizeInvestmentsList(incoming);
+
+      const prevMap = new Map<string, ActiveInvestment>();
+      prev.forEach((inv) => {
+        if (inv && inv.id) prevMap.set(inv.id, inv);
+      });
+
+      const merged = incoming.map((item) => {
+        if (!item || !item.id) return item;
+        const existing = prevMap.get(item.id);
+        if (!existing) return item;
+
+        // Monotonic guarantee: never roll back cycles completed or earned return to an older server snapshot
+        const completedCyclesCount = Math.max(
+          existing.completedCyclesCount || existing.cyclesCompleted || 0,
+          item.completedCyclesCount || item.cyclesCompleted || 0
+        );
+        const earnedSoFar = Math.max(
+          existing.earnedSoFar || existing.totalEarnedSoFar || 0,
+          item.earnedSoFar || item.totalEarnedSoFar || 0
+        );
+        return {
+          ...item,
+          ...existing,
+          completedCyclesCount,
+          cyclesCompleted: completedCyclesCount,
+          earnedSoFar,
+          totalEarnedSoFar: earnedSoFar,
+          unclaimedEarnings: Math.max(existing.unclaimedEarnings || 0, item.unclaimedEarnings || 0),
+        };
+      });
+
+      return normalizeInvestmentsList(merged);
+    });
   }, []);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [plans, setPlans] = useState<InvestmentPlan[]>(getStoredPlans());
@@ -446,11 +479,17 @@ export default function App() {
                     setStoredWallet(state.wallet, uid);
                     return state.wallet;
                   }
+                  const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
+                  const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+                  const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+                  const totalWit = typeof state.wallet.totalWithdrawn === 'number' ? state.wallet.totalWithdrawn : 0;
+                  const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
+
                   const stableWallet: Wallet = {
                     ...state.wallet,
-                    totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
-                    totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
-                    royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+                    totalEarned: authEarned,
+                    royaltyEarned: royaltyGen,
+                    totalInvested: state.wallet.totalInvested !== undefined ? state.wallet.totalInvested : (prev.totalInvested || 0),
                   };
                   setStoredWallet(stableWallet, uid);
                   return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
@@ -461,8 +500,9 @@ export default function App() {
                 setStoredTransactions(state.transactions);
               }
               if (state.investments) {
-                setInvestments(state.investments);
-                setStoredInvestments(state.investments);
+                const myInvs = filterUserInvestments(state.investments, currentUser);
+                setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
+                setStoredInvestments(myInvs);
               }
             }
           }
@@ -478,8 +518,11 @@ export default function App() {
             const activeRules = getStoredRules();
             const res = reconcileAllInvestmentsWithTime(currentInvs, activeRules, Date.now());
             if (res.hasChanges) {
-              setInvestments(res.updatedInvestments);
-              setStoredInvestments(res.updatedInvestments);
+              const myInvs = currentUser && currentUser.role !== 'ADMIN'
+                ? filterUserInvestments(res.updatedInvestments, currentUser)
+                : res.updatedInvestments;
+              setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
+              setStoredInvestments(myInvs);
               saveInvestmentsToFirestore(res.updatedInvestments).catch(console.warn);
 
               // Sync each updated investment to Express server immediately to prevent rollback and duplicate toast alerts
@@ -502,7 +545,7 @@ export default function App() {
                       totalEarned: Math.round(((prev.totalEarned || 0) + delta.totalEarnedDelta) * 100) / 100,
                       royaltyEarned: Math.round(((prev.royaltyEarned || 0) + delta.royaltyEarnedDelta) * 100) / 100,
                     };
-                    setStoredWallet(updatedWallet);
+                    setStoredWallet(updatedWallet, currentUser.id);
                     apiUpdateWallet(currentUser.id, updatedWallet).catch(console.warn);
                     return updatedWallet;
                   });
@@ -704,15 +747,21 @@ export default function App() {
           if (myWallet) {
             setWallet((prev) => {
               if (!prev) return myWallet;
+              const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
+              const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+              const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+              const totalWit = typeof myWallet.totalWithdrawn === 'number' ? myWallet.totalWithdrawn : 0;
+              const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
+
               const stableWallet: Wallet = {
                 ...myWallet,
-                totalEarned: Math.max(prev.totalEarned || 0, myWallet.totalEarned || 0),
-                totalInvested: Math.max(prev.totalInvested || 0, myWallet.totalInvested || 0),
-                royaltyEarned: Math.max(prev.royaltyEarned || 0, myWallet.royaltyEarned || 0),
+                totalEarned: authEarned,
+                royaltyEarned: royaltyGen,
+                totalInvested: myWallet.totalInvested !== undefined ? myWallet.totalInvested : (prev.totalInvested || 0),
               };
+              setStoredWallet(stableWallet, currentUser.id);
               return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
             });
-            setStoredWallet(myWallet, currentUser.id);
           }
         }
         if (fs.transactions) {
@@ -868,15 +917,21 @@ export default function App() {
           if (state.wallet) {
             setWallet((prev) => {
               if (!prev) return state.wallet;
+              const userInvs = currentUser ? filterUserInvestments(getStoredInvestments(), currentUser) : [];
+              const totalGen = Math.round(userInvs.filter(i => i.royaltyStage !== '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+              const royaltyGen = Math.round(userInvs.filter(i => i.royaltyStage === '1825D_ROYALTY').reduce((sum, i) => sum + (i.earnedSoFar || 0), 0) * 100) / 100;
+              const totalWit = typeof state.wallet.totalWithdrawn === 'number' ? state.wallet.totalWithdrawn : 0;
+              const authEarned = Math.max(0, Math.round((totalGen - totalWit) * 100) / 100);
+
               const stableWallet: Wallet = {
                 ...state.wallet,
-                totalEarned: Math.max(prev.totalEarned || 0, state.wallet.totalEarned || 0),
-                totalInvested: Math.max(prev.totalInvested || 0, state.wallet.totalInvested || 0),
-                royaltyEarned: Math.max(prev.royaltyEarned || 0, state.wallet.royaltyEarned || 0),
+                totalEarned: authEarned,
+                royaltyEarned: royaltyGen,
+                totalInvested: state.wallet.totalInvested !== undefined ? state.wallet.totalInvested : (prev.totalInvested || 0),
               };
+              setStoredWallet(stableWallet, currentUser.id);
               return JSON.stringify(prev) !== JSON.stringify(stableWallet) ? stableWallet : prev;
             });
-            setStoredWallet(state.wallet, currentUser.id);
           }
           if (state.transactions) {
             setTransactions((prev) => (JSON.stringify(prev) !== JSON.stringify(state.transactions) ? state.transactions : prev));
@@ -928,12 +983,14 @@ export default function App() {
         const curId = currentUser.id;
         const curLoginId = currentUser.loginId;
         const curPhone10 = currentUser.phone ? currentUser.phone.replace(/[^0-9]/g, "").slice(-10) : "";
-        if (
-          !rawTarget ||
-          rawTarget === curId ||
-          rawTarget === curLoginId ||
-          (targetPhone10 && curPhone10 && targetPhone10 === curPhone10)
-        ) {
+        const isMatch = Boolean(
+          rawTarget && (
+            rawTarget === curId ||
+            rawTarget === curLoginId ||
+            (targetPhone10 && curPhone10 && targetPhone10 === curPhone10)
+          )
+        );
+        if (isMatch) {
           setWallet(event.wallet);
           setStoredWallet(event.wallet, currentUser.id);
         }
@@ -1903,11 +1960,26 @@ export default function App() {
         language: isHi ? 'hi' : 'en',
       });
 
+      // Automatically send official withdrawal payout WhatsApp receipt to the user
+      try {
+        const userPayoutAlert = createWithdrawalWhatsAppAlert(
+          {
+            ...updatedTxn,
+            status: 'APPROVED',
+          },
+          updatedTxn.userName,
+          updatedTxn.userPhone
+        );
+        sendWhatsAppAlert(userPayoutAlert);
+      } catch (waErr) {
+        console.warn('Auto WhatsApp payout alert error:', waErr);
+      }
+
       showToast(
-        isHi ? '✅ निकासी अप्रूव हुई (कंपनी बैलेंस से डिडक्ट)!' : '✅ Withdrawal Approved (Deducted from Company Balance)!',
+        isHi ? '✅ निकासी अप्रूव व ट्रांसफर सफल (WhatsApp भेजा गया)!' : '✅ Withdrawal Approved & Transferred (WhatsApp Dispatched)!',
         isHi
-          ? `यूज़र ${updatedTxn.userName} की ₹${amount.toLocaleString('en-IN')} की निकासी अप्रूव हुई।`
-          : `Withdrawal for ₹${amount.toLocaleString('en-IN')} approved and deducted from Company Main Balance.`
+          ? `यूज़र ${updatedTxn.userName} की ₹${amount.toLocaleString('en-IN')} की निकासी अप्रूव हुई और व्हाट्सएप वाउचर भेजा गया।`
+          : `Withdrawal for ₹${amount.toLocaleString('en-IN')} approved, deducted from Treasury, and WhatsApp voucher dispatched.`
       );
       return;
     } 
@@ -3477,8 +3549,11 @@ export default function App() {
       const now = Date.now();
       const res = reconcileAllInvestmentsWithTime(investments, rules, now);
       if (res.hasChanges) {
-        setInvestments(res.updatedInvestments);
-        setStoredInvestments(res.updatedInvestments);
+        const myInvs = currentUser && currentUser.role !== 'ADMIN'
+          ? filterUserInvestments(res.updatedInvestments, currentUser)
+          : res.updatedInvestments;
+        setInvestments((prev) => (JSON.stringify(prev) !== JSON.stringify(myInvs) ? myInvs : prev));
+        setStoredInvestments(myInvs);
         saveInvestmentsToFirestore(res.updatedInvestments).catch(console.warn);
 
         // Sync each updated investment to Express server immediately to prevent rollback and duplicate toast alerts
@@ -3502,7 +3577,7 @@ export default function App() {
                 totalEarned: Math.round(((prev.totalEarned || 0) + delta.totalEarnedDelta) * 100) / 100,
                 royaltyEarned: Math.round(((prev.royaltyEarned || 0) + delta.royaltyEarnedDelta) * 100) / 100,
               };
-              setStoredWallet(updatedWallet);
+              setStoredWallet(updatedWallet, currentUser.id);
               apiUpdateWallet(currentUser.id, updatedWallet).catch(console.warn);
               return updatedWallet;
             });

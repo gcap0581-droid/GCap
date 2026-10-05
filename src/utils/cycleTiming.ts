@@ -161,14 +161,17 @@ export function reconcileAllInvestmentsWithTime(
       // e.g. Unlock at 4 PM -> First slab starts at 8 PM.
       const firstSlabStart = getNextFixedCycleTimestamp(lockEnd);
       
-      // Credit happens only after completing that slab (at the start of the following slab).
-      const rawEligibleCycles = countElapsedFixedSlots(firstSlabStart, now);
+      // Max cycles cap for safety (365 days = 1460 cycles, 641 days = 2564 cycles)
+      const maxPlanCycles = inv.planId === 'short-term' ? 2564 : 1460;
+      const rawEligibleCycles = Math.min(maxPlanCycles, countElapsedFixedSlots(firstSlabStart, now));
       
-      const currentCompleted = inv.completedCyclesCount || inv.cyclesCompleted || 0;
-      const actualEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
-      const cyclesFromEarned = cyclePayout > 0 ? Math.floor(actualEarned / cyclePayout) : 0;
-      const totalEligibleCycles = Math.max(currentCompleted, rawEligibleCycles, cyclesFromEarned);
+      const currentCompleted = Math.min(maxPlanCycles, inv.completedCyclesCount || inv.cyclesCompleted || 0);
+      const totalEligibleCycles = Math.min(maxPlanCycles, Math.max(currentCompleted, rawEligibleCycles));
       const expectedEarned = Math.round(totalEligibleCycles * cyclePayout * 100) / 100;
+      
+      // Sanitize actualEarned if it was previously corrupted to millions
+      const rawEarned = inv.earnedSoFar || inv.totalEarnedSoFar || 0;
+      const actualEarned = rawEarned > (maxPlanCycles * cyclePayout) ? expectedEarned : rawEarned;
 
       // UI Timer Logic: The next payout milestone is the next fixed slot after (now OR firstSlabStart)
       const nextEnd = getNextFixedCycleTimestamp(Math.max(now, firstSlabStart));

@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Language, Wallet, AppRules, WithdrawalSource, UserProfile, Transaction } from '../types';
-import { formatINR, getStoredBankDetails } from '../utils/storage';
-import { sendWhatsAppAlert, createAdminWithdrawalAlertMessage } from '../utils/whatsappHelper';
+import { formatINR, getStoredBankDetails, setStoredBankDetails } from '../utils/storage';
+import { apiSaveBankDetails } from '../utils/centralSync';
+import { BankAccountDetails } from '../types';
+import { sendWhatsAppAlert, createAdminWithdrawalAlertMessage, createWithdrawalWhatsAppAlert } from '../utils/whatsappHelper';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -106,7 +108,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [upiId, setUpiId] = useState<string>('');
   const [accountNo, setAccountNo] = useState<string>('');
   const [ifsc, setIfsc] = useState<string>('');
+  const [bankName, setBankName] = useState<string>('');
   const [accountName, setAccountName] = useState<string>('');
+  const [bankSavedSuccess, setBankSavedSuccess] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [submittedData, setSubmittedData] = useState<{
@@ -141,6 +145,83 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     sendWhatsAppAlert(alertData);
   };
 
+  const handleNotifyUserWhatsApp = (
+    withdrawGross: number,
+    withdrawNet: number,
+    destination: string,
+    ref: string
+  ) => {
+    const alertData = createWithdrawalWhatsAppAlert(
+      {
+        id: ref,
+        referenceId: ref,
+        grossAmount: withdrawGross,
+        amount: withdrawNet,
+        tdsAmount: Math.round(((withdrawGross * tdsPercent) / 100) * 100) / 100,
+        adminFeeAmount: Math.round(((withdrawGross * adminFeePercent) / 100) * 100) / 100,
+        netAmount: withdrawNet,
+        destinationDetails: destination,
+        status: 'PENDING',
+        timestamp: Date.now(),
+        userPhone: currentUser?.phone,
+        userName: accountName || currentUser?.name,
+      } as any,
+      accountName || currentUser?.name,
+      currentUser?.phone
+    );
+    sendWhatsAppAlert(alertData);
+  };
+
+  const handleSaveBankDetailsDirect = async () => {
+    setError('');
+    setBankSavedSuccess('');
+    if (!currentUser?.id) return;
+
+    if (destinationType === 'BANK') {
+      if (!accountName.trim()) {
+        setError(isHi ? 'कृपया खाताधारक का नाम दर्ज करें।' : 'Please enter account holder name.');
+        return;
+      }
+      if (!bankName.trim()) {
+        setError(isHi ? 'कृपया बैंक का नाम (उदा. SBI, HDFC, Axis Bank) दर्ज करें।' : 'Please enter bank name.');
+        return;
+      }
+      if (!accountNo.trim() || accountNo.trim().length < 8) {
+        setError(isHi ? 'कृपया मान्य बैंक खाता संख्या दर्ज करें (कम से कम 8 अंक)।' : 'Please enter valid account number (min 8 digits).');
+        return;
+      }
+      if (!ifsc.trim() || ifsc.trim().length < 8) {
+        setError(isHi ? 'कृपया मान्य IFSC कोड दर्ज करें (उदा. SBIN0001234)।' : 'Please enter valid IFSC code.');
+        return;
+      }
+    } else {
+      if (!upiId.trim().includes('@') || upiId.trim().length < 5) {
+        setError(isHi ? 'कृपया मान्य UPI ID दर्ज करें (उदा. user@upi)।' : 'Please enter valid UPI ID (e.g. user@upi).');
+        return;
+      }
+    }
+
+    const currentSaved: Partial<BankAccountDetails> = getStoredBankDetails(currentUser.id) || {};
+    const updatedDetails: BankAccountDetails = {
+      accountHolder: accountName.trim() || currentSaved.accountHolder || currentUser.name || '',
+      accountNumber: destinationType === 'BANK' ? accountNo.trim() : (currentSaved.accountNumber || ''),
+      ifscCode: destinationType === 'BANK' ? ifsc.trim().toUpperCase() : (currentSaved.ifscCode || ''),
+      bankName: destinationType === 'BANK' ? bankName.trim() : (currentSaved.bankName || ''),
+      upiId: destinationType === 'UPI' ? upiId.trim() : (currentSaved.upiId || ''),
+    };
+
+    setStoredBankDetails(currentUser.id, updatedDetails);
+    currentUser.bankDetails = updatedDetails;
+    await apiSaveBankDetails(currentUser.id, updatedDetails).catch(() => {});
+
+    setBankSavedSuccess(
+      isHi
+        ? '✅ बैंक विवरण आपके खाते के रिकॉर्ड में स्थायी रूप से सुरक्षित हो गया है!'
+        : '✅ Bank details permanently saved to your account record!'
+    );
+    setTimeout(() => setBankSavedSuccess(''), 4500);
+  };
+
   const prevIsOpenRef = React.useRef<boolean>(false);
   const prevSourceRef = React.useRef<WithdrawalSource>(withdrawalSource);
 
@@ -172,16 +253,23 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           setUpiId(saved.upiId || '');
           setAccountNo(saved.accountNumber || '');
           setIfsc(saved.ifscCode || '');
+          setBankName(saved.bankName || '');
           setAccountName(saved.accountHolder || currentUser.name || '');
         } else {
           setUpiId('');
           setAccountNo('');
           setIfsc('');
+          setBankName('');
           setAccountName(currentUser.name || '');
         }
       }
     }
   }, [isOpen, withdrawalSource, currentUser, totalEarning, royaltyEarning, cashEarning]);
+
+
+  const isBankConfigured = destinationType === "BANK"
+    ? Boolean(accountName.trim() && bankName.trim() && accountNo.trim().length >= 8 && ifsc.trim().length >= 8)
+    : Boolean(upiId.trim().includes("@") && upiId.trim().length >= 5);
 
   if (!isOpen) return null;
 
@@ -257,9 +345,24 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       return;
     }
 
-    if (destinationType === 'UPI' && !upiId.includes('@')) {
-      setError(isHi ? 'कृपया मान्य UPI ID दर्ज करें (उदा. user@upi)' : 'Please enter a valid UPI ID (e.g. user@upi)');
-      return;
+    if (destinationType === 'BANK') {
+      if (!accountName.trim() || !bankName.trim() || accountNo.trim().length < 8 || ifsc.trim().length < 8) {
+        setError(
+          isHi
+            ? '❌ निकासी अनुरोध नहीं लग सकता! कृपया पहले अपना पूरा बैंक विवरण (खाताधारक का नाम, बैंक का नाम, खाता संख्या, IFSC कोड) भरें और "बैंक विवरण स्थायी सुरक्षित करें" दबाएँ।'
+            : '❌ Cannot submit withdrawal! Please enter complete bank details (Holder Name, Bank Name, Account No, IFSC) and save before withdrawing.'
+        );
+        return;
+      }
+    } else {
+      if (!upiId.trim().includes('@') || upiId.trim().length < 5) {
+        setError(
+          isHi
+            ? '❌ निकासी अनुरोध नहीं लग सकता! कृपया मान्य UPI ID दर्ज करें (उदा. user@upi) और सुरक्षित करें।'
+            : '❌ Cannot submit withdrawal! Please enter a valid UPI ID (e.g. user@upi) and save.'
+        );
+        return;
+      }
     }
 
     setIsProcessing(true);
@@ -267,7 +370,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setTimeout(() => {
       setIsProcessing(false);
       const randomRef = 'WTH' + Math.floor(1000000000 + Math.random() * 9000000000);
-      const destinationStr = destinationType === 'UPI' ? `UPI: ${upiId}` : `Bank A/C: ${accountNo} (${ifsc})`;
+      const destinationStr = destinationType === 'UPI'
+        ? `UPI: ${upiId.trim()}`
+        : `Bank A/C: ${accountNo.trim()} (${ifsc.trim().toUpperCase()}) [${bankName.trim()}]`;
 
       confetti({
         particleCount: 60,
@@ -283,13 +388,28 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
         adminFeeAmount,
         netAmount: netPayable,
         destinationDetails: destinationStr,
-        userName: accountName,
-        userPhone: '+91 98000 12345',
+        userName: accountName.trim() || currentUser?.name || 'निवेशक',
+        userPhone: currentUser?.phone || '',
         panNumber: 'ABCDE1234F',
       };
 
       onWithdrawSuccess(amount, destinationStr, randomRef, withdrawalSource, voucherDetails);
       
+      // Automatically save entered bank details to user profile permanently
+      if (currentUser?.id) {
+        const currentSaved: Partial<BankAccountDetails> = getStoredBankDetails(currentUser.id) || {};
+        const updatedDetails: BankAccountDetails = {
+          accountHolder: accountName.trim() || currentSaved.accountHolder || currentUser.name || '',
+          accountNumber: destinationType === 'BANK' ? accountNo.trim() : (currentSaved.accountNumber || ''),
+          ifscCode: destinationType === 'BANK' ? ifsc.trim().toUpperCase() : (currentSaved.ifscCode || ''),
+          bankName: destinationType === 'BANK' ? bankName.trim() : (currentSaved.bankName || ''),
+          upiId: destinationType === 'UPI' ? upiId.trim() : (currentSaved.upiId || ''),
+        };
+        setStoredBankDetails(currentUser.id, updatedDetails);
+        currentUser.bankDetails = updatedDetails;
+        apiSaveBankDetails(currentUser.id, updatedDetails).catch(() => {});
+      }
+
       // Automatically send WhatsApp alert to admin
       handleNotifyAdminWhatsApp(amount, netPayable, destinationStr, randomRef);
 
@@ -381,20 +501,28 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               </div>
             </div>
 
-            {/* 1-Click Notify Admin on WhatsApp Button */}
-            <div className="space-y-2 pt-2">
+            {/* 1-Click WhatsApp Buttons for BOTH Admin & User */}
+            <div className="space-y-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => handleNotifyAdminWhatsApp(submittedData.amount, submittedData.netAmount, submittedData.destination, submittedData.ref)}
-                className="w-full py-3.5 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-950/60 transition-all cursor-pointer active:scale-95 animate-pulse"
+                className="w-full py-3 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-950/60 transition-all cursor-pointer active:scale-95 animate-pulse"
               >
-                <MessageCircle className="w-5 h-5 fill-current" />
-                <span>{isHi ? '📲 एडमिन को WhatsApp पर निकासी सूचना भेजें' : '📲 Send Withdrawal Alert to Admin WhatsApp'}</span>
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>{isHi ? '📲 1. एडमिन को WhatsApp सूचना भेजें (Admin Alert)' : '📲 1. Send Alert to Admin WhatsApp'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNotifyUserWhatsApp(submittedData.amount, submittedData.netAmount, submittedData.destination, submittedData.ref)}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60 transition-all cursor-pointer active:scale-95"
+              >
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>{isHi ? '📄 2. अपनी WhatsApp निकासी रसीद प्राप्त करें' : '📄 2. Get Your WhatsApp Receipt'}</span>
               </button>
               <p className="text-[11px] text-slate-400">
                 {isHi
-                  ? '💡 इस बटन पर क्लिक करने से एडमिन को तुरंत WhatsApp पर सूचना चली जाएगी ताकि भुगतान जल्द हो सके।'
-                  : '💡 Tapping this opens WhatsApp directly to notify Admin for instant payout.'}
+                  ? '💡 निकासी दर्ज होते ही एडमिन पैनल में ट्रांसफर बटन चालू हो गया है। एडमिन द्वारा अप्रूव करते ही आपको भुगतान का संपूर्ण विवरण WhatsApp पर भी प्राप्त होगा।'
+                  : '💡 Admin panel shows your request for instant approval & payout.'}
               </p>
             </div>
 
@@ -721,6 +849,28 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             </div>
           </div>
 
+          {/* Bank Details Status Alert */}
+          {(!isBankConfigured) && (
+            <div className="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-xl text-xs space-y-1.5 animate-pulse">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{isHi ? '⚠️ बैंक विवरण अधूरा है (Bank Details Required)!' : '⚠️ Bank Details Incomplete!'}</span>
+              </div>
+              <p className="text-amber-200/90 text-[11px] leading-relaxed">
+                {isHi
+                  ? 'निकासी अनुरोध लगाने से पहले अपना पूरा बैंक विवरण (खाताधारक का नाम, बैंक का नाम, खाता संख्या, IFSC कोड) या मान्य UPI ID भरना अनिवार्य है। नीचे विवरण भरकर "बैंक विवरण सुरक्षित करें" बटन दबाएँ।'
+                  : 'Complete bank account details (Holder name, Bank name, Account number, IFSC code) or valid UPI ID are mandatory before requesting withdrawal. Please fill and save below.'}
+              </p>
+            </div>
+          )}
+
+          {bankSavedSuccess && (
+            <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="font-semibold">{bankSavedSuccess}</span>
+            </div>
+          )}
+
           {/* Destination Type Toggle */}
           <div className={!activeWindowValid ? 'opacity-40 pointer-events-none' : ''}>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
@@ -759,57 +909,100 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
           {/* Payout Input Fields */}
           {destinationType === 'UPI' ? (
-            <div className={`space-y-2 bg-slate-950 p-4 rounded-xl border border-slate-800 ${!activeWindowValid ? 'opacity-40' : ''}`}>
-              <label className="text-xs text-slate-300 font-medium block">
-                {isHi ? 'अपनी UPI ID दर्ज करें:' : 'Your Virtual Payment Address (UPI ID):'}
-              </label>
-              <input
-                id="input-withdraw-upi"
-                type="text"
-                value={upiId}
-                disabled={!activeWindowValid}
-                onChange={(e) => setUpiId(e.target.value)}
-                placeholder="username@okhdfcbank"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono text-sm focus:outline-none focus:border-purple-500"
-              />
-              <p className="text-[11px] text-slate-500">
-                {isHi ? 'खाताधारक नाम: ' : 'Registered Name: '}
-                <span className="text-slate-300 font-semibold">{accountName}</span>
-              </p>
+            <div className={`space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800 ${!activeWindowValid ? 'opacity-40' : ''}`}>
+              <div>
+                <label className="text-xs text-slate-300 font-medium block mb-1">
+                  {isHi ? 'अपनी UPI ID दर्ज करें:' : 'Your Virtual Payment Address (UPI ID):'}
+                </label>
+                <input
+                  id="input-withdraw-upi"
+                  type="text"
+                  value={upiId}
+                  disabled={!activeWindowValid}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  placeholder="e.g. 7564841400@upi या name@okhdfcbank"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-mono text-sm focus:outline-none focus:border-purple-500"
+                />
+              </div>
+              <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-slate-800/80">
+                <p className="text-[11px] text-slate-400">
+                  {isHi ? 'खाताधारक नाम: ' : 'Registered Name: '}
+                  <span className="text-slate-300 font-semibold">{accountName || currentUser?.name}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSaveBankDetailsDirect}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-950/40"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isHi ? '💾 UPI स्थायी सुरक्षित करें' : '💾 Save UPI Permanently'}</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className={`space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs ${!activeWindowValid ? 'opacity-40' : ''}`}>
-              <div>
-                <label className="text-slate-400 block mb-1">{isHi ? 'खाताधारक का नाम:' : 'Account Holder Name:'}</label>
-                <input
-                  type="text"
-                  value={accountName}
-                  disabled={!activeWindowValid}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-slate-400 block mb-1">{isHi ? 'बैंक खाता संख्या:' : 'Account Number:'}</label>
+                  <label className="text-slate-400 block mb-1 font-semibold">{isHi ? 'खाताधारक का नाम:' : 'Account Holder Name:'}</label>
+                  <input
+                    type="text"
+                    value={accountName}
+                    disabled={!activeWindowValid}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    placeholder="e.g. Ramesh Kumar"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 block mb-1 font-semibold">{isHi ? 'बैंक का नाम (Bank Name):' : 'Bank Name:'}</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    disabled={!activeWindowValid}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="e.g. State Bank of India, HDFC, Axis"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-slate-400 block mb-1 font-semibold">{isHi ? 'बैंक खाता संख्या (Account Number):' : 'Account Number:'}</label>
                   <input
                     type="text"
                     value={accountNo}
                     disabled={!activeWindowValid}
                     onChange={(e) => setAccountNo(e.target.value)}
+                    placeholder="e.g. 924010008662307"
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">{isHi ? 'IFSC कोड:' : 'IFSC Code:'}</label>
+                  <label className="text-slate-400 block mb-1 font-semibold">{isHi ? 'IFSC कोड:' : 'IFSC Code:'}</label>
                   <input
                     type="text"
                     value={ifsc}
                     disabled={!activeWindowValid}
                     onChange={(e) => setIfsc(e.target.value)}
+                    placeholder="e.g. SBIN0001234"
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono uppercase"
                   />
                 </div>
+              </div>
+
+              {/* Dedicated Save Bank Details Button */}
+              <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-slate-800/80">
+                <span className="text-[11px] text-slate-400">
+                  {isHi ? '🔒 विवरण आपके प्रोफ़ाइल रिकॉर्ड में स्थायी सुरक्षित होगा' : '🔒 Details saved permanently to your profile record'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveBankDetailsDirect}
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-950/40"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isHi ? '💾 बैंक विवरण स्थायी सुरक्षित करें' : '💾 Save Bank Details Permanently'}</span>
+                </button>
               </div>
             </div>
           )}

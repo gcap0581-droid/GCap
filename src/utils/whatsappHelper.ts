@@ -324,23 +324,33 @@ export function createWithdrawalWhatsAppAlert(
   const profile = getStoredCompanyProfile();
   const companyName = profile.companyName || 'GCAP CAPITAL PRIVATE LIMITED';
   const name = userName || tx.userName || 'Valued Investor';
-  const gross = tx.grossAmount ?? tx.amount;
+  const gross = tx.grossAmount ?? tx.amount ?? 0;
   const tds = tx.tdsAmount ?? 0;
-  const net = tx.netAmount ?? (gross - tds);
-  const statusStr = tx.status === 'APPROVED' ? '✅ खाते में भेजा गया (SUCCESS)' : tx.status === 'REJECTED' ? '❌ अस्वीकृत (REJECTED)' : '⏳ प्रोसेस में है (PROCESSING)';
+  const adminFee = tx.adminFeeAmount ?? 0;
+  const net = tx.netAmount ?? Math.max(0, gross - tds - adminFee);
+  const isPaid = tx.status === 'APPROVED' || tx.status === 'SUCCESS';
+  const statusStr = isPaid
+    ? '✅ बैंक/UPI खाते में भुगतान सफल (PAYMENT COMPLETED)'
+    : tx.status === 'REJECTED'
+    ? '❌ अस्वीकृत (REJECTED)'
+    : '⏳ प्रोसेस में है (PROCESSING / PENDING)';
 
-  const message = `*🏛️ ${companyName} — आधिकारिक निकासी वाउचर (Withdrawal Voucher)*\n\n` +
+  const message = `*🏛️ ${companyName} — आधिकारिक निकासी वाउचर (Withdrawal Payout Receipt)*\n\n` +
     `नमस्ते *${name}*,\n\n` +
-    `आपकी निकासी (Withdrawal) का आधिकारिक विवरण निम्नलिखित है:\n\n` +
-    `💰 *कुल निकासी (Gross Amount):* ${formatINR(gross)}\n` +
-    `📉 *TDS कटौती (TDS Deducted):* ${formatINR(tds)}\n` +
-    `💳 *शुद्ध प्राप्त राशि (Net Paid Amount):* *${formatINR(net)}*\n` +
-    `📊 *वर्तमान स्थिति (Status):* ${statusStr}\n` +
-    `🔢 *वाउचर क्रमांक (Voucher No):* ${tx.id}\n` +
-    (tx.destinationDetails ? `🏦 *भुगतान माध्यम (Destination):* ${tx.destinationDetails}\n` : '') +
-    `📅 *समय (Date & Time):* ${new Date(tx.timestamp).toLocaleString('hi-IN')}\n\n` +
-    `🛡️ *पुष्टि:* राशि आपके बैंक/UPI खाते में सुरक्षित क्रेडिट की गई है।\n\n` +
-    `शुभकामनाएं,\n*GCAP Payout Department*`;
+    `आपकी निकासी (Withdrawal) का संपूर्ण विवरण निम्नलिखित है:\n\n` +
+    `👤 *निवेशक का नाम:* ${name}\n` +
+    `💰 *कुल निकासी राशि (Gross):* ${formatINR(gross)}\n` +
+    `📉 *सरकारी TDS कटौती:* -${formatINR(tds)}\n` +
+    (adminFee > 0 ? `💼 *एडमिन सेवा शुल्क:* -${formatINR(adminFee)}\n` : '') +
+    `💳 *खाते में भेजी गई शुद्ध राशि (Net Transferred):* *${formatINR(net)}*\n` +
+    `📊 *भुगतान स्थिति (Status):* *${statusStr}*\n` +
+    (tx.destinationDetails ? `🏦 *प्राप्तकर्ता बैंक/UPI:* ${tx.destinationDetails}\n` : '') +
+    `🔢 *वाउचर / संदर्भ संख्या (Ref ID):* ${tx.referenceId || tx.id}\n` +
+    `📅 *दिनांक व समय:* ${new Date(tx.timestamp || Date.now()).toLocaleString('hi-IN')}\n\n` +
+    (isPaid
+      ? `🛡️ *पुष्टि प्रमाण:* कंपनी मुख्य बैलेंस द्वारा आपके बैंक/UPI खाते में राशि सफलतापूर्वक ट्रांसफर कर दी गई है।\n\n`
+      : `⏳ *समीक्षा:* आपका निकासी अनुरोध एडमिन पैनल में समीक्षाधीन है। अप्रूव होते ही राशि आपके खाते में क्रेडिट होगी।\n\n`) +
+    `*GCAP Global Asset Management & Payouts*`;
 
   return {
     phone: userPhone || tx.userPhone,
@@ -350,7 +360,7 @@ export function createWithdrawalWhatsAppAlert(
     recipientName: name,
     recipientRole: 'INVESTOR',
     amount: gross,
-    referenceId: tx.id,
+    referenceId: tx.referenceId || tx.id,
   };
 }
 

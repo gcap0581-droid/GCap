@@ -441,9 +441,9 @@ export const AdminTransactionsTab: React.FC<AdminTransactionsTabProps> = ({
                           <button
                             onClick={() => {
                               if (t.type === 'DEPOSIT') {
-                                sendWhatsAppAlert(createDepositWhatsAppAlert(t, t.userName));
+                                sendWhatsAppAlert(createDepositWhatsAppAlert(t, t.userName, t.userPhone));
                               } else {
-                                sendWhatsAppAlert(createWithdrawalWhatsAppAlert(t, t.userName));
+                                sendWhatsAppAlert(createWithdrawalWhatsAppAlert(t, t.userName, t.userPhone));
                               }
                             }}
                             className="p-1.5 rounded-lg bg-green-950/80 hover:bg-green-900/90 text-green-400 border border-green-700/60 text-xs transition-all cursor-pointer active:scale-95 shadow-sm"
