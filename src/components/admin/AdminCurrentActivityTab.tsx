@@ -607,7 +607,76 @@ export const AdminCurrentActivityTab: React.FC<AdminCurrentActivityTabProps> = (
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-96 rounded-xl border border-slate-800">
+          {/* Mobile Cards View (< sm) */}
+          <div className="block sm:hidden space-y-2.5">
+            {filteredTransactions.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 font-sans bg-slate-950/60 rounded-xl border border-slate-800 text-xs">
+                {isHi ? 'चयनित दिनांक / फ़िल्टर में कोई लेन-देन रिकॉर्ड नहीं मिला।' : 'No transactions found for the selected filter.'}
+              </div>
+            ) : (
+              filteredTransactions.slice(0, 50).map((t, idx) => {
+                const isPositive = t.type === 'DEPOSIT' || t.type === 'RETURN_PAYOUT' || (t.type as string) === 'ADMIN_ADD';
+                return (
+                  <div
+                    key={`${t.id || 'txn'}-${idx}`}
+                    className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2 text-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                              isPositive
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            }`}
+                          >
+                            {t.type}
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-400">
+                            {t.referenceId || t.id.slice(-8)}
+                          </span>
+                        </div>
+                        <div className="font-bold text-white text-xs mt-1">
+                          {t.userName || t.actor || 'User'}
+                          {t.userPhone && <span className="text-[10px] text-slate-400 font-mono ml-1.5 font-normal">{t.userPhone}</span>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-mono font-bold text-sm ${isPositive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                          {isPositive ? '+' : '-'}{formatINR(t.amount || 0)}
+                        </div>
+                        <span
+                          className={`inline-block text-[9px] font-bold px-1.5 py-0.2 rounded mt-0.5 ${
+                            t.status === 'SUCCESS'
+                              ? 'bg-emerald-500/10 text-emerald-400'
+                              : t.status === 'PENDING'
+                              ? 'bg-amber-500/10 text-amber-400'
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}
+                        >
+                          {t.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {(t.note || t.noteHi) && (
+                      <p className="text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800/40 leading-relaxed">
+                        {isHi ? t.noteHi || t.note : t.note}
+                      </p>
+                    )}
+
+                    <div className="text-[10px] text-slate-500 font-mono text-right">
+                      {new Date(t.date || t.timestamp || Date.now()).toLocaleString()}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= sm) */}
+          <div className="hidden sm:block overflow-x-auto max-h-96 rounded-xl border border-slate-800">
             <table className="w-full text-left border-collapse text-xs min-w-[760px]">
               <thead>
                 <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 sticky top-0 z-10 whitespace-nowrap">

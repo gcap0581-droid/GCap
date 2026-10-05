@@ -12,10 +12,11 @@
       "passwordHash": "ad123",
       "password": "ad123",
       "lastLoginAt": "2026-10-03T00:25:47.000Z",
-      "isOnline": true,
+      "isOnline": false,
       "device": "Android Smartphone (Google Chrome Mobile)",
       "lastDevice": "Android Smartphone (Google Chrome Mobile)",
-      "lastActiveAt": "2026-10-05T08:46:26.224Z"
+      "lastActiveAt": "2026-10-05T09:15:39.745Z",
+      "lastLogoutAt": "2026-10-05T09:15:39.745Z"
     },
     {
       "id": "usr-1789384741169",
@@ -63,11 +64,11 @@
       "passwordHash": "1111",
       "password": "1111",
       "lastLoginAt": "2026-10-05T08:40:52.065Z",
-      "lastActiveAt": "2026-10-05T08:42:55.835Z",
+      "lastActiveAt": "2026-10-05T09:07:19.050Z",
       "isOnline": false,
       "device": "Android Smartphone (Google Chrome Mobile)",
       "lastDevice": "Android Smartphone (Google Chrome Mobile)",
-      "lastLogoutAt": "2026-10-05T08:42:55.835Z"
+      "lastLogoutAt": "2026-10-05T09:07:19.050Z"
     }
   ],
   "wallets": {
@@ -115,7 +116,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 2193920,
+      "totalEarned": 5363680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -125,7 +126,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 2193920,
+      "totalEarned": 5363680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -135,7 +136,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 2193920,
+      "totalEarned": 5363680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -164,7 +165,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 2193920,
+      "totalEarned": 5363680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -174,7 +175,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 2193920,
+      "totalEarned": 5363680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -401,6 +402,21 @@
   ],
   "transactions": [
     {
+      "id": "txn-cyc-auto-inv-amit-7564841400-641-23",
+      "userId": "usr-1790000000555",
+      "userLoginId": "7564841400",
+      "userName": "Amit Kumar",
+      "userPhone": "+91 7564841400",
+      "type": "RETURN_PAYOUT",
+      "amount": 40,
+      "date": "2026-10-05T08:40:27.133Z",
+      "timestamp": 1791189627132,
+      "status": "SUCCESS",
+      "referenceId": "CYC47335165",
+      "note": "6-Hour Cycle #23 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
+      "noteHi": "6 घंटे के चक्र #23 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
+    },
+    {
       "id": "txn-cyc-auto-inv-sandhya-7808056040-2-70",
       "userId": "usr-1789384741169",
       "userLoginId": "7808056040",
@@ -429,21 +445,6 @@
       "referenceId": "CYC29126790",
       "note": "6-Hour Cycle #70 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
       "noteHi": "6 घंटे के चक्र #70 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
-    },
-    {
-      "id": "txn-cyc-auto-inv-amit-7564841400-641-23",
-      "userId": "usr-1790000000555",
-      "userLoginId": "7564841400",
-      "userName": "Amit Kumar",
-      "userPhone": "+91 7564841400",
-      "type": "RETURN_PAYOUT",
-      "amount": 40,
-      "date": "2026-10-05T08:40:27.133Z",
-      "timestamp": 1791189627132,
-      "status": "SUCCESS",
-      "referenceId": "CYC47335165",
-      "note": "6-Hour Cycle #23 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
-      "noteHi": "6 घंटे के चक्र #23 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
     },
     {
       "id": "txn-cyc-inv-amit-7564841400-641-23",
@@ -3159,5 +3160,5 @@
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
     "lastUpdated": "2026-09-30T16:31:07.308Z"
   },
-  "lastUpdated": "2026-10-05T08:46:26.224Z"
+  "lastUpdated": "2026-10-05T09:21:40.571Z"
 }
