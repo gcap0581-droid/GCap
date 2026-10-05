@@ -463,9 +463,28 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.supportPhone || ''}
                   onChange={(e) => handleChange('supportPhone', e.target.value)}
-                  placeholder="+91 98000 12345"
+                  placeholder="+91 8503504808"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-emerald-400 font-black mb-1 flex items-center gap-1.5">
+                  <span>📲 {isHi ? 'एडमिन WhatsApp अलर्ट नंबर (Admin WhatsApp):' : 'Admin Alert WhatsApp Number:'}</span>
+                  <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                    {isHi ? 'पेमेंट अलर्ट यहीं आएंगे' : 'Payment Alerts Target'}
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.adminWhatsAppNumber || ''}
+                  onChange={(e) => handleChange('adminWhatsAppNumber', e.target.value)}
+                  placeholder="+91 8603504808"
+                  className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3.5 py-2 text-emerald-300 font-bold font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  {isHi ? '💡 जब भी कोई यूजर डिपॉजिट या विथड्रॉल करेगा, इसी नंबर के WhatsApp पर सूचना आएगी।' : '💡 Instant payment and withdrawal alert messages will be sent to this WhatsApp number.'}
+                </span>
               </div>
 
               <div>

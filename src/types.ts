@@ -169,6 +169,7 @@ export interface AppRules {
   longTerm6hRate?: number;  // 6-hour ROI for Long Term Plan
   supportEmail: string;
   supportPhone: string;
+  adminWhatsAppNumber?: string;
   lastUpdated: string;
   companyUpiId?: string;
   companyBankAccountHolder?: string;
@@ -277,6 +278,7 @@ export interface CompanyProfile {
   legalEmail?: string; // e.g. "legal@gcap.in"
   supportPhone?: string; // e.g. "+91 8503504808"
   altPhone?: string; // e.g. "+91 6184 220011"
+  adminWhatsAppNumber?: string; // e.g. "+91 8603504808" for receiving instant deposit/withdrawal WhatsApp alerts
   websiteUrl?: string; // e.g. "https://gcap.in"
   authorizedSignatory?: string; // e.g. "Amit Kumar"
   signatoryDesignation?: string; // e.g. "Director & Authorized Signatory"

@@ -5,6 +5,7 @@
 
 import { formatINR } from './storage';
 import { getStoredCompanyProfile } from './companyStorage';
+import { getStoredRules } from './rulesStorage';
 import { Transaction, UserProfile, ActiveInvestment } from '../types';
 
 export interface WhatsAppAlertOptions {
@@ -29,6 +30,21 @@ export function formatPhoneNumberForWhatsApp(rawPhone?: string): string {
     return digits;
   }
   return digits;
+}
+
+/**
+ * Gets the configured Admin Alert WhatsApp Number
+ */
+export function getAdminWhatsAppAlertNumber(): string {
+  const profile = getStoredCompanyProfile();
+  if (profile.adminWhatsAppNumber && profile.adminWhatsAppNumber.trim()) {
+    return profile.adminWhatsAppNumber.trim();
+  }
+  const rules = getStoredRules();
+  if (rules.adminWhatsAppNumber && rules.adminWhatsAppNumber.trim()) {
+    return rules.adminWhatsAppNumber.trim();
+  }
+  return profile.supportPhone || '+91 8603504808';
 }
 
 /**
@@ -61,7 +77,76 @@ export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
 }
 
 /**
- * Prepares a formatted Deposit Alert message
+ * Prepares a formatted Deposit Alert message to Admin's WhatsApp
+ */
+export function createAdminDepositAlertMessage(
+  tx: Partial<Transaction>,
+  userName?: string,
+  userLoginId?: string,
+  userPhone?: string
+): WhatsAppAlertOptions {
+  const profile = getStoredCompanyProfile();
+  const companyName = profile.companyName || 'GCAP CAPITAL PRIVATE LIMITED';
+  const adminPhone = getAdminWhatsAppAlertNumber();
+  const amountStr = formatINR(tx.amount || 0);
+
+  const message = `*🚨 नया डिपॉजिट भुगतान अलर्ट (New Deposit Alert)*\n\n` +
+    `*🏛️ कंपनी:* ${companyName}\n\n` +
+    `👤 *निवेशक का नाम:* ${userName || tx.userName || 'निवेशक'}\n` +
+    (userLoginId ? `🆔 *यूज़र आईडी:* ${userLoginId}\n` : '') +
+    (userPhone ? `📱 *मोबाइल नंबर:* ${userPhone}\n` : '') +
+    `💵 *जमा राशि (Amount):* *${amountStr}*\n` +
+    `💳 *भुगतान विधि:* ${tx.method || 'UPI / QR'}\n` +
+    (tx.referenceId ? `🏷️ *UTR / Ref No:* ${tx.referenceId}\n` : '') +
+    `🔢 *लेनदेन आईडी:* ${tx.id || 'GCAP-TX-' + Date.now().toString().slice(-6)}\n` +
+    `📅 *दिनांक व समय:* ${new Date(tx.timestamp || Date.now()).toLocaleString('hi-IN')}\n\n` +
+    `🔒 *कार्रवाई आवश्यक:* कृपया एडमिन पैनल में जाकर पेमेंट स्लिप जांचें और अप्रूव करें।\n\n` +
+    `*GCAP Global Asset Management Portal*`;
+
+  return {
+    phone: adminPhone,
+    message,
+  };
+}
+
+/**
+ * Prepares a formatted Withdrawal Request message to Admin's WhatsApp
+ */
+export function createAdminWithdrawalAlertMessage(
+  tx: Partial<Transaction>,
+  userName?: string,
+  userLoginId?: string,
+  userPhone?: string
+): WhatsAppAlertOptions {
+  const profile = getStoredCompanyProfile();
+  const companyName = profile.companyName || 'GCAP CAPITAL PRIVATE LIMITED';
+  const adminPhone = getAdminWhatsAppAlertNumber();
+  const gross = tx.grossAmount ?? tx.amount ?? 0;
+  const tds = tx.tdsAmount ?? 0;
+  const net = tx.netAmount ?? (gross - tds);
+
+  const message = `*🚨 नया निकासी अनुरोध अलर्ट (New Withdrawal Request)*\n\n` +
+    `*🏛️ कंपनी:* ${companyName}\n\n` +
+    `👤 *निवेशक का नाम:* ${userName || tx.userName || 'निवेशक'}\n` +
+    (userLoginId ? `🆔 *यूज़र आईडी:* ${userLoginId}\n` : '') +
+    (userPhone ? `📱 *मोबाइल नंबर:* ${userPhone}\n` : '') +
+    `💰 *कुल निकासी (Gross):* ${formatINR(gross)}\n` +
+    `📉 *TDS कटौती:* ${formatINR(tds)}\n` +
+    `💳 *नेट भुगतेय राशि (Net Payable):* *${formatINR(net)}*\n` +
+    `🏦 *भुगतान माध्यम:* ${tx.destinationDetails || tx.method || 'UPI / Bank'}\n` +
+    `🔢 *अनुरोध आईडी:* ${tx.id || tx.referenceId || 'GCAP-WDR-' + Date.now().toString().slice(-6)}\n` +
+    `📅 *दिनांक व समय:* ${new Date(tx.timestamp || Date.now()).toLocaleString('hi-IN')}\n\n` +
+    `🔒 *कार्रवाई:* कृपया एडमिन पैनल में जाकर फंड ट्रांसफर करें और अप्रूव करें।\n\n` +
+    `*GCAP Payout Management*`;
+
+  return {
+    phone: adminPhone,
+    message,
+  };
+}
+
+/**
+ * Prepares a formatted Deposit Alert message to User's WhatsApp
  */
 export function createDepositWhatsAppAlert(
   tx: Transaction,
@@ -92,7 +177,7 @@ export function createDepositWhatsAppAlert(
 }
 
 /**
- * Prepares a formatted Withdrawal Alert message
+ * Prepares a formatted Withdrawal Alert message to User's WhatsApp
  */
 export function createWithdrawalWhatsAppAlert(
   tx: Transaction,

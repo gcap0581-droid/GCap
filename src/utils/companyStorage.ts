@@ -25,6 +25,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   legalEmail: 'legal@gcap.in',
   supportPhone: '+91 8503504808',
   altPhone: '+91 6184 220011',
+  adminWhatsAppNumber: '+91 8603504808',
   websiteUrl: 'https://gcap.in',
   authorizedSignatory: 'Amit Kumar',
   signatoryDesignation: 'Director & Authorized Signatory',

@@ -44,6 +44,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   longTerm6hRate: 0.033,
   supportEmail: 'support@gcap.in',
   supportPhone: '+91 98000 12345',
+  adminWhatsAppNumber: '+91 8603504808',
   lastUpdated: '2026-09-29',
   companyUpiId: '8603504808@axisbank',
   companyBankAccountHolder: 'GCAP PRIVATE LIMITED',

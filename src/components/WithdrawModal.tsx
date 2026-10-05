@@ -12,10 +12,13 @@ import {
   Sparkles,
   Award,
   Wallet as WalletIcon,
+  MessageCircle,
+  Send,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Language, Wallet, AppRules, WithdrawalSource, UserProfile, Transaction } from '../types';
 import { formatINR, getStoredBankDetails } from '../utils/storage';
+import { sendWhatsAppAlert, createAdminWithdrawalAlertMessage } from '../utils/whatsappHelper';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -106,6 +109,37 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [accountName, setAccountName] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [submittedData, setSubmittedData] = useState<{
+    amount: number;
+    netAmount: number;
+    destination: string;
+    ref: string;
+    source: WithdrawalSource;
+  } | null>(null);
+
+  const handleNotifyAdminWhatsApp = (
+    withdrawGross: number,
+    withdrawNet: number,
+    destination: string,
+    ref: string
+  ) => {
+    const alertData = createAdminWithdrawalAlertMessage(
+      {
+        amount: withdrawGross,
+        grossAmount: withdrawGross,
+        tdsAmount: Math.round(((withdrawGross * tdsPercent) / 100) * 100) / 100,
+        netAmount: withdrawNet,
+        destinationDetails: destination,
+        id: ref,
+        referenceId: ref,
+        timestamp: Date.now(),
+      },
+      accountName || currentUser?.name || 'निवेशक',
+      currentUser?.id,
+      currentUser?.phone
+    );
+    sendWhatsAppAlert(alertData);
+  };
 
   const prevIsOpenRef = React.useRef<boolean>(false);
   const prevSourceRef = React.useRef<WithdrawalSource>(withdrawalSource);
@@ -255,8 +289,19 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       };
 
       onWithdrawSuccess(amount, destinationStr, randomRef, withdrawalSource, voucherDetails);
-      onClose();
+      setSubmittedData({
+        amount,
+        netAmount: netPayable,
+        destination: destinationStr,
+        ref: randomRef,
+        source: withdrawalSource,
+      });
     }, 1200);
+  };
+
+  const handleCloseModal = () => {
+    setSubmittedData(null);
+    onClose();
   };
 
   return (
@@ -288,15 +333,82 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
           <button
             id="btn-close-withdraw"
-            onClick={onClose}
+            onClick={handleCloseModal}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-5">
+        {/* SUBMITTED SUCCESS VIEW WITH 1-CLICK ADMIN WHATSAPP */}
+        {submittedData ? (
+          <div className="p-6 space-y-5 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/40 flex items-center justify-center mx-auto shadow-lg animate-bounce">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-white">
+                {isHi ? '🎉 निकासी अनुरोध सफलतापूर्वक दर्ज हुआ!' : '🎉 Withdrawal Request Submitted!'}
+              </h3>
+              <p className="text-xs text-slate-300">
+                {isHi
+                  ? 'आपका निकासी अनुरोध एडमिन सत्यापन एवं बैंक ट्रांसफर हेतु दर्ज हो गया है।'
+                  : 'Your withdrawal request has been submitted for admin verification and payout.'}
+              </p>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2 text-left">
+              <div className="flex justify-between border-b border-slate-800 pb-1.5">
+                <span className="text-slate-400">{isHi ? 'कुल निकासी (Gross):' : 'Gross Amount:'}</span>
+                <span className="font-mono text-white font-bold">{formatINR(submittedData.amount)}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1.5">
+                <span className="text-slate-400">{isHi ? 'नेट भुगतेय (Net Payout):' : 'Net Payout:'}</span>
+                <span className="font-bold text-emerald-400 font-mono text-sm">{formatINR(submittedData.netAmount)}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-800 pb-1.5">
+                <span className="text-slate-400">{isHi ? 'भुगतान खाता / UPI:' : 'Destination:'}</span>
+                <span className="font-mono text-slate-200">{submittedData.destination}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">{isHi ? 'अनुरोध आईडी:' : 'Ref ID:'}</span>
+                <span className="font-mono text-amber-300 font-bold">{submittedData.ref}</span>
+              </div>
+            </div>
+
+            {/* 1-Click Notify Admin on WhatsApp Button */}
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => handleNotifyAdminWhatsApp(submittedData.amount, submittedData.netAmount, submittedData.destination, submittedData.ref)}
+                className="w-full py-3.5 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-green-950/60 transition-all cursor-pointer active:scale-95 animate-pulse"
+              >
+                <MessageCircle className="w-5 h-5 fill-current" />
+                <span>{isHi ? '📲 एडमिन को WhatsApp पर निकासी सूचना भेजें' : '📲 Send Withdrawal Alert to Admin WhatsApp'}</span>
+              </button>
+              <p className="text-[11px] text-slate-400">
+                {isHi
+                  ? '💡 इस बटन पर क्लिक करने से एडमिन को तुरंत WhatsApp पर सूचना चली जाएगी ताकि भुगतान जल्द हो सके।'
+                  : '💡 Tapping this opens WhatsApp directly to notify Admin for instant payout.'}
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                {isHi ? 'बंद करें (Done)' : 'Close'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* REGULAR WITHDRAWAL FORM */
+          <>
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5">
 
           {/* Quick Date Simulator Switch for Seamless Verification */}
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
@@ -807,6 +919,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             </button>
           </div>
         </div>
+      </>
+    )}
 
       </div>
     </div>
