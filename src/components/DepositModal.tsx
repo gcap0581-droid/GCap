@@ -128,6 +128,10 @@ export const DepositModal: React.FC<DepositModalProps> = ({
       });
 
       onDepositSuccess(amount, methodStr, generatedRef);
+      
+      // Automatically send WhatsApp alert to admin
+      handleNotifyAdminWhatsApp(amount, methodStr, generatedRef);
+
       setSubmittedData({ amount, method: methodStr, ref: generatedRef });
     }, 1000);
   };

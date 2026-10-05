@@ -289,6 +289,10 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       };
 
       onWithdrawSuccess(amount, destinationStr, randomRef, withdrawalSource, voucherDetails);
+      
+      // Automatically send WhatsApp alert to admin
+      handleNotifyAdminWhatsApp(amount, netPayable, destinationStr, randomRef);
+
       setSubmittedData({
         amount,
         netAmount: netPayable,

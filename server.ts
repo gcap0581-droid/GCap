@@ -1289,13 +1289,7 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
 
   if (userInvs.length > 0) {
     const dynamicInvested = userInvs.reduce((sum: number, inv: any) => sum + (inv.investedAmount || inv.amount || 0), 0);
-    const dynamicShortEarned = userInvs.filter((inv: any) => inv.royaltyStage !== '1825D_ROYALTY').reduce((sum: number, inv: any) => {
-      const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar >= 0)
-        ? inv.earnedSoFar
-        : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar >= 0) ? inv.totalEarnedSoFar : 0);
-      return sum + e;
-    }, 0);
-    const dynamicRoyaltyEarned = userInvs.filter((inv: any) => inv.royaltyStage === '1825D_ROYALTY').reduce((sum: number, inv: any) => {
+    const dynamicEarned = userInvs.reduce((sum: number, inv: any) => {
       const e = (typeof inv.earnedSoFar === 'number' && inv.earnedSoFar >= 0)
         ? inv.earnedSoFar
         : ((typeof inv.totalEarnedSoFar === 'number' && inv.totalEarnedSoFar >= 0) ? inv.totalEarnedSoFar : 0);
@@ -1305,13 +1299,8 @@ function getBestUserWallet(db: any, reqUserId: string, foundUser?: any): Wallet 
     if (bestWallet.totalInvested === 0 && dynamicInvested > 0) {
       bestWallet.totalInvested = dynamicInvested;
     }
-    const netShortAvailable = Math.max(0, dynamicShortEarned - (bestWallet.totalWithdrawn || 0));
-    // Self-healing: if wallet totalEarned was 0 OR became corrupted/inflated beyond actual investment earnings, heal it
-    if (dynamicShortEarned > 0 && ((bestWallet.totalWithdrawn || 0) === 0 || bestWallet.totalEarned === 0 || bestWallet.totalEarned > dynamicShortEarned * 1.5)) {
-      bestWallet.totalEarned = Math.round(netShortAvailable * 100) / 100;
-    }
-    if (dynamicRoyaltyEarned > 0 && ((bestWallet.royaltyEarned || 0) === 0 || (bestWallet.royaltyEarned || 0) > dynamicRoyaltyEarned * 1.5)) {
-      bestWallet.royaltyEarned = Math.round(dynamicRoyaltyEarned * 100) / 100;
+    if (bestWallet.totalEarned === 0 && (bestWallet.totalWithdrawn || 0) === 0 && dynamicEarned > 0) {
+      bestWallet.totalEarned = Math.round(dynamicEarned * 100) / 100;
     }
   }
 
@@ -1416,16 +1405,12 @@ function processServerSideCycles(db: ServerDB): boolean {
           const user = findUserInDb(db, inv.userId);
           const keys = getAllUserWalletKeys(db, inv.userId, user);
           let bestWallet = getBestUserWallet(db, inv.userId, user);
-          
-          const userInvs = (db.investments || []).filter((i: any) => i && (i.userId === inv.userId || (user && i.userLoginId === user.loginId)));
-          const userShortEarned = userInvs.filter((i: any) => i.royaltyStage !== "1825D_ROYALTY").reduce((sum: number, i: any) => sum + (i.earnedSoFar || i.totalEarnedSoFar || 0), 0);
-          const userRoyaltyEarned = userInvs.filter((i: any) => i.royaltyStage === "1825D_ROYALTY").reduce((sum: number, i: any) => sum + (i.earnedSoFar || i.totalEarnedSoFar || 0), 0);
-          const totalWithdrawn = (bestWallet.totalWithdrawn || 0);
-
           if (isRoyaltyPlan) {
-            bestWallet.royaltyEarned = Math.max(0, Math.round(userRoyaltyEarned * 100) / 100);
+            bestWallet.royaltyEarned = Math.round(((bestWallet.royaltyEarned || 0) + earningsToAdd) * 100) / 100;
           } else {
-            bestWallet.totalEarned = Math.max(0, Math.round((userShortEarned - totalWithdrawn) * 100) / 100);
+            const currentTotalGen = (bestWallet.totalEarned || 0) + earningsToAdd;
+            const netAvailable = Math.max(0, currentTotalGen - (bestWallet.totalWithdrawn || 0));
+            bestWallet.totalEarned = Math.round(netAvailable * 100) / 100;
           }
           keys.forEach((k) => {
             if (k && db.wallets) db.wallets[k] = { ...bestWallet };
@@ -1965,6 +1950,14 @@ function ensureDb(): ServerDB {
         }
       });
       parsed.investments.forEach((i: any) => {
+        if (i.id === "inv-amit-7564841400-641" || i.userLoginId === "7564841400" || i.userId === "usr-1790000000555") {
+          i.completedCyclesCount = 1;
+          i.cyclesCompleted = 1;
+          i.earnedSoFar = 40;
+          i.totalEarnedSoFar = 40;
+          i.unclaimedEarnings = 40;
+          needsSave = true;
+        }
         if (i.userLoginId === "917808056040") {
           i.userLoginId = "7808056040";
           needsSave = true;
@@ -2019,10 +2012,7 @@ function ensureDb(): ServerDB {
           best.totalInvested = dynamicInvested;
         }
         if (dynamicEarned > 0) {
-          const netAvailable = Math.max(0, dynamicEarned - (best.totalWithdrawn || 0));
-          if (best.totalEarned === 0 || (best.totalWithdrawn || 0) === 0 || best.totalEarned > dynamicEarned * 1.2) {
-            best.totalEarned = Math.round(netAvailable * 100) / 100;
-          }
+          best.totalEarned = Math.max(best.totalEarned || 0, Math.round(dynamicEarned * 100) / 100);
         }
 
         keys.forEach((k) => {
@@ -3488,8 +3478,18 @@ GCap में काम कैसे होता है:
       wallet.gpBalance = (wallet.gpBalance || 0) + gpEarned;
     } else if (transaction.type === "DEPOSIT" && transaction.status === "PENDING") {
       wallet.pendingDeposits = (wallet.pendingDeposits || 0) + Number(transaction.amount || 0);
-    } else if (transaction.type === "WITHDRAWAL" && transaction.status === "PENDING") {
-      wallet.pendingWithdrawals = (wallet.pendingWithdrawals || 0) + Number(transaction.amount || 0);
+    } else if (transaction.type === "WITHDRAWAL") {
+      const wAmt = Number(transaction.grossAmount || transaction.amount || 0);
+      if (transaction.withdrawalSource === "ROYALTY") {
+        wallet.royaltyEarned = Math.max(0, (wallet.royaltyEarned || 0) - wAmt);
+      } else if (transaction.withdrawalSource === "CASH") {
+        wallet.cashBalance = Math.max(0, (wallet.cashBalance || 0) - wAmt);
+      } else {
+        wallet.totalEarned = Math.max(0, (wallet.totalEarned || 0) - wAmt);
+      }
+      if (transaction.status === "PENDING") {
+        wallet.pendingWithdrawals = (wallet.pendingWithdrawals || 0) + Number(transaction.amount || 0);
+      }
     } else if (transaction.type === "REFERRAL_BONUS") {
       wallet.cashBalance = (wallet.cashBalance || 0) + Number(transaction.amount || 0);
       wallet.totalEarned = (wallet.totalEarned || 0) + Number(transaction.amount || 0);
