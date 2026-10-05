@@ -1918,9 +1918,9 @@ function ensureDb(): ServerDB {
         dailyReturnAmount: 160,
         durationDays: 641,
         daysCompleted: 0,
-        earnedSoFar: 40,
-        totalEarnedSoFar: 40,
-        unclaimedEarnings: 40,
+        earnedSoFar: 960,
+        totalEarnedSoFar: 960,
+        unclaimedEarnings: 960,
         claimedSoFar: 0,
         totalExpectedReturn: 102560,
         startDate: "2026-09-28T10:30:00.000Z",
@@ -1931,8 +1931,8 @@ function ensureDb(): ServerDB {
         lockedUntilTimestamp: 1790677800000,
         isInitialLockCompleted: true,
         lockCongratulationsShown: true,
-        completedCyclesCount: 1,
-        cyclesCompleted: 1,
+        completedCyclesCount: 24,
+        cyclesCompleted: 24,
         totalWithdrawn: 0,
         cycleDurationHours: 6,
         cycleReturnAmount: 40
@@ -1950,12 +1950,12 @@ function ensureDb(): ServerDB {
         }
       });
       parsed.investments.forEach((i: any) => {
-        if (i.id === "inv-amit-7564841400-641" || i.userLoginId === "7564841400" || i.userId === "usr-1790000000555") {
-          i.completedCyclesCount = 1;
-          i.cyclesCompleted = 1;
-          i.earnedSoFar = 40;
-          i.totalEarnedSoFar = 40;
-          i.unclaimedEarnings = 40;
+        if (i.id === "inv-amit-7564841400-641" || i.userLoginId === "7564841400" || i.userId === "usr-1790000000555" || i.userLoginId === "amitarya8308061" || i.userPhone === "7808056040") {
+          i.completedCyclesCount = 24;
+          i.cyclesCompleted = 24;
+          i.earnedSoFar = 960;
+          i.totalEarnedSoFar = 960;
+          i.unclaimedEarnings = 960;
           needsSave = true;
         }
         if (i.userLoginId === "917808056040") {
@@ -2460,14 +2460,24 @@ async function startServer() {
             if (!iLocal) {
               invMap.set(iRemote.id, iRemote);
             } else {
-              // Prefer whichever record has higher cyclesCompleted or higher earnedSoFar
-              const localCycles = (iLocal.cyclesCompleted || 0);
-              const remoteCycles = (iRemote.cyclesCompleted || 0);
-              const localEarned = (iLocal.earnedSoFar || iLocal.totalEarnedSoFar || 0);
-              const remoteEarned = (iRemote.earnedSoFar || iRemote.totalEarnedSoFar || 0);
-              if (remoteCycles > localCycles || (remoteCycles === localCycles && remoteEarned > localEarned)) {
-                invMap.set(iRemote.id, iRemote);
-              }
+              // Prefer whichever record has higher cyclesCompleted or higher earnedSoFar, preserving max progress
+              const localCycles = Math.max(iLocal.completedCyclesCount || 0, iLocal.cyclesCompleted || 0);
+              const remoteCycles = Math.max(iRemote.completedCyclesCount || 0, iRemote.cyclesCompleted || 0);
+              const localEarned = Math.max(iLocal.earnedSoFar || 0, iLocal.totalEarnedSoFar || 0);
+              const remoteEarned = Math.max(iRemote.earnedSoFar || 0, iRemote.totalEarnedSoFar || 0);
+              
+              const maxCycles = Math.max(localCycles, remoteCycles);
+              const maxEarned = Math.max(localEarned, remoteEarned);
+
+              const mergedInv = {
+                ...iLocal,
+                ...iRemote,
+                completedCyclesCount: maxCycles,
+                cyclesCompleted: maxCycles,
+                earnedSoFar: maxEarned,
+                totalEarnedSoFar: maxEarned,
+              };
+              invMap.set(iRemote.id, mergedInv);
             }
           });
 

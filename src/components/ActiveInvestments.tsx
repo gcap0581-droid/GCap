@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, CheckCircle, Sparkles, Lock, ArrowRight, Zap, RefreshCw, AlertCircle, ShieldCheck, Search, Award, FileText, ArrowUpRight, DollarSign } from 'lucide-react';
-import { ActiveInvestment, Language, AppRules } from '../types';
+import { ActiveInvestment, Language, AppRules, Wallet, Transaction } from '../types';
 import { formatINR } from '../utils/storage';
 import { formatFixedSlotTime, FIXED_SLAB_LABELS } from '../utils/cycleTiming';
 
@@ -8,6 +8,8 @@ interface ActiveInvestmentsProps {
   investments: ActiveInvestment[];
   language: Language;
   rules?: AppRules | null;
+  wallet?: Wallet | null;
+  transactions?: Transaction[];
   onClaimReturn?: (investmentId: string) => void;
   onNavigateToPlans: () => void;
   onSimulateComplete24hLock?: (investmentId: string) => void;
@@ -47,6 +49,8 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
   investments,
   language,
   rules,
+  wallet,
+  transactions,
   onClaimReturn,
   onNavigateToPlans,
   onSimulateComplete24hLock,
@@ -99,8 +103,24 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
     return sum + Math.max(invEarned, calcEarned);
   }, 0) * 100) / 100;
 
-  const totalWithdrawnSoFar = investments.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
-  const netAvailableEarning = Math.max(0, totalEarnedSoFar - totalWithdrawnSoFar);
+  // Calculate actual remaining available earnings balance from wallet
+  const walletEarnings = wallet && typeof wallet.totalEarned === 'number' ? wallet.totalEarned : null;
+
+  // Calculate total withdrawals from transactions array or investment history
+  const withdrawalTxnsSum = (transactions || [])
+    .filter((t) => t && t.type === 'WITHDRAWAL' && t.status !== 'REJECTED')
+    .reduce((sum, t) => sum + (t.grossAmount || t.amount || 0), 0);
+
+  const invWithdrawnSum = investments.reduce((sum, inv) => sum + (inv.totalWithdrawn || 0), 0);
+  const actualWithdrawn = Math.max(withdrawalTxnsSum, invWithdrawnSum);
+
+  const netAvailableEarning = walletEarnings !== null
+    ? walletEarnings
+    : Math.max(0, totalEarnedSoFar - actualWithdrawn);
+
+  const totalWithdrawnSoFar = actualWithdrawn > 0
+    ? actualWithdrawn
+    : Math.max(0, totalEarnedSoFar - netAvailableEarning);
 
   // Filter investments by Plan ID search query
   const filteredInvestments = investments.filter((inv) => {

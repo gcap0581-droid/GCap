@@ -94,62 +94,62 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* Hero Showcase Banner Slider */}
+      {/* Hero Showcase Banner Slider with Fixed Frame Height */}
       <div 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
-        className={`relative overflow-hidden rounded-3xl border bg-gradient-to-r ${currentDeal.gradient} p-5 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur-2xl transition-all duration-300 min-h-[200px] sm:min-h-[210px] flex flex-col justify-between`}
+        className={`relative overflow-hidden rounded-3xl border bg-gradient-to-r ${currentDeal.gradient} p-4 sm:p-5 shadow-2xl shadow-black/50 backdrop-blur-2xl h-[235px] sm:h-[210px] flex flex-col justify-between select-none`}
       >
         {/* Background glow orbs */}
         <div className="absolute -right-10 -bottom-10 w-52 h-52 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute left-1/3 -top-10 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-2.5 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[10px] sm:text-xs uppercase px-3 py-1 rounded-full shadow-md ${currentDeal.tagColor}`}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 relative z-10 h-full overflow-hidden">
+          <div className="space-y-1.5 max-w-2xl flex-1 overflow-hidden">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`text-[10px] sm:text-xs uppercase px-2.5 py-0.5 rounded-full shadow-md font-extrabold ${currentDeal.tagColor}`}>
                 {currentDeal.tag}
               </span>
-              <span className="text-[10px] text-slate-300 bg-slate-950/80 px-2.5 py-1 rounded-full border border-slate-800 flex items-center gap-1.5 font-mono shadow-sm">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[10px] text-slate-300 bg-slate-950/80 px-2 py-0.5 rounded-full border border-slate-800 flex items-center gap-1 font-mono shadow-sm">
+                <Clock className="w-3 h-3 text-amber-400" />
                 {isHi ? 'सीमित समय ऑफर' : 'Limited Period Offer'}
               </span>
             </div>
 
-            <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug line-clamp-1 font-display">
+            <h2 className="text-sm sm:text-base md:text-lg font-black text-white tracking-tight leading-snug truncate font-display">
               {currentDeal.title}
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">
+            <p className="text-[11px] sm:text-xs text-slate-300 leading-snug line-clamp-2 h-[32px] sm:h-[36px] overflow-hidden">
               {currentDeal.desc}
             </p>
 
             {/* Micro action tags */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-300">
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                {isHi ? '100% मूलधन सुरक्षित' : '100% Principal Safe'}
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] sm:text-[11px] text-slate-300">
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm">
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                {isHi ? '100% मूलधन सुरक्षित' : '100% Safe'}
               </span>
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
-                {isHi ? 'हर 6 घंटे में रिटर्न' : 'Payout Every 6h'}
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm">
+                <Flame className="w-3 h-3 text-amber-400" />
+                {isHi ? 'हर 6h में रिटर्न' : 'Every 6h'}
               </span>
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
-                <Percent className="w-3.5 h-3.5 text-cyan-400" />
-                {isHi ? '0% निकासी चार्ज' : '0% Withdrawal Charge'}
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm">
+                <Percent className="w-3 h-3 text-cyan-400" />
+                {isHi ? '0% निकासी शुल्क' : '0% Fee'}
               </span>
             </div>
           </div>
 
           {/* Right side Deal Badge & Button */}
-          <div className="flex sm:flex-col items-center sm:items-end justify-between w-full md:w-auto gap-3.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/80">
-            <div className="text-left sm:text-right">
-              <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight">
+          <div className="flex items-center md:flex-col md:items-end justify-between w-full md:w-auto gap-2.5 shrink-0 pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+            <div className="text-left md:text-right">
+              <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight leading-none">
                 {currentDeal.badgeText}
               </div>
-              <div className="text-[10px] sm:text-xs text-slate-400 uppercase font-bold tracking-wider">
+              <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                 {currentDeal.badgeSub}
               </div>
             </div>
@@ -162,16 +162,16 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
                   onNavigateTab(currentDeal.targetTab);
                 }
               }}
-              className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-amber-950/30 transition-all cursor-pointer active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-amber-950/30 transition-all cursor-pointer active:scale-95"
             >
               <span>{currentDeal.ctaText}</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {/* Carousel Dots */}
-        <div className="flex items-center justify-center gap-2 pt-3 mt-3 border-t border-slate-800/50">
+        <div className="flex items-center justify-center gap-2 pt-1.5 shrink-0 border-t border-slate-800/50">
           {deals.map((deal, idx) => (
             <button
               key={deal.id}

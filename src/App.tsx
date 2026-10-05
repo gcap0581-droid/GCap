@@ -4374,6 +4374,8 @@ export default function App() {
               investments={investments}
               language={language}
               rules={rules}
+              wallet={wallet}
+              transactions={transactions}
               onClaimReturn={handleClaimSingleReturn}
               onSimulateComplete24hLock={handleSimulateComplete24hLock}
               onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
@@ -4435,6 +4437,8 @@ export default function App() {
             investments={investments}
             language={language}
             rules={rules}
+            wallet={wallet}
+            transactions={transactions}
             onClaimReturn={handleClaimSingleReturn}
             onSimulateComplete24hLock={handleSimulateComplete24hLock}
             onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
@@ -5125,6 +5129,8 @@ export default function App() {
                     investments={investments}
                     language={language}
                     rules={rules}
+                    wallet={wallet}
+                    transactions={transactions}
                     onClaimReturn={handleClaimSingleReturn}
                     onSimulateComplete24hLock={handleSimulateComplete24hLock}
                     onSimulateComplete6hCycle={handleSimulateComplete6hCycle}
