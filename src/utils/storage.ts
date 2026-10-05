@@ -29,12 +29,12 @@ export function getStoredWallet(userId?: string): Wallet {
     const userKey = userId ? `inv_portal_wallet_${userId}` : null;
     const raw = userKey ? localStorage.getItem(userKey) : localStorage.getItem(STORAGE_KEYS.WALLET);
     const invs = getStoredInvestments();
-    const dynamicEarned = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
+    const totalGenerated = Math.round(invs.reduce((sum, inv) => sum + (inv.earnedSoFar || inv.totalEarnedSoFar || 0), 0) * 100) / 100;
 
     if (!raw) {
       const w = {
         ...INITIAL_WALLET,
-        totalEarned: dynamicEarned > 0 ? dynamicEarned : INITIAL_WALLET.totalEarned,
+        totalEarned: totalGenerated > 0 ? totalGenerated : INITIAL_WALLET.totalEarned,
       };
       if (userId) {
         localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(w));
@@ -44,7 +44,9 @@ export function getStoredWallet(userId?: string): Wallet {
       return w;
     }
     const parsed = JSON.parse(raw);
-    let totalEarned = dynamicEarned > 0 ? dynamicEarned : (typeof parsed.totalEarned === 'number' ? parsed.totalEarned : INITIAL_WALLET.totalEarned);
+    const totalWithdrawn = typeof parsed.totalWithdrawn === 'number' ? parsed.totalWithdrawn : 0;
+    const totalEarned = Math.max(0, Math.round((totalGenerated - totalWithdrawn) * 100) / 100);
+
     return {
       cashBalance: typeof parsed.cashBalance === 'number' ? parsed.cashBalance : INITIAL_WALLET.cashBalance,
       gpBalance: typeof parsed.gpBalance === 'number' ? parsed.gpBalance : INITIAL_WALLET.gpBalance,
@@ -53,6 +55,7 @@ export function getStoredWallet(userId?: string): Wallet {
       royaltyEarned: typeof parsed.royaltyEarned === 'number' ? parsed.royaltyEarned : INITIAL_WALLET.royaltyEarned,
       pendingWithdrawals: typeof parsed.pendingWithdrawals === 'number' ? parsed.pendingWithdrawals : 0,
       pendingDeposits: typeof parsed.pendingDeposits === 'number' ? parsed.pendingDeposits : 0,
+      totalWithdrawn,
     };
   } catch {
     return INITIAL_WALLET;

@@ -15,7 +15,7 @@
       "isOnline": true,
       "device": "Android Smartphone (Google Chrome Mobile)",
       "lastDevice": "Android Smartphone (Google Chrome Mobile)",
-      "lastActiveAt": "2026-10-05T07:06:50.675Z"
+      "lastActiveAt": "2026-10-05T07:14:40.683Z"
     },
     {
       "id": "usr-1789384741169",
@@ -113,7 +113,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 4558720,
+      "totalEarned": 5435680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -123,7 +123,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 4558720,
+      "totalEarned": 5435680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -133,7 +133,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 4558720,
+      "totalEarned": 5435680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -162,7 +162,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 4558720,
+      "totalEarned": 5435680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -172,7 +172,7 @@
       "cashBalance": 0,
       "gpBalance": 0,
       "totalInvested": 100000,
-      "totalEarned": 4558720,
+      "totalEarned": 5435680,
       "royaltyEarned": 0,
       "pendingDeposits": 0,
       "pendingWithdrawals": 0,
@@ -3067,5 +3067,5 @@
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
     "lastUpdated": "2026-09-30T16:31:07.308Z"
   },
-  "lastUpdated": "2026-10-05T07:06:51.946Z"
+  "lastUpdated": "2026-10-05T07:14:43.247Z"
 }
