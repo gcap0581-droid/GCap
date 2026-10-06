@@ -31,7 +31,7 @@ export const SuspendedUserModal: React.FC<SuspendedUserModalProps> = ({
       : 'Your account has been temporarily suspended by administration for security or verification purposes.');
 
   const supportPhone = rules?.supportPhone || '+91 98000 12345';
-  const supportEmail = rules?.supportEmail || 'support@gcap.in';
+  const supportEmail = rules?.supportEmail || 'support@gcapopc.com';
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">

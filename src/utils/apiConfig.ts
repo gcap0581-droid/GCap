@@ -24,7 +24,8 @@ export function isDirectServerHost(): boolean {
     host === '127.0.0.1' ||
     host.endsWith('.run.app') ||
     host.endsWith('.onrender.com') ||
-    host.endsWith('.render.com')
+    host.endsWith('.render.com') ||
+    host.endsWith('gcapopc.com')
   );
 }
 

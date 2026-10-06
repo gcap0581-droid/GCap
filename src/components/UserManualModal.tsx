@@ -472,7 +472,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
               <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] text-slate-400">
                 <div className="space-y-0.5 text-left">
                   <div className="font-black text-xs text-white">{profile.companyName}</div>
-                  <div>Email: <span className="text-emerald-400 font-mono font-semibold">{profile.supportEmail || 'support@gcap.in'}</span> | Phone: <span className="text-amber-300 font-mono font-semibold">{profile.supportPhone || '+91 8503504808'}</span></div>
+                  <div>Email: <span className="text-emerald-400 font-mono font-semibold">{profile.supportEmail || 'support@gcapopc.com'}</span> | Phone: <span className="text-amber-300 font-mono font-semibold">{profile.supportPhone || '+91 8503504808'}</span></div>
                   <div className="text-[10px] text-slate-500">Address: {profile.registeredAddress}</div>
                 </div>
                 <div className="text-left sm:text-right shrink-0">

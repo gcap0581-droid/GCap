@@ -23,7 +23,7 @@ export const DEFAULT_SEED_USERS: UserProfile[] = [
     name: 'GCap System Administrator',
     role: 'ADMIN',
     phone: '+91 98000 12345',
-    email: 'admin@gcap.in',
+    email: 'support@gcapopc.com',
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
     passwordHash: 'ad123',

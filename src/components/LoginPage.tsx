@@ -144,7 +144,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         name: 'GCap System Administrator',
         role: 'ADMIN' as const,
         phone: '+91 98000 12345',
-        email: 'admin@gcap.in',
+        email: 'support@gcapopc.com',
         joinedDate: '2026-01-01',
         status: 'ACTIVE' as const,
         isOnline: true,

@@ -611,7 +611,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
         `सभी सम्मानित निवेशकों को सूचित किया जाता है कि मासिक अर्निंग निकासी विंडो 1 से 5 तारीख तक सक्रिय है। साथ ही नए हाई-रिटर्न 6-Hour कम्पाउंडिंग प्रोजेक्ट्स लाइव हो चुके हैं।\n\n` +
         `──────────────────\n` +
         `📞 *हेल्पलाइन:* ${profile.supportPhone || '+91 8503504808'}\n` +
-        `🌐 *वेबसाइट पोर्टल:* https://gcap.in`;
+        `🌐 *वेबसाइट पोर्टल:* https://www.gcapopc.com`;
 
       return {
         phone,

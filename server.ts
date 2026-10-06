@@ -320,7 +320,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     name: "GCap System Administrator",
     role: "ADMIN",
     phone: "+91 98000 12345",
-    email: "admin@gcap.in",
+    email: "support@gcapopc.com",
     joinedDate: "2026-01-01",
     status: "ACTIVE",
     passwordHash: "ad123",
@@ -367,7 +367,7 @@ const DEFAULT_ACCOUNTS: StoredAccount[] = [
     name: "Amit Kumar",
     role: "USER",
     phone: "+91 7564841400",
-    email: "amit@gcap.user",
+    email: "support@gcapopc.com",
     referralCode: "GCAP-45678",
     joinedDate: "2026-09-22",
     status: "ACTIVE",
@@ -473,7 +473,7 @@ const DEFAULT_RULES: AppRules = {
   adminFeePercent: 2.0,
   shortTerm6hRate: 0.040,
   longTerm6hRate: 0.033,
-  supportEmail: "support@gcap.in",
+  supportEmail: "support@gcapopc.com",
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
   companyUpiId: "8603504808@axisbank",
@@ -521,11 +521,11 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   city: 'Sasaram',
   state: 'Bihar',
   pincode: '821113',
-  supportEmail: 'support@gcap.in',
-  legalEmail: 'legal@gcap.in',
+  supportEmail: 'support@gcapopc.com',
+  legalEmail: 'support@gcapopc.com',
   supportPhone: '+91 8503504808',
   altPhone: '+91 6184 220011',
-  websiteUrl: 'https://gcap.in',
+  websiteUrl: 'https://www.gcapopc.com',
   authorizedSignatory: 'Amit Kumar',
   signatoryDesignation: 'Director & Authorized Signatory',
   signatoryDin: 'DIN: 11964641',
@@ -1827,13 +1827,13 @@ function ensureDb(): ServerDB {
       parsed.transactions.forEach((t: any) => {
         if (!t) return;
         if (t.id === "WTH3260749976" || t.referenceId === "WTH3260749976") {
-          if (t.userPhone !== "7564841400" || t.userLoginId !== "7564841400" || t.userId !== "usr-1790000000555") {
+          if (t.userPhone !== "7808056040" || t.userLoginId !== "7808056040" || t.userId !== "usr-1790000000555") {
             t.userId = "usr-1790000000555";
-            t.userLoginId = "7564841400";
+            t.userLoginId = "7808056040";
             t.userName = "Amit Kumar";
-            t.userPhone = "7564841400";
-            t.method = "UPI: 7564841400@ptyes";
-            t.destinationDetails = "UPI: 7564841400@ptyes";
+            t.userPhone = "7808056040";
+            t.method = "UPI: 7808056040@ptyes";
+            t.destinationDetails = "UPI: 7808056040@ptyes";
             needsSave = true;
           }
         }
@@ -1856,9 +1856,9 @@ function ensureDb(): ServerDB {
           id: "WTH3260749976",
           referenceId: "WTH3260749976",
           userId: "usr-1790000000555",
-          userLoginId: "7564841400",
+          userLoginId: "7808056040",
           userName: "Amit Kumar",
-          userPhone: "7564841400",
+          userPhone: "7808056040",
           type: "WITHDRAWAL",
           amount: 818.4,
           grossAmount: 880.0,
@@ -1868,8 +1868,8 @@ function ensureDb(): ServerDB {
           adminFeeAmount: 17.6,
           netAmount: 818.4,
           status: "SUCCESS",
-          method: "UPI: 7564841400@ptyes",
-          destinationDetails: "UPI: 7564841400@ptyes",
+          method: "UPI: 7808056040@ptyes",
+          destinationDetails: "UPI: 7808056040@ptyes",
           withdrawalSource: "EARNING",
           date: "5 Oct 2026, 03:18 pm",
           timestamp: 1791203880000,
@@ -1946,8 +1946,8 @@ function ensureDb(): ServerDB {
       {
         id: "inv-amit-7564841400-641",
         userId: "usr-1790000000555",
-        userLoginId: "7564841400",
-        userPhone: "+91 7564841400",
+        userLoginId: "7808056040",
+        userPhone: "+91 7808056040",
         userName: "Amit Kumar",
         planId: "short-term",
         planName: "641-Day High Yield Growth Plan",
@@ -2200,9 +2200,9 @@ function ensureDb(): ServerDB {
           id: "WTH3260749976",
           referenceId: "WTH3260749976",
           userId: "usr-1790000000555",
-          userLoginId: "7564841400",
+          userLoginId: "7808056040",
           userName: "Amit Kumar",
-          userPhone: "7564841400",
+          userPhone: "7808056040",
           type: "WITHDRAWAL",
           amount: 818.4,
           grossAmount: 880.0,
@@ -2212,8 +2212,8 @@ function ensureDb(): ServerDB {
           adminFeeAmount: 17.6,
           netAmount: 818.4,
           status: "SUCCESS",
-          method: "UPI: 7564841400@ptyes",
-          destinationDetails: "UPI: 7564841400@ptyes",
+          method: "UPI: 7808056040@ptyes",
+          destinationDetails: "UPI: 7808056040@ptyes",
           withdrawalSource: "EARNING",
           date: "5 Oct 2026, 03:18 pm",
           timestamp: 1791203880000,
@@ -2894,7 +2894,7 @@ async function startServer() {
       q.includes("office") ||
       q.includes("address")
     ) {
-      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcap.in"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
+      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
     }
 
     // 9. Referral
@@ -2936,7 +2936,7 @@ async function startServer() {
 - PAN: ${companyProfile.pan || "AANCG4365Q"} | TAN: ${companyProfile.tan || "PTNG16977C"}
 - अधिकृत निदेशक / हस्ताक्षरकर्ता: ${companyProfile.authorizedSignatory || "Amit Kumar"} (DIN: ${companyProfile.signatoryDin || "11964641"})
 - रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}
-- हेल्पलाइन सपोर्ट: ${companyProfile.supportEmail || rules.supportEmail || "support@gcap.in"} | ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}
+- हेल्पलाइन सपोर्ट: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"} | ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}
 - UPI ID: ${companyProfile.companyUpiId || rules.companyUpiId || "8603504808@axisbank"}
 - बैंक खाता: ${companyProfile.bankName || "Axis Bank Ltd."}, खाता धारक: ${companyProfile.companyBankAccountHolder || "GCAP PRIVATE LIMITED"}, A/C: ${companyProfile.bankAccountNumber || rules.companyBankAccountNumber || "924010008662307"}, IFSC: ${companyProfile.bankIfsc || rules.companyBankIfsc || "UTIB0001219"}
 
@@ -4689,7 +4689,7 @@ GCap में काम कैसे होता है:
         name: "GCap System Administrator",
         role: "ADMIN",
         phone: "+91 98000 12345",
-        email: "admin@gcap.in",
+        email: "support@gcapopc.com",
         joinedDate: "2026-01-01",
         status: "ACTIVE",
         passwordHash: "ad123",

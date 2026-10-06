@@ -437,7 +437,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="email"
                   value={formData.supportEmail || ''}
                   onChange={(e) => handleChange('supportEmail', e.target.value)}
-                  placeholder="support@gcap.in"
+                  placeholder="support@gcapopc.com"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
@@ -450,7 +450,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="email"
                   value={formData.legalEmail || ''}
                   onChange={(e) => handleChange('legalEmail', e.target.value)}
-                  placeholder="legal@gcap.in"
+                  placeholder="support@gcapopc.com"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
@@ -495,7 +495,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.websiteUrl || ''}
                   onChange={(e) => handleChange('websiteUrl', e.target.value)}
-                  placeholder="https://gcap.in"
+                  placeholder="https://www.gcapopc.com"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>

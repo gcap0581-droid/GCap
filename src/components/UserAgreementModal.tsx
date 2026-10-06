@@ -58,7 +58,7 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
     loginId: '9999999999',
     phone: '+91 9999999999',
     name: 'INVESTOR NAME (SAMPLE)',
-    email: 'investor@gcap.in',
+    email: 'support@gcapopc.com',
     role: 'USER',
     status: 'ACTIVE',
     joinedDate: new Date().toISOString().split('T')[0]

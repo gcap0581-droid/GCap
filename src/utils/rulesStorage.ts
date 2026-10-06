@@ -42,7 +42,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   adminFeePercent: 0.02,
   shortTerm6hRate: 0.040,
   longTerm6hRate: 0.033,
-  supportEmail: 'support@gcap.in',
+  supportEmail: 'support@gcapopc.com',
   supportPhone: '+91 98000 12345',
   adminWhatsAppNumber: '+91 8603504808',
   lastUpdated: '2026-09-29',
