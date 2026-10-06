@@ -1825,6 +1825,18 @@ function ensureDb(): ServerDB {
     }
     if (Array.isArray(parsed.transactions)) {
       parsed.transactions.forEach((t: any) => {
+        if (!t) return;
+        if (t.id === "WTH3260749976" || t.referenceId === "WTH3260749976") {
+          if (t.userPhone !== "7564841400" || t.userLoginId !== "7564841400" || t.userId !== "usr-1790000000555") {
+            t.userId = "usr-1790000000555";
+            t.userLoginId = "7564841400";
+            t.userName = "Amit Kumar";
+            t.userPhone = "7564841400";
+            t.method = "UPI: 7564841400@ptyes";
+            t.destinationDetails = "UPI: 7564841400@ptyes";
+            needsSave = true;
+          }
+        }
         if (t.userLoginId === "917808056040") {
           t.userLoginId = "7808056040";
           needsSave = true;
@@ -1843,10 +1855,10 @@ function ensureDb(): ServerDB {
         parsed.transactions.push({
           id: "WTH3260749976",
           referenceId: "WTH3260749976",
-          userId: "7808056040",
-          userLoginId: "amitarya8308061",
-          userName: "Amit Arya",
-          userPhone: "7808056040",
+          userId: "usr-1790000000555",
+          userLoginId: "7564841400",
+          userName: "Amit Kumar",
+          userPhone: "7564841400",
           type: "WITHDRAWAL",
           amount: 818.4,
           grossAmount: 880.0,
@@ -1856,8 +1868,8 @@ function ensureDb(): ServerDB {
           adminFeeAmount: 17.6,
           netAmount: 818.4,
           status: "SUCCESS",
-          method: "UPI: amitarya8308061@ptyes",
-          destinationDetails: "UPI: amitarya8308061@ptyes",
+          method: "UPI: 7564841400@ptyes",
+          destinationDetails: "UPI: 7564841400@ptyes",
           withdrawalSource: "EARNING",
           date: "5 Oct 2026, 03:18 pm",
           timestamp: 1791203880000,
@@ -2187,10 +2199,10 @@ function ensureDb(): ServerDB {
         {
           id: "WTH3260749976",
           referenceId: "WTH3260749976",
-          userId: "7808056040",
-          userLoginId: "amitarya8308061",
-          userName: "Amit Arya",
-          userPhone: "7808056040",
+          userId: "usr-1790000000555",
+          userLoginId: "7564841400",
+          userName: "Amit Kumar",
+          userPhone: "7564841400",
           type: "WITHDRAWAL",
           amount: 818.4,
           grossAmount: 880.0,
@@ -2200,8 +2212,8 @@ function ensureDb(): ServerDB {
           adminFeeAmount: 17.6,
           netAmount: 818.4,
           status: "SUCCESS",
-          method: "UPI: amitarya8308061@ptyes",
-          destinationDetails: "UPI: amitarya8308061@ptyes",
+          method: "UPI: 7564841400@ptyes",
+          destinationDetails: "UPI: 7564841400@ptyes",
           withdrawalSource: "EARNING",
           date: "5 Oct 2026, 03:18 pm",
           timestamp: 1791203880000,
