@@ -17,8 +17,9 @@ import {
   ShieldCheck,
   Check,
 } from 'lucide-react';
-import { Language, UserProfile } from '../types';
+import { Language, UserProfile, AppRules, CompanyProfile } from '../types';
 import { getStoredCompanyProfile } from '../utils/companyStorage';
+import { getStoredRules } from '../utils/rulesStorage';
 
 export interface ChatMessage {
   id: string;
@@ -32,6 +33,8 @@ interface GcapAssistantModalProps {
   onClose: () => void;
   language: Language;
   currentUser?: UserProfile | null;
+  rules?: AppRules;
+  companyProfile?: CompanyProfile;
 }
 
 const INITIAL_WELCOME_MESSAGE: ChatMessage = {
@@ -52,8 +55,22 @@ const QUICK_SUGGESTIONS = [
   'अलविदा / धन्यवाद 🙏',
 ];
 
-function getLocalAssistantReply(query: string, userName: string = 'साथी'): string {
+function getLocalAssistantReply(
+  query: string, 
+  userName: string = 'साथी',
+  rules?: AppRules,
+  companyProfile?: CompanyProfile
+): string {
   const q = (query || '').toLowerCase().trim();
+
+  // Load current bank info dynamically
+  const activeProfile = companyProfile || getStoredCompanyProfile();
+  const activeRules = rules || (typeof getStoredRules === 'function' ? getStoredRules() : null);
+
+  const companyUpiId = activeProfile?.companyUpiId || activeRules?.companyUpiId || '8603504808@axisbank';
+  const companyBankAccountNumber = activeProfile?.bankAccountNumber || activeRules?.companyBankAccountNumber || '924010008662307';
+  const companyBankName = activeProfile?.bankName || activeRules?.companyBankName || 'Axis Bank Ltd.';
+  const companyBankIfsc = activeProfile?.bankIfsc || activeRules?.companyBankIfsc || 'UTIB0001219';
 
   // Language detection: if user queries entirely in English
   const isEnglishQuery = /^[a-z0-9\s\?\.,!@#\$%\^&\*\(\)_\+\-\=\[\]\{\};:'"\\\|`~]+$/.test(q) && !q.includes('kaise') && !q.includes('kya') && !q.includes('paisa') && !q.includes('batao') && !q.includes('karo') && !q.includes('mein') && !q.includes('ko');
@@ -63,7 +80,7 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
       return `Hello ${userName}! I am the official GCap Capital AI Assistant. How can I assist you with GCap investment plans, deposits, GP swaps, or withdrawals today?`;
     }
     if (q.includes('deposit') || q.includes('recharge')) {
-      return `💰 **Step-by-Step Guide to Deposit Funds in GCap:**\n1️⃣ Tap **'Add Money (Deposit)'** in your dashboard.\n2️⃣ Transfer funds to official UPI ID: \`8603504808@axisbank\` or Axis Bank A/C: \`924010002662307\` (IFSC: UTIB0001219).\n3️⃣ Enter the 12-digit UTR/reference number and submit.\n4️⃣ Once verified by admin, cash balance is credited instantly to your wallet.`;
+      return `💰 **Step-by-Step Guide to Deposit Funds in GCap:**\n1️⃣ Tap **'Add Money (Deposit)'** in your dashboard.\n2️⃣ Transfer funds to official UPI ID: \`${companyUpiId}\` or \`${companyBankName}\` A/C: \`${companyBankAccountNumber}\` (IFSC: \`${companyBankIfsc}\`).\n3️⃣ Enter the 12-digit UTR/reference number and submit.\n4️⃣ Once verified by admin, cash balance is credited instantly to your wallet.`;
     }
     if (q.includes('swap') || q.includes('gp')) {
       return `🪙 **Step-by-Step Guide to GP Swap:**\n1️⃣ Go to **'GP Swap'** from the menu.\n2️⃣ Enter the cash amount you wish to convert (Exchange rate: ₹1 = 0.98 GP).\n3️⃣ Tap **'Swap Now'** to instantly convert cash to GP points for activating investment plans.`;
@@ -122,7 +139,7 @@ function getLocalAssistantReply(query: string, userName: string = 'साथी'
     q.includes('recharge') ||
     (q.includes('kaise') && (q.includes('jama') || q.includes('kare')))
   ) {
-    return `💰 **GCap सॉफ्टवेयर में पैसा जमा (Deposit) करने की चरण-दर-चरण विधि (Step-by-Step):**\n\n1️⃣ **स्टेप 1**: ऐप के होम पेज पर **'पैसे जोड़ें (Deposit)'** बटन पर क्लिक करें।\n2️⃣ **स्टेप 2**: कंपनी की आधिकारिक **UPI ID**: \`8603504808@axisbank\` पर अपने PhonePe, Google Pay या Paytm से राशि ट्रांसफर करें।\n   *(या बैंक ट्रांसफर करें: Axis Bank, खाता संख्या: \`924010002662307\`, IFSC: \`UTIB0001219\`)*\n3️⃣ **स्टेप 3**: भुगतान करने के बाद मिले **12-अंकों का UTR/संदर्भ नंबर** और जमा राशि को ऐप में दिए गए फॉर्म में भरें।\n4️⃣ **स्टेप 4**: **'सबमिट (Submit)'** बटन दबाएं। एडमिन द्वारा सत्यापन होते ही कैश बैलेंस तुरंत आपके वॉलेट में जुड़ जाएगा!\n\nक्या आप GP स्वैप या प्लान खरीदने की विधि जानना चाहते हैं?`;
+    return `💰 **GCap सॉफ्टवेयर में पैसा जमा (Deposit) करने की चरण-दर-चरण विधि (Step-by-Step):**\n\n1️⃣ **स्टेप 1**: ऐप के होम पेज पर **'पैसे जोड़ें (Deposit)'** बटन पर क्लिक करें।\n2️⃣ **स्टेप 2**: कंपनी की आधिकारिक **UPI ID**: \`${companyUpiId}\` पर अपने PhonePe, Google Pay या Paytm से राशि ट्रांसफर करें।\n   *(या बैंक ट्रांसफर करें: ${companyBankName}, खाता संख्या: \`${companyBankAccountNumber}\`, IFSC: \`${companyBankIfsc}\`)*\n3️⃣ **स्टेप 3**: भुगतान करने के बाद मिले **12-अंकों का UTR/संदर्भ नंबर** और जमा राशि को ऐप में दिए गए फॉर्म में भरें।\n4️⃣ **स्टेप 4**: **'सबमिट (Submit)'** बटन दबाएं। एडमिन द्वारा सत्यापन होते ही कैश बैलेंस तुरंत आपके वॉलेट में जुड़ जाएगा!\n\nक्या आप GP स्वैप या प्लान खरीदने की विधि जानना चाहते हैं?`;
   }
 
   // 4. STEP-BY-STEP: GP Swap (Cash to GP)
@@ -237,6 +254,8 @@ export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({
   onClose,
   language,
   currentUser,
+  rules,
+  companyProfile,
 }) => {
   const isHi = language === 'hi';
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_WELCOME_MESSAGE]);
@@ -380,7 +399,7 @@ export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({
       });
 
       const data = await res.json();
-      const reply = data.reply || getLocalAssistantReply(text, currentUser?.name || 'साथी');
+      const reply = data.reply || getLocalAssistantReply(text, currentUser?.name || 'साथी', rules, companyProfile);
 
       const assistantMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
@@ -396,7 +415,7 @@ export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({
       }
     } catch (err) {
       console.warn('[Assistant Chat Error]:', err);
-      const fallbackReply = getLocalAssistantReply(text, currentUser?.name || 'साथी');
+      const fallbackReply = getLocalAssistantReply(text, currentUser?.name || 'साथी', rules, companyProfile);
       const fallbackMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
         role: 'assistant',

@@ -1,68 +1,59 @@
 {
   "users": [
     {
-      "email": "admin@gcap.in",
-      "status": "ACTIVE",
+      "passwordHash": "ad123",
       "isOnline": false,
-      "role": "ADMIN",
-      "joinedDate": "2026-01-01",
       "loginId": "Admin",
+      "id": "usr-admin-01",
+      "joinedDate": "2026-01-01",
+      "role": "ADMIN",
       "phone": "+91 98000 12345",
       "lastLoginAt": "2026-10-03T00:25:47.000Z",
-      "name": "GCap System Administrator",
-      "passwordHash": "ad123",
-      "id": "usr-admin-01",
-      "password": "ad123"
+      "status": "ACTIVE",
+      "email": "support@gcapopc.com",
+      "password": "ad123",
+      "name": "GCap System Administrator"
     },
     {
-      "loginId": "7808056040",
-      "password": "1111",
       "joinedDate": "2026-09-16",
-      "passwordHash": "1111",
+      "password": "1111",
+      "lastLogoutAt": "2026-10-02T16:25:10.000Z",
       "name": "Sandhya",
-      "isOnline": false,
-      "id": "usr-1789384741169",
+      "status": "ACTIVE",
+      "role": "USER",
       "lastActiveAt": "2026-10-02T16:25:10.000Z",
       "lastLoginAt": "2026-10-02T16:16:44.000Z",
       "phone": "+91 7808056040",
-      "lastLogoutAt": "2026-10-02T16:25:10.000Z",
-      "role": "USER",
+      "loginId": "7808056040",
+      "passwordHash": "1111",
       "email": "gcap0581@gmail.com",
-      "status": "ACTIVE"
+      "id": "usr-1789384741169",
+      "isOnline": false
     },
     {
-      "passwordHash": "1111",
-      "phone": "+91 8409803181",
-      "role": "USER",
       "password": "1111",
-      "email": "8409803181@gcap.user",
+      "phone": "+91 8409803181",
+      "lastLoginAt": "2026-10-02T14:30:00.000Z",
       "id": "usr-1789962044130",
+      "email": "8409803181@gcap.user",
+      "lastLogoutAt": "2026-10-02T14:45:12.000Z",
+      "name": "Rahul",
+      "status": "ACTIVE",
+      "passwordHash": "1111",
+      "role": "USER",
       "lastActiveAt": "2026-10-02T14:45:12.000Z",
       "joinedDate": "2026-09-21",
       "isOnline": false,
-      "loginId": "8409803181",
-      "lastLoginAt": "2026-10-02T14:30:00.000Z",
       "referralCode": "GCAP-03181",
-      "lastLogoutAt": "2026-10-02T14:45:12.000Z",
-      "status": "ACTIVE",
-      "name": "Rahul"
+      "loginId": "8409803181"
     },
     {
-      "email": "amit@gcap.user",
-      "lastActiveAt": "2026-10-06T03:13:10.537Z",
       "referralCode": "GCAP-45678",
-      "lastLoginAt": "2026-10-06T01:50:16.727Z",
-      "passwordHash": "1111",
-      "phone": "+91 7564841400",
-      "name": "Amit Kumar",
+      "device": "Android Smartphone (Google Chrome Mobile)",
       "status": "ACTIVE",
-      "role": "USER",
-      "isOnline": false,
-      "lastDevice": "Windows PC / Laptop",
-      "joinedDate": "2026-09-22",
-      "device": "Windows PC / Laptop",
-      "lastLogoutAt": "2026-10-06T03:13:10.537Z",
-      "id": "usr-1790000000555",
+      "password": "1111",
+      "passwordHash": "1111",
+      "name": "Amit Kumar",
       "bankDetails": {
         "accountHolder": "Amit Kumar",
         "accountNumber": "39645918565",
@@ -70,49 +61,20 @@
         "bankName": "State Bank of India",
         "upiId": "amitarya8308@sbi"
       },
-      "password": "1111",
-      "loginId": "7564841400"
+      "lastActiveAt": "2026-10-06T03:44:01.641Z",
+      "role": "USER",
+      "lastLoginAt": "2026-10-06T01:50:16.727Z",
+      "loginId": "7564841400",
+      "joinedDate": "2026-09-22",
+      "lastDevice": "Android Smartphone (Google Chrome Mobile)",
+      "phone": "+91 7564841400",
+      "id": "usr-1790000000555",
+      "email": "amit@gcap.user",
+      "isOnline": false,
+      "lastLogoutAt": "2026-10-06T03:44:01.641Z"
     }
   ],
   "wallets": {
-    "01": {
-      "cashBalance": 5730000,
-      "totalEarned": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0
-    },
-    "9384741169": {
-      "gpBalance": 19600,
-      "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
-      "pendingDeposits": 0,
-      "totalEarned": 5369.2,
-      "cashBalance": 0,
-      "totalWithdrawn": 0,
-      "totalInvested": 110000
-    },
-    "9800012345": {
-      "cashBalance": 5730000,
-      "totalEarned": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0
-    },
-    "7808056040": {
-      "gpBalance": 19600,
-      "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
-      "pendingDeposits": 0,
-      "totalEarned": 5369.2,
-      "cashBalance": 0,
-      "totalWithdrawn": 0,
-      "totalInvested": 110000
-    },
     "7564841400": {
       "cashBalance": 0,
       "gpBalance": 0,
@@ -123,42 +85,32 @@
       "pendingWithdrawals": 0,
       "totalWithdrawn": 880
     },
-    "1789962044130": {
-      "totalEarned": 0,
+    "9962044130": {
+      "totalInvested": 0,
       "cashBalance": 0,
       "royaltyEarned": 0,
-      "pendingDeposits": 0,
       "gpBalance": 0,
+      "pendingDeposits": 0,
+      "pendingWithdrawals": 0,
+      "totalEarned": 0
+    },
+    "1789962044130": {
       "totalInvested": 0,
-      "pendingWithdrawals": 0
+      "cashBalance": 0,
+      "royaltyEarned": 0,
+      "gpBalance": 0,
+      "pendingDeposits": 0,
+      "pendingWithdrawals": 0,
+      "totalEarned": 0
     },
     "admin": {
-      "pendingDeposits": 0,
       "cashBalance": 5730000,
-      "totalEarned": 0,
       "totalInvested": 0,
       "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
-      "gpBalance": 0
-    },
-    "Sandhya": {
-      "gpBalance": 19600,
-      "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
       "pendingDeposits": 0,
-      "totalEarned": 5369.2,
-      "cashBalance": 0,
-      "totalWithdrawn": 0,
-      "totalInvested": 110000
-    },
-    "Admin": {
-      "cashBalance": 5730000,
       "totalEarned": 0,
-      "pendingDeposits": 0,
       "gpBalance": 0,
-      "totalInvested": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0
+      "royaltyEarned": 0
     },
     "917564841400": {
       "cashBalance": 0,
@@ -170,42 +122,34 @@
       "pendingWithdrawals": 0,
       "totalWithdrawn": 880
     },
-    "9123456789": {
-      "pendingWithdrawals": 0,
-      "totalInvested": 100000,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalEarned": 40,
-      "cashBalance": 0,
-      "royaltyEarned": 0
-    },
-    "usr-admin-01": {
-      "cashBalance": 5730000,
-      "totalEarned": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "royaltyEarned": 0,
-      "pendingWithdrawals": 0
-    },
     "usr-1789384741169": {
+      "cashBalance": 0,
       "gpBalance": 19600,
-      "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
-      "pendingDeposits": 0,
+      "totalInvested": 110000,
       "totalEarned": 5369.2,
-      "cashBalance": 0,
-      "totalWithdrawn": 0,
-      "totalInvested": 110000
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0,
+      "totalWithdrawn": 0
     },
-    "usr-1789962044130": {
-      "totalEarned": 0,
+    "1789384741169": {
+      "cashBalance": 0,
+      "gpBalance": 19600,
+      "totalInvested": 110000,
+      "totalEarned": 5369.2,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0,
+      "totalWithdrawn": 0
+    },
+    "918409803181": {
+      "totalInvested": 0,
       "cashBalance": 0,
       "royaltyEarned": 0,
-      "pendingDeposits": 0,
       "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingWithdrawals": 0
+      "pendingDeposits": 0,
+      "pendingWithdrawals": 0,
+      "totalEarned": 0
     },
     "usr-1790000000555": {
       "cashBalance": 0,
@@ -217,23 +161,24 @@
       "pendingWithdrawals": 0,
       "totalWithdrawn": 880
     },
-    "919800012345": {
-      "cashBalance": 5730000,
-      "totalEarned": 0,
-      "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
+    "Sandhya": {
+      "cashBalance": 0,
+      "gpBalance": 19600,
+      "totalInvested": 110000,
+      "totalEarned": 5369.2,
       "royaltyEarned": 0,
-      "pendingWithdrawals": 0
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0,
+      "totalWithdrawn": 0
     },
-    "admin-01": {
-      "cashBalance": 5730000,
-      "totalEarned": 0,
+    "9800012345": {
       "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
+      "totalEarned": 0,
       "royaltyEarned": 0,
-      "pendingWithdrawals": 0
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
     },
     "1790000000555": {
       "cashBalance": 0,
@@ -245,33 +190,42 @@
       "pendingWithdrawals": 0,
       "totalWithdrawn": 880
     },
-    "918409803181": {
-      "totalEarned": 0,
-      "cashBalance": 0,
-      "royaltyEarned": 0,
-      "pendingDeposits": 0,
+    "9123456789": {
+      "totalEarned": 40,
+      "totalInvested": 100000,
       "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingWithdrawals": 0
-    },
-    "8409803181": {
-      "totalEarned": 0,
-      "cashBalance": 0,
-      "royaltyEarned": 0,
       "pendingDeposits": 0,
-      "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingWithdrawals": 0
-    },
-    "1789384741169": {
-      "gpBalance": 19600,
+      "cashBalance": 0,
       "pendingWithdrawals": 0,
-      "royaltyEarned": 0,
+      "royaltyEarned": 0
+    },
+    "Admin": {
       "pendingDeposits": 0,
-      "totalEarned": 5369.2,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
+    },
+    "usr-1789962044130": {
+      "totalInvested": 0,
       "cashBalance": 0,
-      "totalWithdrawn": 0,
-      "totalInvested": 110000
+      "royaltyEarned": 0,
+      "gpBalance": 0,
+      "pendingDeposits": 0,
+      "pendingWithdrawals": 0,
+      "totalEarned": 0
+    },
+    "7808056040": {
+      "cashBalance": 0,
+      "gpBalance": 19600,
+      "totalInvested": 110000,
+      "totalEarned": 5369.2,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0,
+      "totalWithdrawn": 0
     },
     "0000000555": {
       "cashBalance": 0,
@@ -283,14 +237,60 @@
       "pendingWithdrawals": 0,
       "totalWithdrawn": 880
     },
-    "9962044130": {
+    "usr-admin-01": {
+      "pendingDeposits": 0,
       "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
+    },
+    "01": {
+      "pendingDeposits": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
+    },
+    "admin-01": {
+      "pendingDeposits": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
+    },
+    "8409803181": {
+      "totalInvested": 0,
       "cashBalance": 0,
       "royaltyEarned": 0,
-      "pendingDeposits": 0,
       "gpBalance": 0,
-      "totalInvested": 0,
-      "pendingWithdrawals": 0
+      "pendingDeposits": 0,
+      "pendingWithdrawals": 0,
+      "totalEarned": 0
+    },
+    "9384741169": {
+      "cashBalance": 0,
+      "gpBalance": 19600,
+      "totalInvested": 110000,
+      "totalEarned": 5369.2,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "pendingDeposits": 0,
+      "totalWithdrawn": 0
+    },
+    "919800012345": {
+      "pendingDeposits": 0,
+      "totalEarned": 0,
+      "royaltyEarned": 0,
+      "pendingWithdrawals": 0,
+      "cashBalance": 5730000,
+      "gpBalance": 0,
+      "totalInvested": 0
     }
   },
   "investments": [
@@ -311,7 +311,7 @@
       "daysCompleted": 0,
       "earnedSoFar": 2920,
       "totalEarnedSoFar": 2920,
-      "unclaimedEarnings": 2880,
+      "unclaimedEarnings": 2920,
       "claimedSoFar": 0,
       "totalExpectedReturn": 102560,
       "startDate": "2026-09-16T15:23:23.901Z",
@@ -347,7 +347,7 @@
       "daysCompleted": 0,
       "earnedSoFar": 240.9,
       "totalEarnedSoFar": 240.9,
-      "unclaimedEarnings": 237.6,
+      "unclaimedEarnings": 240.9,
       "claimedSoFar": 0,
       "totalExpectedReturn": 4818,
       "startDate": "2026-09-16T17:44:24.512Z",
@@ -405,6 +405,36 @@
   ],
   "transactions": [
     {
+      "id": "txn-cyc-auto-inv-sandhya-7808056040-2-73",
+      "userId": "usr-1789384741169",
+      "userLoginId": "7808056040",
+      "userName": "Sandhya",
+      "userPhone": "+91 7808056040",
+      "type": "RETURN_PAYOUT",
+      "amount": 3.3,
+      "date": "2026-10-06T04:07:25.766Z",
+      "timestamp": 1791259645764,
+      "status": "SUCCESS",
+      "referenceId": "CYC82755293",
+      "note": "6-Hour Cycle #73 return of ₹3.3 credited to Total Earning (365-Day Long Term Royalty Asset Plan)",
+      "noteHi": "6 घंटे के चक्र #73 का रिटर्न ₹3.3 स्वतः कुल अर्निंग में जमा हुआ (365-Day Long Term Royalty Asset Plan)"
+    },
+    {
+      "id": "txn-cyc-auto-inv-sandhya-7808056040-1-73",
+      "userId": "usr-1789384741169",
+      "userLoginId": "7808056040",
+      "userName": "Sandhya",
+      "userPhone": "+91 7808056040",
+      "type": "RETURN_PAYOUT",
+      "amount": 40,
+      "date": "2026-10-06T04:07:25.766Z",
+      "timestamp": 1791259645764,
+      "status": "SUCCESS",
+      "referenceId": "CYC82785084",
+      "note": "6-Hour Cycle #73 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
+      "noteHi": "6 घंटे के चक्र #73 का रिटर्न ₹40 स्वतः कुल अर्निंग में जमा हुआ (641-Day High Yield Growth Plan)"
+    },
+    {
       "id": "txn-cyc-auto-inv-amit-7564841400-641-26",
       "userId": "usr-1790000000555",
       "userLoginId": "7564841400",
@@ -412,8 +442,8 @@
       "userPhone": "+91 7564841400",
       "type": "RETURN_PAYOUT",
       "amount": 40,
-      "date": "2026-10-06T02:33:40.920Z",
-      "timestamp": 1791254020919,
+      "date": "2026-10-06T04:07:25.767Z",
+      "timestamp": 1791259645764,
       "status": "SUCCESS",
       "referenceId": "CYC89781994",
       "note": "6-Hour Cycle #26 return of ₹40 credited to Total Earning (641-Day High Yield Growth Plan)",
@@ -3101,20 +3131,10 @@
   ],
   "plans": [
     {
-      "id": "short-term",
-      "featuresHi": [
-        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
-        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
-        "हर 6 घंटे में 0.040% GP लाभ",
-        "महीने की 1 से 5 तारीख तक निकासी"
-      ],
-      "risk": "Low",
-      "tag": "641 Days • First 24h Lock • 0.040%/6h GP",
-      "badge": "⚡ 641-Day Short Term Plan (Min ₹1 Lakh)",
       "payoutFrequency": "Daily",
-      "minAmount": 100000,
+      "payoutFrequencyHi": "हर 6 घंटे में 0.040% GP",
+      "tag": "641 Days • First 24h Lock • 0.040%/6h GP",
       "dailyRoiPercent": 0.16,
-      "name": "Short Term Plan (641-Day Plan)",
       "features": [
         "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
         "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
@@ -3122,41 +3142,51 @@
         "महीने की 1 से 5 तारीख तक निकासी"
       ],
       "durationDays": 641,
-      "payoutFrequencyHi": "हर 6 घंटे में 0.040% GP",
-      "tagHi": "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP",
+      "featuresHi": [
+        "न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)",
+        "परिपक्वता अवधि 641 दिन (पहले 24 घंटे का लॉक)",
+        "हर 6 घंटे में 0.040% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ],
+      "minAmount": 100000,
+      "badge": "⚡ 641-Day Short Term Plan (Min ₹1 Lakh)",
       "description": "Special 641-day Short Term investment plan. Deposit ₹10,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.",
       "nameHi": "शॉर्ट टर्म प्लान (641-Day Plan)",
+      "tagHi": "641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP",
       "maxAmount": 1000000000,
-      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।"
+      "descriptionHi": "विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹10,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।",
+      "risk": "Low",
+      "id": "short-term",
+      "name": "Short Term Plan (641-Day Plan)"
     },
     {
       "badge": "👑 365-Day Long Term & Royalty Plan",
-      "id": "long-term",
-      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.033% GP लाभ + रॉयल्टी पाथवे।",
-      "maxAmount": 100000,
-      "dailyRoiPercent": 0.132,
-      "name": "Long Term Plan (365-Day & Royalty Plan)",
       "payoutFrequency": "Daily",
-      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.033% every 6 hours.",
-      "tag": "365 Days • First 24h Lock • 0.033%/6h GP + Royalty",
-      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
+      "descriptionHi": "प्रीमियम 365-दिवसीय लॉन्ग टर्म निवेश एवं रॉयल्टी योजना। निवेश ₹10,000 से ₹1,00,000 तक। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.033% GP लाभ + रॉयल्टी पाथवे।",
+      "id": "long-term",
+      "name": "Long Term Plan (365-Day & Royalty Plan)",
+      "dailyRoiPercent": 0.132,
       "risk": "Low",
       "tagHi": "365 दिन • पहले 24 घंटे का लॉक • 0.033%/6h GP + रॉयल्टी पाथवे",
-      "payoutFrequencyHi": "हर 6 घंटे में 0.033% GP",
+      "maxAmount": 100000,
+      "featuresHi": [
+        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
+        "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
+        "हर 6 घंटे में 0.033% GP लाभ",
+        "महीने की 1 से 5 तारीख तक निकासी"
+      ],
+      "tag": "365 Days • First 24h Lock • 0.033%/6h GP + Royalty",
+      "nameHi": "लॉन्ग टर्म प्लान (365-Day & Royalty Plan)",
+      "minAmount": 10000,
+      "description": "Premier 365-day Long Term Plan with Royalty pathway. Deposit ₹10,000 to ₹100,000. First 24 hours lock. Earn 0.033% every 6 hours.",
+      "durationDays": 365,
       "features": [
         "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
         "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
         "हर 6 घंटे में 0.033% GP लाभ",
         "महीने की 1 से 5 तारीख तक निकासी"
       ],
-      "minAmount": 10000,
-      "durationDays": 365,
-      "featuresHi": [
-        "न्यूनतम निवेश ₹10,000 एवं अधिकतम ₹1,00,000",
-        "अवधि 365 दिन (पहले 24 घंटे का लॉक) + 1461 दिन रॉयल्टी विकल्प",
-        "हर 6 घंटे में 0.033% GP लाभ",
-        "महीने की 1 से 5 तारीख तक निकासी"
-      ]
+      "payoutFrequencyHi": "हर 6 घंटे में 0.033% GP"
     }
   ],
   "rules": {
@@ -3181,7 +3211,7 @@
     "adminFeePercent": 2,
     "shortTerm6hRate": 0.04,
     "longTerm6hRate": 0.033,
-    "supportEmail": "support@gcap.in",
+    "supportEmail": "support@gcapopc.com",
     "supportPhone": "+91 98000 12345",
     "lastUpdated": "2026-10-05",
     "companyUpiId": "8603504808@axisbank",
@@ -3191,31 +3221,31 @@
     "companyBankIfsc": "UTIB0001219"
   },
   "liveConfig": {
-    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
-    "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
-    "lastUpdated": "2026-10-05 13:55",
-    "appVersion": "v2.5.2-MAIN-DB",
-    "bannerType": "success",
-    "autoSyncIntervalSec": 3,
-    "themeAccent": "emerald",
-    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
-    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
-    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
-    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
-    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
     "maintenanceMode": false,
     "maintenanceMessage": "System routine maintenance in progress.",
-    "bannerEnabled": true,
+    "themeAccent": "emerald",
+    "heroHeadline": "Smart Daily Returns & Automated Growth",
+    "bannerTextHi": "🚀 लाइव अपडेट: मुख्य डेटाबेस सिंक्रोनाइज़ेशन विश्व स्तर पर पूर्णतः सक्रिय है।",
     "liveBadgeText": "⚡ Live Main DB Connected",
-    "heroHeadline": "Smart Daily Returns & Automated Growth"
+    "bannerText": "🚀 Live Update: Main Database synchronization is fully active worldwide.",
+    "autoSyncIntervalSec": 3,
+    "liveBadgeTextHi": "⚡ मुख्य डेटाबेस लाइव कनेक्टेड",
+    "appVersion": "v2.5.2-MAIN-DB",
+    "bannerType": "success",
+    "heroSubtext": "Invest with confidence. 100% principal protection, daily interest credits, and instant UPI withdrawals.",
+    "maintenanceMessageHi": "सिस्टम रूटीन मेंटेनेंस प्रगति पर है।",
+    "heroSubtextHi": "सुरक्षित एवं प्रमाणित निवेश। 100% मूलधन सुरक्षा, प्रतिदिन स्वचालित ब्याज और त्वरित UPI निकासी।",
+    "bannerEnabled": true,
+    "heroHeadlineHi": "स्मार्ट दैनिक रिटर्न एवं स्वचालित पूंजी वृद्धि",
+    "lastUpdated": "2026-10-05 13:55"
   },
   "bankDetails": {
     "usr-1790000000555": {
       "bankName": "State Bank of India",
       "accountNumber": "39645918565",
-      "ifscCode": "SBIN0001099",
+      "accountHolder": "Amit Kumar",
       "upiId": "amitarya8308@sbi",
-      "accountHolder": "Amit Kumar"
+      "ifscCode": "SBIN0001099"
     }
   },
   "treasury": {
@@ -3271,20 +3301,20 @@
   ],
   "messages": [
     {
-      "targetType": "ALL",
-      "title": "Welcome to GCap Investment Platform",
-      "contentHi": "जीकैप में आपका हार्दिक स्वागत है! अब आप उच्च रिटर्न वाले प्लान्स में निवेश कर सकते हैं, हर 6 घंटे में रिटर्न प्राप्त कर सकते हैं और महीने की 1-5 या 6-10 तारीख को सीधे अपने बैंक खाते में निकासी कर सकते हैं।",
-      "titleHi": "जीकैप निवेश मंच में आपका स्वागत है",
-      "content": "Welcome to GCap! You can now explore high-yield investment plans, earn daily automated returns, and withdraw directly to your bank account or UPI.",
-      "category": "ANNOUNCEMENT",
-      "priority": "NORMAL",
       "dismissedByUserIds": [],
-      "createdAt": "2026-10-05T13:55:22.538Z",
-      "readByUserIds": [],
       "showPopup": false,
+      "contentHi": "जीकैप में आपका हार्दिक स्वागत है! अब आप उच्च रिटर्न वाले प्लान्स में निवेश कर सकते हैं, हर 6 घंटे में रिटर्न प्राप्त कर सकते हैं और महीने की 1-5 या 6-10 तारीख को सीधे अपने बैंक खाते में निकासी कर सकते हैं।",
+      "id": "msg-welcome-01",
+      "priority": "NORMAL",
+      "targetType": "ALL",
+      "titleHi": "जीकैप निवेश मंच में आपका स्वागत है",
+      "category": "ANNOUNCEMENT",
+      "createdAt": "2026-10-05T13:55:22.538Z",
       "timestamp": 1791204922538,
       "senderName": "GCap Management",
-      "id": "msg-welcome-01"
+      "title": "Welcome to GCap Investment Platform",
+      "readByUserIds": [],
+      "content": "Welcome to GCap! You can now explore high-yield investment plans, earn daily automated returns, and withdraw directly to your bank account or UPI."
     }
   ],
   "deletedUserIds": [
@@ -3383,11 +3413,11 @@
     "city": "Sasaram",
     "state": "Bihar",
     "pincode": "821113",
-    "supportEmail": "support@gcap.in",
-    "legalEmail": "legal@gcap.in",
+    "supportEmail": "support@gcapopc.com",
+    "legalEmail": "support@gcapopc.com",
     "supportPhone": "+91 8503504808",
     "altPhone": "+91 6184 220011",
-    "websiteUrl": "https://gcap.in",
+    "websiteUrl": "https://www.gcapopc.com",
     "authorizedSignatory": "Amit Kumar",
     "signatoryDesignation": "Director & Authorized Signatory",
     "signatoryDin": "DIN: 11964641",
@@ -3403,5 +3433,5 @@
     "taglineHi": "संपत्ति और धन प्रबंधन प्रणाली",
     "lastUpdated": "2026-09-30T16:31:07.308Z"
   },
-  "lastUpdated": "2026-10-06T03:31:02.703Z"
+  "lastUpdated": "2026-10-06T04:07:27.774Z"
 }

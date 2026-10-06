@@ -5448,6 +5448,8 @@ export default function App() {
         onClose={() => setIsAssistantModalOpen(false)}
         language={language}
         currentUser={currentUser}
+        rules={rules}
+        companyProfile={companyProfile}
       />
 
     </div>

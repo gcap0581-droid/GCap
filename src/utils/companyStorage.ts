@@ -34,7 +34,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   bankName: 'Axis Bank Ltd.',
   bankAccountNumber: '924010008662307',
   bankIfsc: 'UTIB0001219',
-  bankBranch: 'Axis Commercial Branch',
+  bankBranch: 'Sasaram Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
   companyBankAccountHolder: 'GCAP PRIVATE LIMITED',

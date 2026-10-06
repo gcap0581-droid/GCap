@@ -129,8 +129,8 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
                     ? '⚡ तुरंत वॉलेट क्रेडिट: पासवर्ड दर्ज करते ही यह राशि यूज़र के मुख्य वॉलेट कैश में जुड़ जाएगी और वह तुरंत निवेश शुरू कर सकेगा।'
                     : '⚡ Instant Wallet Credit: Upon password confirmation, funds will immediately credit to user wallet for instant investment.')
                 : (isHi
-                    ? '⚡ 100% स्वचालित डायरेक्ट बैंकिंग ट्रांसफर (Auto IMPS API): पासवर्ड डालते ही कंपनी Axis Bank खाते (924010008662307) से पैसे डिडक्ट होकर यूज़र के खाते में ट्रांसफर हो जाएँगे।'
-                    : '⚡ 100% Automated Corporate Payout: Funds auto-deduct from Company Reserve (924010008662307) & credit directly to User Account via API.')}
+                    ? `⚡ 100% स्वचालित डायरेक्ट बैंकिंग ट्रांसफर (Auto IMPS API): पासवर्ड डालते ही कंपनी ${companyBank.bank} खाते (${companyBank.accountNumber}) से पैसे डिडक्ट होकर यूज़र के खाते में ट्रांसफर हो जाएँगे।`
+                    : `⚡ 100% Automated Corporate Payout: Funds auto-deduct from Company Reserve (${companyBank.accountNumber}) & credit directly to User Account via API.`)}
             </span>
           </div>
 
