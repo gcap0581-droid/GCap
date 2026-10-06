@@ -38,10 +38,10 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       id: 'deal-short-term',
       tag: isHi ? '⚡ शॉर्ट टर्म निवेश प्लान (641 दिन)' : '⚡ SHORT TERM INVESTMENT PLAN (641 DAYS)',
       tagColor: 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black',
-      title: isHi ? 'शॉर्ट टर्म प्लान — 641 दिन लॉक • हर 6 घंटे में 0.040% GP' : 'Short Term Plan — 641-Day Lock • 0.040% GP Every 6 Hours',
+      title: isHi ? 'शॉर्ट टर्म प्लान (641D लॉक) • हर 6 घंटे 0.040% GP' : 'Short Term Plan (641D Lock) • 0.040% GP Every 6h',
       desc: isHi
-        ? 'न्यूनतम निवेश ₹1,00,000 से असीमित (Unlimited) • हर 6h में 0.040% GP ऑटो-क्रेडिट • 641 दिन परिपक्वता पर पूरा मूलधन + रिटर्न प्रमाण पत्र'
-        : 'Deposit ₹1,00,000 to Unlimited • 0.040% GP auto-credited every 6 hours • Full Principal + Certificate at 641 days',
+        ? 'न्यूनतम ₹1,00,000 • हर 6h में 0.040% GP ऑटो-क्रेडिट • परिपक्वता पर पूरा मूलधन वापसी'
+        : 'Min ₹1,00,000 • 0.040% GP auto-credited every 6h • Full Principal return at maturity',
       badgeText: '0.160%/DAY',
       badgeSub: isHi ? '641 दिन लॉक' : '641-Day Maturity',
       ctaText: isHi ? 'शॉर्ट टर्म प्लान चुनें' : 'View Short Term Plan',
@@ -52,10 +52,10 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       id: 'deal-long-term',
       tag: isHi ? '👑 लॉन्ग टर्म निवेश व रॉयल्टी प्लान (365 दिन)' : '👑 LONG TERM & ROYALTY PLAN (365 DAYS)',
       tagColor: 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black',
-      title: isHi ? 'लॉन्ग टर्म प्लान — 365 दिन लॉक • हर 6 घंटे में 0.033% GP + 5-वर्ष रॉयल्टी' : 'Long Term Plan — 365-Day Lock • 0.033% GP Every 6 Hours + Royalty',
+      title: isHi ? 'लॉन्ग टर्म प्लान (365D लॉक) • हर 6 घंटे 0.033% GP' : 'Long Term Plan (365D Lock) • 0.033% GP Every 6h',
       desc: isHi
-        ? 'निवेश सीमा ₹10,000 - ₹1,00,000 • 365 दिन पर मूलधन वापसी या 1461 दिन रॉयल्टी विकल्प (1825 दिन तक लगातार रॉयल्टी अर्निंग)'
-        : 'Deposit ₹10,000 - ₹1,00,000 • 365-day exit or 1461-day Royalty Pathway (earn continuous royalty for 1825 days)',
+        ? 'सीमा ₹10,000 - ₹1,00,000 • 365D पर मूलधन वापसी या 1461D रॉयल्टी पाथवे विकल्प'
+        : 'Limit ₹10k - ₹1L • 365-day exit or 1461-day Royalty Pathway options',
       badgeText: '0.132%/DAY',
       badgeSub: isHi ? '365 दिन + रॉयल्टी' : '365D + Royalty',
       ctaText: isHi ? 'लॉन्ग टर्म प्लान चुनें' : 'View Long Term Plan',
@@ -68,8 +68,8 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
       tagColor: 'bg-gradient-to-r from-cyan-400 to-blue-400 text-slate-950 font-black',
       title: isHi ? 'केवल 2% शुल्क पर मिनटों में पैसे जोड़ें' : 'Instant UPI & QR Deposit (2% Fee Only)',
       desc: isHi
-        ? 'PhonePe, Google Pay, Paytm व सभी UPI ऐप्स से डायरेक्ट जमा • 100% सुरक्षित गेटवे'
-        : 'Instant deposit via PhonePe, GPay, Paytm & bank transfer with 100% security',
+        ? 'PhonePe, Google Pay, Paytm व सभी UPI ऐप्स से डायरेक्ट जमा • 100% सुरक्षित'
+        : 'Instant deposit via PhonePe, GPay, Paytm & UPI with 100% security',
       badgeText: '2% FEE ONLY',
       badgeSub: isHi ? 'तत्काल क्रेडिट' : 'Instant Credit',
       ctaText: isHi ? 'पैसे जोड़ें (Deposit)' : 'Add Funds Now',
@@ -94,62 +94,62 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* Hero Showcase Banner Slider with Fixed Frame Height */}
+      {/* Hero Showcase Banner Slider with Fixed Frame Height and No Clipping */}
       <div 
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={() => setIsPaused(true)}
         onTouchEnd={() => setIsPaused(false)}
-        className={`relative overflow-hidden rounded-3xl border bg-gradient-to-r ${currentDeal.gradient} p-4.5 sm:p-5.5 shadow-2xl shadow-black/50 backdrop-blur-2xl h-[255px] sm:h-[225px] flex flex-col justify-between select-none`}
+        className={`relative overflow-hidden rounded-3xl border bg-gradient-to-r ${currentDeal.gradient} p-3.5 sm:p-5 shadow-2xl shadow-black/50 backdrop-blur-2xl h-[245px] sm:h-[215px] flex flex-col justify-between select-none`}
       >
         {/* Background glow orbs */}
         <div className="absolute -right-10 -bottom-10 w-52 h-52 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute left-1/3 -top-10 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3.5 relative z-10 h-full overflow-hidden">
-          <div className="space-y-2 max-w-2xl flex-1 overflow-hidden">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[11px] sm:text-xs uppercase px-3 py-1 rounded-full shadow-md font-extrabold ${currentDeal.tagColor}`}>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 relative z-10 h-full overflow-hidden">
+          <div className="space-y-1.5 max-w-2xl flex-1 overflow-hidden">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`text-[10px] sm:text-xs uppercase px-2.5 py-0.5 rounded-full shadow-md font-extrabold ${currentDeal.tagColor}`}>
                 {currentDeal.tag}
               </span>
-              <span className="text-[11px] text-slate-200 bg-slate-950/80 px-2.5 py-1 rounded-full border border-slate-800 flex items-center gap-1.5 font-mono shadow-sm">
+              <span className="text-[10px] text-slate-300 bg-slate-950/80 px-2 py-0.5 rounded-full border border-slate-800 flex items-center gap-1 font-mono shadow-sm">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
                 {isHi ? 'सीमित समय ऑफर' : 'Limited Period Offer'}
               </span>
             </div>
 
-            <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug truncate font-display">
+            <h2 className="text-sm sm:text-base md:text-lg font-black text-white tracking-tight leading-snug line-clamp-1 font-display">
               {currentDeal.title}
             </h2>
 
-            <p className="text-[12px] sm:text-sm text-slate-200 leading-snug line-clamp-2 h-[36px] sm:h-[40px] overflow-hidden">
+            <p className="text-[11px] sm:text-xs text-slate-300 leading-snug line-clamp-2 h-[32px] sm:h-[36px] overflow-hidden">
               {currentDeal.desc}
             </p>
 
-            {/* Micro action tags */}
-            <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[11px] sm:text-xs text-slate-300">
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-lg border border-slate-800 shadow-sm font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            {/* Micro action tags - Horizontal Scrollable Row without Clipping */}
+            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none w-full pt-0.5 text-[10px] sm:text-[11px] text-slate-300">
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm font-medium shrink-0">
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
                 {isHi ? '100% मूलधन सुरक्षित' : '100% Safe'}
               </span>
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-lg border border-slate-800 shadow-sm font-medium">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm font-medium shrink-0">
+                <Flame className="w-3 h-3 text-amber-400" />
                 {isHi ? 'हर 6h में रिटर्न' : 'Every 6h'}
               </span>
-              <span className="flex items-center gap-1 bg-slate-950/70 px-2.5 py-1 rounded-lg border border-slate-800 shadow-sm font-medium">
-                <Percent className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="flex items-center gap-1 bg-slate-950/70 px-2 py-0.5 rounded-lg border border-slate-800 shadow-sm font-medium shrink-0">
+                <Percent className="w-3 h-3 text-cyan-400" />
                 {isHi ? '0% निकासी शुल्क' : '0% Fee'}
               </span>
             </div>
           </div>
 
           {/* Right side Deal Badge & Button */}
-          <div className="flex items-center md:flex-col md:items-end justify-between w-full md:w-auto gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+          <div className="flex items-center md:flex-col md:items-end justify-between w-full md:w-auto gap-2.5 shrink-0 pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-800/80">
             <div className="text-left md:text-right">
-              <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight leading-none">
+              <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight leading-none">
                 {currentDeal.badgeText}
               </div>
-              <div className="text-[10px] sm:text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+              <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                 {currentDeal.badgeSub}
               </div>
             </div>
@@ -162,10 +162,10 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
                   onNavigateTab(currentDeal.targetTab);
                 }
               }}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/30 transition-all cursor-pointer active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-amber-950/30 transition-all cursor-pointer active:scale-95"
             >
               <span>{currentDeal.ctaText}</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

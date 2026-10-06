@@ -1838,6 +1838,34 @@ function ensureDb(): ServerDB {
           needsSave = true;
         }
       });
+
+      if (!parsed.transactions.some((t: any) => t && (t.id === "WTH3260749976" || t.referenceId === "WTH3260749976"))) {
+        parsed.transactions.push({
+          id: "WTH3260749976",
+          referenceId: "WTH3260749976",
+          userId: "7808056040",
+          userLoginId: "amitarya8308061",
+          userName: "Amit Arya",
+          userPhone: "7808056040",
+          type: "WITHDRAWAL",
+          amount: 818.4,
+          grossAmount: 880.0,
+          tdsPercent: 5.0,
+          tdsAmount: 44.0,
+          adminFeePercent: 2.0,
+          adminFeeAmount: 17.6,
+          netAmount: 818.4,
+          status: "SUCCESS",
+          method: "UPI: amitarya8308061@ptyes",
+          destinationDetails: "UPI: amitarya8308061@ptyes",
+          withdrawalSource: "EARNING",
+          date: "5 Oct 2026, 03:18 pm",
+          timestamp: 1791203880000,
+          note: "अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]",
+          noteHi: "अर्निंग निकासी (शुद्ध: ₹818.40, TDS: -₹44.00, एडमिन: -₹17.60) [सफल]"
+        });
+        needsSave = true;
+      }
     }
     const defaultSandhyaInvs = [
       {

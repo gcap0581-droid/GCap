@@ -940,9 +940,9 @@ export default function App() {
       }
     };
 
-    // Run immediately, then poll every 30s as light fallback (SSE handles instant pushes silently)
+    // Run immediately, then poll every 5s as light fallback (SSE handles instant pushes silently)
     syncWithCentralDb();
-    const interval = setInterval(syncWithCentralDb, 30000);
+    const interval = setInterval(syncWithCentralDb, 5000);
 
     const handleResume = () => {
       if (document.visibilityState === 'visible') {
@@ -3660,8 +3660,8 @@ export default function App() {
     // Run immediately
     runCycleReconciliation();
 
-    // Recheck every 30 seconds (avoids 2s state re-render loop)
-    const interval = setInterval(runCycleReconciliation, 30000);
+    // Recheck every 5 seconds (avoids 2s state re-render loop)
+    const interval = setInterval(runCycleReconciliation, 5000);
     return () => clearInterval(interval);
   }, [currentUser?.id]);
 
