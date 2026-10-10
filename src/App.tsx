@@ -442,6 +442,11 @@ export default function App() {
             setRules((prev) => (JSON.stringify(prev) !== JSON.stringify(state.rules) ? state.rules : prev));
             saveStoredRules(state.rules);
           }
+          if ((state as any).companyProfile) {
+            const serverProfile = (state as any).companyProfile;
+            setCompanyProfile((prev) => (JSON.stringify(prev) !== JSON.stringify(serverProfile) ? serverProfile : prev));
+            saveStoredCompanyProfile(serverProfile);
+          }
           if (state.liveConfig) {
             setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(state.liveConfig) ? state.liveConfig : prev));
             saveStoredLiveConfig(state.liveConfig);
@@ -3441,6 +3446,33 @@ export default function App() {
   const handleSaveRules = (updatedRules: AppRules) => {
     setRules(updatedRules);
     saveStoredRules(updatedRules, true, true);
+
+    // Persist rules to central server database immediately
+    apiSaveRules(updatedRules).catch((err) => {
+      console.warn('Failed to persist rules to central database:', err);
+    });
+
+    // Synchronize company profile if rules bank details were modified
+    if (updatedRules.companyBankAccountNumber || updatedRules.companyBankName || updatedRules.companyBankIfsc || updatedRules.companyBankAccountHolder) {
+      const updatedProfile: CompanyProfile = {
+        ...companyProfile,
+        bankName: updatedRules.companyBankName || companyProfile.bankName,
+        bankAccountNumber: updatedRules.companyBankAccountNumber || companyProfile.bankAccountNumber,
+        bankIfsc: updatedRules.companyBankIfsc || companyProfile.bankIfsc,
+        companyBankAccountHolder: updatedRules.companyBankAccountHolder || companyProfile.companyBankAccountHolder,
+        companyUpiId: updatedRules.companyUpiId || companyProfile.companyUpiId,
+        supportEmail: updatedRules.supportEmail || companyProfile.supportEmail,
+        supportPhone: updatedRules.supportPhone || companyProfile.supportPhone,
+        lastUpdated: new Date().toISOString(),
+      };
+      setCompanyProfile(updatedProfile);
+      saveStoredCompanyProfile(updatedProfile);
+      fetch('/api/company-profile/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: updatedProfile }),
+      }).catch(() => {});
+    }
 
     // Refresh and sync plans with updated 6h rate
     try {

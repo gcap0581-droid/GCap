@@ -417,6 +417,9 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                 {profile.pan && <span>• PAN: {profile.pan}</span>}
                 {profile.tan && <span>• Tax TAN: {profile.tan}</span>}
                 {profile.gstin && <span>• GST: {profile.gstin}</span>}
+                <span className="text-amber-400 print:text-black font-bold">
+                  • DPIIT Recognized Startup: {profile.dippNumber || 'DIPP285976'} (#startupindia)
+                </span>
                 {(profile.supportEmail || rules.supportEmail) && (
                   <span>• Support: {profile.supportEmail || rules.supportEmail}</span>
                 )}

@@ -217,6 +217,17 @@ export interface UserProfile {
   lastActiveAt?: string;
   device?: string;
   lastDevice?: string;
+  // Real KYC Verification Details
+  isPhoneVerified?: boolean;
+  phoneVerifiedAt?: string;
+  panNumber?: string;
+  isPanVerified?: boolean;
+  panVerifiedAt?: string;
+  panHolderName?: string;
+  aadhaarNumber?: string;
+  isAadhaarVerified?: boolean;
+  aadhaarVerifiedAt?: string;
+  kycStatus?: 'NOT_SUBMITTED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 }
 
 export type TreasuryLogType =
@@ -293,6 +304,14 @@ export interface CompanyProfile {
   companyBankAccountHolder?: string; // e.g. "GCAP PRIVATE LIMITED"
   tagline?: string; // e.g. "ASSETS & WEALTH MANAGEMENT SYSTEM"
   taglineHi?: string; // e.g. "संपत्ति और धन प्रबंधन प्रणाली"
+  // DPIIT Startup India Recognition (Govt of India)
+  dippNumber?: string; // e.g. "DIPP285976"
+  startupIndiaCertNumber?: string; // e.g. "DIPP285976"
+  startupIndiaCertIssueDate?: string; // e.g. "30-09-2026"
+  startupIndiaCertValidUpto?: string; // e.g. "22-09-2036"
+  industry?: string; // e.g. "Finance Technology"
+  sector?: string; // e.g. "Business Finance"
+  dpiitMinistry?: string; // e.g. "Ministry of Commerce & Industry, DPIIT, Govt of India"
   lastUpdated?: string;
 }
 

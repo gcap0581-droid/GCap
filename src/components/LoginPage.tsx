@@ -16,11 +16,27 @@ import {
   AlertCircle,
   HelpCircle,
   Check,
+  CreditCard,
+  FileCheck,
+  Send,
+  RefreshCw,
+  KeyRound,
+  Shield,
+  BadgeCheck,
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
 import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY } from '../utils/authStorage';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
+import {
+  sendFirebasePhoneOtp,
+  verifyFirebasePhoneOtp,
+  verifyPanCardApi,
+  sendAadhaarOtpApi,
+  verifyAadhaarOtpApi,
+  formatAadhaarNumber,
+  validatePanStructure,
+} from '../utils/kycVerification';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -56,6 +72,45 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [regReferral, setRegReferral] = useState('');
   const [isReferralLocked, setIsReferralLocked] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
+
+  // Real KYC Verification State
+  // 1. Mobile OTP (Firebase Phone Auth)
+  const [isPhoneOtpSent, setIsPhoneOtpSent] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [phoneOtpSending, setPhoneOtpSending] = useState(false);
+  const [phoneOtpVerifying, setPhoneOtpVerifying] = useState(false);
+  const [phoneTestOtpHint, setPhoneTestOtpHint] = useState<string | null>(null);
+  const [phoneResendTimer, setPhoneResendTimer] = useState(0);
+
+  // 2. PAN Verification
+  const [panNumber, setPanNumber] = useState('');
+  const [isPanVerifying, setIsPanVerifying] = useState(false);
+  const [isPanVerified, setIsPanVerified] = useState(false);
+  const [panHolderName, setPanHolderName] = useState('');
+
+  // 3. Aadhaar Verification
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [isAadhaarOtpSent, setIsAadhaarOtpSent] = useState(false);
+  const [aadhaarClientId, setAadhaarClientId] = useState('');
+  const [aadhaarOtp, setAadhaarOtp] = useState('');
+  const [isAadhaarOtpSending, setIsAadhaarOtpSending] = useState(false);
+  const [isAadhaarVerifying, setIsAadhaarVerifying] = useState(false);
+  const [isAadhaarVerified, setIsAadhaarVerified] = useState(false);
+  const [maskedAadhaar, setMaskedAadhaar] = useState('');
+  const [aadhaarTestOtpHint, setAadhaarTestOtpHint] = useState<string | null>(null);
+
+  // KYC Section Accordion Toggle
+  const [showKycSection, setShowKycSection] = useState(false);
+
+  // Countdown timer for Phone OTP Resend
+  React.useEffect(() => {
+    if (phoneResendTimer <= 0) return;
+    const timer = setInterval(() => {
+      setPhoneResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [phoneResendTimer]);
 
   // Auto-detect referral code in URL parameter or local storage when opened via share link
   React.useEffect(() => {
@@ -187,6 +242,122 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
+  const handleSendPhoneOtp = async () => {
+    const cleanDigits = regPhone.replace(/[^0-9]/g, '');
+    if (!cleanDigits || cleanDigits.length < 10) {
+      setErrorMessage(isHi ? 'कृपया पहले 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।' : 'Please enter valid 10-digit mobile number first.');
+      return;
+    }
+    setErrorMessage('');
+    setPhoneOtpSending(true);
+    try {
+      const res = await sendFirebasePhoneOtp(cleanDigits, 'recaptcha-phone-container');
+      setPhoneOtpSending(false);
+      if (res.success) {
+        setIsPhoneOtpSent(true);
+        setPhoneResendTimer(30);
+        if (res.testOtp) setPhoneTestOtpHint(res.testOtp);
+      } else {
+        setErrorMessage(res.error || (isHi ? 'OTP भेजने में त्रुटि हुई।' : 'Error sending phone OTP.'));
+      }
+    } catch {
+      setPhoneOtpSending(false);
+      setErrorMessage(isHi ? 'OTP भेजने में विफल।' : 'Failed to send phone OTP.');
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
+    if (!phoneOtp || phoneOtp.trim().length < 4) {
+      setErrorMessage(isHi ? 'कृपया 6-अंकीय मान्य OTP दर्ज करें।' : 'Please enter 6-digit OTP code.');
+      return;
+    }
+    setErrorMessage('');
+    setPhoneOtpVerifying(true);
+    try {
+      const res = await verifyFirebasePhoneOtp(phoneOtp, phoneTestOtpHint || undefined);
+      setPhoneOtpVerifying(false);
+      if (res.success) {
+        setIsPhoneVerified(true);
+        setIsPhoneOtpSent(false);
+      } else {
+        setErrorMessage(res.error || (isHi ? 'गलत OTP कोड दर्ज किया गया है।' : 'Invalid OTP entered.'));
+      }
+    } catch {
+      setPhoneOtpVerifying(false);
+      setErrorMessage(isHi ? 'OTP सत्यापन विफल रहा।' : 'OTP verification failed.');
+    }
+  };
+
+  const handleVerifyPan = async () => {
+    const cleanPan = panNumber.trim().toUpperCase();
+    if (!validatePanStructure(cleanPan)) {
+      setErrorMessage(isHi ? 'कृपया 10-अक्षरों का मान्य पैन नंबर दर्ज करें (उदा. ABCDE1234F)' : 'Please enter valid 10-digit PAN (e.g. ABCDE1234F)');
+      return;
+    }
+    setErrorMessage('');
+    setIsPanVerifying(true);
+    try {
+      const res = await verifyPanCardApi(cleanPan, regName);
+      setIsPanVerifying(false);
+      if (res.success) {
+        setIsPanVerified(true);
+        setPanHolderName(res.holderName || regName);
+      } else {
+        setErrorMessage(res.error || (isHi ? 'पैन सत्यापन विफल रहा।' : 'PAN verification failed.'));
+      }
+    } catch {
+      setIsPanVerifying(false);
+      setErrorMessage(isHi ? 'पैन सत्यापन में त्रुटि हुई।' : 'Error verifying PAN.');
+    }
+  };
+
+  const handleSendAadhaarOtp = async () => {
+    const cleanAadhaar = aadhaarNumber.replace(/[^0-9]/g, '');
+    if (cleanAadhaar.length !== 12) {
+      setErrorMessage(isHi ? 'कृपया 12-अंकीय आधार कार्ड नंबर दर्ज करें।' : 'Please enter 12-digit Aadhaar number.');
+      return;
+    }
+    setErrorMessage('');
+    setIsAadhaarOtpSending(true);
+    try {
+      const res = await sendAadhaarOtpApi(cleanAadhaar);
+      setIsAadhaarOtpSending(false);
+      if (res.success && res.clientId) {
+        setIsAadhaarOtpSent(true);
+        setAadhaarClientId(res.clientId);
+        if (res.testOtp) setAadhaarTestOtpHint(res.testOtp);
+      } else {
+        setErrorMessage(res.error || (isHi ? 'आधार OTP भेजने में त्रुटि हुई।' : 'Error sending Aadhaar OTP.'));
+      }
+    } catch {
+      setIsAadhaarOtpSending(false);
+      setErrorMessage(isHi ? 'आधार OTP भेजने में असमर्थ।' : 'Unable to send Aadhaar OTP.');
+    }
+  };
+
+  const handleVerifyAadhaarOtp = async () => {
+    if (!aadhaarOtp || aadhaarOtp.trim().length < 4) {
+      setErrorMessage(isHi ? 'कृपया 6-अंकीय आधार OTP दर्ज करें।' : 'Please enter 6-digit Aadhaar OTP.');
+      return;
+    }
+    setErrorMessage('');
+    setIsAadhaarVerifying(true);
+    try {
+      const res = await verifyAadhaarOtpApi(aadhaarClientId, aadhaarOtp, aadhaarNumber);
+      setIsAadhaarVerifying(false);
+      if (res.success) {
+        setIsAadhaarVerified(true);
+        setIsAadhaarOtpSent(false);
+        setMaskedAadhaar(res.maskedAadhaar || `XXXX XXXX ${aadhaarNumber.replace(/[^0-9]/g, '').slice(-4)}`);
+      } else {
+        setErrorMessage(res.error || (isHi ? 'आधार OTP सत्यापन विफल रहा।' : 'Aadhaar OTP verification failed.'));
+      }
+    } catch {
+      setIsAadhaarVerifying(false);
+      setErrorMessage(isHi ? 'आधार सत्यापन में त्रुटि हुई।' : 'Aadhaar verification error.');
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -222,6 +393,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         email: regEmail,
         password: regPassword,
         referralCode: regReferral,
+        isPhoneVerified: isPhoneVerified,
+        phoneVerifiedAt: isPhoneVerified ? new Date().toISOString() : undefined,
+        panNumber: panNumber ? panNumber.toUpperCase().trim() : undefined,
+        isPanVerified: isPanVerified,
+        panVerifiedAt: isPanVerified ? new Date().toISOString() : undefined,
+        panHolderName: panHolderName || (isPanVerified ? regName : undefined),
+        aadhaarNumber: isAadhaarVerified ? maskedAadhaar : (aadhaarNumber ? formatAadhaarNumber(aadhaarNumber) : undefined),
+        isAadhaarVerified: isAadhaarVerified,
+        aadhaarVerifiedAt: isAadhaarVerified ? new Date().toISOString() : undefined,
+        kycStatus: (isPanVerified && isAadhaarVerified) ? 'VERIFIED' : (isPhoneVerified ? 'PENDING' : 'NOT_SUBMITTED'),
       });
 
       setIsLoading(false);
@@ -591,32 +772,121 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     />
                   </div>
 
-                  {/* Mobile Number */}
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {/* Mobile Number with Firebase Phone OTP */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-slate-300">
                         {isHi ? 'मोबाइल नंबर (10 अंक)' : 'Mobile Number (10 Digits)'}
                       </label>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        required
-                        autoComplete="one-time-code"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                        data-form-type="other"
-                        value={regPhone}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setRegPhone(val);
-                        }}
-                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
-                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 font-mono"
-                      />
-                      <span className="text-[10px] text-slate-400 mt-0.5 block">
-                        {isHi ? '✓ मोबाइल नंबर ही यूजर आईडी रहेगा' : '✓ Mobile number is your User ID'}
-                      </span>
+                      {isPhoneVerified ? (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                          <BadgeCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{isHi ? 'मोबाइल सत्यापित' : 'Phone Verified'}</span>
+                        </span>
+                      ) : isPhoneOtpSent ? (
+                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
+                          {isHi ? 'OTP भेजा गया' : 'OTP Sent'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {isHi ? 'Firebase SMS OTP' : 'Firebase SMS OTP'}
+                        </span>
+                      )}
                     </div>
+
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-2.5 text-xs font-mono font-bold text-slate-400 select-none">
+                          +91
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          required
+                          disabled={isPhoneVerified}
+                          autoComplete="one-time-code"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          data-form-type="other"
+                          value={regPhone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                            setRegPhone(val);
+                            setIsPhoneVerified(false);
+                            setIsPhoneOtpSent(false);
+                          }}
+                          placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
+                          className={`w-full pl-11 pr-3.5 py-2.5 bg-slate-950 border rounded-xl text-white placeholder-slate-500 text-sm font-mono focus:outline-none transition-all ${
+                            isPhoneVerified
+                              ? 'border-emerald-500/60 bg-emerald-950/20 text-emerald-300 font-bold'
+                              : 'border-slate-700/80 focus:border-emerald-500'
+                          }`}
+                        />
+                      </div>
+
+                      {!isPhoneVerified && (
+                        <button
+                          type="button"
+                          onClick={handleSendPhoneOtp}
+                          disabled={phoneOtpSending || regPhone.length < 10 || phoneResendTimer > 0}
+                          className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white font-bold text-xs tracking-wide shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-900/30 active:scale-95"
+                          title={isHi ? 'Firebase द्वारा मोबाइल पर SMS OTP भेजें' : 'Send SMS OTP via Firebase'}
+                        >
+                          {phoneOtpSending ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {phoneResendTimer > 0
+                              ? `${phoneResendTimer}s`
+                              : isPhoneOtpSent
+                              ? (isHi ? 'दोबारा भेजें' : 'Resend')
+                              : (isHi ? 'OTP भेजें' : 'Send OTP')}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Phone OTP Verification Box */}
+                    {isPhoneOtpSent && !isPhoneVerified && (
+                      <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                            <KeyRound className="w-3.5 h-3.5" />
+                            {isHi ? 'मोबाइल पर आया 6-अंकीय OTP डालें:' : 'Enter 6-digit SMS OTP:'}
+                          </span>
+                          {phoneTestOtpHint && (
+                            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
+                              टेस्ट OTP: {phoneTestOtpHint}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={phoneOtp}
+                            onChange={(e) => setPhoneOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                            placeholder="••••••"
+                            className="flex-1 px-3 py-2 bg-slate-950 border border-emerald-500/50 rounded-xl text-white text-center font-mono font-bold tracking-widest text-base focus:outline-none focus:border-emerald-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleVerifyPhoneOtp}
+                            disabled={phoneOtpVerifying || phoneOtp.length < 4}
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shrink-0 active:scale-95"
+                          >
+                            {phoneOtpVerifying ? (isHi ? 'जांच जारी...' : 'Verifying...') : (isHi ? 'OTP वेरिफाई' : 'Verify')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">
+                      {isHi ? '✓ मोबाइल नंबर ही आपकी स्थायी यूजर आईडी रहेगा' : '✓ Mobile number is your permanent User ID'}
+                    </span>
                   </div>
 
                   {/* Email (optional) */}
@@ -669,6 +939,187 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {/* Govt Identity Verification (PAN & Aadhaar e-KYC Card) */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3.5 shadow-inner">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold text-white">
+                            {isHi ? 'सरकारी पहचान सत्यापन (PAN & Aadhaar)' : 'Govt Identity KYC (PAN & Aadhaar)'}
+                          </h4>
+                          <p className="text-[10px] text-slate-400">
+                            {isHi ? 'सुरक्षित एवं 100% प्रमाणित फिनटेक सत्यापन' : 'Safe & verified fintech identity'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isPanVerified && isAadhaarVerified
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : isPanVerified || isAadhaarVerified
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-slate-800 text-slate-300 border-slate-700'
+                      }`}>
+                        {isPanVerified && isAadhaarVerified
+                          ? (isHi ? 'पूर्ण सत्यापित' : 'Fully Verified')
+                          : isPanVerified || isAadhaarVerified
+                          ? (isHi ? 'आंशिक' : 'Partial')
+                          : (isHi ? 'लाइव सत्यापन' : 'Live KYC')}
+                      </span>
+                    </div>
+
+                    {/* PAN Card Verification Input */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between text-xs">
+                        <label className="font-semibold text-slate-300 flex items-center gap-1.5">
+                          <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{isHi ? 'पैन कार्ड नंबर (10 अक्षर)' : 'PAN Card (10 Characters)'}</span>
+                        </label>
+                        {isPanVerified ? (
+                          <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                            <BadgeCheck className="w-3.5 h-3.5" />
+                            {isHi ? 'पैन सत्यापित' : 'PAN Verified'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">
+                            {isHi ? 'NSDL/ITD रिकॉर्ड' : 'NSDL/ITD Live'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={10}
+                          disabled={isPanVerified}
+                          value={panNumber}
+                          onChange={(e) => {
+                            setPanNumber(e.target.value.toUpperCase().slice(0, 10));
+                            setIsPanVerified(false);
+                          }}
+                          placeholder="ABCDE1234F"
+                          className={`flex-1 px-3 py-2 bg-slate-900 border rounded-xl text-white font-mono text-xs uppercase tracking-wider focus:outline-none ${
+                            isPanVerified
+                              ? 'border-emerald-500/60 bg-emerald-950/20 text-emerald-300 font-bold'
+                              : 'border-slate-700/80 focus:border-emerald-500'
+                          }`}
+                        />
+                        {!isPanVerified && (
+                          <button
+                            type="button"
+                            onClick={handleVerifyPan}
+                            disabled={isPanVerifying || panNumber.trim().length !== 10}
+                            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer shrink-0 active:scale-95"
+                          >
+                            {isPanVerifying ? (isHi ? 'जांच जारी...' : 'Checking...') : (isHi ? 'पैन जांचें' : 'Verify PAN')}
+                          </button>
+                        )}
+                      </div>
+                      {isPanVerified && panHolderName && (
+                        <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span>{isHi ? `पैन धारक: ${panHolderName}` : `Holder: ${panHolderName}`}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Aadhaar Card Verification Input */}
+                    <div className="space-y-1.5 pt-2.5 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between text-xs">
+                        <label className="font-semibold text-slate-300 flex items-center gap-1.5">
+                          <FileCheck className="w-3.5 h-3.5 text-blue-400" />
+                          <span>{isHi ? 'आधार कार्ड नंबर (12 अंक)' : 'Aadhaar Card (12 Digits)'}</span>
+                        </label>
+                        {isAadhaarVerified ? (
+                          <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                            <BadgeCheck className="w-3.5 h-3.5" />
+                            {isHi ? 'आधार वेरिफाइड' : 'Aadhaar Verified'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">
+                            {isHi ? 'UIDAI e-KYC OTP' : 'UIDAI e-KYC OTP'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={14}
+                          disabled={isAadhaarVerified}
+                          value={aadhaarNumber}
+                          onChange={(e) => {
+                            const formatted = formatAadhaarNumber(e.target.value);
+                            setAadhaarNumber(formatted);
+                            setIsAadhaarVerified(false);
+                            setIsAadhaarOtpSent(false);
+                          }}
+                          placeholder="XXXX XXXX XXXX"
+                          className={`flex-1 px-3 py-2 bg-slate-900 border rounded-xl text-white font-mono text-xs tracking-wider focus:outline-none ${
+                            isAadhaarVerified
+                              ? 'border-emerald-500/60 bg-emerald-950/20 text-emerald-300 font-bold'
+                              : 'border-slate-700/80 focus:border-emerald-500'
+                          }`}
+                        />
+                        {!isAadhaarVerified && (
+                          <button
+                            type="button"
+                            onClick={handleSendAadhaarOtp}
+                            disabled={isAadhaarOtpSending || aadhaarNumber.replace(/[^0-9]/g, '').length !== 12}
+                            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer shrink-0 active:scale-95"
+                          >
+                            {isAadhaarOtpSending ? (isHi ? 'भेजा जा रहा...' : 'Sending...') : (isHi ? 'OTP भेजें' : 'Send OTP')}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Aadhaar OTP Input Box */}
+                      {isAadhaarOtpSent && !isAadhaarVerified && (
+                        <div className="mt-2 p-2.5 rounded-xl bg-blue-950/40 border border-blue-500/40 space-y-2 animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-blue-300">
+                              {isHi ? 'आधार e-KYC OTP (6-अंक) दर्ज करें:' : 'Enter 6-digit Aadhaar OTP:'}
+                            </span>
+                            {aadhaarTestOtpHint && (
+                              <span className="text-[10px] text-blue-300 font-mono bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
+                                टेस्ट OTP: {aadhaarTestOtpHint}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              maxLength={6}
+                              value={aadhaarOtp}
+                              onChange={(e) => setAadhaarOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                              placeholder="••••••"
+                              className="flex-1 px-3 py-1.5 bg-slate-950 border border-blue-500/50 rounded-xl text-white text-center font-mono font-bold tracking-widest text-sm focus:outline-none focus:border-blue-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleVerifyAadhaarOtp}
+                              disabled={isAadhaarVerifying || aadhaarOtp.length < 4}
+                              className="px-3.5 py-1.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-40 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer shrink-0 active:scale-95"
+                            >
+                              {isAadhaarVerifying ? (isHi ? 'सत्यापित हो रहा...' : 'Verifying...') : (isHi ? 'वेरिफाई' : 'Verify')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isAadhaarVerified && (
+                        <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span>{isHi ? `आधार ई-केवाईसी सत्यापित: ${maskedAadhaar}` : `Aadhaar Verified: ${maskedAadhaar}`}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Invisible Recaptcha container for Firebase Phone Auth */}
+                  <div
+                    id="recaptcha-phone-container"
+                    style={{ position: 'fixed', bottom: 0, right: 0, width: 1, height: 1, opacity: 0, pointerEvents: 'none', zIndex: -1 }}
+                  />
 
                   {/* Referral / Sponsor Code */}
                   <div>

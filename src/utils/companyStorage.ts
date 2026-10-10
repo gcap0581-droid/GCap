@@ -4,14 +4,14 @@ const COMPANY_PROFILE_STORAGE_KEY = 'gcap_corporate_company_profile_v2';
 const OLD_COMPANY_PROFILE_KEY = 'gcap_corporate_company_profile_v1';
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCAP PRIVATE LIMITED',
-  companyNameHi: 'जीकैप प्राइवेट लिमिटेड',
-  tradeName: 'GCAP PRIVATE LIMITED',
+  companyName: 'GCAP (OPC) PRIVATE LIMITED',
+  companyNameHi: 'जीकैप (ओपीसी) प्राइवेट लिमिटेड',
+  tradeName: 'GCAP (OPC) PRIVATE LIMITED',
   cin: 'U66190BR2026OPC088307',
   pan: 'AANCG4365Q',
   tan: 'PTNG16977C',
   gstin: '',
-  incorporationDate: '2026-09-05',
+  incorporationDate: '2026-09-23',
   rocJurisdiction: 'ROC Patna, Bihar',
   companyType: 'Private Limited Company (Non-Govt)',
   authorizedCapital: '₹55,00,00,000',
@@ -37,9 +37,17 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   bankBranch: 'Sasaram Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
+  companyBankAccountHolder: 'GCAP (OPC) PRIVATE LIMITED',
   tagline: 'ASSETS & WEALTH MANAGEMENT SYSTEM',
   taglineHi: 'संपत्ति और धन प्रबंधन प्रणाली',
+  // DPIIT Startup India Recognition (Govt of India)
+  dippNumber: 'DIPP285976',
+  startupIndiaCertNumber: 'DIPP285976',
+  startupIndiaCertIssueDate: '30-09-2026',
+  startupIndiaCertValidUpto: '22-09-2036',
+  industry: 'Finance Technology',
+  sector: 'Business Finance',
+  dpiitMinistry: 'Ministry of Commerce & Industry, DPIIT, Government of India',
   lastUpdated: '2026-09-30T16:31:07.308Z',
 };
 

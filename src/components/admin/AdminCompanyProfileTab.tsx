@@ -26,6 +26,7 @@ import {
   saveStoredCompanyProfile,
   resetStoredCompanyProfile,
 } from '../../utils/companyStorage';
+import { StartupIndiaCertificateModal } from '../StartupIndiaCertificateModal';
 
 interface AdminCompanyProfileTabProps {
   language: Language;
@@ -45,6 +46,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const [formData, setFormData] = useState<CompanyProfile>({ ...initialProfile });
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activePreview, setActivePreview] = useState<'LETTERHEAD' | 'LEGAL_BLOCK' | 'SEAL'>('LETTERHEAD');
+  const [showStartupCertModal, setShowStartupCertModal] = useState(false);
   const isDirtyRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -344,6 +346,104 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   placeholder="e.g. ₹5,00,00,000"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
+              </div>
+            </div>
+
+            {/* Startup India Recognition Card */}
+            <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-orange-950/30 via-slate-950 to-blue-950/30 border border-amber-500/40 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-500/20 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-orange-400" />
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>{isHi ? 'भारत सरकार स्टार्टअप इंडिया मान्यता' : 'DPIIT #startupindia Recognition'}</span>
+                      <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.2 rounded border border-emerald-500/40">
+                        {formData.dippNumber || 'DIPP285976'}
+                      </span>
+                    </h4>
+                    <p className="text-[10px] text-slate-400">
+                      {isHi ? 'वाणिज्य एवं उद्योग मंत्रालय (DPIIT) द्वारा 10 वर्षों के लिए मान्यता प्राप्त' : 'Govt of India DPIIT Recognized Startup for 10 Years'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowStartupCertModal(true)}
+                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'प्रमाण पत्र देखें / प्रिंट' : 'View Certificate'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    {isHi ? 'DPIIT सर्टिफिकेट नंबर:' : 'DPIIT Certificate No:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.dippNumber || 'DIPP285976'}
+                    onChange={(e) => handleChange('dippNumber', e.target.value)}
+                    placeholder="DIPP285976"
+                    className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-300 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-500 uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    {isHi ? 'जारी तिथि (Date of Issue):' : 'Date of Issue:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.startupIndiaCertIssueDate || '30-09-2026'}
+                    onChange={(e) => handleChange('startupIndiaCertIssueDate', e.target.value)}
+                    placeholder="30-09-2026"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    {isHi ? 'वैधता (Valid Upto):' : 'Valid Upto:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.startupIndiaCertValidUpto || '22-09-2036'}
+                    onChange={(e) => handleChange('startupIndiaCertValidUpto', e.target.value)}
+                    placeholder="22-09-2036"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-emerald-300 font-mono font-bold text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    {isHi ? 'उद्योग (Industry):' : 'Industry:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.industry || 'Finance Technology'}
+                    onChange={(e) => handleChange('industry', e.target.value)}
+                    placeholder="Finance Technology"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    {isHi ? 'क्षेत्र (Sector):' : 'Sector:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sector || 'Business Finance'}
+                    onChange={(e) => handleChange('sector', e.target.value)}
+                    placeholder="Business Finance"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -840,6 +940,15 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Official Startup India Certificate Modal */}
+      {showStartupCertModal && (
+        <StartupIndiaCertificateModal
+          isOpen={showStartupCertModal}
+          onClose={() => setShowStartupCertModal(false)}
+          language={language}
+        />
+      )}
     </div>
   );
 };

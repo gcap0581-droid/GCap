@@ -613,6 +613,16 @@ export async function registerUserAsync(data: {
   loginId?: string;
   email?: string;
   referralCode?: string;
+  isPhoneVerified?: boolean;
+  phoneVerifiedAt?: string;
+  panNumber?: string;
+  isPanVerified?: boolean;
+  panVerifiedAt?: string;
+  panHolderName?: string;
+  aadhaarNumber?: string;
+  isAadhaarVerified?: boolean;
+  aadhaarVerifiedAt?: string;
+  kycStatus?: 'NOT_SUBMITTED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 }): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   const rawDigits = data.phone.replace(/[^0-9]/g, '');
   const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
@@ -646,6 +656,16 @@ export async function registerUserAsync(data: {
         email: data.email || `${cleanPhone}@gcap.user`,
         password: cleanPassword,
         referralCode: data.referralCode,
+        isPhoneVerified: Boolean(data.isPhoneVerified),
+        phoneVerifiedAt: data.phoneVerifiedAt,
+        panNumber: data.panNumber,
+        isPanVerified: Boolean(data.isPanVerified),
+        panVerifiedAt: data.panVerifiedAt,
+        panHolderName: data.panHolderName,
+        aadhaarNumber: data.aadhaarNumber,
+        isAadhaarVerified: Boolean(data.isAadhaarVerified),
+        aadhaarVerifiedAt: data.aadhaarVerifiedAt,
+        kycStatus: data.kycStatus || (data.isPanVerified && data.isAadhaarVerified ? 'VERIFIED' : (data.isPhoneVerified ? 'PENDING' : 'NOT_SUBMITTED')),
       }),
     });
 

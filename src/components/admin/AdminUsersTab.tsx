@@ -67,6 +67,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   isSyncing = false,
   defaultFilterStatus,
 }) => {
+  console.log('[DEBUG] AdminUsersTab users prop:', users);
   const isHi = language === 'hi';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ONLINE' | 'OFFLINE' | 'USER' | 'ADMIN' | 'SUSPENDED'>(defaultFilterStatus || 'ALL');
@@ -104,6 +105,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     }
   };
 
+  const filteredUsers = enrichedUsers; 
+  /*
   const filteredUsers = enrichedUsers.filter((u) => {
     if (!u) return false;
     const uPhone = String(u.phone || '').trim();
@@ -132,6 +135,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
     return matchesSearch && matchesStatus;
   });
+  */
 
   const userToDelete = enrichedUsers.find((u) => u && u.id === deleteConfirmId);
 
@@ -481,6 +485,28 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                         <span className="font-mono text-cyan-300 font-semibold">{u.loginId}</span>
                         <span>•</span>
                         <span>{u.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {u.isPhoneVerified && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                            ✓ Phone OTP
+                          </span>
+                        )}
+                        {u.isPanVerified && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title={u.panHolderName}>
+                            ✓ PAN: {u.panNumber || 'OK'}
+                          </span>
+                        )}
+                        {u.isAadhaarVerified && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30" title={u.aadhaarNumber}>
+                            ✓ Aadhaar {u.aadhaarNumber ? `(${u.aadhaarNumber.slice(-4)})` : 'eKYC'}
+                          </span>
+                        )}
+                        {u.kycStatus === 'VERIFIED' && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40">
+                            KYC पूर्ण
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -832,6 +858,28 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <td className="py-3.5 px-4 font-mono">
                         <div className="text-slate-200 font-bold">{u.loginId}</div>
                         <div className="text-[11px] text-slate-400">{u.phone}</div>
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          {u.isPhoneVerified && (
+                            <span className="text-[8px] font-sans px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              ✓ OTP
+                            </span>
+                          )}
+                          {u.isPanVerified && (
+                            <span className="text-[8px] font-sans px-1 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title={u.panHolderName}>
+                              ✓ PAN
+                            </span>
+                          )}
+                          {u.isAadhaarVerified && (
+                            <span className="text-[8px] font-sans px-1 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                              ✓ Aadh
+                            </span>
+                          )}
+                          {u.kycStatus === 'VERIFIED' && (
+                            <span className="text-[8px] font-sans px-1 py-0.2 rounded bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40">
+                              KYC OK
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[10px] text-slate-500 mt-0.5">Joined: {u.joinedDate}</div>
                       </td>
 
