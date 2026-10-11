@@ -15,38 +15,27 @@ export function setupServiceWorker(): void {
   }
 
   if ('serviceWorker' in navigator) {
-    let refreshing = false;
+    // Prevent reload loops: NEVER automatically reload the page on background service worker updates
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing && !isIframe) {
-        refreshing = true;
-        window.location.reload();
-      }
+      // Background update only - do not force window.location.reload()
+      console.log('[PWA] Service worker updated successfully in background.');
     });
 
     window.addEventListener('load', () => {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  // New update available in background without interrupting user
+                  console.log('[PWA] New service worker installed.');
                 }
               });
             }
           });
-
-          // Check for updates periodically and on visibility change
-          registration.update().catch(() => {});
-          setInterval(() => {
-            registration.update().catch(() => {});
-          }, 30000);
         })
         .catch(() => {});
     });

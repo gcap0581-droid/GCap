@@ -739,7 +739,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     .reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-full space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Show Header & Sub-Tabs Grid ONLY when not viewing User Manual */}
       {activeSubTab !== 'USER_MANUAL' && (
         <>
@@ -922,24 +922,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
 
           {/* Navigation Sub-Tabs & Mobile Menu Grid */}
-          <div className="space-y-4">
-            {/* Navigation Sub-Tabs Cards Grid: Consistent premium navigation */}
-            <div className="grid grid-cols-2 gap-2 w-full">
+          <div className="space-y-3 w-full">
+            {/* Navigation Sub-Tabs Cards Grid: 18 items perfectly balanced across 2 cols (mobile), 3 cols (tablet), 6 cols (desktop) with zero right blank space */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 w-full">
                 
-                {/* Tabs definition */}
+                {/* Tabs definition - 18 balanced items */}
                 {[
                   { id: 'OVERVIEW', icon: TrendingUp, label: isHi ? 'डैशबोर्ड' : 'Overview', desc: isHi ? 'मुख्य सांख्यिकी' : 'System Stats', badge: 'STATS' },
-                  { id: 'USERS', icon: Users, label: isHi ? 'यूज़र्स' : 'Users', desc: isHi ? `${onlineUsersCount} ऑनलाइन` : `${onlineUsersCount} Online`, badge: onlineUsersCount > 0 ? "LIVE" : "ACCOUNTS" },
+                  { id: 'USERS', icon: Users, label: isHi ? 'यूज़र्स' : 'Users', desc: isHi ? `${onlineUsersCount} ऑनलाइन` : `${onlineUsersCount} Online`, badge: onlineUsersCount > 0 ? "LIVE" : "USERS" },
                   { id: 'TRANSACTIONS', icon: Clock, label: isHi ? 'लेन-देन' : 'Transactions', desc: isHi ? 'अप्रूवल व एडिट' : 'Approve & Audit', badge: transactions.filter(t => t.status === 'PENDING').length > 0 ? "REQ" : "LEDGER" },
                   { id: 'PLANS', icon: Layers, label: isHi ? 'प्लान्स' : 'Plans', desc: isHi ? 'CRUD मैनेजमेंट' : 'ROI Schemes', badge: 'SCHEMES' },
                   { id: 'MESSAGES', icon: Bell, label: isHi ? 'ब्रॉडकास्ट' : 'Messages', desc: isHi ? 'मैसेज भेजें' : 'Send Messages', badge: 'NOTIFY' },
-                  { id: 'WHATSAPP_HUB', icon: MessageCircle, label: isHi ? 'WhatsApp हब' : 'WhatsApp Hub', desc: isHi ? 'टेस्ट सैंपल व रिकॉर्ड' : 'Samples & Audit Logs', badge: 'WHATSAPP' },
+                  { id: 'WHATSAPP_HUB', icon: MessageCircle, label: isHi ? 'WhatsApp हब' : 'WhatsApp Hub', desc: isHi ? 'अलर्ट व रिकॉर्ड' : 'Samples & Logs', badge: 'WHATSAPP' },
                   { id: 'SMS_SETTINGS', icon: Smartphone, label: isHi ? 'SMS सेटिंग्स' : 'SMS Settings', desc: isHi ? 'OTP व अलर्ट' : 'OTP & Alerts', badge: 'SMS' },
                   { 
                     id: 'TREASURY', 
                     icon: Building2, 
                     label: isHi ? 'ट्रेजरी' : 'Treasury', 
-                    desc: unseenTreasuryRequestsCount > 0 ? (isHi ? `${unseenTreasuryRequestsCount} नए पेमेंट अनुरोध` : `${unseenTreasuryRequestsCount} New Requests`) : (isHi ? 'कंपनी का खजाना' : 'Company Reserve'), 
+                    desc: unseenTreasuryRequestsCount > 0 ? (isHi ? `${unseenTreasuryRequestsCount} नए अनुरोध` : `${unseenTreasuryRequestsCount} Requests`) : (isHi ? 'कंपनी का खजाना' : 'Company Reserve'), 
                     badge: unseenTreasuryRequestsCount > 0 ? `${unseenTreasuryRequestsCount} REQ` : 'RESERVES',
                     isAlert: unseenTreasuryRequestsCount > 0,
                     customClick: () => {
@@ -948,14 +948,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     }
                   },
                   { id: 'BACKUP', icon: Database, label: isHi ? 'बैकअप' : 'Backup', desc: isHi ? 'मैन्युअल स्नैपशॉट' : 'Snapshots', badge: 'CLONES' },
-                  { id: 'DEDUCTIONS', icon: ShieldAlert, label: isHi ? 'कटौती व शुल्क' : 'Deductions', desc: isHi ? 'चार्ज, TDS व ट्रांसफर' : 'Admin & TDS Fees', badge: 'AUDIT' },
-                  { id: 'LEDGER', icon: BookOpen, label: isHi ? 'कंपनी हिसाब-किताब' : 'Company Ledger', desc: isHi ? 'आय और ख़र्च का हिसाब' : 'Income & Expenses', badge: 'LEDGER' },
+                  { id: 'DEDUCTIONS', icon: ShieldAlert, label: isHi ? 'कटौती व शुल्क' : 'Deductions', desc: isHi ? 'चार्ज, TDS व फीस' : 'Admin & TDS Fees', badge: 'AUDIT' },
+                  { id: 'LEDGER', icon: BookOpen, label: isHi ? 'कंपनी हिसाब' : 'Company Ledger', desc: isHi ? 'आय और ख़र्च' : 'Income & Expenses', badge: 'LEDGER' },
                   { id: 'USER_MANUAL', icon: BookOpen, label: isHi ? 'यूज़र गाइड' : 'Manual', desc: isHi ? 'प्रशिक्षण गाइड' : 'Admin Guide', badge: 'DOCS' },
                   { id: 'CURRENT_ACTIVITY', icon: Activity, label: isHi ? 'मास्टर समरी' : 'Activity', desc: isHi ? 'सिस्टम स्टेटस' : 'Master Summary', badge: 'MASTER' },
                   { id: 'COMPANY_PROFILE', icon: Building2, label: isHi ? 'कंपनी प्रोफाइल' : 'Company Profile', desc: isHi ? 'DIN, PAN, TAN' : 'Statutory Data', badge: 'MASTER' },
-                  { id: 'COMPANY_SEAL', icon: Award, label: isHi ? 'कंपनी मुहर एवं सील' : 'Stamps & Seals', desc: isHi ? 'डायरेक्टर मुहर व गोल सील' : 'Download PNG/Print', badge: 'LEGAL SEAL' },
-                  { id: 'COMPANY_LOGO', icon: Sparkles, label: isHi ? 'कंपनी HD लोगो' : 'Company HD Logo', desc: isHi ? 'हर साइज में PNG / JPG' : 'All Sizes PNG & JPG', badge: '4K LOGO' },
-                  { id: 'INVESTMENTS', icon: BarChart3, label: isHi ? 'कुल निवेश' : 'Investments', desc: isHi ? 'सभी यूज़र पोर्टफोलियो' : 'All Portfolios', badge: 'ASSETS' },
+                  { id: 'COMPANY_SEAL', icon: Award, label: isHi ? 'मुहर एवं सील' : 'Stamps & Seals', desc: isHi ? 'डायरेक्टर मुहर' : 'Legal Stamps', badge: 'SEAL' },
+                  { id: 'COMPANY_LOGO', icon: Sparkles, label: isHi ? 'कंपनी HD लोगो' : 'Company HD Logo', desc: isHi ? '4K PNG व JPG' : 'All Sizes Logo', badge: '4K LOGO' },
+                  { id: 'INVESTMENTS', icon: BarChart3, label: isHi ? 'कुल निवेश' : 'Investments', desc: isHi ? 'सभी पोर्टफोलियो' : 'All Portfolios', badge: 'ASSETS' },
+                  { 
+                    id: 'RULES_LIMITS', 
+                    icon: Sliders, 
+                    label: isHi ? 'नियम व सेटिंग्स' : 'Rules & Limits', 
+                    desc: isHi ? 'दरें, सीमाएं व चक्र' : 'Rates, Limits & Cycles', 
+                    badge: 'RULES',
+                    customClick: onOpenRules
+                  },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -967,25 +975,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setActiveSubTab(tab.id as any);
                       }
                     }}
-                    className={`w-full p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2 h-full group ${
+                    className={`w-full p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-[96px] sm:h-[102px] group overflow-hidden ${
                       tab.isAlert
                         ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-amber-950/50 border-rose-500/80 text-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.4)] ring-2 ring-rose-500/40 animate-pulse'
                         : activeSubTab === tab.id
-                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                        ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
                         : 'bg-slate-950/60 hover:bg-slate-850/60 border-slate-800/80 hover:border-slate-700 text-slate-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <div className={`p-1.5 rounded-lg border ${
+                    <div className="flex items-center justify-between w-full min-w-0">
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center shrink-0 ${
                         tab.isAlert
                           ? 'bg-rose-500/30 border-rose-500/50 text-rose-300 animate-bounce'
                           : activeSubTab === tab.id 
                           ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
                           : 'bg-slate-800 border-slate-700 text-emerald-400'
                       }`}>
-                        <tab.icon className="w-4 h-4" />
+                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
-                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono ${
+                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${
                         tab.isAlert
                           ? 'bg-rose-500 text-white shadow-md animate-pulse'
                           : activeSubTab === tab.id 
@@ -995,9 +1003,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         {tab.badge}
                       </span>
                     </div>
-                    <div className="leading-tight pt-1">
-                      <h4 className="text-sm font-black tracking-tight">{tab.label}</h4>
-                      <p className="text-[10px] sm:text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors mt-0.5">{tab.desc}</p>
+                    <div className="w-full min-w-0 pt-0.5">
+                      <h4 className="text-xs sm:text-sm font-black tracking-tight text-white truncate">{tab.label}</h4>
+                      <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium group-hover:text-slate-300 transition-colors truncate mt-0.5">{tab.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -1170,156 +1178,172 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           )}
 
-          {/* Key Stat Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                <span>{isHi ? 'कुल प्राप्त डिपॉजिट' : 'Total Deposits'}</span>
-                <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
+          {/* Key Stat Cards: 2 cols on mobile, 4 cols on desktop - completely uniform and symmetrical */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 w-full">
+            <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between h-[105px] sm:h-[115px] overflow-hidden">
+              <div className="flex items-center justify-between text-slate-400 text-[11px] sm:text-xs font-medium">
+                <span className="truncate">{isHi ? 'कुल प्राप्त डिपॉजिट' : 'Total Deposits'}</span>
+                <ArrowDownLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
               </div>
-              <p className="text-2xl font-bold font-mono text-emerald-400">
-                {formatINR(totalDeposits)}
-              </p>
-              <p className="text-[11px] text-slate-400">{isHi ? '100% वेरिफाइड फंड्स' : '100% Verified Bank/UPI'}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                <span>{isHi ? 'वितरित दैनिक रिटर्न (ROI)' : 'Total ROI Paid'}</span>
-                <TrendingUp className="w-4 h-4 text-purple-400" />
-              </div>
-              <p className="text-2xl font-bold font-mono text-purple-300">
-                {formatINR(totalRoiPaid)}
-              </p>
-              <p className="text-[11px] text-slate-400">{isHi ? 'दैनिक ऑटोमेटेड पेआउट' : 'Daily Automated Cycles'}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                <span>{isHi ? 'सफल कुल निकासी' : 'Total Withdrawals'}</span>
-                <ArrowUpRight className="w-4 h-4 text-rose-400" />
-              </div>
-              <p className="text-2xl font-bold font-mono text-rose-300">
-                {formatINR(totalWithdrawals)}
-              </p>
-              <p className="text-[11px] text-slate-400">{isHi ? '24x7 तत्काल UPI/IMPS' : 'Instant 24x7 Cleared'}</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-                <span>{isHi ? 'पंजीकृत यूज़र्स व उपस्थिति' : 'Registered Users & Presence'}</span>
-                <Users className="w-4 h-4 text-cyan-400" />
-              </div>
-              <div className="flex items-baseline justify-between">
-                <p className="text-2xl font-bold font-mono text-cyan-300">
-                  {usersList.length}
+              <div>
+                <p className="text-lg sm:text-2xl font-bold font-mono text-emerald-400 truncate">
+                  {formatINR(totalDeposits)}
                 </p>
-                <span className="text-[10px] text-slate-400">{isHi ? 'कुल खाते' : 'Total'}</span>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{isHi ? '100% वेरिफाइड फंड्स' : '100% Verified Bank/UPI'}</p>
               </div>
-              {/* Online and Offline Quick Action Pills */}
-              <div className="pt-2 border-t border-slate-800/80 flex items-center gap-1.5 flex-wrap">
-                <button
-                  type="button"
-                  id="btn-overview-filter-online"
-                  onClick={() => {
-                    setUsersStatusFilter('ONLINE');
-                    setActiveSubTab('USERS');
-                  }}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 cursor-pointer transition-all"
-                  title={isHi ? 'ऑनलाइन यूज़र्स सूची खोलें' : 'Open online users'}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>{onlineUsersCount} {isHi ? 'ऑनलाइन' : 'Online'}</span>
-                </button>
-                <button
-                  type="button"
-                  id="btn-overview-filter-offline"
-                  onClick={() => {
-                    setUsersStatusFilter('OFFLINE');
-                    setActiveSubTab('USERS');
-                  }}
-                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 cursor-pointer transition-all"
-                  title={isHi ? 'ऑफ़लाइन यूज़र्स सूची खोलें' : 'Open offline users'}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>{offlineUsersCount} {isHi ? 'ऑफ़लाइन' : 'Offline'}</span>
-                </button>
+            </div>
+
+            <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between h-[105px] sm:h-[115px] overflow-hidden">
+              <div className="flex items-center justify-between text-slate-400 text-[11px] sm:text-xs font-medium">
+                <span className="truncate">{isHi ? 'वितरित रिटर्न (ROI)' : 'Total ROI Paid'}</span>
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-bold font-mono text-purple-300 truncate">
+                  {formatINR(totalRoiPaid)}
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{isHi ? 'दैनिक 6h पेआउट' : 'Daily Automated Cycles'}</p>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between h-[105px] sm:h-[115px] overflow-hidden">
+              <div className="flex items-center justify-between text-slate-400 text-[11px] sm:text-xs font-medium">
+                <span className="truncate">{isHi ? 'सफल कुल निकासी' : 'Total Withdrawals'}</span>
+                <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 shrink-0" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-bold font-mono text-rose-300 truncate">
+                  {formatINR(totalWithdrawals)}
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{isHi ? '24x7 तत्काल UPI/IMPS' : 'Instant 24x7 Cleared'}</p>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between h-[105px] sm:h-[115px] overflow-hidden">
+              <div className="flex items-center justify-between text-slate-400 text-[11px] sm:text-xs font-medium">
+                <span className="truncate">{isHi ? 'पंजीकृत यूज़र्स' : 'Registered Users'}</span>
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
+              </div>
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <p className="text-lg sm:text-2xl font-bold font-mono text-cyan-300 truncate">
+                    {usersList.length}
+                  </p>
+                  <span className="text-[10px] text-slate-400 shrink-0">{isHi ? 'कुल खाते' : 'Total'}</span>
+                </div>
+                {/* Online and Offline Quick Action Pills */}
+                <div className="pt-1 border-t border-slate-800/80 flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    id="btn-overview-filter-online"
+                    onClick={() => {
+                      setUsersStatusFilter('ONLINE');
+                      setActiveSubTab('USERS');
+                    }}
+                    className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 cursor-pointer transition-all"
+                    title={isHi ? 'ऑनलाइन यूज़र्स सूची खोलें' : 'Open online users'}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>{onlineUsersCount} {isHi ? 'ऑनलाइन' : 'Online'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-overview-filter-offline"
+                    onClick={() => {
+                      setUsersStatusFilter('OFFLINE');
+                      setActiveSubTab('USERS');
+                    }}
+                    className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 cursor-pointer transition-all"
+                    title={isHi ? 'ऑफ़लाइन यूज़र्स सूची खोलें' : 'Open offline users'}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <span>{offlineUsersCount} {isHi ? 'ऑफ़लाइन' : 'Offline'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Action Hub for Admin */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Quick Action Hub for Admin: 2 cols on mobile, 4 cols on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 w-full">
             <div
               onClick={() => setActiveSubTab('PLANS')}
-              className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all cursor-pointer group"
+              className="p-3 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all cursor-pointer group flex flex-col justify-between h-[130px] sm:h-[150px] overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Layers className="w-5 h-5" />
+              <div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-white truncate mb-0.5">
+                  {isHi ? 'प्लान्स जोड़ें / एडिट' : 'Manage Investment Plans'}
+                </h4>
               </div>
-              <h4 className="text-sm font-bold text-white mb-1">
-                {isHi ? 'प्लान्स जोड़ें / एडिट करें' : 'Manage Investment Plans'}
-              </h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-2">
                 {isHi
-                  ? `वर्तमान में ${plans.length} प्लान्स सक्रिय हैं। नया जोड़ें या ROI/अवधि बदलें।`
-                  : `Currently ${plans.length} schemes active. Add new or adjust returns.`}
+                  ? `कुल ${plans.length} प्लान्स सक्रिय हैं। नया जोड़ें या दरें बदलें।`
+                  : `Currently ${plans.length} schemes active.`}
               </p>
             </div>
 
             <div
               onClick={() => setActiveSubTab('USERS')}
-              className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer group"
+              className="p-3 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer group flex flex-col justify-between h-[130px] sm:h-[150px] overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Users className="w-5 h-5" />
+              <div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-white truncate mb-0.5">
+                  {isHi ? 'यूज़र्स जोड़ें / ब्लॉक' : 'Manage Accounts'}
+                </h4>
               </div>
-              <h4 className="text-sm font-bold text-white mb-1">
-                {isHi ? 'यूज़र्स जोड़ें / ब्लॉक करें' : 'Manage Investor Accounts'}
-              </h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-2">
                 {isHi
-                  ? `कुल ${usersList.length} निवेशक। नए खाते जोड़ें, पासवर्ड बदलें या ब्लॉक करें।`
-                  : `Total ${usersList.length} accounts. Add users, reset passwords, or block.`}
+                  ? `कुल ${usersList.length} निवेशक। पासवर्ड व खाता नियंत्रण।`
+                  : `Total ${usersList.length} investor accounts.`}
               </p>
             </div>
 
             <div
               onClick={() => setActiveSubTab('TRANSACTIONS')}
-              className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 transition-all cursor-pointer group"
+              className="p-3 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/40 transition-all cursor-pointer group flex flex-col justify-between h-[130px] sm:h-[150px] overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
-                <Clock className="w-5 h-5" />
+              <div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-white truncate mb-0.5">
+                  {isHi ? 'लेनदेन ऑडिट / अप्रूव' : 'Audit Transactions'}
+                </h4>
               </div>
-              <h4 className="text-sm font-bold text-white mb-1">
-                {isHi ? 'लेनदेन जोड़ें / ऑडिट करें' : 'Audit Transactions'}
-              </h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-2">
                 {isHi
-                  ? `कुल ${transactions.length} लेन-देन। मैन्युअल क्रेडिट/डेबिट जोड़ें या स्थिति बदलें।`
-                  : `Total ${transactions.length} records. Manually credit, debit, or approve.`}
+                  ? `कुल ${transactions.length} लेन-देन। अप्रूवल व ऑडिट।`
+                  : `Total ${transactions.length} records to review.`}
               </p>
             </div>
 
             <div
               onClick={() => setActiveSubTab('COMPANY_LOGO')}
-              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/40 hover:border-amber-400 transition-all cursor-pointer group shadow-lg"
+              className="p-3 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/40 hover:border-amber-400 transition-all cursor-pointer group shadow-lg flex flex-col justify-between h-[130px] sm:h-[150px] overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform border border-amber-500/30">
-                <Sparkles className="w-5 h-5" />
+              <div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform border border-amber-500/30">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <div className="flex items-center justify-between mb-0.5 min-w-0">
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                    {isHi ? 'HD लोगो स्टूडियो' : 'HD Logo Studio'}
+                  </h4>
+                  <span className="text-[8px] sm:text-[9px] px-1 py-0.5 rounded font-black bg-amber-500 text-slate-950 uppercase font-mono shrink-0">
+                    4K
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">
-                  {isHi ? 'कंपनी HD लोगो स्टूडियो' : 'HD Logo Studio'}
-                </h4>
-                <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-amber-500 text-slate-950 uppercase font-mono">
-                  4K / HD
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 line-clamp-2">
                 {isHi
-                  ? 'लग्जरी 3D गोल्ड व कॉरपोरेट लोगो हर साइज (128px-4K) में PNG और JPEG डाउनलोड करें।'
-                  : 'Download luxury 3D gold & corporate logos in any size in PNG and JPEG formats.'}
+                  ? '3D गोल्ड व कॉरपोरेट लोगो हर साइज में PNG व JPEG डाउनलोड करें।'
+                  : 'Download corporate 4K logos in PNG & JPG.'}
               </p>
             </div>
           </div>

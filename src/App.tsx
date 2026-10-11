@@ -4850,7 +4850,7 @@ export default function App() {
       />
 
       {/* Main Viewport */}
-      <main className={viewMode === 'web' ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" : "w-full max-w-full p-0 overflow-x-hidden"}>
+      <main className={viewMode === 'web' ? "w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-8 overflow-x-hidden" : "w-full max-w-full p-0 overflow-x-hidden"}>
         {/* Global Admin Treasury Low Alert Banner (if balance < threshold) */}
         {currentUser.role === 'ADMIN' && treasury && treasury.balance < (treasury.minAlertThreshold || DEFAULT_ALERT_THRESHOLD) && (
           <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-rose-950/80 via-slate-900 to-rose-950/80 border-2 border-rose-500/80 shadow-2xl shadow-rose-950/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-pulse">

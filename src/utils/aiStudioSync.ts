@@ -67,10 +67,25 @@ export function isIframeContext(): boolean {
  */
 export async function applyAiStudioUpdateNow(targetBuildId?: string): Promise<void> {
   if (isUpdatingNow || isIframeContext()) return;
+
+  // Strict loop protection: never reload more than once every 10 minutes automatically
+  const lastReloadTime = Number(sessionStorage.getItem('gcap_last_reload_timestamp') || '0');
+  const now = Date.now();
+  if (now - lastReloadTime < 600000) {
+    console.log('[AutoSync] Reload suppressed by loop guard cooldown.');
+    return;
+  }
+
   isUpdatingNow = true;
+  sessionStorage.setItem('gcap_last_reload_timestamp', String(now));
 
   try {
     const buildIdToRecord = targetBuildId || updateAvailable?.buildId || Date.now().toString();
+
+    // Save build acknowledgment in localStorage & sessionStorage
+    localStorage.setItem('gcap_installed_build_id', buildIdToRecord);
+    sessionStorage.setItem('gcap_last_auto_reload_build', buildIdToRecord);
+    sessionStorage.setItem('gcap_session_build_id', buildIdToRecord);
 
     // 1. Clear caches if Service Worker Cache Storage exists
     if ('caches' in window) {
@@ -82,30 +97,11 @@ export async function applyAiStudioUpdateNow(targetBuildId?: string): Promise<vo
       }
     }
 
-    // 2. Trigger Service Worker skipWaiting & update if active
-    if ('serviceWorker' in navigator) {
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (const reg of registrations) {
-          if (reg.waiting) {
-            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-          await reg.update().catch(() => {});
-        }
-      } catch (e) {
-        console.warn('[AutoSync] Service worker update error:', e);
-      }
-    }
-
-    // 3. Save build acknowledgment in localStorage & sessionStorage
-    localStorage.setItem('gcap_installed_build_id', buildIdToRecord);
-    sessionStorage.setItem('gcap_last_auto_reload_build', buildIdToRecord);
-
-    // 4. Force clean page reload bypassing all browser and proxy cache
-    const cleanUrl = window.location.origin + window.location.pathname + `?_v=${encodeURIComponent(buildIdToRecord)}`;
-    window.location.replace(cleanUrl);
-  } catch {
+    // Smooth reload once
     window.location.reload();
+  } catch {
+    // If error, do not loop
+    isUpdatingNow = false;
   }
 }
 
@@ -207,8 +203,8 @@ export function initAiStudioLiveSync(): () => void {
   // 3. Whenever user opens/resumes the app on their mobile (visibilitychange)
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      // User just brought mobile app back to foreground - check and auto-apply!
-      checkForAiStudioUpdate(true);
+      // Quiet background check without forcing disruptive reloads
+      checkForAiStudioUpdate(false);
     }
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
