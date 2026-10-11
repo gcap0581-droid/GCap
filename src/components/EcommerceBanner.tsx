@@ -241,7 +241,7 @@ export const EcommerceBanner: React.FC<EcommerceBannerProps> = ({
           {
             id: 'wallet',
             title: isHi ? 'वॉलेट लेजर' : 'Passbook',
-            sub: formatINR(wallet?.cashBalance || 0),
+            sub: formatINR((wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0) + (wallet?.cashBalance || 0)),
             icon: Tag,
             badge: 'LEDGER',
             color: 'from-indigo-500/20 via-slate-900/90 to-slate-950/90 border-indigo-500/40 text-indigo-400',

@@ -222,7 +222,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
           <div className="bg-slate-950/80 p-3 rounded-xl border border-emerald-500/30">
             <span className="text-[10px] text-emerald-400 font-semibold block mb-0.5">
-              {isHi ? 'कुल अर्जित लाभ (Total Earned):' : 'Total Earned:'}
+              {isHi ? 'लाइफटाइम संचयी लाभ (Gross Earned):' : 'Lifetime Gross Earned:'}
             </span>
             <span className="text-base font-black font-mono text-emerald-400">
               +{formatINR(totalEarnedSoFar)}
@@ -240,7 +240,7 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
 
           <div className="bg-slate-950/80 p-3 rounded-xl border border-amber-500/30">
             <span className="text-[10px] text-amber-400 font-semibold block mb-0.5">
-              {isHi ? 'शेष उपलब्ध अर्निंग (Net Balance):' : 'Net Available Earning:'}
+              {isHi ? 'वर्तमान शुद्ध बैलेंस (Net Available):' : 'Net Available Balance:'}
             </span>
             <span className="text-base font-black font-mono text-amber-300">
               {formatINR(netAvailableEarning)}

@@ -175,12 +175,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                         if (isCompanyView) {
                           return treasury?.balance !== undefined ? treasury.balance : 0;
                         }
-                        const grossEarned = (wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0);
-                        const withdrawn = wallet?.totalWithdrawn || 0;
-                        if (withdrawn > 0 && grossEarned >= withdrawn) {
-                          return Math.max(0, grossEarned - withdrawn);
-                        }
-                        return Math.max(0, grossEarned);
+                        // wallet.totalEarned is already net of all withdrawals (authoritative balance)
+                        const available = (wallet?.totalEarned || 0) + (wallet?.royaltyEarned || 0);
+                        return Math.max(0, available);
                       })()
                     )}
                   </span>

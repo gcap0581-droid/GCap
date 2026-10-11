@@ -117,18 +117,18 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
 
               <div className="flex items-center justify-between w-full mb-1.5">
                 <div
-                  className={`p-2 rounded-xl transition-all ${
+                  className={`p-2 sm:p-2.5 rounded-xl transition-all ${
                     isActive
                       ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 shadow-md shadow-amber-500/40'
                       : 'bg-slate-800/80 text-slate-400 group-hover:text-white group-hover:bg-slate-700'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
 
                 {cat.badge && (
                   <span
-                    className={`text-[9px] px-2 py-0.5 rounded-full font-mono uppercase tracking-wider shadow-sm ${
+                    className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-mono uppercase tracking-wider shadow-sm font-black ${
                       cat.badgeColor || 'bg-slate-800 text-slate-300'
                     }`}
                   >
@@ -137,15 +137,15 @@ export const DesktopCategoryNav: React.FC<DesktopCategoryNavProps> = ({
                 )}
               </div>
 
-              <div className="mt-0.5 w-full">
+              <div className="mt-1 w-full">
                 <div
-                  className={`text-xs sm:text-sm font-extrabold tracking-tight truncate ${
-                    isActive ? 'text-amber-300' : 'text-slate-200 group-hover:text-white'
+                  className={`text-sm sm:text-base font-black tracking-tight truncate ${
+                    isActive ? 'text-amber-300' : 'text-white group-hover:text-amber-200'
                   }`}
                 >
                   {isHi ? cat.labelHi : cat.labelEn}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
+                <div className="text-xs sm:text-[13px] text-slate-300 truncate mt-0.5 font-semibold group-hover:text-white">
                   {isHi ? cat.subHi : cat.subEn}
                 </div>
               </div>

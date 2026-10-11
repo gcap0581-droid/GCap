@@ -975,7 +975,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setActiveSubTab(tab.id as any);
                       }
                     }}
-                    className={`w-full p-2.5 sm:p-3 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-[96px] sm:h-[102px] group overflow-hidden ${
+                    className={`w-full p-3 sm:p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between h-[108px] sm:h-[116px] group overflow-hidden ${
                       tab.isAlert
                         ? 'bg-gradient-to-br from-rose-950/70 via-slate-900 to-amber-950/50 border-rose-500/80 text-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.4)] ring-2 ring-rose-500/40 animate-pulse'
                         : activeSubTab === tab.id
@@ -984,16 +984,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between w-full min-w-0">
-                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border flex items-center justify-center shrink-0 ${
+                      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg border flex items-center justify-center shrink-0 ${
                         tab.isAlert
                           ? 'bg-rose-500/30 border-rose-500/50 text-rose-300 animate-bounce'
                           : activeSubTab === tab.id 
                           ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' 
                           : 'bg-slate-800 border-slate-700 text-emerald-400'
                       }`}>
-                        <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                      <span className={`text-[10px] sm:text-[11px] uppercase font-black px-2 py-0.5 rounded font-mono shrink-0 ${
                         tab.isAlert
                           ? 'bg-rose-500 text-white shadow-md animate-pulse'
                           : activeSubTab === tab.id 
@@ -1003,9 +1003,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         {tab.badge}
                       </span>
                     </div>
-                    <div className="w-full min-w-0 pt-0.5">
-                      <h4 className="text-xs sm:text-sm font-black tracking-tight text-white truncate">{tab.label}</h4>
-                      <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium group-hover:text-slate-300 transition-colors truncate mt-0.5">{tab.desc}</p>
+                    <div className="w-full min-w-0 pt-1">
+                      <h4 className="text-sm sm:text-base font-black tracking-tight text-white truncate">{tab.label}</h4>
+                      <p className="text-xs sm:text-[13px] text-slate-300 font-semibold group-hover:text-white transition-colors truncate mt-0.5">{tab.desc}</p>
                     </div>
                   </button>
                 ))}
