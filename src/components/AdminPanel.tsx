@@ -563,6 +563,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const handleOpenAddUser = () => {
+    setSelectedUser(null);
+    setUserModalInitialTab('PROFILE');
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setUserModalInitialTab('PROFILE');
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditUserWallet = (user: UserProfile) => {
+    setSelectedUser(user);
+    setUserModalInitialTab('WALLET');
+    setUserModalOpen(true);
+  };
+
   const handleToggleUserStatus = async (userId: string, currentStatus: 'ACTIVE' | 'BLOCKED' | 'SUSPENDED') => {
     setIsSyncingUsers(true);
     try {
