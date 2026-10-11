@@ -1,5 +1,6 @@
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import { getFirebaseAuth } from '../lib/firebase';
+import { getCachedFirestoreState } from '../lib/firestoreBridge';
 
 // Memory cache for active Firebase Phone Auth ConfirmationResult
 let activePhoneConfirmationResult: ConfirmationResult | null = null;
@@ -123,6 +124,11 @@ export async function sendFirebasePhoneOtp(
   phone10Digits: string,
   containerId: string = 'recaptcha-phone-container'
 ): Promise<{ success: boolean; testOtp?: string; isRealFirebase?: boolean; error?: string }> {
+  const state = getCachedFirestoreState();
+  if (state?.smsSettings && !state.smsSettings.isSmsEnabled) {
+    return { success: false, error: 'SMS service is currently disabled by Admin.' };
+  }
+
   const cleanDigits = phone10Digits.replace(/[^0-9]/g, '').slice(-10);
   if (cleanDigits.length < 10) {
     return { success: false, error: 'कृपया 10-अंकीय मान्य मोबाइल नंबर दर्ज करें' };

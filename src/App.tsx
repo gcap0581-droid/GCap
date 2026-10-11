@@ -19,6 +19,7 @@ import {
   AdminMessage,
   CompanyProfile,
   BankAccountDetails,
+  SmsSettings,
 } from './types';
 import {
   getStoredWallet,
@@ -314,6 +315,7 @@ export default function App() {
   const [treasury, setTreasury] = useState<CompanyTreasury | null>(() => getStoredTreasury());
   const [treasuryLogs, setTreasuryLogs] = useState<TreasuryLog[]>(() => getStoredTreasuryLogs());
   const [backups, setBackups] = useState<BackupRecord[]>([]);
+  const [smsSettings, setSmsSettings] = useState<SmsSettings | null>(null);
   const [liveConfig, setLiveConfig] = useState<LiveInterfaceConfig | null>(null);
   const [congratulationsInvestment, setCongratulationsInvestment] = useState<ActiveInvestment | null>(null);
   const [selectedCertificateInvestment, setSelectedCertificateInvestment] = useState<ActiveInvestment | null>(null);
@@ -321,7 +323,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('web');
   const [mobileTab, setMobileTab] = useState<string>('dashboard');
   const [adminMobileTab, setAdminMobileTab] = useState<
-    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER'
+    'OVERVIEW' | 'MESSAGES' | 'INVESTMENTS' | 'TREASURY' | 'COMPANY_PROFILE' | 'COMPANY_SEAL' | 'COMPANY_LOGO' | 'BACKUP' | 'PLANS' | 'USERS' | 'TRANSACTIONS' | 'OTA' | 'USER_MANUAL' | 'DEDUCTIONS' | 'CURRENT_ACTIVITY' | 'LEDGER' | 'SMS_SETTINGS'
   >('OVERVIEW');
   const [desktopTab, setDesktopTab] = useState<DesktopCategoryTab>('dashboard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -450,6 +452,9 @@ export default function App() {
           if (state.liveConfig) {
             setLiveConfig((prev) => (JSON.stringify(prev) !== JSON.stringify(state.liveConfig) ? state.liveConfig : prev));
             saveStoredLiveConfig(state.liveConfig);
+          }
+          if ((state as any).smsSettings) {
+             setSmsSettings((state as any).smsSettings);
           }
 
           if (state.treasury) {
@@ -4935,6 +4940,7 @@ export default function App() {
               liveConfig={liveConfig || undefined}
               onUpdateLiveConfig={handleUpdateLiveConfig}
               onResetLiveConfig={handleResetLiveConfig}
+              smsSettings={smsSettings}
               onOpenRules={() => setIsRulesOpen(true)}
               onSwitchToInvestorView={() => {}}
               onLogout={handleLogout}

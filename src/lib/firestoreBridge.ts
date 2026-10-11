@@ -18,6 +18,7 @@ import {
   BankAccountDetails,
   UserProfile,
   AdminMessage,
+  SmsSettings,
 } from '../types';
 import { DEFAULT_GCAP_RULES } from '../utils/rulesStorage';
 import { DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
@@ -47,6 +48,7 @@ export interface FirestoreDatabaseState {
   treasury: CompanyTreasury | null;
   treasuryLogs: TreasuryLog[];
   messages: AdminMessage[];
+  smsSettings: SmsSettings | null;
   deletedUserIds: string[];
   companyLedger?: any[];
   companyProfile?: any;
@@ -265,6 +267,7 @@ function parseSnapshotDocs(docs: any[]): FirestoreDatabaseState {
     treasury: map['treasury'] || null,
     treasuryLogs: Array.isArray(map['treasuryLogs']) ? map['treasuryLogs'] : [],
     messages: Array.isArray(map['messages']) ? map['messages'] : [],
+    smsSettings: map['smsSettings'] || null,
     deletedUserIds: Array.isArray(map['deletedUserIds']) ? map['deletedUserIds'] : [],
     companyLedger: Array.isArray(map['companyLedger']) ? map['companyLedger'] : [],
     companyProfile: map['companyProfile'] || null,
@@ -412,6 +415,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       'treasury',
       'treasuryLogs',
       'messages',
+      'smsSettings',
       'deletedUserIds',
       'companyLedger',
       'companyProfile',
@@ -449,6 +453,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
       treasury: docMap['treasury'] || null,
       treasuryLogs: Array.isArray(docMap['treasuryLogs']) ? docMap['treasuryLogs'] : [],
       messages: Array.isArray(docMap['messages']) ? docMap['messages'] : [],
+      smsSettings: docMap['smsSettings'] || null,
       deletedUserIds: Array.isArray(docMap['deletedUserIds']) ? docMap['deletedUserIds'] : [],
       companyLedger: Array.isArray(docMap['companyLedger']) ? docMap['companyLedger'] : [],
       companyProfile: docMap['companyProfile'] || null,
@@ -523,6 +528,7 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
       treasuryLogs: [],
       messages: [],
       deletedUserIds: [],
+      smsSettings: null,
       lastUpdated: new Date().toISOString()
     };
   }
@@ -638,6 +644,10 @@ export async function saveMessagesToFirestore(messages: AdminMessage[]): Promise
   return await saveDocToFirestore('messages', messages);
 }
 
+export async function saveSmsSettingsToFirestore(smsSettings: SmsSettings): Promise<boolean> {
+  return await saveDocToFirestore('smsSettings', smsSettings);
+}
+
 export async function saveDeletedUserIdsToFirestore(deletedIds: string[]): Promise<boolean> {
   return await saveDocToFirestore('deletedUserIds', deletedIds);
 }
@@ -735,6 +745,7 @@ export async function updatePresenceInFirestore(
       messages: [],
       deletedUserIds: [],
       presence: {},
+      smsSettings: null,
       lastUpdated: nowIso,
     };
   }
@@ -802,6 +813,7 @@ export function updateFirestoreBridgeCache(partial: Partial<FirestoreDatabaseSta
       treasuryLogs: [],
       messages: [],
       deletedUserIds: [],
+      smsSettings: null,
       lastUpdated: new Date().toISOString()
     };
   }

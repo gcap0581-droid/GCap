@@ -176,6 +176,7 @@ export interface AppRules {
   companyBankName?: string;
   companyBankAccountNumber?: string;
   companyBankIfsc?: string;
+  smsSettings?: SmsSettings;
 }
 
 export interface StaffPermissions {
@@ -446,6 +447,23 @@ export interface MetaCloudApiConfig {
   wabaId: string;
   accessToken: string;
   verifiedDisplayName?: string; // e.g. "GCAP PRIVATE LIMITED"
+}
+
+export interface SmsTemplateConfig {
+  enabled: boolean;
+  template: string;
+}
+
+export interface SmsSettings {
+  isSmsEnabled: boolean;
+  senderId: string;
+  sendOtpSms: SmsTemplateConfig;
+  sendRegistrationSms: SmsTemplateConfig;
+  sendDepositApprovalSms: SmsTemplateConfig;
+  sendWithdrawalApprovalSms: SmsTemplateConfig;
+  sendInvestmentSuccessSms: SmsTemplateConfig;
+  sendRoiPayoutSms: SmsTemplateConfig;
+  lastUpdated: string;
 }
 
 
