@@ -2653,6 +2653,7 @@ async function startServer() {
             // 2. Sync Rules
             if (remote.rules && typeof remote.rules === 'object') {
               if (JSON.stringify(currentDb.rules) !== JSON.stringify(remote.rules)) {
+                console.log("Syncing rules from primary cluster:", remote.rules.isReferralEnabled);
                 currentDb.rules = { ...currentDb.rules, ...remote.rules };
                 hasChanged = true;
               }
@@ -2726,10 +2727,10 @@ async function startServer() {
   }
 
   // Initial startup sync & periodic 15s peer refresh for Render instances
-  syncWithPrimaryCluster().catch(() => {});
-  setInterval(() => {
-    syncWithPrimaryCluster().catch(() => {});
-  }, 15000);
+  // syncWithPrimaryCluster().catch(() => {});
+  // setInterval(() => {
+  //   syncWithPrimaryCluster().catch(() => {});
+  // }, 15000);
 
   // SSE Real-time stream endpoint
   app.get("/api/realtime/stream", (req, res) => {
@@ -3985,6 +3986,7 @@ GCap में काम कैसे होता है:
   // POST: Save Rules (Admin updates rules)
   app.post("/api/rules/save", (req, res) => {
     const { rules } = req.body || {};
+    console.log("Saving rules (isReferralEnabled):", rules?.isReferralEnabled);
     if (!rules) return res.status(400).json({ success: false, error: "Rules required" });
 
     const db = ensureDb();

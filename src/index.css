@@ -14,12 +14,12 @@
 }
 
 html {
-  font-size: 114%;
+  font-size: 125%;
 }
 
 @media (min-width: 640px) {
   html {
-    font-size: 118%;
+    font-size: 130%;
   }
 }
 

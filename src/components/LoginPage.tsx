@@ -25,7 +25,7 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
-import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY, getAllUsers } from '../utils/authStorage';
+import * as authStorage from '../utils/authStorage';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 import {
@@ -107,7 +107,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   // Sync users on mount
   React.useEffect(() => {
-    syncUsersWithServer();
+    authStorage.syncUsersWithServer();
   }, []);
 
   // Countdown timer for Phone OTP Resend
@@ -189,7 +189,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       setIsIdValid(false);
       return;
     }
-    const allUsers = await getAllUsersAsync();
+    const allUsers = await authStorage.getAllUsersAsync();
     const isValid = allUsers.some(u => 
       u.loginId === trimmedId || 
       (u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === trimmedId.replace(/[^0-9]/g, '').slice(-10))
@@ -244,8 +244,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       };
 
       try {
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(adminUser));
-        sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(adminUser));
+        localStorage.setItem(authStorage.AUTH_USER_KEY, JSON.stringify(adminUser));
+        sessionStorage.setItem(authStorage.AUTH_USER_KEY, JSON.stringify(adminUser));
       } catch (_) {}
 
       // Inform parent and enter dashboard
@@ -257,7 +257,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await loginUserAsync(loginId, password);
+      const res = await authStorage.loginUserAsync(loginId, password);
       setIsLoading(false);
       if (res.success && res.user) {
         onLoginSuccess(res.user);
@@ -429,7 +429,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await registerUserAsync({
+      const res = await authStorage.registerUserAsync({
         name: regName,
         loginId: cleanDigits.slice(-10),
         phone: cleanDigits.slice(-10),
@@ -452,7 +452,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
       if (res.success && res.user) {
         // Sync with server in background without blocking login
-        syncUsersWithServer().catch(() => {});
+        authStorage.syncUsersWithServer().catch(() => {});
         audioAnnouncer.announceRegistration({
           userName: res.user.name,
           language: isHi ? 'hi' : 'en',
