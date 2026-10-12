@@ -105,6 +105,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   // KYC Section Accordion Toggle
   const [showKycSection, setShowKycSection] = useState(false);
 
+  // Sync users on mount
+  React.useEffect(() => {
+    syncUsersWithServer();
+  }, []);
+
   // Countdown timer for Phone OTP Resend
   React.useEffect(() => {
     if (phoneResendTimer <= 0) return;
