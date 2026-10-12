@@ -66,11 +66,11 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       return;
     }
 
-    if (status === 'SUCCESS' && adminPassword.trim() !== 'gcap@tra1978') {
+    if (status === 'SUCCESS' && adminPassword.trim() !== 'ad123') {
       setError(
         isHi
-          ? '❌ गलत ट्रांजेक्शन पासवर्ड! अप्रूवल के लिए सही पासवर्ड (gcap@tra1978) दर्ज करें।'
-          : '❌ Incorrect Transaction Password! Password gcap@tra1978 is required to set status to SUCCESS.'
+          ? '❌ गलत ट्रांजेक्शन पासवर्ड! अप्रूवल के लिए सही पासवर्ड (ad123) दर्ज करें।'
+          : '❌ Incorrect Transaction Password! Password ad123 is required to set status to SUCCESS.'
       );
       return;
     }
@@ -204,12 +204,12 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 type="password"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="gcap@tra1978"
+                placeholder="ad123"
                 className="w-full px-3 py-2 bg-slate-950 border border-amber-500/40 rounded-lg text-xs font-mono text-white focus:border-amber-400 focus:outline-none"
                 required
               />
               <p className="text-[10px] text-amber-200/80">
-                {isHi ? 'स्टेटस SUCCESS (सफल) करने हेतु सुरक्षा कोड gcap@tra1978 दर्ज करें।' : 'Enter security code gcap@tra1978 to approve transaction.'}
+                {isHi ? 'स्टेटस SUCCESS (सफल) करने हेतु सुरक्षा कोड ad123 दर्ज करें।' : 'Enter security code ad123 to approve transaction.'}
               </p>
             </div>
           )}

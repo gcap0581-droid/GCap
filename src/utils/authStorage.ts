@@ -497,8 +497,8 @@ export async function loginUserAsync(
 
   const cleanDigits = trimmedId.replace(/[^0-9]/g, '');
   const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
-  const isMasterAdminId = trimmedId.toLowerCase() === 'admin' || clean10 === '9800012345' || trimmedId === 'usr-admin-01';
-  const isMasterAdminPass = trimmedPass === 'ad123' || trimmedPass === 'gcap@tra1978';
+  const isMasterAdminId = trimmedId.toLowerCase() === 'admin';
+  const isMasterAdminPass = trimmedPass === 'ad123';
 
   // Instant Master Admin Fail-Safe (Guarantees Admin never fails on Vercel or offline)
   if (isMasterAdminId && isMasterAdminPass) {
@@ -584,7 +584,7 @@ export async function loginUserAsync(
       const actualPass = String(matched.passwordHash || (matched as any).password || '').trim();
       const isAdminUser = matched.role === 'ADMIN' || matched.loginId === 'admin' || trimmedId === 'admin';
 
-      if (actualPass === trimmedPass || isAdminUser || trimmedPass === 'ad123' || trimmedPass === 'gcap@tra1978') {
+      if (actualPass === trimmedPass || isAdminUser || trimmedPass === 'ad123') {
         const nowIso = new Date().toISOString();
         matched.isOnline = true;
         matched.lastLoginAt = nowIso;

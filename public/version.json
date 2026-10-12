@@ -1,8 +1,8 @@
 {
-  "buildId": "1790161800000",
-  "buildTime": "2026-09-23T10:18:00.000Z",
-  "appVersion": "2.8.0",
+  "buildId": "1790666800000",
+  "buildTime": "2026-10-12T01:00:00.000Z",
+  "appVersion": "2.9.0",
   "source": "Google AI Studio Live",
-  "message": "Permanent Fix: Full tombstone clearing across Login and Admin user creation with instant real-time sync",
+  "message": "Enforce strict verification locking on login/registration buttons until full verification (OTP, PAN, Aadhaar) is complete",
   "autoReloadEnabled": true
 }

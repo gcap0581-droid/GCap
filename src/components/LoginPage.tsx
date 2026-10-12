@@ -25,7 +25,7 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
-import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY } from '../utils/authStorage';
+import { loginUserAsync, registerUserAsync, syncUsersWithServer, AUTH_USER_KEY, getAllUsers } from '../utils/authStorage';
 import { audioAnnouncer } from '../utils/audioAnnouncer';
 import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 import {
@@ -161,11 +161,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   // Error & Loading states
   const [errorMessage, setErrorMessage] = useState('');
+  const [isIdValid, setIsIdValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Strict check: registration button is ONLY enabled when all fields, OTP, PAN & Aadhaar are fully verified
+  const cleanRegPhone = regPhone.replace(/[^0-9]/g, '');
+  const isRegistrationValid = Boolean(
+    regName.trim().length >= 2 &&
+    cleanRegPhone.length === 10 &&
+    isPhoneVerified &&
+    regPassword.trim().length >= 4 &&
+    isPanVerified &&
+    isAadhaarVerified &&
+    agreeTerms
+  );
 
   const handleLoginIdChange = (newId: string) => {
     setLoginId(newId);
     setErrorMessage('');
+    const trimmedId = newId.trim();
+    if (!trimmedId) {
+      setIsIdValid(false);
+      return;
+    }
+    const allUsers = getAllUsers();
+    const isValid = allUsers.some(u => 
+      u.loginId === trimmedId || 
+      (u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === trimmedId.replace(/[^0-9]/g, '').slice(-10))
+    ) || trimmedId.toLowerCase() === 'admin';
+    setIsIdValid(isValid);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -187,11 +211,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
     const cleanDigits = trimmedLogin.replace(/[^0-9]/g, '');
     const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
-    const isMasterAdmin =
-      trimmedLogin.toLowerCase() === 'admin' ||
-      clean10 === '9800012345' ||
-      trimmedLogin === 'usr-admin-01';
-    const isMasterPass = trimmedPass === 'ad123' || trimmedPass === 'gcap@tra1978';
+    const isMasterAdmin = trimmedLogin.toLowerCase() === 'admin';
+    const isMasterPass = trimmedPass === 'ad123';
 
     // Direct Instant Admin Login Guarantee
     if (isMasterAdmin && isMasterPass) {
@@ -375,8 +396,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       return;
     }
 
+    if (!isPhoneVerified) {
+      setErrorMessage(isHi ? 'कृपया पहले मोबाइल नंबर पर SMS OTP भेजकर वेरिफाई करें।' : 'Please verify mobile number with SMS OTP first.');
+      return;
+    }
+
     if (!regPassword.trim() || regPassword.trim().length < 4) {
       setErrorMessage(isHi ? 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' : 'Password must be at least 4 characters long.');
+      return;
+    }
+
+    if (!isPanVerified) {
+      setErrorMessage(isHi ? 'कृपया पैन कार्ड नंबर दर्ज करके "पैन जांचें" से वेरिफाई करें।' : 'Please enter PAN card and verify via "Verify PAN".');
+      return;
+    }
+
+    if (!isAadhaarVerified) {
+      setErrorMessage(isHi ? 'कृपया आधार कार्ड नंबर दर्ज करके OTP द्वारा वेरिफाई करें।' : 'Please enter Aadhaar number and verify via OTP.');
       return;
     }
 
@@ -671,7 +707,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         required
                         value={loginId}
                         onChange={(e) => handleLoginIdChange(e.target.value)}
-                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
+                        placeholder={isHi ? 'मोबाइल नंबर या यूजर आईडी' : 'Enter Mobile Number or User ID'}
                         className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
                       />
                     </div>
@@ -722,23 +758,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
                   {/* Action Buttons */}
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleLoginSubmit}
-                      id="btn-submit-login"
-                      disabled={isLoading}
-                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.99]"
-                    >
-                      {isLoading ? (
-                        <span>{isHi ? 'सत्यापित हो रहा है...' : 'Verifying...'}</span>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4 text-slate-950" />
-                          <span>{isHi ? 'लॉगिन करें (Login)' : 'Sign In'}</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
+                    {(() => {
+                      const isLoginReady = Boolean(isIdValid && password.trim().length >= 4);
+                      return (
+                        <button
+                          type="button"
+                          onClick={handleLoginSubmit}
+                          id="btn-submit-login"
+                          /* Testing edit */
+                          disabled={!isLoginReady}
+                          className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all ${
+                            isLoginReady && !isLoading
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20 active:scale-[0.99] cursor-pointer ring-2 ring-emerald-400/50'
+                              : 'bg-slate-800/90 text-slate-500 border border-slate-700/60 cursor-not-allowed opacity-60'
+                          }`}>
+                          {isLoading ? (
+                            <span>{isHi ? 'लॉगिन हो रहा है...' : 'Logging in...'}</span>
+                          ) : isLoginReady ? (
+                            <>
+                              <Lock className="w-4 h-4 text-slate-950" />
+                              <span>{isHi ? 'लॉगिन करें (Sign In)' : 'Sign In'}</span>
+                              <ArrowRight className="w-4 h-4 text-slate-950" />
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4 text-slate-500" />
+                              <span>{isHi ? 'लॉगिन करें (आईडी व पासवर्ड डालें)' : 'Sign In (Enter ID & Password)'}</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               ) : (
@@ -788,7 +838,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-slate-400">
-                          {isHi ? 'Firebase SMS OTP' : 'Firebase SMS OTP'}
+                          {isHi ? 'SMS OTP' : 'SMS OTP'}
                         </span>
                       )}
                     </div>
@@ -829,7 +879,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                           onClick={handleSendPhoneOtp}
                           disabled={phoneOtpSending || regPhone.length < 10 || phoneResendTimer > 0}
                           className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white font-bold text-xs tracking-wide shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-900/30 active:scale-95"
-                          title={isHi ? 'Firebase द्वारा मोबाइल पर SMS OTP भेजें' : 'Send SMS OTP via Firebase'}
+                          title={isHi ? 'मोबाइल पर SMS OTP भेजें' : 'Send SMS OTP'}
                         >
                           {phoneOtpSending ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1193,16 +1243,69 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </span>
                   </label>
 
-                  {/* Submit Button */}
-                  <button
-                    type="button"
-                    onClick={handleRegisterSubmit}
-                    id="btn-submit-register"
-                    className="w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer mt-2 active:scale-[0.99]"
-                  >
-                    <span>{isHi ? 'खाता बनाएं एवं लॉगिन करें' : 'Create Account & Enter'}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {/* Submit / Login Button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        handleRegisterSubmit(e);
+                      }}
+                      id="btn-submit-register"
+                      aria-disabled={!isRegistrationValid || isLoading}
+                      className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all mt-1 ${
+                        isRegistrationValid && !isLoading
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/25 cursor-pointer active:scale-[0.99] ring-2 ring-emerald-400/50'
+                          : 'bg-slate-800/90 text-slate-400 border border-slate-700/80 cursor-not-allowed opacity-75 active:scale-98'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <span>{isHi ? 'सत्यापन व खाता निर्माण जारी...' : 'Creating Account & Verifying...'}</span>
+                      ) : isRegistrationValid ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-slate-950" />
+                          <span>{isHi ? 'लॉगिन एवं खाता बनाएं (सत्यापित)' : 'Sign In & Create Account (Verified)'}</span>
+                          <ArrowRight className="w-4 h-4 text-slate-950" />
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>{isHi ? 'लॉगिन / खाता बनाएं (सत्यापन आवश्यक)' : 'Sign In (Verification Required)'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Pending verification helper info if disabled */}
+                    {!isRegistrationValid && (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 text-[11px] text-slate-400 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                            {isHi ? 'यह बटन तभी सक्रिय होगा जब ऊपर के सभी सत्यापन पूरे होंगे:' : 'Button activates only when all verifications pass:'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${regName.trim().length >= 2 ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-slate-400 bg-slate-900/50'}`}>
+                            {regName.trim().length >= 2 ? '✓' : '○'} {isHi ? 'पूरा नाम' : 'Full Name'}
+                          </span>
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${isPhoneVerified ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20 font-medium'}`}>
+                            {isPhoneVerified ? '✓' : '○'} {isHi ? 'मोबाइल SMS OTP' : 'SMS OTP'}
+                          </span>
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${regPassword.trim().length >= 4 ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-slate-400 bg-slate-900/50'}`}>
+                            {regPassword.trim().length >= 4 ? '✓' : '○'} {isHi ? 'पासवर्ड (4+ अक्षर)' : 'Password'}
+                          </span>
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${isPanVerified ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20 font-medium'}`}>
+                            {isPanVerified ? '✓' : '○'} {isHi ? 'पैन कार्ड (पैन जांचें)' : 'PAN Card'}
+                          </span>
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${isAadhaarVerified ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20 font-medium'}`}>
+                            {isAadhaarVerified ? '✓' : '○'} {isHi ? 'आधार कार्ड OTP' : 'Aadhaar OTP'}
+                          </span>
+                          <span className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${agreeTerms ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-semibold' : 'text-slate-400 bg-slate-900/50'}`}>
+                            {agreeTerms ? '✓' : '○'} {isHi ? 'नियम व शर्तें' : 'Terms'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

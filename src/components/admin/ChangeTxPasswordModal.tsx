@@ -30,7 +30,7 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const activePassword = rules?.adminTxPassword || getStoredAdminTxPassword() || 'adtra123';
+  const activePassword = rules?.adminTxPassword || getStoredAdminTxPassword() || 'ad123';
 
   useEffect(() => {
     if (isOpen) {
@@ -59,8 +59,6 @@ export const ChangeTxPasswordModal: React.FC<ChangeTxPasswordModalProps> = ({
     // Check current password
     if (
       inputCurrent !== activePassword &&
-      inputCurrent !== 'adtra123' &&
-      inputCurrent !== 'gcap@tra1978' &&
       inputCurrent !== 'ad123'
     ) {
       setError(isHi ? '❌ वर्तमान ट्रांजेक्शन पासवर्ड गलत है!' : '❌ Incorrect current transaction password!');

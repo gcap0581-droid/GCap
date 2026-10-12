@@ -15,7 +15,7 @@ interface AdminApprovalPasswordModalProps {
   onChangePasswordClick?: () => void;
 }
 
-export const REQUIRED_ADMIN_TRANSACTION_PASSWORD = 'adtra123';
+export const REQUIRED_ADMIN_TRANSACTION_PASSWORD = 'ad123';
 
 export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProps> = ({
   isOpen,
@@ -62,10 +62,7 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
 
     const isValid =
       inputPass === activePassword ||
-      inputPass === 'adtra123' ||
-      inputPass === 'gcap@tra1978' ||
-      inputPass === 'ad123' ||
-      inputPass === 'admin123';
+      inputPass === 'ad123';
 
     if (!isValid) {
       setError(

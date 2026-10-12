@@ -1055,14 +1055,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                     <p className="text-xs text-slate-300 mt-0.5">
                       {isHi
-                        ? '🔒 सुरक्षा नियम: अप्रूव या रिजेक्ट करने के लिए ट्रांजेक्शन पासवर्ड (gcap@tra1978) अनिवार्य है। अप्रूव करने पर राशि तुरंत वॉलेट में जुड़ेगी, रिजेक्ट करने पर कारण यूज़र को दिखेगा।'
-                        : '🔒 Security Rule: Transaction password (gcap@tra1978) is required to Approve/Reject. Approved deposits credit to user wallet instantly.'}
+                        ? '🔒 सुरक्षा नियम: अप्रूव या रिजेक्ट करने के लिए ट्रांजेक्शन पासवर्ड (ad123) अनिवार्य है। अप्रूव करने पर राशि तुरंत वॉलेट में जुड़ेगी, रिजेक्ट करने पर कारण यूज़र को दिखेगा।'
+                        : '🔒 Security Rule: Transaction password (ad123) is required to Approve/Reject. Approved deposits credit to user wallet instantly.'}
                     </p>
                   </div>
                 </div>
 
                 <div className="bg-slate-950/90 px-3.5 py-2 rounded-xl border border-emerald-500/20 flex items-center gap-2 text-xs">
-                  <span className="text-slate-300 font-mono text-[11px]">Pass: <strong className="text-emerald-300">gcap@tra1978</strong></span>
+                  <span className="text-slate-300 font-mono text-[11px]">Pass: <strong className="text-emerald-300">ad123</strong></span>
                 </div>
               </div>
 

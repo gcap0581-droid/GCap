@@ -70,11 +70,11 @@ export const AdminRejectReasonModal: React.FC<AdminRejectReasonModalProps> = ({
     }
 
     const inputPass = password.trim();
-    if (inputPass !== REQUIRED_ADMIN_TRANSACTION_PASSWORD && inputPass !== 'ad123' && inputPass !== 'admin123') {
+    if (inputPass !== 'ad123') {
       setError(
         isHi
-          ? '❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड (gcap@tra1978 या ad123) दर्ज करें।'
-          : '❌ Incorrect Password! Enter transaction password (gcap@tra1978) or Admin password (ad123)'
+          ? '❌ गलत ट्रांजेक्शन पासवर्ड! कृपया सही पासवर्ड (ad123) दर्ज करें।'
+          : '❌ Incorrect Password! Enter transaction password (ad123)'
       );
       return;
     }
@@ -198,14 +198,14 @@ export const AdminRejectReasonModal: React.FC<AdminRejectReasonModalProps> = ({
               spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="gcap@tra1978"
+              placeholder="ad123"
               className="w-full bg-slate-950 border border-rose-500/50 rounded-xl py-2.5 px-3.5 text-white font-mono text-sm focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition-all"
               required
             />
             <p className="text-[11px] text-slate-400">
               {isHi
-                ? 'सुरक्षा नियम: अस्वीकार करने हेतु ट्रांजेक्शन पासवर्ड (gcap@tra1978) अनिवार्य है।'
-                : 'Security Rule: Transaction password (gcap@tra1978) is required to reject.'}
+                ? 'सुरक्षा नियम: अस्वीकार करने हेतु ट्रांजेक्शन पासवर्ड (ad123) अनिवार्य है।'
+                : 'Security Rule: Transaction password (ad123) is required to reject.'}
             </p>
           </div>
 
