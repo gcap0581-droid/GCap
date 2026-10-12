@@ -181,7 +181,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     agreeTerms
   );
 
-  const handleLoginIdChange = (newId: string) => {
+  const handleLoginIdChange = async (newId: string) => {
     setLoginId(newId);
     setErrorMessage('');
     const trimmedId = newId.trim();
@@ -189,7 +189,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       setIsIdValid(false);
       return;
     }
-    const allUsers = getAllUsers();
+    const allUsers = await getAllUsersAsync();
     const isValid = allUsers.some(u => 
       u.loginId === trimmedId || 
       (u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === trimmedId.replace(/[^0-9]/g, '').slice(-10))
