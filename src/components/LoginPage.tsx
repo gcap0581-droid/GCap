@@ -62,6 +62,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [isIdActive, setIsIdActive] = useState(false);
+  const [isPassActive, setIsPassActive] = useState(false);
 
   // Register form state
   const [regName, setRegName] = useState('');
@@ -651,21 +653,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <User className="w-4 h-4" />
                       </div>
                       <input
-                        type="text"
+                        type="search"
                         inputMode="text"
-                        name="auth_login_id"
-                        autoComplete="username"
+                        name="q_acc_code"
+                        autoComplete="off"
                         data-lpignore="true"
                         data-1p-ignore="true"
+                        data-bwignore="true"
                         data-form-type="other"
+                        aria-autocomplete="none"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}
+                        readOnly={!isIdActive}
+                        onFocus={() => setIsIdActive(true)}
+                        onTouchStart={() => setIsIdActive(true)}
                         required
                         value={loginId}
                         onChange={(e) => handleLoginIdChange(e.target.value)}
-                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर या admin' : '10-digit mobile number or admin'}
-                        className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
                       />
                     </div>
                   </div>
@@ -682,21 +689,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
-                        type="text"
-                        name="auth_user_security_pin"
-                        autoComplete="one-time-code"
+                        type="search"
+                        name="q_sec_token"
+                        autoComplete="off"
                         data-lpignore="true"
                         data-1p-ignore="true"
+                        data-bwignore="true"
                         data-form-type="other"
+                        aria-autocomplete="none"
                         autoCorrect="off"
                         autoCapitalize="none"
                         spellCheck={false}
+                        readOnly={!isPassActive}
+                        onFocus={() => setIsPassActive(true)}
+                        onTouchStart={() => setIsPassActive(true)}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={isHi ? 'पासवर्ड दर्ज करें' : 'Enter password'}
                         style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' } as any}
-                        className="w-full pl-10 pr-10 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                        className="w-full pl-10 pr-10 py-3 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
                       />
                       <button
                         type="button"
@@ -706,19 +718,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                  </div>
-
-                  {/* Remember Me Checkbox */}
-                  <div className="pt-0.5">
-                    <label className="flex items-center gap-2 cursor-pointer select-none text-slate-400 hover:text-slate-300 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-700 text-emerald-500 focus:ring-0 bg-slate-950 cursor-pointer"
-                      />
-                      <span>{isHi ? 'मुझे याद रखें (Remember me)' : 'Remember me'}</span>
-                    </label>
                   </div>
 
                   {/* Action Buttons */}
