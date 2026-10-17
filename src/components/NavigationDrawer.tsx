@@ -32,6 +32,7 @@ import {
   Activity,
   CheckCircle2,
   Bot,
+  Type,
 } from 'lucide-react';
 import {
   Language,
@@ -111,6 +112,22 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
   // State to expand/collapse each menu section
   const [expandedMenu, setExpandedMenu] = useState<string | null>('investments');
+
+  const [textSize, setTextSize] = useState<'100%' | '108%' | '116%'>(() => {
+    try {
+      return (localStorage.getItem('gcap_app_text_size') as any) || '108%';
+    } catch {
+      return '108%';
+    }
+  });
+
+  const changeTextSize = (size: '100%' | '108%' | '116%') => {
+    setTextSize(size);
+    try {
+      localStorage.setItem('gcap_app_text_size', size);
+      document.documentElement.style.setProperty('--app-base-font-size', size);
+    } catch {}
+  };
 
   const toggleSection = (section: string) => {
     setExpandedMenu((prev) => (prev === section ? null : section));
@@ -727,6 +744,54 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <RefreshCw className="w-4 h-4 text-emerald-400" />
             <span>{isHi ? '🔄 डेटा सिंक व रिफ्रेश करें (Refresh App)' : '🔄 Sync & Refresh App'}</span>
           </button>
+
+          {/* Text Size Control */}
+          <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <Type className="w-3.5 h-3.5 text-amber-400" />
+                <span>{isHi ? 'टेक्स्ट आकार (Text Size):' : 'Text Size:'}</span>
+              </span>
+              <span className="text-[10px] text-amber-300 font-mono font-bold">
+                {textSize === '100%' ? (isHi ? 'छोटा' : '100% Normal') : textSize === '108%' ? (isHi ? 'मध्यम (संतुलित)' : '108% Balanced') : (isHi ? 'बड़ा' : '116% Large')}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => changeTextSize('100%')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                  textSize === '100%'
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                }`}
+              >
+                A- ({isHi ? 'छोटा' : '100%'})
+              </button>
+              <button
+                type="button"
+                onClick={() => changeTextSize('108%')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                  textSize === '108%'
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                }`}
+              >
+                A ({isHi ? 'मध्यम' : '108%'})
+              </button>
+              <button
+                type="button"
+                onClick={() => changeTextSize('116%')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                  textSize === '116%'
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                }`}
+              >
+                A+ ({isHi ? 'बड़ा' : '116%'})
+              </button>
+            </div>
+          </div>
 
           {/* Quick Actions Row */}
           <div className="grid grid-cols-2 gap-2">

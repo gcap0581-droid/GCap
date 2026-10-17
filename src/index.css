@@ -14,12 +14,12 @@
 }
 
 html {
-  font-size: 140%;
+  font-size: var(--app-base-font-size, 108%);
 }
 
 @media (min-width: 640px) {
   html {
-    font-size: 150%;
+    font-size: var(--app-base-font-size, 110%);
   }
 }
 

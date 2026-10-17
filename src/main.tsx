@@ -8,6 +8,10 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 // 0. Aggressively silence all console.error to remove the "Fix" bar permanently
 if (typeof window !== 'undefined') {
+  try {
+    const savedSize = localStorage.getItem('gcap_app_text_size') || '108%';
+    document.documentElement.style.setProperty('--app-base-font-size', savedSize);
+  } catch {}
   const originalError = window.console.error;
   window.console.error = function (...args: any[]) {
     try {
