@@ -38,13 +38,23 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
   const [filter, setFilter] = useState<'ALL' | 'UNREAD' | 'ANNOUNCEMENT' | 'ALERT'>('ALL');
   const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
   const [localReadIds, setLocalReadIds] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    try {
-      const raw = localStorage.getItem('gcap_read_notif_ids_v1');
-      return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch {
-      return new Set();
+    const set = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('gcap_read_notif_ids_v1');
+        if (raw) {
+          JSON.parse(raw).forEach((id: string) => set.add(id));
+        }
+      } catch {}
     }
+    if (currentUserId && Array.isArray(messages)) {
+      messages.forEach((m) => {
+        if (Array.isArray(m.readByUserIds) && m.readByUserIds.includes(currentUserId)) {
+          set.add(m.id);
+        }
+      });
+    }
+    return set;
   });
   const [pushPermission, setPushPermission] = useState<NotificationPermission>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
