@@ -164,11 +164,10 @@ export async function sendFirebasePhoneOtp(
     console.log('[Firebase Phone Auth] Real SMS sent to', fullPhone);
     return { success: true, isRealFirebase: true };
   } catch (err: any) {
-    console.warn('[Firebase Phone Auth] Real SMS error/fallback:', err?.code || err?.message || err);
+    console.warn('[Firebase Phone Auth] Real SMS error:', err?.code || err?.message || err);
     return {
-      success: true,
-      testOtp: '123456',
-      isRealFirebase: false,
+      success: false,
+      error: err?.message || 'Failed to send SMS via Firebase Auth. Please check Firebase Console Phone Auth settings.',
     };
   }
 }
