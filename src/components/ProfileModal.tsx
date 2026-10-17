@@ -719,11 +719,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                           <KeyRound className="w-3.5 h-3.5" />
                           {isHi ? 'मोबाइल पर आया 6-अंकीय OTP कोड डालें:' : 'Enter 6-digit SMS OTP:'}
                         </span>
-                        {phoneTestOtpHint && (
-                          <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                            टेस्ट OTP: {phoneTestOtpHint}
-                          </span>
-                        )}
                       </div>
                       <div className="flex gap-2">
                         <input

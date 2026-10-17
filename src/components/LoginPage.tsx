@@ -401,11 +401,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       return;
     }
 
-    if (!isPhoneVerified) {
-      setErrorMessage(isHi ? 'कृपया पहले मोबाइल नंबर पर SMS OTP भेजकर वेरिफाई करें।' : 'Please verify mobile number with SMS OTP first.');
-      return;
-    }
-
     if (!regPassword.trim() || regPassword.trim().length < 4) {
       setErrorMessage(isHi ? 'पासवर्ड कम से कम 4 अक्षरों का होना चाहिए।' : 'Password must be at least 4 characters long.');
       return;
@@ -828,115 +823,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
                   {/* Mobile Number with Firebase Phone OTP */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        {isHi ? 'मोबाइल नंबर (10 अंक)' : 'Mobile Number (10 Digits)'}
-                      </label>
-                      {isPhoneVerified ? (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                          <BadgeCheck className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{isHi ? 'मोबाइल सत्यापित' : 'Phone Verified'}</span>
-                        </span>
-                      ) : isPhoneOtpSent ? (
-                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full animate-pulse">
-                          {isHi ? 'OTP भेजा गया' : 'OTP Sent'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          {isHi ? 'SMS OTP' : 'SMS OTP'}
-                        </span>
-                      )}
+                    <label className="block text-xs font-semibold text-slate-300">
+                      {isHi ? 'मोबाइल नंबर (10 अंक - यूजर आईडी)' : 'Mobile Number (10 Digits - User ID)'}
+                    </label>
+
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-mono font-bold text-slate-400 select-none">
+                        +91
+                      </span>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        required
+                        autoComplete="tel"
+                        value={regPhone}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                          setRegPhone(val);
+                        }}
+                        placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
+                        className="w-full pl-11 pr-3.5 py-2.5 bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-emerald-500 transition-all"
+                      />
                     </div>
-
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-2.5 text-xs font-mono font-bold text-slate-400 select-none">
-                          +91
-                        </span>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          required
-                          disabled={isPhoneVerified}
-                          autoComplete="one-time-code"
-                          data-lpignore="true"
-                          data-1p-ignore="true"
-                          data-form-type="other"
-                          value={regPhone}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
-                            setRegPhone(val);
-                            setIsPhoneVerified(false);
-                            setIsPhoneOtpSent(false);
-                          }}
-                          placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
-                          className={`w-full pl-11 pr-3.5 py-2.5 bg-slate-950 border rounded-xl text-white placeholder-slate-500 text-sm font-mono focus:outline-none transition-all ${
-                            isPhoneVerified
-                              ? 'border-emerald-500/60 bg-emerald-950/20 text-emerald-300 font-bold'
-                              : 'border-slate-700/80 focus:border-emerald-500'
-                          }`}
-                        />
-                      </div>
-
-                      {!isPhoneVerified && (
-                        <button
-                          type="button"
-                          onClick={handleSendPhoneOtp}
-                          disabled={phoneOtpSending || regPhone.length < 10 || phoneResendTimer > 0}
-                          className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white font-bold text-xs tracking-wide shrink-0 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-900/30 active:scale-95"
-                          title={isHi ? 'मोबाइल पर SMS OTP भेजें' : 'Send SMS OTP'}
-                        >
-                          {phoneOtpSending ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Send className="w-3.5 h-3.5" />
-                          )}
-                          <span>
-                            {phoneResendTimer > 0
-                              ? `${phoneResendTimer}s`
-                              : isPhoneOtpSent
-                              ? (isHi ? 'दोबारा भेजें' : 'Resend')
-                              : (isHi ? 'OTP भेजें' : 'Send OTP')}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Phone OTP Verification Box */}
-                    {isPhoneOtpSent && !isPhoneVerified && (
-                      <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                            <KeyRound className="w-3.5 h-3.5" />
-                            {isHi ? 'मोबाइल पर आया 6-अंकीय OTP डालें:' : 'Enter 6-digit SMS OTP:'}
-                          </span>
-                          {phoneTestOtpHint && (
-                            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                              टेस्ट OTP: {phoneTestOtpHint}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={phoneOtp}
-                            onChange={(e) => setPhoneOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                            placeholder="••••••"
-                            className="flex-1 px-3 py-2 bg-slate-950 border border-emerald-500/50 rounded-xl text-white text-center font-mono font-bold tracking-widest text-base focus:outline-none focus:border-emerald-400"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleVerifyPhoneOtp}
-                            disabled={phoneOtpVerifying || phoneOtp.length < 4}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow-md shrink-0 active:scale-95"
-                          >
-                            {phoneOtpVerifying ? (isHi ? 'जांच जारी...' : 'Verifying...') : (isHi ? 'OTP वेरिफाई' : 'Verify')}
-                          </button>
-                        </div>
-                      </div>
-                    )}
 
                     <span className="text-[10px] text-slate-400 mt-0.5 block">
                       {isHi ? '✓ मोबाइल नंबर ही आपकी स्थायी यूजर आईडी रहेगा' : '✓ Mobile number is your permanent User ID'}

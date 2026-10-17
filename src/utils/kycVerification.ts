@@ -139,9 +139,8 @@ export async function sendFirebasePhoneOtp(
 
   if (!auth) {
     return {
-      success: true,
-      testOtp: '123456',
-      isRealFirebase: false,
+      success: false,
+      error: 'Firebase Auth not initialized. Please check configuration.',
     };
   }
 
@@ -153,9 +152,8 @@ export async function sendFirebasePhoneOtp(
 
     if (!verifier) {
       return {
-        success: true,
-        testOtp: '123456',
-        isRealFirebase: false,
+        success: false,
+        error: 'Failed to initialize reCAPTCHA verifier for SMS.',
       };
     }
 
@@ -167,7 +165,7 @@ export async function sendFirebasePhoneOtp(
     console.warn('[Firebase Phone Auth] Real SMS error:', err?.code || err?.message || err);
     return {
       success: false,
-      error: err?.message || 'Failed to send SMS via Firebase Auth. Please check Firebase Console Phone Auth settings.',
+      error: err?.message || 'Failed to send SMS via Firebase Auth. Please check Firebase Console Phone Auth settings & Authorized Domains.',
     };
   }
 }
