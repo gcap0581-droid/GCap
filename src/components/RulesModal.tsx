@@ -51,6 +51,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
     if (isOpen && !prevIsOpenRef.current) {
       setFormData({
         ...rules,
+        isReferralEnabled: rules.isReferralEnabled === true,
         shortTerm6hRate: rules.shortTerm6hRate !== undefined ? rules.shortTerm6hRate : 0.040,
         longTerm6hRate: rules.longTerm6hRate !== undefined ? rules.longTerm6hRate : 0.033,
       });
@@ -804,34 +805,37 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                         {isHi ? '🎁 रेफरल प्रोग्राम चालू / बंद (Referral Program Switch)' : '🎁 Referral Program On / Off Switch'}
                       </label>
                       <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
-                        formData.isReferralEnabled !== false
+                        formData.isReferralEnabled === true
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                       }`}>
-                        {formData.isReferralEnabled !== false ? (isHi ? '🟢 चालू (ACTIVE)' : '🟢 ACTIVE') : (isHi ? '🔴 बंद (DISABLED)' : '🔴 DISABLED')}
+                        {formData.isReferralEnabled === true ? (isHi ? '🟢 चालू (ACTIVE)' : '🟢 ACTIVE') : (isHi ? '🔴 बंद (DISABLED)' : '🔴 DISABLED')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400">
                       {isHi
-                        ? 'चालू करने पर यूजर शेयर करके कमीशन कमा सकते हैं। बंद करने पर रेफरल कमीशन बंद रहेगा।'
+                        ? 'चालू करने पर ही यूजर शेयर करके रेफरल कमीशन कमा सकते हैं। बंद करने पर पूरे सिस्टम में रेफरल बंद रहेगा।'
                         : 'Enable or disable referral code generation & commission distribution across the platform.'}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      const updatedValue = formData.isReferralEnabled === false ? true : false;
+                      const updatedValue = !(formData.isReferralEnabled === true);
                       const updatedRules = { ...formData, isReferralEnabled: updatedValue };
                       setFormData(updatedRules);
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('gcap_rules_referral_state', updatedValue ? 'ENABLED' : 'DISABLED');
+                      }
                       onSaveRules(updatedRules);
                     }}
                     className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer border shadow-sm ${
-                      formData.isReferralEnabled !== false
+                      formData.isReferralEnabled === true
                         ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 shadow-rose-500/20'
                         : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 border-emerald-400 shadow-emerald-500/20'
                     }`}
                   >
-                    {formData.isReferralEnabled !== false 
+                    {formData.isReferralEnabled === true 
                       ? (isHi ? '🔴 बंद करें' : '🔴 Stop Referral') 
                       : (isHi ? '🟢 शुरू करें' : '🟢 Start Referral')}
                   </button>

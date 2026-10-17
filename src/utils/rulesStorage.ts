@@ -37,7 +37,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   referralL1Percent: 5.0,
   referralL2Percent: 2.0,
   referralL3Percent: 1.0,
-  isReferralEnabled: true,
+  isReferralEnabled: false,
   tdsPercent: 5.0,
   adminFeePercent: 0.02,
   shortTerm6hRate: 0.040,
@@ -54,7 +54,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
 };
 
 const RULES_STORAGE_KEY = 'gcap_platform_rules_v2';
-
+export const REFERRAL_AUTH_KEY = 'gcap_rules_referral_state';
 
 export function getStoredRules(): AppRules {
   try {
@@ -83,9 +83,19 @@ export function getStoredRules(): AppRules {
       longRate = 0.033;
     }
 
+    // Authoritative check for referral enabled/disabled so stale remote snapshots or defaults never auto-start it
+    let isReferral = false;
+    const authorPref = typeof window !== 'undefined' ? localStorage.getItem(REFERRAL_AUTH_KEY) : null;
+    if (authorPref !== null) {
+      isReferral = authorPref === 'ENABLED' || authorPref === 'true';
+    } else if (parsed.isReferralEnabled !== undefined) {
+      isReferral = parsed.isReferralEnabled === true;
+    }
+
     const rules: AppRules = {
       ...DEFAULT_GCAP_RULES,
       ...parsed,
+      isReferralEnabled: isReferral,
       shortTerm6hRate: shortRate,
       longTerm6hRate: longRate,
     };
@@ -116,9 +126,15 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
       longRate = 0.033;
     }
 
+    const isReferral = rules.isReferralEnabled === true;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(REFERRAL_AUTH_KEY, isReferral ? 'ENABLED' : 'DISABLED');
+    }
+
     const sanitizedRules: AppRules = {
       ...DEFAULT_GCAP_RULES,
       ...rules,
+      isReferralEnabled: isReferral,
       shortTerm6hRate: shortRate,
       longTerm6hRate: longRate,
     };

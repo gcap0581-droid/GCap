@@ -223,6 +223,22 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
         }
       });
     }
+
+    // Ensure stale Firestore rules snapshots (especially during quota exhaustion) NEVER override Admin's referral setting
+    if (state.rules) {
+      if (typeof window !== 'undefined') {
+        const authorPref = localStorage.getItem('gcap_rules_referral_state');
+        if (authorPref === 'DISABLED' || authorPref === 'false') {
+          state.rules.isReferralEnabled = false;
+        } else if (authorPref === 'ENABLED' || authorPref === 'true') {
+          state.rules.isReferralEnabled = true;
+        } else {
+          state.rules.isReferralEnabled = state.rules.isReferralEnabled === true;
+        }
+      } else {
+        state.rules.isReferralEnabled = state.rules.isReferralEnabled === true;
+      }
+    }
   }
 
   return state;

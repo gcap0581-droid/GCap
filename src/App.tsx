@@ -3449,11 +3449,19 @@ export default function App() {
   };
 
   const handleSaveRules = (updatedRules: AppRules) => {
-    setRules(updatedRules);
-    saveStoredRules(updatedRules, true, true);
+    const isRefEnabled = updatedRules.isReferralEnabled === true;
+    const cleanRules: AppRules = {
+      ...updatedRules,
+      isReferralEnabled: isRefEnabled,
+    };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gcap_rules_referral_state', isRefEnabled ? 'ENABLED' : 'DISABLED');
+    }
+    setRules(cleanRules);
+    saveStoredRules(cleanRules, true, true);
 
     // Persist rules to central server database immediately
-    apiSaveRules(updatedRules).catch((err) => {
+    apiSaveRules(cleanRules).catch((err) => {
       console.warn('Failed to persist rules to central database:', err);
     });
 
@@ -3636,7 +3644,7 @@ export default function App() {
             });
 
             // If referral enabled, compute team bonus for sponsor
-            if (rules?.isReferralEnabled !== false) {
+            if (rules?.isReferralEnabled === true) {
               const allUsers = getAllUsers();
               const l1SponsorCode = currentUser.referredBy?.trim().toUpperCase();
               if (l1SponsorCode) {
@@ -3817,7 +3825,7 @@ export default function App() {
 
     const newTxns: Transaction[] = [cycleTx];
     
-    if (rules?.isReferralEnabled !== false && currentUser) {
+    if (rules?.isReferralEnabled === true && currentUser) {
       const allUsers = getAllUsers();
       const l1SponsorCode = currentUser.referredBy?.trim().toUpperCase();
       if (l1SponsorCode) {

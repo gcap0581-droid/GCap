@@ -478,7 +478,7 @@ const DEFAULT_RULES: AppRules = {
   capitalReturnPolicyLabelHi: "प्लान समाप्ति पर 100% मूलधन सीधे वॉलेट में वापस",
   referralL1Percent: 1.0,
   referralL2Percent: 0.5,
-  isReferralEnabled: true,
+  isReferralEnabled: false,
   tdsPercent: 5.0,
   adminFeePercent: 2.0,
   shortTerm6hRate: 0.040,
@@ -1714,6 +1714,7 @@ function ensureDb(): ServerDB {
       parsed.rules = {
         ...DEFAULT_RULES,
         ...parsed.rules,
+        isReferralEnabled: parsed.rules.isReferralEnabled === true,
       };
       // Migrate legacy 2662307 error to official 8662307
       if (parsed.rules.companyBankAccountNumber === "924010002662307") {
@@ -2419,7 +2420,6 @@ async function startServer() {
     }
     saveDb(db);
     broadcastRealtimeEvent("COMPANY_PROFILE_UPDATED", db.companyProfile);
-    broadcastRealtimeEvent("rules_updated", { rules: db.rules, timestamp: Date.now() });
     broadcastRealtimeEvent("state_changed", { type: "COMPANY_PROFILE_UPDATE", timestamp: Date.now() });
     if (firestore) {
       saveToFirestore(db).catch((err) => console.warn("[Firebase] Failed to save companyProfile to Firestore:", err));
@@ -3990,7 +3990,15 @@ GCap में काम कैसे होता है:
     if (!rules) return res.status(400).json({ success: false, error: "Rules required" });
 
     const db = ensureDb();
-    db.rules = { ...db.rules, ...rules };
+    const updatedReferral = rules.isReferralEnabled !== undefined 
+      ? rules.isReferralEnabled === true 
+      : (db.rules ? db.rules.isReferralEnabled === true : false);
+
+    db.rules = { 
+      ...db.rules, 
+      ...rules,
+      isReferralEnabled: updatedReferral,
+    };
     // Bi-directionally sync to companyProfile so Admin Company Profile tab and print documents stay 100% in sync
     if (db.companyProfile) {
       if (rules.companyBankAccountNumber) db.companyProfile.bankAccountNumber = rules.companyBankAccountNumber;
@@ -4001,8 +4009,8 @@ GCap में काम कैसे होता है:
       if (rules.supportEmail) db.companyProfile.supportEmail = rules.supportEmail;
       if (rules.supportPhone) db.companyProfile.supportPhone = rules.supportPhone;
     }
-    saveDb(db);
-    console.log(`[GCap DB] Rules updated`);
+    saveDb(db, true);
+    console.log(`[GCap DB] Rules updated (isReferralEnabled: ${db.rules.isReferralEnabled})`);
 
     broadcastRealtimeEvent("rules_updated", { rules: db.rules, timestamp: Date.now() });
     broadcastRealtimeEvent("COMPANY_PROFILE_UPDATED", db.companyProfile);

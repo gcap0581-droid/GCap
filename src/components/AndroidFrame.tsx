@@ -245,18 +245,6 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
               </div>
             </button>
           )}
-
-          {/* GCap AI Assistant Button in Mobile Header */}
-          {currentUser && onOpenAssistant && (
-            <button
-              id="btn-mobile-header-assistant"
-              onClick={onOpenAssistant}
-              className="p-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 transition-all cursor-pointer active:scale-95 shadow-sm"
-              title={isHi ? 'GCap AI सहायक (बोलकर या लिखकर पूछें)' : 'GCap AI Assistant (Voice & Text)'}
-            >
-              <Bot className="w-4 h-4 text-emerald-400 animate-pulse" />
-            </button>
-          )}
         </div>
       </header>
 
@@ -363,17 +351,43 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
             )}
 
             {/* Quick Live Refresh & Sync Button in Menu */}
-            <div className="px-3 pt-3">
+            <div className="px-3 pt-3 space-y-2">
               <button
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                   window.location.reload();
                 }}
-                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600/30 via-emerald-500/20 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
               >
-                <RefreshCw className="w-4 h-4 text-emerald-400" />
+                <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{isHi ? '🔄 डेटा सिंक व ऐप रिफ्रेश करें' : '🔄 Sync & Refresh App'}</span>
               </button>
+
+              {/* GCap AI Voice & Text Assistant Card in Menu */}
+              {onOpenAssistant && (
+                <button
+                  id="btn-drawer-assistant"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenAssistant();
+                  }}
+                  className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-emerald-950/90 via-slate-900 to-cyan-950/90 border border-emerald-500/50 text-emerald-300 flex items-center justify-between shadow-lg shadow-emerald-950/40 active:scale-95 transition-all cursor-pointer hover:border-emerald-400"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+                      <Bot className="w-4 h-4 text-slate-950 animate-pulse" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>{isHi ? '🤖 GCap AI सहायक' : '🤖 GCap AI Assistant'}</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/40">24/7 LIVE</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block">{isHi ? 'बोलकर या लिखकर सवाल पूछें' : 'Voice & Text Assistant'}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-emerald-400" />
+                </button>
+              )}
             </div>
 
             {/* Menu List */}
@@ -697,31 +711,6 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
                       <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                     </button>
                   </div>
-
-                  {/* GCap AI Assistant Quick Trigger */}
-                  {onOpenAssistant && (
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        onOpenAssistant();
-                      }}
-                      className="w-full text-left p-2.5 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-850 to-cyan-950/80 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-md active:scale-95 transition-all"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                          <Bot className="w-4 h-4 animate-pulse" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>{isHi ? 'GCap AI सहायक' : 'GCap AI Assistant'}</span>
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/30 text-emerald-300 font-extrabold">🎙️ 24/7</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 block">{isHi ? 'बोलकर या लिखकर पूछें' : 'Voice & Text Assistant'}</span>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-emerald-400" />
-                    </button>
-                  )}
 
                   {/* Category 1: Plans */}
                   <div className="space-y-1">

@@ -139,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-2 relative items-center"></div>
 
           {/* Right Actions: Wallet Pill, Deposit, Profile & Notifications */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 max-w-full">
             
             {/* Compact Wallet Pill */}
             {currentUser && (
@@ -151,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onDesktopTabChange('wallet');
                   }
                 }}
-                className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-slate-900/95 to-slate-950/95 border border-emerald-500/30 hover:border-amber-400/50 rounded-xl px-2.5 py-1 sm:py-1.5 shadow-md shadow-black/40 cursor-pointer transition-all active:scale-95"
+                className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-slate-900/95 to-slate-950/95 border border-emerald-500/30 hover:border-amber-400/50 rounded-xl px-2 sm:px-2.5 py-1 sm:py-1.5 shadow-md shadow-black/40 cursor-pointer transition-all active:scale-95 shrink-0"
                 title={
                   isCompanyView
                     ? (isHi ? 'कंपनी मुख्य बैलेंस' : 'Company Main Balance')
@@ -159,17 +159,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }
               >
                 {!isCompanyView ? (
-                  <span className="text-sm shrink-0 leading-none">💰</span>
+                  <span className="text-xs sm:text-sm shrink-0 leading-none">💰</span>
                 ) : (
                   <WalletIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 )}
                 <div className="leading-none">
-                  <span className="text-[9px] text-slate-400 block font-semibold hidden sm:block">
+                  <span className="text-[9px] text-slate-400 block font-semibold hidden md:block">
                     {isCompanyView
                       ? (isHi ? 'कंपनी बैलेंस' : 'Company Balance')
                       : (isHi ? 'कुल कमाई' : 'Total Earnings')}
                   </span>
-                  <span className="text-xs sm:text-sm font-extrabold font-mono text-emerald-300">
+                  <span className="text-[11px] sm:text-sm font-extrabold font-mono text-emerald-300 whitespace-nowrap">
                     {formatINR(
                       (() => {
                         if (isCompanyView) {
@@ -185,12 +185,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
 
-            {/* Quick Add Money Button */}
-            {currentUser && (
+            {/* Quick Add Money Button - Hidden on small mobile for admin to prevent navbar cramping */}
+            {currentUser && (!isAdmin || false) && (
               <button
                 id="btn-nav-deposit-quick"
                 onClick={onOpenDeposit}
-                className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-900/40 cursor-pointer transition-all active:scale-95"
+                className="hidden sm:flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-900/40 cursor-pointer transition-all active:scale-95 shrink-0"
               >
                 <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
@@ -202,13 +202,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="btn-nav-profile-notifications"
                 onClick={onOpenProfile || onOpenNotifications}
-                className="relative flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/80 to-slate-900/80 hover:from-cyan-900/80 hover:to-slate-800/80 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition-all cursor-pointer shadow-md shadow-black/40 active:scale-95"
+                className="relative flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/80 to-slate-900/80 hover:from-cyan-900/80 hover:to-slate-800/80 border border-cyan-500/40 text-cyan-300 font-semibold text-xs transition-all cursor-pointer shadow-md shadow-black/40 active:scale-95 shrink-0"
                 title={isHi ? 'प्रोफ़ाइल विवरण एवं सूचनाएं' : 'Profile Details & Notifications'}
               >
-                <div className="w-5.5 h-5.5 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-extrabold text-xs shrink-0 border border-cyan-500/30">
+                <div className="w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-extrabold text-[11px] sm:text-xs shrink-0 border border-cyan-500/30">
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
-                <span className="hidden sm:inline max-w-[110px] truncate font-bold">{currentUser.name || (isHi ? 'प्रोफ़ाइल' : 'Profile')}</span>
+                <span className="hidden md:inline max-w-[80px] lg:max-w-[110px] truncate font-bold text-xs">
+                  {currentUser.name || (isHi ? 'प्रोफ़ाइल' : 'Profile')}
+                </span>
 
                 {/* Integrated Notification Bell */}
                 <div 
@@ -218,12 +220,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onOpenNotifications();
                     }
                   }}
-                  className="relative flex items-center justify-center pl-1 border-l border-cyan-500/30 text-amber-400 hover:text-amber-300 cursor-pointer"
+                  className="relative flex items-center justify-center pl-1 sm:pl-1.5 border-l border-cyan-500/30 text-amber-400 hover:text-amber-300 cursor-pointer"
                   title={isHi ? 'सूचनाएं' : 'Notifications'}
                 >
-                  <Bell className="w-4 h-4 text-amber-400" />
+                  <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-2 -right-2 min-w-[16px] h-[16px] px-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center border-2 border-slate-900 shadow-sm animate-pulse">
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-0.5 bg-amber-500 text-slate-950 rounded-full text-[8px] font-black flex items-center justify-center border-2 border-slate-900 shadow-sm animate-pulse">
                       {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                     </span>
                   )}
@@ -231,10 +233,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Static Admin Indicator */}
+            {/* Static Admin Indicator - Visible on large screens only so mobile navbar never overflows */}
             {isAdmin && (
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-amber-500/40 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 text-amber-300 shadow-md shadow-amber-950/30"
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-amber-500/40 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 text-amber-300 shadow-md shadow-amber-950/30 shrink-0"
               >
                 <Award className="w-3.5 h-3.5 text-amber-400" />
                 <span>{isHi ? '👑 मुख्य एडमिन' : '👑 Master Admin'}</span>

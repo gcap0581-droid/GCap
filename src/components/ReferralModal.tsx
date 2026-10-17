@@ -158,7 +158,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
 
         {/* Body Content */}
         <div className="p-6 overflow-y-auto space-y-5 text-sm">
-          {rules.isReferralEnabled === false ? (
+          {rules.isReferralEnabled !== true ? (
             <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-xl">
                 🚫
