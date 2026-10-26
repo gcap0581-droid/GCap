@@ -372,7 +372,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
             </div>
 
             <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium tracking-wider">
-              <span>{isHi ? 'सुरक्षित 256-Bit SSL • GCap AI' : '256-Bit SSL • GCap Capital'}</span>
+              <span>{isHi ? 'सुरक्षित 256-Bit SSL • GCap AI' : '256-Bit SSL • GCap OPC Private Limited'}</span>
               <span className="text-emerald-400/80 font-mono flex items-center gap-1">
                 <span>🎵 High-Fi Audio Active</span>
               </span>

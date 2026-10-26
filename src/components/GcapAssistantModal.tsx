@@ -41,7 +41,7 @@ const INITIAL_WELCOME_MESSAGE: ChatMessage = {
   id: 'msg-welcome-0',
   role: 'assistant',
   content:
-    '🙏 नमस्ते जी! मैं GCap Capital का आधिकारिक AI सहायक हूँ। GCap परिवार में आपका स्वागत है!\n\nआप मुझसे GCap के बारे में कुछ भी पूछ सकते हैं:\n• GCap सॉफ्टवेयर में काम कैसे करें (Step-by-Step)\n• पैसा जमा (Deposit), GP स्वैप व बैंक निकासी की विधि\n• 641-दिन व 365-दिन निवेश प्लान्स और 6-घंटे का रिटर्न\n• कंपनी की कानूनी जानकारी व कार्यालय विवरण\n\nबताइए, आज मैं आपकी क्या सहायता करूँ?',
+    '🙏 नमस्ते जी! मैं GCap OPC Private Limited का आधिकारिक AI सहायक हूँ। GCap परिवार में आपका स्वागत है!\n\nआप मुझसे GCap के बारे में कुछ भी पूछ सकते हैं:\n• GCap सॉफ्टवेयर में काम कैसे करें (Step-by-Step)\n• पैसा जमा (Deposit), GP स्वैप व बैंक निकासी की विधि\n• 641-दिन व 365-दिन निवेश प्लान्स और 6-घंटे का रिटर्न\n• कंपनी की कानूनी जानकारी व कार्यालय विवरण\n\nबताइए, आज मैं आपकी क्या सहायता करूँ?',
   timestamp: Date.now(),
 };
 
@@ -77,7 +77,7 @@ function getLocalAssistantReply(
 
   if (isEnglishQuery && q.length > 3) {
     if (q.includes('hello') || q.includes('hi')) {
-      return `Hello ${userName}! I am the official GCap Capital AI Assistant. How can I assist you with GCap investment plans, deposits, GP swaps, or withdrawals today?`;
+      return `Hello ${userName}! I am the official GCap OPC Private Limited AI Assistant. How can I assist you with GCap investment plans, deposits, GP swaps, or withdrawals today?`;
     }
     if (q.includes('deposit') || q.includes('recharge')) {
       return `💰 **Step-by-Step Guide to Deposit Funds in GCap:**\n1️⃣ Tap **'Add Money (Deposit)'** in your dashboard.\n2️⃣ Transfer funds to official UPI ID: \`${companyUpiId}\` or \`${companyBankName}\` A/C: \`${companyBankAccountNumber}\` (IFSC: \`${companyBankIfsc}\`).\n3️⃣ Enter the 12-digit UTR/reference number and submit.\n4️⃣ Once verified by admin, cash balance is credited instantly to your wallet.`;
@@ -101,7 +101,7 @@ function getLocalAssistantReply(
     q.includes('kaise ho') ||
     q.includes('kya hal')
   ) {
-    return `🙏 नमस्ते ${userName} जी! मैं GCap Capital का आधिकारिक AI सहायक हूँ।\n\nआप मुझसे GCap सॉफ्टवेयर में काम करने के तरीके (Step-by-Step), निवेश प्लान्स, डिपॉजिट, निकासी या कंपनी की जानकारी पूछ सकते हैं। बताइए, आज मैं आपकी क्या सहायता करूँ?`;
+    return `🙏 नमस्ते ${userName} जी! मैं GCap OPC Private Limited का आधिकारिक AI सहायक हूँ।\n\nआप मुझसे GCap सॉफ्टवेयर में काम करने के तरीके (Step-by-Step), निवेश प्लान्स, डिपॉजिट, निकासी या कंपनी की जानकारी पूछ सकते हैं। बताइए, आज मैं आपकी क्या सहायता करूँ?`;
   }
 
   // 2. Farewell / Bidai Sandesh (Alvida, Bye, Thanks, Fir Milenge)
@@ -126,7 +126,7 @@ function getLocalAssistantReply(
     q.includes('bas itna') ||
     q.includes('बस उतना')
   ) {
-    return `🙏 GCap Capital परिवार से जुड़ने के लिए आपका बहुत-बहुत धन्यवाद ${userName} जी! आपका दिन शुभ, मंगलमय और समृद्ध रहे। आपका निवेश निरंतर फलता-फूलता रहे। जब भी आपको किसी सहायता की आवश्यकता हो, मैं हमेशा उपस्थित हूँ। अलविदा और फिर मिलेंगे! ✨`;
+    return `🙏 GCap OPC Private Limited परिवार से जुड़ने के लिए आपका बहुत-बहुत धन्यवाद ${userName} जी! आपका दिन शुभ, मंगलमय और समृद्ध रहे। आपका निवेश निरंतर फलता-फूलता रहे। जब भी आपको किसी सहायता की आवश्यकता हो, मैं हमेशा उपस्थित हूँ। अलविदा और फिर मिलेंगे! ✨`;
   }
 
   // 3. STEP-BY-STEP: Deposit / Paisa Jama Karne Ka Tarika
@@ -214,7 +214,7 @@ function getLocalAssistantReply(
     q.includes('शुरू') ||
     q.includes('process')
   ) {
-    return `🌟 **GCap Capital सॉफ्टवेयर में काम करने की पूरी प्रक्रिया (Step-by-Step):**\n\n1️⃣ **खाता बनाएं**: मोबाइल नंबर और पासवर्ड से तुरंत लॉगइन करें।\n2️⃣ **डिपॉजिट करें**: कंपनी के UPI/बैंक में पैसे भेजकर UTR सबमिट करें।\n3️⃣ **GP स्वैप करें**: कैश को GP पॉइंट्स में बदलें (₹1 = 0.98 GP)।\n4️⃣ **प्लान खरीदें**: 641-दिन या 365-दिन का निवेश प्लान GP से एक्टिवेट करें।\n5️⃣ **6-घंटे का रिटर्न लें**: हर 6 घंटे में स्वतः रिटर्न वॉलेट में आएगा।\n6️⃣ **बैंक विथड्रॉल लें**: महीने की 1-5 तारीख को अपनी कमाई बैंक में ट्रांसफर करें।\n\nबताइए, इनमें से किस स्टेप के बारे में आप विस्तार से जानना चाहते हैं?`;
+    return `🌟 **GCap OPC Private Limited सॉफ्टवेयर में काम करने की पूरी प्रक्रिया (Step-by-Step):**\n\n1️⃣ **खाता बनाएं**: मोबाइल नंबर और पासवर्ड से तुरंत लॉगइन करें।\n2️⃣ **डिपॉजिट करें**: कंपनी के UPI/बैंक में पैसे भेजकर UTR सबमिट करें।\n3️⃣ **GP स्वैप करें**: कैश को GP पॉइंट्स में बदलें (₹1 = 0.98 GP)।\n4️⃣ **प्लान खरीदें**: 641-दिन या 365-दिन का निवेश प्लान GP से एक्टिवेट करें।\n5️⃣ **6-घंटे का रिटर्न लें**: हर 6 घंटे में स्वतः रिटर्न वॉलेट में आएगा।\n6️⃣ **बैंक विथड्रॉल लें**: महीने की 1-5 तारीख को अपनी कमाई बैंक में ट्रांसफर करें।\n\nबताइए, इनमें से किस स्टेप के बारे में आप विस्तार से जानना चाहते हैं?`;
   }
 
   // 8. Company Profile / Legal / Trust
@@ -246,7 +246,7 @@ function getLocalAssistantReply(
   }
 
   // 10. Strict Redirection for Outside topics
-  return `🙏 नमस्ते ${userName} जी! मैं GCap Capital का आधिकारिक AI सहायक हूँ।\n\nमैं GCap सॉफ्टवेयर में काम करने के तरीके (Step-by-Step), निवेश प्लान्स, डिपॉजिट, GP स्वैप (₹1 = 0.98 GP), और बैंक निकासी के बारे में आपकी सहायता कर सकता हूँ।\n\nकृपया GCap से जुड़ा प्रश्न पूछें, मैं विस्तार से मदद करूँगा!`;
+  return `🙏 नमस्ते ${userName} जी! मैं GCap OPC Private Limited का आधिकारिक AI सहायक हूँ।\n\nमैं GCap सॉफ्टवेयर में काम करने के तरीके (Step-by-Step), निवेश प्लान्स, डिपॉजिट, GP स्वैप (₹1 = 0.98 GP), और बैंक निकासी के बारे में आपकी सहायता कर सकता हूँ।\n\nकृपया GCap से जुड़ा प्रश्न पूछें, मैं विस्तार से मदद करूँगा!`;
 }
 
 export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({

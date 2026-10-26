@@ -936,7 +936,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                         value={formData.companyBankAccountHolder || ''}
                         onChange={(e) => setFormData({ ...formData, companyBankAccountHolder: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs focus:border-purple-500 focus:outline-none"
-                        placeholder="e.g. GCap Capital Pvt Ltd"
+                        placeholder="e.g. GCap OPC Private Limited"
                       />
                     </div>
 

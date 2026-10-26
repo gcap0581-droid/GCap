@@ -143,8 +143,8 @@ class AudioAnnouncerEngine {
     const isHi = options.language !== 'en';
 
     const text = isHi
-      ? `नमस्ते ${name} जी! जी-कैप कैपिटल में आपका स्वागत है। आपका सुरक्षित खाता सफलतापूर्वक बन गया है!`
-      : `Welcome ${name} to GCap Capital! Your secure account has been created successfully!`;
+      ? `नमस्ते ${name} जी! जी-कैप ओपीसी प्राइवेट लिमिटेड में आपका स्वागत है। आपका सुरक्षित खाता सफलतापूर्वक बन गया है!`
+      : `Welcome ${name} to GCap OPC Private Limited! Your secure account has been created successfully!`;
 
     this.speak(text, isHi ? 'hi' : 'en');
   }

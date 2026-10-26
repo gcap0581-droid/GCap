@@ -22,7 +22,7 @@ export default defineConfig({
         skipWaiting: true,
       },
       manifest: {
-        name: 'GCap Capital',
+        name: 'GCAP (OPC) PRIVATE LIMITED',
         short_name: 'GCap',
         description: "India's Premier High-Yield Fixed Growth & Investment Platform",
         theme_color: '#020617',

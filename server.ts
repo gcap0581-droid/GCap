@@ -1722,7 +1722,7 @@ function ensureDb(): ServerDB {
         needsSave = true;
       }
       if (parsed.rules.companyBankAccountHolder === "GCap Assets & Wealth Management Private Limited" ||
-          parsed.rules.companyBankAccountHolder === "GCap Capital Ventures Pvt Ltd" ||
+          parsed.rules.companyBankAccountHolder === "GCAP (OPC) PRIVATE LIMITED" ||
           parsed.rules.companyBankAccountHolder === "GCap Investments" ||
           parsed.rules.companyBankAccountHolder === "GCap Asset Management (India) Pvt. Ltd." ||
           !parsed.rules.companyBankAccountHolder) {
@@ -2821,7 +2821,7 @@ async function startServer() {
       q.includes("pranam") ||
       q.includes("प्रणाम")
     ) {
-      return "🙏 नमस्ते जी! मैं GCap Capital का आधिकारिक AI सहायक (GCap Assistant) हूँ। GCap में निवेश कैसे करें, प्लान्स, विड्रॉल, या खाते से जुड़ी कोई भी जानकारी आप मुझसे लिखकर या बोलकर पूछ सकते हैं। बताइए, मैं आपकी क्या सहायता करूँ?";
+      return "🙏 नमस्ते जी! मैं GCAP (OPC) PRIVATE LIMITED का आधिकारिक AI सहायक (GCap Assistant) हूँ। GCap में निवेश कैसे करें, प्लान्स, विड्रॉल, या खाते से जुड़ी कोई भी जानकारी आप मुझसे लिखकर या बोलकर पूछ सकते हैं। बताइए, मैं आपकी क्या सहायता करूँ?";
     }
 
     // 2. Goodbyes & Thanks (Bidai Sandesh)
@@ -2838,7 +2838,7 @@ async function startServer() {
       q.includes("theek hai") ||
       q.includes("ठीक है")
     ) {
-      return "🙏 GCap Capital पर भरोसा करने के लिए आपका बहुत-बहुत धन्यवाद जी! आपका दिन शुभ, समृद्ध और मंगलमय हो। अलविदा और हार्दिक शुभकामनाएं!";
+      return "🙏 GCAP (OPC) PRIVATE LIMITED पर भरोसा करने के लिए आपका बहुत-बहुत धन्यवाद जी! आपका दिन शुभ, समृद्ध और मंगलमय हो। अलविदा और हार्दिक शुभकामनाएं!";
     }
 
     // 3. How GCap works / Kaise kaam kare
@@ -2853,7 +2853,7 @@ async function startServer() {
       q.includes("शुरू") ||
       q.includes("process")
     ) {
-      return `🌟 GCap Capital में काम करना बहुत सरल और सुरक्षित है:\n\n1️⃣ खाता बनाएं (रजिस्टर करें) और लॉगिन करें।\n2️⃣ 'डिपॉजिट' पर जाकर कंपनी के अधिकृत UPI (${rules.companyUpiId || "8603504808@axisbank"}) या बैंक खाते में पैसे भेजें और UTR नंबर सबमिट करें। एडमिन द्वारा सत्यापित होते ही बैलेंस वॉलेट में आ जाएगा।\n3️⃣ 'जीपी स्वैप' से अपने कैश को GP पॉइंट्स में बदलें (दर: ₹1 = 1 GP)। प्लान्स केवल GP से खरीदे जाते हैं।\n4️⃣ 'प्लान्स' सेक्शन में जाकर 641-दिन या 365-दिन का प्लान चुनें और GP से एक्टिवेट करें।\n5️⃣ हर 6 घंटे में स्वचालित रिटर्न सीधे आपके वॉलेट में GP के रूप में जुड़ता रहेगा!\n\nक्या आप किसी विशेष प्लान की जानकारी चाहते हैं?`;
+      return `🌟 GCAP (OPC) PRIVATE LIMITED में काम करना बहुत सरल और सुरक्षित है:\n\n1️⃣ खाता बनाएं (रजिस्टर करें) और लॉगिन करें।\n2️⃣ 'डिपॉजिट' पर जाकर कंपनी के अधिकृत UPI (${rules.companyUpiId || "8603504808@axisbank"}) या बैंक खाते में पैसे भेजें और UTR नंबर सबमिट करें। एडमिन द्वारा सत्यापित होते ही बैलेंस वॉलेट में आ जाएगा।\n3️⃣ 'जीपी स्वैप' से अपने कैश को GP पॉइंट्स में बदलें (दर: ₹1 = 1 GP)। प्लान्स केवल GP से खरीदे जाते हैं।\n4️⃣ 'प्लान्स' सेक्शन में जाकर 641-दिन या 365-दिन का प्लान चुनें और GP से एक्टिवेट करें।\n5️⃣ हर 6 घंटे में स्वचालित रिटर्न सीधे आपके वॉलेट में GP के रूप में जुड़ता रहेगा!\n\nक्या आप किसी विशेष प्लान की जानकारी चाहते हैं?`;
     }
 
     // 4. Dedicated 6-Hour Cycle, Earning Percentage & ROI Calculation
@@ -2889,7 +2889,7 @@ async function startServer() {
       q.includes("return") ||
       q.includes("रिटर्न")
     ) {
-      return `📦 GCap Capital में 2 मुख्य उच्च-रिटर्न निवेश प्लान हैं:\n\n⚡ 1. शॉर्ट टर्म प्लान (641-Day Plan):\n• न्यूनतम निवेश: ₹1,00,000 (1 लाख रुपये) से असीमित\n• अवधि: 641 दिन (पहले 24 घंटे का लॉक)\n• रिटर्न दर: 0.040% हर 6 घंटे में (दैनिक 0.160% = ₹1 लाख पर ₹160 प्रतिदिन)\n• 641 दिन पूरे होने पर 100% मूलधन वापस या रिन्यूअल विकल्प।\n\n👑 2. लॉन्ग टर्म प्लान (365-Day & Royalty Plan):\n• निवेश सीमा: ₹10,000 से ₹1,00,000 तक\n• अवधि: 365 दिन (पहले 24 घंटे का लॉक) + 1461-दिन रॉयल्टी पाथवे\n• रिटर्न दर: 0.033% हर 6 घंटे में (दैनिक 0.132% = ₹10,000 पर ₹13.2 प्रतिदिन)।\n\nदोनों ही प्लान्स में आपका मूलधन 100% सुरक्षित रहता है!`;
+      return `📦 GCAP (OPC) PRIVATE LIMITED में 2 मुख्य उच्च-रिटर्न निवेश प्लान हैं:\n\n⚡ 1. शॉर्ट टर्म प्लान (641-Day Plan):\n• न्यूनतम निवेश: ₹1,00,000 (1 लाख रुपये) से असीमित\n• अवधि: 641 दिन (पहले 24 घंटे का लॉक)\n• रिटर्न दर: 0.040% हर 6 घंटे में (दैनिक 0.160% = ₹1 लाख पर ₹160 प्रतिदिन)\n• 641 दिन पूरे होने पर 100% मूलधन वापस या रिन्यूअल विकल्प।\n\n👑 2. लॉन्ग टर्म प्लान (365-Day & Royalty Plan):\n• निवेश सीमा: ₹10,000 से ₹1,00,000 तक\n• अवधि: 365 दिन (पहले 24 घंटे का लॉक) + 1461-दिन रॉयल्टी पाथवे\n• रिटर्न दर: 0.033% हर 6 घंटे में (दैनिक 0.132% = ₹10,000 पर ₹13.2 प्रतिदिन)।\n\nदोनों ही प्लान्स में आपका मूलधन 100% सुरक्षित रहता है!`;
     }
 
     // 5. Withdrawal / Nikasi
@@ -2937,7 +2937,7 @@ async function startServer() {
       q.includes("office") ||
       q.includes("address")
     ) {
-      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCap OPC Private Limited"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
+      return `🏛️ GCAP (OPC) PRIVATE LIMITED आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCap OPC Private Limited"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
     }
 
     // 9. Referral
@@ -2953,7 +2953,7 @@ async function startServer() {
     }
 
     // Default polite redirection strictly to GCap
-    return `🙏 नमस्ते जी! मैं GCap Capital का आधिकारिक AI सहायक हूँ।\n\nमैं GCap के निवेश प्लान्स (641-दिन व 365-दिन), पैसा जमा/निकासी, GP स्वैप, या खाता नियमों के बारे में आपकी सहायता कर सकता हूँ।\n\nकृपया GCap से जुड़ा कोई भी प्रश्न पूछें, मैं विस्तार से आपकी मदद करूँगा!`;
+    return `🙏 नमस्ते जी! मैं GCAP (OPC) PRIVATE LIMITED का आधिकारिक AI सहायक हूँ।\n\nमैं GCap के निवेश प्लान्स (641-दिन व 365-दिन), पैसा जमा/निकासी, GP स्वैप, या खाता नियमों के बारे में आपकी सहायता कर सकता हूँ।\n\nकृपया GCap से जुड़ा कोई भी प्रश्न पूछें, मैं विस्तार से आपकी मदद करूँगा!`;
   }
 
   // POST: GCap AI Assistant Chat Endpoint
@@ -2970,8 +2970,8 @@ async function startServer() {
       const rules = (db as any).rules || {};
 
       const systemInstruction = `
-आप GCap Capital (GCap OPC Private Limited) के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
-आपका एकमात्र उद्देश्य यूज़र को GCap Capital के बारे में हर जानकारी शुद्ध और सरल हिंदी (या यूज़र की भाषा) में देना है।
+आप GCAP (OPC) PRIVATE LIMITED के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
+आपका एकमात्र उद्देश्य यूज़र को GCAP (OPC) PRIVATE LIMITED के बारे में हर जानकारी शुद्ध और सरल हिंदी (या यूज़र की भाषा) में देना है।
 
 कंपनी की मुख्य जानकारी:
 - नाम: ${companyProfile.companyName || "GCap OPC Private Limited"} (${companyProfile.companyNameHi || "जीकैप (ओपीसी) प्राइवेट लिमिटेड"})
@@ -3012,9 +3012,9 @@ GCap में काम कैसे होता है:
 1. डिफ़ॉल्ट रूप से हमेशा शुद्ध और अत्यंत विनम्र हिंदी में उत्तर दें। यदि यूज़र किसी अन्य भाषा (जैसे अंग्रेज़ी) में सवाल पूछे, तो उसके साथ उसी भाषा में उत्तर दें।
 2. कंपनी का संपूर्ण वैधानिक विवरण (CIN U66190BR2026OPC088307, PAN AANCG4365Q, TAN PTNG16977C, सासाराम बिहार ऑफिस पता, अधिकृत निदेशक Amit Kumar, एक्सिस बैंक खाता, UPI 8603504808@axisbank) यूज़र के पूछने पर हमेशा 100% सटीक और पूरा बताएं।
 3. GCap के सॉफ्टवेयर में कोई भी काम कैसे करना है (जैसे: पैसे जमा/डिपॉजिट करना, GP स्वैप करना [₹1 = 0.98 GP], प्लान खरीदना/एक्टिवेट करना, बैंक विड्रॉल करना, पासवर्ड बदलना, रेफरल शेयर करना), उसका उत्तर हमेशा 1️⃣, 2️⃣, 3️⃣ करके चरण-दर-चरण (Step-by-Step) स्पष्ट दें।
-4. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap Capital, निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
+4. केवल GCap से जुड़े प्रश्नों का उत्तर दें। यदि कोई बाहरी विषय पूछे तो विनम्रता से कहें: "क्षमा करें, मैं केवल GCap (GCAP OPC PRIVATE LIMITED), निवेश योजनाओं, विड्रॉल और खाता संचालन से जुड़े प्रश्नों में आपकी सहायता कर सकता हूँ।"
 5. हमेशा अत्यंत आदरपूर्वक "जी", "आप" कहकर बात करें।
-6. यदि यूज़र धन्यवाद, अलविदा, बाय, ठीक है या बात समाप्त करे, तो सम्मानजनक विदाई संदेश अवश्य दें: "🙏 GCap Capital चुनने के लिए आपका बहुत-बहुत धन्यवाद! आपका दिन शुभ और समृद्ध हो। अलविदा!"
+6. यदि यूज़र धन्यवाद, अलविदा, बाय, ठीक है या बात समाप्त करे, तो सम्मानजनक विदाई संदेश अवश्य दें: "🙏 GCAP (OPC) PRIVATE LIMITED चुनने के लिए आपका बहुत-बहुत धन्यवाद! आपका दिन शुभ और समृद्ध हो। अलविदा!"
 `;
 
       // Try Gemini API first
