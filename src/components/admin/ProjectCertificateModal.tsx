@@ -186,13 +186,13 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                 <img
                   src="/assets/images/logo.jpg"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                    (e.currentTarget as HTMLImageElement).src = '/logo.png';
                   }}
                   alt="GCap Logo"
                   className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-400 print:border-black shrink-0"
                 />
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
+                  {profile.companyName || 'GCap OPC Private Limited'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-x-2 text-[11px] text-amber-300 print:text-amber-800 uppercase tracking-widest font-mono">
@@ -326,7 +326,7 @@ export const ProjectCertificateModal: React.FC<ProjectCertificateModalProps> = (
                   {profile.signatoryDesignation || 'Chief Executive Officer (CEO)'}
                 </span>
                 <span className="text-[10px] text-slate-400 print:text-slate-600 block">
-                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
+                  {profile.companyName || 'GCap OPC Private Limited'}
                 </span>
               </div>
 

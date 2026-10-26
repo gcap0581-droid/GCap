@@ -289,7 +289,7 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
               <span className="font-bold text-amber-300">मैसेज हेडर ब्रांडिंग (सक्रिय)</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              हर मैसेज के शीर्ष पर <strong>*🏛️ GCAP PRIVATE LIMITED*</strong> और नीचे कंपनी का CIN व आधिकारिक सील पहले से ही मौजूद है।
+              हर मैसेज के शीर्ष पर <strong>*🏛️ GCap OPC Private Limited*</strong> और नीचे कंपनी का CIN व आधिकारिक सील पहले से ही मौजूद है।
             </p>
           </div>
 
@@ -299,7 +299,7 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
               <span className="font-bold text-emerald-300">WhatsApp Business प्रोफाइल (फ्री)</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              फ़ोन में <strong>WhatsApp Business</strong> ऐप डाउनलोड करके बिज़नेस नाम <strong>"GCAP PRIVATE LIMITED"</strong> और GCAP लोगो सेट करें।
+              फ़ोन में <strong>WhatsApp Business</strong> ऐप डाउनलोड करके बिज़नेस नाम <strong>"GCap OPC Private Limited"</strong> और GCAP लोगो सेट करें।
             </p>
           </div>
 
@@ -309,7 +309,7 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
               <span className="font-bold text-teal-300">Meta Verified Cloud API (ग्रीन टिक)</span>
             </div>
             <p className="text-slate-300 text-[11px] leading-relaxed">
-              बिना नंबर सेव किए भी सीधे <strong>"GCAP PRIVATE LIMITED ✅"</strong> नाम से मैसेज भेजने का आधिकारिक Meta सिस्टम।
+              बिना नंबर सेव किए भी सीधे <strong>"GCap OPC Private Limited ✅"</strong> नाम से मैसेज भेजने का आधिकारिक Meta सिस्टम।
             </p>
           </div>
         </div>
@@ -359,16 +359,16 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
                 </div>
                 <p className="text-slate-400 text-[11px]">
                   • डैशबोर्ड में <strong>"WhatsApp"</strong> के आगे <strong>"Set Up"</strong> दबाएं।<br />
-                  • अपना Meta Business Portfolio (<strong>GCAP PRIVATE LIMITED</strong>) चुनें या नया बनाएं।
+                  • अपना Meta Business Portfolio (<strong>GCap OPC Private Limited</strong>) चुनें या नया बनाएं।
                 </p>
               </div>
 
               {/* Step 3 */}
               <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                <div className="font-bold text-white">स्टेप 3: मोबाइल नंबर जोड़ें और Display Name "GCAP PRIVATE LIMITED" रखें</div>
+                <div className="font-bold text-white">स्टेप 3: मोबाइल नंबर जोड़ें और Display Name "GCap OPC Private Limited" रखें</div>
                 <p className="text-slate-400 text-[11px]">
                   • <strong>API Setup &gt; Step 5 (Add Phone Number)</strong> में जाएँ।<br />
-                  • <strong>Display Name:</strong> <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-300 font-mono">GCAP PRIVATE LIMITED</code> दर्ज करें (यह MCA सर्टिफिकेट से मेल खाना चाहिए)।<br />
+                  • <strong>Display Name:</strong> <code className="bg-slate-950 px-1 py-0.5 rounded text-emerald-300 font-mono">GCap OPC Private Limited</code> दर्ज करें (यह MCA सर्टिफिकेट से मेल खाना चाहिए)।<br />
                   • <strong>Category:</strong> Financial Services / Investment चुनें और OTP से नंबर वेरिफाई करें।
                 </p>
               </div>
@@ -378,7 +378,7 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
                 <div className="font-bold text-white">स्टेप 4: Meta Business Verification (कंपनी दस्तावेज़ अपलोड करें)</div>
                 <p className="text-slate-400 text-[11px]">
                   • <strong>Business Settings &gt; Security Center</strong> में <strong>"Start Verification"</strong> पर क्लिक करें।<br />
-                  • <strong>GCAP PRIVATE LIMITED</strong> का MCA सर्टिफिकेट (CIN: <strong>U66190BR2026OPC088307</strong>), PAN व बैंक स्टेटमेंट अपलोड करें। Meta 24-48 घंटों में वेरिफाई कर देता है।
+                  • <strong>GCap OPC Private Limited</strong> का MCA सर्टिफिकेट (CIN: <strong>U66190BR2026OPC088307</strong>), PAN व बैंक स्टेटमेंट अपलोड करें। Meta 24-48 घंटों में वेरिफाई कर देता है।
                 </p>
               </div>
 
@@ -387,7 +387,7 @@ export const AdminWhatsAppHubTab: React.FC<AdminWhatsAppHubTabProps> = ({
                 <div className="font-bold text-white">स्टेप 5: Official Business Account (ग्रीन टिक ✅) हेतु आवेदन</div>
                 <p className="text-slate-400 text-[11px]">
                   • WhatsApp Manager &gt; Phone Numbers &gt; Profile में <strong>"Submit Request for Official Business Account"</strong> दबाएं।<br />
-                  • सत्यापन होने के बाद आपका सेंडर नाम बिना नंबर सेव किए भी सीधे <strong>"GCAP PRIVATE LIMITED ✅"</strong> दिखेगा।
+                  • सत्यापन होने के बाद आपका सेंडर नाम बिना नंबर सेव किए भी सीधे <strong>"GCap OPC Private Limited ✅"</strong> दिखेगा।
                 </p>
               </div>
             </div>

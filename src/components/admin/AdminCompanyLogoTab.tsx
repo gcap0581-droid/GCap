@@ -52,7 +52,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
   const [activeMockup, setActiveMockup] = useState<'none' | 'appHeader' | 'letterhead' | 'idCard'>('none');
 
   // Vector Engine custom texts
-  const [companyText, setCompanyText] = useState(profile.companyName || 'GCAP PRIVATE LIMITED');
+  const [companyText, setCompanyText] = useState(profile.companyName || 'GCap OPC Private Limited');
   const [subtitleText, setSubtitleText] = useState('GLOBAL ASSET PORTAL');
   const [cinText, setCinText] = useState(profile.cin || 'U66190BR2026OPC088307');
   const [establishedYear, setEstablishedYear] = useState('2026');
@@ -382,8 +382,8 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
               </div>
               <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
                 {isHi
-                  ? 'GCAP PRIVATE LIMITED के लिए एडवांस और आकर्षक HD लोगो। हर साइज (128px से 4096px 4K) में PNG और JPEG दोनों फॉर्मेट में तुरंत डाउनलोड करें।'
-                  : 'Advanced & attractive HD logo assets for GCAP PRIVATE LIMITED. Download in all resolutions (128px to 4096px 4K) in both PNG and JPEG formats.'}
+                  ? 'GCap OPC Private Limited के लिए एडवांस और आकर्षक HD लोगो। हर साइज (128px से 4096px 4K) में PNG और JPEG दोनों फॉर्मेट में तुरंत डाउनलोड करें।'
+                  : 'Advanced & attractive HD logo assets for GCap OPC Private Limited. Download in all resolutions (128px to 4096px 4K) in both PNG and JPEG formats.'}
               </p>
             </div>
           </div>
@@ -713,7 +713,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
                       className="w-10 h-10 rounded-lg object-contain border border-amber-500/50"
                     />
                     <div>
-                      <div className="text-xs font-black text-white">{profile.companyName || 'GCAP PRIVATE LIMITED'}</div>
+                      <div className="text-xs font-black text-white">{profile.companyName || 'GCap OPC Private Limited'}</div>
                       <div className="text-[10px] text-amber-400 font-medium">Secured • Govt. Registered</div>
                     </div>
                   </div>
@@ -734,7 +734,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
                         className="w-12 h-12 object-contain"
                       />
                       <div>
-                        <div className="text-sm font-black text-slate-900">{profile.companyName || 'GCAP PRIVATE LIMITED'}</div>
+                        <div className="text-sm font-black text-slate-900">{profile.companyName || 'GCap OPC Private Limited'}</div>
                         <div className="text-[10px] text-slate-600 font-mono">CIN: {profile.cin || 'U66190BR2026OPC088307'}</div>
                       </div>
                     </div>
@@ -760,7 +760,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
                       className="w-full h-full object-contain rounded-full"
                     />
                   </div>
-                  <div className="text-xs font-black text-white">{profile.companyName || 'GCAP PRIVATE LIMITED'}</div>
+                  <div className="text-xs font-black text-white">{profile.companyName || 'GCap OPC Private Limited'}</div>
                   <div className="text-[10px] text-amber-400 font-bold uppercase mt-0.5">DIRECTOR / EXECUTIVE</div>
                   <div className="text-[9px] text-slate-400 font-mono mt-1">ID: GCAP-DIR-001</div>
                 </div>

@@ -47,7 +47,7 @@ export const DEFAULT_GCAP_RULES: AppRules = {
   adminWhatsAppNumber: '+91 8603504808',
   lastUpdated: '2026-09-29',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
+  companyBankAccountHolder: 'GCap OPC Private Limited',
   companyBankName: 'Axis Bank Ltd.',
   companyBankAccountNumber: '924010008662307',
   companyBankIfsc: 'UTIB0001219',

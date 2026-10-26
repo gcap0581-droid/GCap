@@ -390,13 +390,13 @@ export const UserAgreementModal: React.FC<UserAgreementModalProps> = ({
                 <img
                   src="/assets/images/logo.jpg"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                    (e.currentTarget as HTMLImageElement).src = '/logo.png';
                   }}
                   alt="GCap Logo"
                   className="w-10 h-10 rounded-xl object-cover shadow-md border border-amber-500/50 print:border-black shrink-0"
                 />
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                  {profile.companyName || 'GCAP PRIVATE LIMITED'}
+                  {profile.companyName || 'GCap OPC Private Limited'}
                 </h1>
               </div>
 

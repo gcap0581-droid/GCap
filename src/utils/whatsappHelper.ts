@@ -29,7 +29,7 @@ export const DEFAULT_META_CONFIG: MetaCloudApiConfig = {
   phoneNumberId: '',
   wabaId: '',
   accessToken: '',
-  verifiedDisplayName: 'GCAP PRIVATE LIMITED',
+  verifiedDisplayName: 'GCap OPC Private Limited',
 };
 
 /**
@@ -461,7 +461,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '💵',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*🚨 [टेस्ट सैंपल] नया डिपॉजिट भुगतान अलर्ट (New Deposit Alert)*\n\n` +
         `*🏛️ कंपनी:* ${companyName}\n\n` +
@@ -497,7 +497,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '💸',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*🚨 [टेस्ट सैंपल] नया निकासी अनुरोध अलर्ट (New Withdrawal Request)*\n\n` +
         `*🏛️ कंपनी:* ${companyName}\n\n` +
@@ -534,7 +534,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '🧾',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*🏛️ ${companyName} — आधिकारिक भुगतान वाउचर (Withdrawal Voucher)*\n\n` +
         `नमस्ते *AMIT KUMAR*,\n\n` +
@@ -570,7 +570,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '👑',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*👑 ${companyName} — प्रोजेक्ट समापन एवं 100% मूलधन वापसी प्रमाण पत्र*\n\n` +
         `बधाई हो *AMIT KUMAR*! 🎉\n\n` +
@@ -604,7 +604,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '📢',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*📢 ${companyName} — आधिकारिक महत्वपूर्ण सूचना*\n\n` +
         `*मासिक निकासी विंडो और नए प्रोजेक्ट्स का शुभारंभ*\n\n` +
@@ -632,7 +632,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '🎁',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*🎁 ${companyName} — रॉयल्टी बोनस क्रेडिट अलर्ट*\n\n` +
         `बधाई हो *AMIT KUMAR*! 🌟\n\n` +
@@ -664,7 +664,7 @@ export const WHATSAPP_TEST_SAMPLES: WhatsAppSampleDefinition[] = [
     icon: '🛡️',
     generateAlert: (targetPhone) => {
       const profile = getStoredCompanyProfile();
-      const companyName = profile.companyName || 'GCAP PRIVATE LIMITED';
+      const companyName = profile.companyName || 'GCap OPC Private Limited';
       const phone = targetPhone || getAdminWhatsAppAlertNumber();
       const message = `*🛡️ ${companyName} — खाता सुरक्षा अलर्ट*\n\n` +
         `नमस्ते *AMIT KUMAR*,\n\n` +

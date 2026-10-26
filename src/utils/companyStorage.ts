@@ -4,9 +4,9 @@ const COMPANY_PROFILE_STORAGE_KEY = 'gcap_corporate_company_profile_v2';
 const OLD_COMPANY_PROFILE_KEY = 'gcap_corporate_company_profile_v1';
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCAP (OPC) PRIVATE LIMITED',
+  companyName: 'GCap OPC Private Limited',
   companyNameHi: 'जीकैप (ओपीसी) प्राइवेट लिमिटेड',
-  tradeName: 'GCAP (OPC) PRIVATE LIMITED',
+  tradeName: 'GCap OPC Private Limited',
   cin: 'U66190BR2026OPC088307',
   pan: 'AANCG4365Q',
   tan: 'PTNG16977C',
@@ -37,7 +37,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   bankBranch: 'Sasaram Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCAP (OPC) PRIVATE LIMITED',
+  companyBankAccountHolder: 'GCap OPC Private Limited',
   tagline: 'ASSETS & WEALTH MANAGEMENT SYSTEM',
   taglineHi: 'संपत्ति और धन प्रबंधन प्रणाली',
   // DPIIT Startup India Recognition (Govt of India)
@@ -73,6 +73,19 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
       (merged as any)[key] = val;
     }
   });
+
+  if (merged.companyName === 'GCAP PRIVATE LIMITED' || merged.companyName === 'GCAP (OPC) PRIVATE LIMITED') {
+    merged.companyName = 'GCap OPC Private Limited';
+  }
+  if (merged.tradeName === 'GCAP PRIVATE LIMITED' || merged.tradeName === 'GCAP (OPC) PRIVATE LIMITED') {
+    merged.tradeName = 'GCap OPC Private Limited';
+  }
+  if (merged.companyBankAccountHolder === 'GCAP PRIVATE LIMITED' || merged.companyBankAccountHolder === 'GCAP (OPC) PRIVATE LIMITED') {
+    merged.companyBankAccountHolder = 'GCap OPC Private Limited';
+  }
+  if (merged.companyNameHi === 'जीकैप प्राइवेट लिमिटेड') {
+    merged.companyNameHi = 'जीकैप (ओपीसी) प्राइवेट लिमिटेड';
+  }
 
   return merged;
 }

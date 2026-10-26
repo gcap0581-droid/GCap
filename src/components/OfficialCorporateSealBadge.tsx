@@ -17,7 +17,7 @@ export const OfficialCorporateSealBadge: React.FC<OfficialCorporateSealBadgeProp
   className = '',
 }) => {
   const profile = getStoredCompanyProfile();
-  const companyName = (profile.companyName || 'GCAP PRIVATE LIMITED').toUpperCase();
+  const companyName = (profile.companyName || 'GCap OPC Private Limited').toUpperCase();
   const cinNumber = (profile.cin || 'U66190BR2026OPC088307').toUpperCase();
   const city = (profile.sealCity || 'SASARAM (BIHAR)').toUpperCase();
 
@@ -99,7 +99,7 @@ export const OfficialCorporateSealBadge: React.FC<OfficialCorporateSealBadgeProp
           className="px-2.5 py-1 rounded border border-dashed text-[9px] font-bold text-center leading-tight uppercase"
           style={{ borderColor: color, color }}
         >
-          <div>FOR GCAP PRIVATE LIMITED</div>
+          <div>FOR GCAP OPC PRIVATE LIMITED</div>
           <div className="font-extrabold text-[10px] my-0.5">{directorName}</div>
           <div className="text-[8px] opacity-90">DIRECTOR / AUTHORIZED SIGNATORY</div>
         </div>

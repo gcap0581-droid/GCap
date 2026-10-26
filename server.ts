@@ -487,7 +487,7 @@ const DEFAULT_RULES: AppRules = {
   supportPhone: "+91 98000 12345",
   lastUpdated: new Date().toISOString().split("T")[0],
   companyUpiId: "8603504808@axisbank",
-  companyBankAccountHolder: "GCAP PRIVATE LIMITED",
+  companyBankAccountHolder: "GCap OPC Private Limited",
   companyBankName: "Axis Bank Ltd.",
   companyBankAccountNumber: "924010008662307",
   companyBankIfsc: "UTIB0001219",
@@ -514,9 +514,9 @@ const DEFAULT_LIVE_CONFIG: LiveInterfaceConfig = {
 };
 
 const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  companyName: 'GCAP PRIVATE LIMITED',
-  companyNameHi: 'जीकैप प्राइवेट लिमिटेड',
-  tradeName: 'GCAP PRIVATE LIMITED',
+  companyName: 'GCap OPC Private Limited',
+  companyNameHi: 'जीकैप (ओपीसी) प्राइवेट लिमिटेड',
+  tradeName: 'GCap OPC Private Limited',
   cin: 'U66190BR2026OPC088307',
   pan: 'AANCG4365Q',
   tan: 'PTNG16977C',
@@ -546,7 +546,7 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   bankBranch: 'Axis Commercial Branch',
   bankAccountType: 'Current Account',
   companyUpiId: '8603504808@axisbank',
-  companyBankAccountHolder: 'GCAP PRIVATE LIMITED',
+  companyBankAccountHolder: 'GCap OPC Private Limited',
   tagline: 'ASSETS & WEALTH MANAGEMENT SYSTEM',
   taglineHi: 'संपत्ति और धन प्रबंधन प्रणाली',
   lastUpdated: '2026-09-30T16:31:07.308Z',
@@ -1726,7 +1726,7 @@ function ensureDb(): ServerDB {
           parsed.rules.companyBankAccountHolder === "GCap Investments" ||
           parsed.rules.companyBankAccountHolder === "GCap Asset Management (India) Pvt. Ltd." ||
           !parsed.rules.companyBankAccountHolder) {
-        parsed.rules.companyBankAccountHolder = "GCAP PRIVATE LIMITED";
+        parsed.rules.companyBankAccountHolder = "GCap OPC Private Limited";
         needsSave = true;
       }
       if (parsed.rules.companyBankName === "Axis Bank") {
@@ -1801,6 +1801,22 @@ function ensureDb(): ServerDB {
         ...DEFAULT_COMPANY_PROFILE,
         ...parsed.companyProfile,
       };
+      if (parsed.companyProfile.companyName === 'GCAP PRIVATE LIMITED' || parsed.companyProfile.companyName === 'GCAP (OPC) PRIVATE LIMITED') {
+        parsed.companyProfile.companyName = 'GCap OPC Private Limited';
+        needsSave = true;
+      }
+      if (parsed.companyProfile.tradeName === 'GCAP PRIVATE LIMITED' || parsed.companyProfile.tradeName === 'GCAP (OPC) PRIVATE LIMITED') {
+        parsed.companyProfile.tradeName = 'GCap OPC Private Limited';
+        needsSave = true;
+      }
+      if (parsed.companyProfile.companyBankAccountHolder === 'GCAP PRIVATE LIMITED' || parsed.companyProfile.companyBankAccountHolder === 'GCAP (OPC) PRIVATE LIMITED') {
+        parsed.companyProfile.companyBankAccountHolder = 'GCap OPC Private Limited';
+        needsSave = true;
+      }
+      if (parsed.companyProfile.companyNameHi === 'जीकैप प्राइवेट लिमिटेड') {
+        parsed.companyProfile.companyNameHi = 'जीकैप (ओपीसी) प्राइवेट लिमिटेड';
+        needsSave = true;
+      }
     }
 
     // Ensure Admin account exists and has the requested password
@@ -2921,7 +2937,7 @@ async function startServer() {
       q.includes("office") ||
       q.includes("address")
     ) {
-      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
+      return `🏛️ GCap Capital आधिकारिक विवरण:\n\n• कंपनी का नाम: ${companyProfile.companyName || "GCap OPC Private Limited"}\n• CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}\n• पैन: ${companyProfile.pan || "AANCG4365Q"} | टैन: ${companyProfile.tan || "PTNG16977C"}\n• पंजीकृत कार्यालय: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}\n• ईमेल: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"}\n• फ़ोन: ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}\n\nGCap भारत सरकार के नियमों के अधीन एक पंजीकृत और सुरक्षित कॉर्पोरेट परिसंपत्ति प्रबंधन कंपनी है।`;
     }
 
     // 9. Referral
@@ -2954,18 +2970,18 @@ async function startServer() {
       const rules = (db as any).rules || {};
 
       const systemInstruction = `
-आप GCap Capital (GCAP PRIVATE LIMITED) के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
+आप GCap Capital (GCap OPC Private Limited) के आधिकारिक और विनम्र AI सहायक (GCap Assistant) हैं।
 आपका एकमात्र उद्देश्य यूज़र को GCap Capital के बारे में हर जानकारी शुद्ध और सरल हिंदी (या यूज़र की भाषा) में देना है।
 
 कंपनी की मुख्य जानकारी:
-- नाम: ${companyProfile.companyName || "GCAP PRIVATE LIMITED"} (${companyProfile.companyNameHi || "जीकैप प्राइवेट लिमिटेड"})
+- नाम: ${companyProfile.companyName || "GCap OPC Private Limited"} (${companyProfile.companyNameHi || "जीकैप (ओपीसी) प्राइवेट लिमिटेड"})
 - CIN: ${companyProfile.cin || "U66190BR2026OPC088307"}
 - PAN: ${companyProfile.pan || "AANCG4365Q"} | TAN: ${companyProfile.tan || "PTNG16977C"}
 - अधिकृत निदेशक / हस्ताक्षरकर्ता: ${companyProfile.authorizedSignatory || "Amit Kumar"} (DIN: ${companyProfile.signatoryDin || "11964641"})
 - रजिस्टर्ड ऑफिस: ${companyProfile.registeredAddress || "Khari, Babhangawa, Shree Nagur, Near RRP School of Nursing Sasaram, Bihar - 821113"}
 - हेल्पलाइन सपोर्ट: ${companyProfile.supportEmail || rules.supportEmail || "support@gcapopc.com"} | ${companyProfile.supportPhone || rules.supportPhone || "+91 8503504808"}
 - UPI ID: ${companyProfile.companyUpiId || rules.companyUpiId || "8603504808@axisbank"}
-- बैंक खाता: ${companyProfile.bankName || "Axis Bank Ltd."}, खाता धारक: ${companyProfile.companyBankAccountHolder || "GCAP PRIVATE LIMITED"}, A/C: ${companyProfile.bankAccountNumber || rules.companyBankAccountNumber || "924010008662307"}, IFSC: ${companyProfile.bankIfsc || rules.companyBankIfsc || "UTIB0001219"}
+- बैंक खाता: ${companyProfile.bankName || "Axis Bank Ltd."}, खाता धारक: ${companyProfile.companyBankAccountHolder || "GCap OPC Private Limited"}, A/C: ${companyProfile.bankAccountNumber || rules.companyBankAccountNumber || "924010008662307"}, IFSC: ${companyProfile.bankIfsc || rules.companyBankIfsc || "UTIB0001219"}
 
 GCap में काम कैसे होता है:
 1. खाता रजिस्ट्रेशन: मोबाइल नंबर और पासवर्ड से खाता बनता है।
@@ -5155,28 +5171,19 @@ GCap में काम कैसे होता है:
       }
     }
 
-    // High-precision algorithmic check and entity classification
-    const categoryChar = cleanPan[3];
-    const categoryMap: Record<string, string> = {
-      P: "व्यक्तिगत (Individual)",
-      C: "कंपनी (Company)",
-      H: "HUF (Hindu Undivided Family)",
-      A: "AOP (Association of Persons)",
-      B: "BOI (Body of Individuals)",
-      F: "फर्म (Firm / Partnership)",
-      T: "ट्रस्ट (Trust)"
-    };
-    const category = categoryMap[categoryChar] || "व्यक्तिगत (Individual)";
-    const verifiedName = fullName ? String(fullName).trim().toUpperCase() : "VERIFIED PAN HOLDER";
+    // Dev mode: Allow test PAN
+    if (cleanPan === "TEST12345A") {
+      return res.json({
+        success: true,
+        panNumber: cleanPan,
+        holderName: "Test PAN Holder",
+        category: "Individual",
+        status: "VALID",
+        message: "Mock: पैन कार्ड सफलतापूर्वक सत्यापित हुआ।"
+      });
+    }
 
-    return res.json({
-      success: true,
-      panNumber: cleanPan,
-      holderName: verifiedName,
-      category,
-      status: "VALID",
-      message: "पैन कार्ड प्रारूप एवं डेटाबेस से सफलतापूर्वक सत्यापित हुआ।"
-    });
+    return res.status(400).json({ success: false, error: "पैन कार्ड सत्यापित नहीं किया जा सका। कृपया वैध पैन कार्ड दर्ज करें।" });
   });
 
   // POST: Aadhaar e-KYC Send OTP
@@ -5216,7 +5223,7 @@ GCap में काम कैसे होता है:
       success: true,
       client_id: txnId,
       testOtp: "123456",
-      message: "आधार से जुड़े मोबाइल नंबर पर 6-अंकों का e-KYC OTP भेजा गया है।"
+      message: "टेस्ट मोड: वेरिफिकेशन के लिए 123456 का उपयोग करें।"
     });
   });
 

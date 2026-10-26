@@ -205,7 +205,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
                     <img
                       src="/assets/images/logo.jpg"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                        (e.currentTarget as HTMLImageElement).src = '/logo.png';
                       }}
                       alt="GCap Logo"
                       className="w-8 h-8 rounded-lg object-cover border border-amber-400 print:border-black shrink-0"
@@ -607,7 +607,7 @@ export const GuidesModal: React.FC<GuidesModalProps> = ({
           {/* Footer Official Stamp on Printed PDF */}
           <div className="pt-6 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono flex-wrap gap-2 print:border-black print:text-black">
             <div>
-              <b>GCAP PRIVATE LIMITED Official Document</b> • Synchronized System Guidelines
+              <b>GCap OPC Private Limited Official Document</b> • Synchronized System Guidelines
             </div>
             <div>
               Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

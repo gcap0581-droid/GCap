@@ -43,7 +43,7 @@ export const AdminApprovalPasswordModal: React.FC<AdminApprovalPasswordModalProp
   if (!isOpen || !transaction) return null;
 
   const companyBank = {
-    name: rules?.companyBankAccountHolder || 'GCAP PRIVATE LIMITED',
+    name: rules?.companyBankAccountHolder || 'GCap OPC Private Limited',
     bank: rules?.companyBankName || 'Axis Bank Ltd.',
     accountNumber: rules?.companyBankAccountNumber || '924010008662307',
     ifsc: rules?.companyBankIfsc || 'UTIB0001219',

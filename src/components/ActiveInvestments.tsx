@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, CheckCircle, Sparkles, Lock, ArrowRight, Zap, RefreshCw, AlertCircle, ShieldCheck, Search, Award, FileText, ArrowUpRight, DollarSign } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ActiveInvestment, Language, AppRules, Wallet, Transaction } from '../types';
 import { formatINR } from '../utils/storage';
 import { formatFixedSlotTime, FIXED_SLAB_LABELS } from '../utils/cycleTiming';
@@ -301,6 +302,11 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
             const planEarned = Math.round(completedCycles * cyclePayout * 100) / 100;
             const planWithdrawn = inv.totalWithdrawn || 0;
             const planNetEarnings = Math.max(0, planEarned - planWithdrawn);
+
+            const SIX_HOURS_MS = 6 * 3600 * 1000;
+            const cycleProgressPct = Math.min(100, Math.max(0, Math.round(((SIX_HOURS_MS - cycleRemainingMs) / SIX_HOURS_MS) * 100)));
+            const cyclesToday = completedCycles % 4;
+            const dailyProgressPct = Math.min(100, Math.max(0, Math.round(((cyclesToday + (cycleProgressPct / 100)) / 4) * 100)));
 
             return (
               <div
@@ -619,6 +625,38 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                             })}
                           </div>
 
+                          {/* Animated Daily Payout Progress Bar */}
+                          <div className="mt-3 bg-slate-950/80 p-3 rounded-xl border border-emerald-500/30 space-y-2 text-left shadow-lg">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-extrabold text-emerald-300 flex items-center gap-1.5">
+                                <Zap className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
+                                <span>{isHi ? 'दैनिक पेआउट चक्र प्रगति (Daily Payout Progress)' : 'Daily Payout Cycle Progress'}</span>
+                              </span>
+                              <span className="font-mono font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 text-[10px]">
+                                {cyclesToday}/4 {isHi ? 'चक्र' : 'Cycles'} ({dailyProgressPct}%)
+                              </span>
+                            </div>
+
+                            {/* Animated Glowing Progress Bar Track */}
+                            <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-emerald-500/30 relative p-0.5 shadow-inner">
+                              <div
+                                className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 transition-all duration-700 ease-out rounded-full relative overflow-hidden shadow-[0_0_15px_rgba(16,185,129,0.6)]"
+                                style={{ width: `${dailyProgressPct}%` }}
+                              >
+                                <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-[shimmer_1.5s_infinite]" />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                              <span>00:00 • 06:00 • 12:00 • 18:00</span>
+                              <span className="text-emerald-400 font-bold">
+                                {cyclesToday === 0 && cycleProgressPct > 0 
+                                  ? (isHi ? 'चक्र 1 प्रगति पर...' : 'Cycle 1 Running...') 
+                                  : `+${(cyclesToday * 0.040).toFixed(3)}% / 0.160% ${isHi ? 'क्रेडिट' : 'Credited'}`}
+                              </span>
+                            </div>
+                          </div>
+
                           {/* Fast-Forward simulator buttons */}
                           <div className="mt-3 pt-2.5 border-t border-emerald-500/20 flex flex-wrap items-center justify-center gap-2">
                             {onSimulateComplete6hCycle && (
@@ -789,6 +827,52 @@ export const ActiveInvestments: React.FC<ActiveInvestmentsProps> = ({
                                 <span className="font-mono font-black text-amber-300">{formatINR(projTotalMaturityAmount)}</span>
                               </div>
                             </div>
+
+                            {/* Recharts Projected ROI Growth Line Chart */}
+                            {(() => {
+                              const chartData = [
+                                { period: isHi ? 'प्रारंभ' : 'Start', returnVal: 0, totalVal: inv.investedAmount },
+                                { period: '30D', returnVal: Math.round(proj30d), totalVal: Math.round(inv.investedAmount + proj30d) },
+                                { period: '90D', returnVal: Math.round(proj90d), totalVal: Math.round(inv.investedAmount + proj90d) },
+                                { period: '180D', returnVal: Math.round(proj180d), totalVal: Math.round(inv.investedAmount + proj180d) },
+                                { period: `${durationDays}D`, returnVal: Math.round(projMaturity), totalVal: Math.round(projTotalMaturityAmount) },
+                              ];
+
+                              return (
+                                <div className="mt-3 bg-slate-900/80 p-3 rounded-xl border border-emerald-500/30 space-y-2">
+                                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                                    <span className="flex items-center gap-1 text-emerald-400">
+                                      <TrendingUp className="w-3.5 h-3.5" />
+                                      <span>{isHi ? 'समय के साथ अनुमानित पोर्टफोलियो ग्रोथ चार्ट:' : 'Projected Portfolio Growth Chart:'}</span>
+                                    </span>
+                                    <span className="text-[10px] font-mono text-amber-300">
+                                      {isHi ? 'ग्रोथ कर्व' : 'Growth Curve'}
+                                    </span>
+                                  </div>
+
+                                  <div className="h-40 w-full pt-1">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <defs>
+                                          <linearGradient id={`gradROI-${inv.id}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                          </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+                                        <XAxis dataKey="period" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                        <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                                        <Tooltip
+                                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                                          formatter={(val: any) => [`₹${Number(val).toLocaleString('en-IN')}`, isHi ? 'कुल वैल्यू' : 'Total Portfolio Value']}
+                                        />
+                                        <Area type="monotone" dataKey="totalVal" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill={`url(#gradROI-${inv.id})`} />
+                                      </AreaChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                             <p className="text-[10px] text-slate-400 italic text-center pt-1">
                               {isHi

@@ -132,6 +132,7 @@ import { RulesModal } from './components/RulesModal';
 import { ReferralModal } from './components/ReferralModal';
 import { AndroidFrame } from './components/AndroidFrame';
 import { LoginPage } from './components/LoginPage';
+import { CorporateWebsite } from './components/CorporateWebsite';
 import { GcapSplashIntro } from './components/GcapSplashIntro';
 import { AdminPanel } from './components/AdminPanel';
 import { LockCongratulationsModal } from './components/LockCongratulationsModal';
@@ -331,6 +332,55 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isAgreementOpen, setIsAgreementOpen] = useState<boolean>(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState<boolean>(false);
+
+  // Dedicated Separate Link Routing for Official Corporate Website (Always start on Home page by default)
+  const [isWebsiteRoute, setIsWebsiteRoute] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    // Only go to app if explicitly requested via /app
+    if (path === '/app' || search.includes('view=app') || hash.includes('app')) {
+      return false;
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      setIsWebsiteRoute(
+        path === '/website' ||
+        path === '/home' ||
+        path === '/site' ||
+        search.includes('view=website') ||
+        search.includes('page=website') ||
+        hash.includes('website')
+      );
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToWebsite = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.history.pushState({}, '', '/website');
+      } catch {}
+    }
+    setIsWebsiteRoute(true);
+  }, []);
+
+  const navigateToApp = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.history.pushState({}, '', '/');
+      } catch {}
+    }
+    setIsWebsiteRoute(false);
+  }, []);
   const [messages, setMessages] = useState<AdminMessage[]>(() => {
     try {
       const raw = localStorage.getItem('gcap_admin_messages_backup');
@@ -4683,6 +4733,20 @@ export default function App() {
     </div>
   );
 
+  // Check if user requested the separate Official Corporate Website link (/website or /home or /site)
+  if (isWebsiteRoute) {
+    return (
+      <CorporateWebsite
+        companyProfile={companyProfile}
+        plans={plans}
+        language={language}
+        onLaunchApp={navigateToApp}
+        onOpenLogin={navigateToApp}
+        onOpenRegister={navigateToApp}
+      />
+    );
+  }
+
   // Check if user is logged in. If not, project starts from Login Page!
   if (!currentUser) {
     return (
@@ -4692,6 +4756,7 @@ export default function App() {
         onLanguageChange={setLanguage}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        onOpenWebsite={navigateToWebsite}
       />
     );
   }
@@ -4855,6 +4920,7 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenSplashIntro={() => setShowSplashIntro(true)}
         onOpenAssistant={() => setIsAssistantModalOpen(true)}
+        onOpenWebsite={navigateToWebsite}
       />
 
       {/* Main Viewport */}

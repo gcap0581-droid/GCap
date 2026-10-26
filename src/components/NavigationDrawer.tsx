@@ -75,6 +75,7 @@ interface NavigationDrawerProps {
   onOpenProfile?: () => void;
   onOpenSplashIntro?: () => void;
   onOpenAssistant?: () => void;
+  onOpenWebsite?: () => void;
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
@@ -106,6 +107,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onOpenProfile,
   onOpenSplashIntro,
   onOpenAssistant,
+  onOpenWebsite,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
@@ -305,7 +307,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
                   <Layers className="w-5 h-5" />
                 </div>
-                <span>1. Investment Schemes</span>
+                <span>Investment Schemes</span>
               </div>
               {expandedMenu === 'investments' ? (
                 <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -383,7 +385,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
                   <WalletIcon className="w-5 h-5" />
                 </div>
-                <span>{isHi ? '2. वॉलेट व बैंकिंग (Wallet)' : '2. Wallet & Banking'}</span>
+                <span>{isHi ? 'वॉलेट व बैंकिंग (Wallet)' : 'Wallet & Banking'}</span>
               </div>
               {expandedMenu === 'wallet' ? (
                 <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -466,7 +468,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="p-1.5 rounded-lg bg-teal-500/10 text-teal-400">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
-                <span>{isHi ? '3. नीतियां व सुरक्षा (Rules)' : '3. Rules & Assured'}</span>
+                <span>{isHi ? 'नीतियां व सुरक्षा (Rules)' : 'Rules & Assured'}</span>
               </div>
               {expandedMenu === 'rules' ? (
                 <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -581,7 +583,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
                   <Gift className="w-5 h-5" />
                 </div>
-                <span>{isHi ? '4. रेफरल व रिवार्ड्स (Rewards)' : '4. Referral & Rewards'}</span>
+                <span>{isHi ? 'रेफरल व रिवार्ड्स (Rewards)' : 'Referral & Rewards'}</span>
               </div>
               {expandedMenu === 'rewards' ? (
                 <ChevronDown className="w-5 h-5 text-slate-400" />
@@ -820,6 +822,23 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               )}
             </button>
           </div>
+
+          {/* Official Corporate Website Link */}
+          {onOpenWebsite && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenWebsite();
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-bold flex items-center justify-between transition-all cursor-pointer shadow-sm active:scale-98"
+            >
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-amber-400" />
+                <span>{isHi ? '🌐 जीकैप ऑफिशियल वेबसाइट देखें' : '🌐 Visit Official Corporate Website'}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-amber-400" />
+            </button>
+          )}
 
           {/* GCap Intro Animation & Music Replay */}
           {onOpenSplashIntro && (

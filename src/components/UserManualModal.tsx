@@ -61,7 +61,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
         <!DOCTYPE html>
         <html>
           <head>
-            <title>GCAP PRIVATE LIMITED - Official Operations SOP & User Manual</title>
+            <title>GCap OPC Private Limited - Official Operations SOP & User Manual</title>
             <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
             <style>
               @media print {
@@ -112,9 +112,9 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
           <body onload="setTimeout(() => { window.focus(); window.print(); window.close(); }, 600);">
             <div class="max-w-4xl mx-auto space-y-6 bg-white text-slate-900 p-8 shadow-2xl rounded-2xl border border-slate-300">
               <div class="flex items-center justify-center gap-4 pb-6 border-b-2 border-emerald-600 mb-6">
-                <img src="/assets/images/logo.jpg" onerror="this.src='/icon.svg'" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
+                <img src="/assets/images/logo.jpg" onerror="this.src='/logo.png'" alt="GCap Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500 shadow-md shrink-0" />
                 <div class="text-left">
-                  <h1 class="text-2xl font-black text-slate-900">GCAP PRIVATE LIMITED</h1>
+                  <h1 class="text-2xl font-black text-slate-900">GCap OPC Private Limited</h1>
                   <p class="text-sm font-bold text-emerald-700 mt-0.5">OFFICIAL OPERATIONS SOP & USER MANUAL (DYNAMIC LIVE SYNC)</p>
                   <p class="text-xs text-slate-500 mt-0.5">Generated on: \${new Date().toLocaleString()} | Official Compliance Document</p>
                 </div>
@@ -206,7 +206,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
               <img
                 src="/assets/images/logo.jpg"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                  (e.currentTarget as HTMLImageElement).src = '/logo.png';
                 }}
                 alt="GCap Logo"
                 className="w-16 h-16 rounded-2xl object-cover shadow-xl shadow-amber-500/20 border-2 border-amber-300 print:border-black shrink-0"
@@ -214,7 +214,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl sm:text-2xl font-black text-white print:text-black tracking-tight">
-                    GCAP PRIVATE LIMITED
+                    GCap OPC Private Limited
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm font-bold text-emerald-400 print:text-slate-700 mt-0.5">

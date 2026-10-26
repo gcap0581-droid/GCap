@@ -44,6 +44,7 @@ interface LoginPageProps {
   onLanguageChange: (lang: Language) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  onOpenWebsite?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
@@ -52,6 +53,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onLanguageChange,
   viewMode,
   onViewModeChange,
+  onOpenWebsite,
 }) => {
   const isHi = language === 'hi';
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
@@ -528,6 +530,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               <span>Mobile</span>
             </button>
           </div>
+
+          {/* Official Website Button */}
+          {onOpenWebsite && (
+            <button
+              onClick={onOpenWebsite}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 text-amber-300 border border-amber-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{isHi ? 'ऑफिशियल वेबसाइट' : 'Official Website'}</span>
+              <span className="sm:hidden">{isHi ? 'वेबसाइट' : 'Website'}</span>
+            </button>
+          )}
 
           {/* Language Toggle */}
           <button
@@ -1265,7 +1279,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {viewMode !== 'android' && (
         <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-3 text-center text-xs text-slate-500">
           <p>
-            © 2026 GCAP PRIVATE LIMITED • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
+            © 2026 GCap OPC Private Limited • {isHi ? 'सभी अधिकार सुरक्षित' : 'All Rights Reserved'} • ISO 27001 Certified
           </p>
         </footer>
       )}

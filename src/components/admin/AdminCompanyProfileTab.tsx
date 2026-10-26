@@ -684,7 +684,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="text"
                   value={formData.companyBankAccountHolder || ''}
                   onChange={(e) => handleChange('companyBankAccountHolder', e.target.value)}
-                  placeholder="e.g. GCAP AUTHORIZED PERSON या GCAP PRIVATE LIMITED"
+                  placeholder="e.g. GCAP AUTHORIZED PERSON या GCap OPC Private Limited"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-bold text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">
@@ -845,7 +845,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                     </div>
                     <div className="space-y-0.5 min-w-0">
                       <h4 className="font-black text-sm text-slate-950 tracking-tight uppercase leading-tight truncate">
-                        {formData.companyName || 'GCAP PRIVATE LIMITED'}
+                        {formData.companyName || 'GCap OPC Private Limited'}
                       </h4>
                       {formData.companyNameHi && (
                         <p className="text-[11px] text-slate-700 font-medium">{formData.companyNameHi}</p>

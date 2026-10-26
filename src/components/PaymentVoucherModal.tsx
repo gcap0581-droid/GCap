@@ -116,7 +116,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
               <img
                 src="/assets/images/logo.jpg"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                  (e.currentTarget as HTMLImageElement).src = '/logo.png';
                 }}
                 alt="GCap Logo"
                 className="w-12 h-12 rounded-xl object-cover border border-amber-500/50 print:border-black shrink-0 shadow-md"
@@ -124,7 +124,7 @@ export const PaymentVoucherModal: React.FC<PaymentVoucherModalProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-black tracking-tight text-white print:text-black font-sans">
-                    {profile.companyName || 'GCAP PRIVATE LIMITED'}
+                    {profile.companyName || 'GCap OPC Private Limited'}
                   </span>
                   <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 print:bg-emerald-100 print:text-emerald-800 border border-emerald-500/30">
                     OFFICIAL VOUCHER

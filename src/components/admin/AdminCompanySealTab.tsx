@@ -27,14 +27,14 @@ export const AdminCompanySealTab: React.FC<AdminCompanySealTabProps> = ({ langua
   const profile = getStoredCompanyProfile();
 
   // Form Controls for Seal Customization
-  const [companyName, setCompanyName] = useState(profile.companyName || 'GCAP PRIVATE LIMITED');
+  const [companyName, setCompanyName] = useState(profile.companyName || 'GCap OPC Private Limited');
   const [cinNumber, setCinNumber] = useState(profile.cin || 'U66190BR2026OPC088307');
   const [locationText, setLocationText] = useState(profile.sealCity || 'SASARAM (BIHAR)');
 
   // Auto-sanitize on mount if stale data exists in local state
   useEffect(() => {
     if (companyName.includes('ASSETS & WEALTH MANAGEMENT')) {
-      setCompanyName('GCAP PRIVATE LIMITED');
+      setCompanyName('GCap OPC Private Limited');
     }
   }, []);
   const [directorTitle, setDirectorTitle] = useState('DIRECTOR / AUTHORIZED SIGNATORY');
@@ -435,7 +435,7 @@ export const AdminCompanySealTab: React.FC<AdminCompanySealTabProps> = ({ langua
         </head>
         <body>
           <div class="header">
-            <h2>GCAP PRIVATE LIMITED</h2>
+            <h2>GCap OPC Private Limited</h2>
             <p>Official Corporate Seals & Director Designation Rubber Stamps</p>
           </div>
           <button class="no-print" onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background: #0284c7; color: white; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px;">

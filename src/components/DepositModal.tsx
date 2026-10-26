@@ -63,7 +63,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const profile = propCompanyProfile || getStoredCompanyProfile();
   const companyUpiId = profile.companyUpiId || rules?.companyUpiId || '8603504808@axisbank';
   const companyBank = {
-    name: profile.companyBankAccountHolder || rules?.companyBankAccountHolder || profile.companyName || 'GCAP PRIVATE LIMITED',
+    name: profile.companyBankAccountHolder || rules?.companyBankAccountHolder || profile.companyName || 'GCap OPC Private Limited',
     bank: profile.bankName || rules?.companyBankName || 'Axis Bank Ltd.',
     accountNumber: profile.bankAccountNumber || rules?.companyBankAccountNumber || '924010008662307',
     ifsc: profile.bankIfsc || rules?.companyBankIfsc || 'UTIB0001219',

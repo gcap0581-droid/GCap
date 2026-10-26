@@ -160,13 +160,13 @@ export const MaturityCertificateModal: React.FC<MaturityCertificateModalProps> =
             <img
               src="/assets/images/logo.jpg"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+                (e.currentTarget as HTMLImageElement).src = '/logo.png';
               }}
               alt="GCap Logo"
               className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-amber-400 mb-3 mx-auto print:border-black shrink-0"
             />
             <h1 className="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider uppercase font-serif print:text-amber-800">
-              {profile.companyName || 'GCAP PRIVATE LIMITED'}
+              {profile.companyName || 'GCap OPC Private Limited'}
             </h1>
             {profile.companyNameHi && (
               <p className="text-xs font-semibold text-amber-300 print:text-amber-900 mt-0.5">

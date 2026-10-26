@@ -1,3 +1,4 @@
+import officialLogoPng from '../assets/images/gcap_official_logo.png';
 import luxuryGoldImg from '../assets/images/gcap_luxury_logo_1790665820788.jpg';
 import officialSealImg from '../assets/images/gcap_emblem_seal_1790665840672.jpg';
 import corporateEliteImg from '../assets/images/gcap_hd_logo_premium_1790349527564.jpg';
@@ -23,8 +24,8 @@ export const GCAP_LOGOS: LogoAssetInfo[] = [
     descEn: '3D polished metallic gold crest with growth arrow and royal crown finishing.',
     tag: 'MOST POPULAR',
     tagColor: 'from-amber-500 to-yellow-600',
-    url: luxuryGoldImg,
-    fallbackUrl: '/assets/images/gcap-luxury-gold-3d.jpg',
+    url: officialLogoPng || luxuryGoldImg,
+    fallbackUrl: '/assets/aistudio/GCAP_Official_Logo_luxury_gold_3d_1024x1024_5b90bedb.png',
   },
   {
     id: 'official-crest-seal',
@@ -50,6 +51,6 @@ export const GCAP_LOGOS: LogoAssetInfo[] = [
   },
 ];
 
-export const PRIMARY_COMPANY_LOGO = luxuryGoldImg || '/assets/images/gcap-luxury-gold-3d.jpg';
+export const PRIMARY_COMPANY_LOGO = officialLogoPng || luxuryGoldImg || '/assets/aistudio/GCAP_Official_Logo_luxury_gold_3d_1024x1024_5b90bedb.png';
 export const OFFICIAL_SEAL_LOGO = officialSealImg || '/assets/images/gcap-official-crest-seal.jpg';
 export const CORPORATE_ELITE_LOGO = corporateEliteImg || '/assets/images/gcap-corporate-elite.jpg';

@@ -269,9 +269,9 @@ export interface CompanyTreasury {
 export type BackupTriggerType = 'MIDNIGHT_AUTO' | 'ADMIN_MANUAL';
 
 export interface CompanyProfile {
-  companyName: string; // e.g. "GCAP PRIVATE LIMITED"
-  companyNameHi?: string; // e.g. "जीकैप प्राइवेट लिमिटेड"
-  tradeName?: string; // e.g. "GCAP PRIVATE LIMITED"
+  companyName: string; // e.g. "GCap OPC Private Limited"
+  companyNameHi?: string; // e.g. "जीकैप (ओपीसी) प्राइवेट लिमिटेड"
+  tradeName?: string; // e.g. "GCap OPC Private Limited"
   cin?: string; // Corporate Identification Number e.g. "U66190BR2026OPC088307"
   pan?: string; // Company PAN e.g. "AANCG4365Q"
   tan?: string; // Tax Deduction TAN e.g. "PTNG16977C"
@@ -302,7 +302,7 @@ export interface CompanyProfile {
   bankBranch?: string; // e.g. "Axis Commercial Branch"
   bankAccountType?: string; // e.g. "Current Account"
   companyUpiId?: string; // e.g. "8603504808@axisbank"
-  companyBankAccountHolder?: string; // e.g. "GCAP PRIVATE LIMITED"
+  companyBankAccountHolder?: string; // e.g. "GCap OPC Private Limited"
   tagline?: string; // e.g. "ASSETS & WEALTH MANAGEMENT SYSTEM"
   taglineHi?: string; // e.g. "संपत्ति और धन प्रबंधन प्रणाली"
   // DPIIT Startup India Recognition (Govt of India)
@@ -446,7 +446,7 @@ export interface MetaCloudApiConfig {
   phoneNumberId: string;
   wabaId: string;
   accessToken: string;
-  verifiedDisplayName?: string; // e.g. "GCAP PRIVATE LIMITED"
+  verifiedDisplayName?: string; // e.g. "GCap OPC Private Limited"
 }
 
 export interface SmsTemplateConfig {
