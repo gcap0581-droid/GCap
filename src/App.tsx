@@ -150,6 +150,8 @@ import { UserAgreementModal } from './components/UserAgreementModal';
 import { UserManualModal } from './components/UserManualModal';
 import { SuspendedUserModal } from './components/SuspendedUserModal';
 import { GcapAssistantModal } from './components/GcapAssistantModal';
+import { YouTubePromoStudioModal } from './components/YouTubePromoStudioModal';
+import { SocialMediaHubModal } from './components/SocialMediaHubModal';
 import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
@@ -299,8 +301,27 @@ export default function App() {
         setCompanyProfile(e.detail);
       }
     };
+    const handleStorageChange = (e: StorageEvent) => {
+      if ((e.key === 'gcap_corporate_company_profile_v2' || e.key === 'gcap_corporate_company_profile_v1') && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setCompanyProfile(parsed);
+        } catch {}
+      }
+    };
+    const handleFirestoreStateUpdated = (e: any) => {
+      if (e?.detail?.companyProfile) {
+        setCompanyProfile(e.detail.companyProfile);
+      }
+    };
     window.addEventListener('gcap_company_profile_updated', handleProfileUpdated);
-    return () => window.removeEventListener('gcap_company_profile_updated', handleProfileUpdated);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('firestore_state_updated', handleFirestoreStateUpdated);
+    return () => {
+      window.removeEventListener('gcap_company_profile_updated', handleProfileUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('firestore_state_updated', handleFirestoreStateUpdated);
+    };
   }, []);
 
   useEffect(() => {
@@ -332,6 +353,7 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isAgreementOpen, setIsAgreementOpen] = useState<boolean>(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState<boolean>(false);
+  const [isSocialHubOpen, setIsSocialHubOpen] = useState<boolean>(false);
 
   // Dedicated Separate Link Routing for Official Corporate Website (Always start on Home page by default)
   const [isWebsiteRoute, setIsWebsiteRoute] = useState<boolean>(() => {
@@ -2253,6 +2275,7 @@ export default function App() {
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState<boolean>(false);
   const [isGpTransferOpen, setIsGpTransferOpen] = useState<boolean>(false);
   const [isAssistantModalOpen, setIsAssistantModalOpen] = useState<boolean>(false);
+  const [isYouTubeStudioOpen, setIsYouTubeStudioOpen] = useState<boolean>(false);
 
   const handleExecuteGpTransfer = (recipientLoginIdOrPhone: string, amount: number): boolean => {
     if (!currentUser) return false;
@@ -4736,28 +4759,61 @@ export default function App() {
   // Check if user requested the separate Official Corporate Website link (/website or /home or /site)
   if (isWebsiteRoute) {
     return (
-      <CorporateWebsite
-        companyProfile={companyProfile}
-        plans={plans}
-        language={language}
-        onLaunchApp={navigateToApp}
-        onOpenLogin={navigateToApp}
-        onOpenRegister={navigateToApp}
-      />
+      <>
+        <CorporateWebsite
+          companyProfile={companyProfile}
+          plans={plans}
+          language={language}
+          onLaunchApp={navigateToApp}
+          onOpenLogin={navigateToApp}
+          onOpenRegister={navigateToApp}
+          onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+          onOpenSocialHub={() => setIsSocialHubOpen(true)}
+        />
+        {/* YouTube Explainer & Promo Video Studio Modal */}
+        <YouTubePromoStudioModal
+          isOpen={isYouTubeStudioOpen}
+          onClose={() => setIsYouTubeStudioOpen(false)}
+          language={language}
+          companyProfile={companyProfile}
+          rules={rules}
+        />
+        {/* Social Media & YouTube Hub Modal */}
+        <SocialMediaHubModal
+          isOpen={isSocialHubOpen}
+          onClose={() => setIsSocialHubOpen(false)}
+          language={language}
+          companyProfile={companyProfile}
+          currentUser={currentUser}
+          onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+          onSaveProfileSuccess={() => setCompanyProfile(getStoredCompanyProfile())}
+        />
+      </>
     );
   }
 
   // Check if user is logged in. If not, project starts from Login Page!
   if (!currentUser) {
     return (
-      <LoginPage
-        onLoginSuccess={handleLoginSuccess}
-        language={language}
-        onLanguageChange={setLanguage}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onOpenWebsite={navigateToWebsite}
-      />
+      <>
+        <LoginPage
+          onLoginSuccess={handleLoginSuccess}
+          language={language}
+          onLanguageChange={setLanguage}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onOpenWebsite={navigateToWebsite}
+          onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+        />
+        {/* YouTube Explainer & Promo Video Studio Modal */}
+        <YouTubePromoStudioModal
+          isOpen={isYouTubeStudioOpen}
+          onClose={() => setIsYouTubeStudioOpen(false)}
+          language={language}
+          companyProfile={companyProfile}
+          rules={rules}
+        />
+      </>
     );
   }
 
@@ -4878,6 +4934,7 @@ export default function App() {
           onRefreshApp={() => window.location.reload()}
           onGoHome={handleGoHome}
           onOpenAssistant={() => setIsAssistantModalOpen(true)}
+          onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
         />
       )}
 
@@ -4920,6 +4977,8 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenSplashIntro={() => setShowSplashIntro(true)}
         onOpenAssistant={() => setIsAssistantModalOpen(true)}
+        onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+        onOpenSocialHub={() => setIsSocialHubOpen(true)}
         onOpenWebsite={navigateToWebsite}
       />
 
@@ -5048,6 +5107,7 @@ export default function App() {
               onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
               companyProfile={companyProfile}
               onSaveCompanyProfile={handleSaveCompanyProfile}
+              onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
             />
           </div>
         ) : viewMode === 'web' ? (
@@ -5136,6 +5196,7 @@ export default function App() {
                 onConvertAdminFeeGpToRupees={handleConvertAdminFeeGpToRupees}
                 companyProfile={companyProfile}
                 onSaveCompanyProfile={handleSaveCompanyProfile}
+                onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
               />
             ) : (
               <>
@@ -5562,6 +5623,26 @@ export default function App() {
         currentUser={currentUser}
         rules={rules}
         companyProfile={companyProfile}
+      />
+
+      {/* YouTube Explainer & Promo Video Studio Modal */}
+      <YouTubePromoStudioModal
+        isOpen={isYouTubeStudioOpen}
+        onClose={() => setIsYouTubeStudioOpen(false)}
+        language={language}
+        companyProfile={companyProfile}
+        rules={rules}
+      />
+
+      {/* Official YouTube & All Social Media Hub Modal */}
+      <SocialMediaHubModal
+        isOpen={isSocialHubOpen}
+        onClose={() => setIsSocialHubOpen(false)}
+        language={language}
+        companyProfile={companyProfile}
+        currentUser={currentUser}
+        onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+        onSaveProfileSuccess={() => setCompanyProfile(getStoredCompanyProfile())}
       />
 
     </div>

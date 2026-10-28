@@ -33,6 +33,8 @@ import {
   CheckCircle2,
   Bot,
   Type,
+  Video,
+  Youtube,
 } from 'lucide-react';
 import {
   Language,
@@ -75,6 +77,8 @@ interface NavigationDrawerProps {
   onOpenProfile?: () => void;
   onOpenSplashIntro?: () => void;
   onOpenAssistant?: () => void;
+  onOpenYouTubeStudio?: () => void;
+  onOpenSocialHub?: () => void;
   onOpenWebsite?: () => void;
 }
 
@@ -107,6 +111,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onOpenProfile,
   onOpenSplashIntro,
   onOpenAssistant,
+  onOpenYouTubeStudio,
+  onOpenSocialHub,
   onOpenWebsite,
 }) => {
   const isHi = language === 'hi';
@@ -293,6 +299,33 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          )}
+
+          {/* YouTube Video Studio Trigger Card */}
+          {onOpenYouTubeStudio && (
+            <div className="p-3 bg-gradient-to-r from-red-950/80 via-slate-900 to-amber-950/80 rounded-xl border border-red-500/40 shadow-lg shadow-red-950/40">
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenYouTubeStudio();
+                }}
+                className="w-full flex items-center justify-between text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 via-rose-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-red-500/30 shrink-0">
+                    <Video className="w-5 h-5 animate-pulse text-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-white text-xs">{isHi ? 'यूट्यूब वीडियो स्टूडियो' : 'YouTube Video Studio'}</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-red-600/30 text-red-300 font-bold border border-red-500/40">🎥 HD PROMO</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">{isHi ? '1-क्लिक में वीडियो डाउनलोड करें' : 'Download 1080p Promo Video'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           )}
@@ -620,6 +653,23 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   </div>
                   <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono">APK</span>
                 </a>
+
+                <button
+                  id="btn-drawer-social-hub"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenSocialHub) onOpenSocialHub();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between text-red-300 hover:bg-red-500/15 transition-colors font-bold border border-red-500/30 bg-red-500/10 mt-1 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Youtube className="w-4 h-4 text-red-500" />
+                    <span>{isHi ? '📺 यूट्यूब व सोशल मीडिया हब' : '📺 YouTube & Social Hub'}</span>
+                  </div>
+                  <span className="text-[10px] bg-red-600 text-white font-black px-1.5 py-0.5 rounded uppercase">
+                    HUB
+                  </span>
+                </button>
               </div>
             )}
           </div>

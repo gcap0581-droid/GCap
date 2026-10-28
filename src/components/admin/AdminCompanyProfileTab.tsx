@@ -18,6 +18,8 @@ import {
   Sparkles,
   Info,
   Printer,
+  Share2,
+  Copy,
 } from 'lucide-react';
 import { CompanyProfile, Language } from '../../types';
 import {
@@ -45,6 +47,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const initialProfile = propCompanyProfile || getStoredCompanyProfile();
   const [formData, setFormData] = useState<CompanyProfile>({ ...initialProfile });
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const [activePreview, setActivePreview] = useState<'LETTERHEAD' | 'LEGAL_BLOCK' | 'SEAL'>('LETTERHEAD');
   const [showStartupCertModal, setShowStartupCertModal] = useState(false);
   const isDirtyRef = React.useRef(false);
@@ -599,6 +602,19 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-red-400 font-bold mb-1">
+                  {isHi ? 'फीचर्ड यूट्यूब वीडियो यूआरएल:' : 'Featured YouTube Video URL:'}
+                </label>
+                <input
+                  type="url"
+                  value={formData.featuredVideoUrl || ''}
+                  onChange={(e) => handleChange('featuredVideoUrl', e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -759,6 +775,187 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
             </div>
           </div>
 
+          {/* SECTION 7: Official Social Media Channels */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800 text-rose-400">
+              <Globe className="w-5 h-5" />
+              <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                {isHi ? '7. आधिकारिक सोशल मीडिया चैनल्स (Official Social Links)' : '7. Official Social Media Channels'}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="block text-red-400 font-bold mb-1">
+                  YouTube Channel URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.youtubeUrl || ''}
+                  onChange={(e) => handleChange('youtubeUrl', e.target.value)}
+                  placeholder="https://www.youtube.com/@GCapOfficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sky-400 font-bold mb-1">
+                  Telegram Channel URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.telegramUrl || ''}
+                  onChange={(e) => handleChange('telegramUrl', e.target.value)}
+                  placeholder="https://t.me/gcapofficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-emerald-400 font-bold mb-1">
+                  WhatsApp Group / Community URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.whatsappGroupUrl || ''}
+                  onChange={(e) => handleChange('whatsappGroupUrl', e.target.value)}
+                  placeholder="https://chat.whatsapp.com/GCapOfficialCommunity"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-blue-400 font-bold mb-1">
+                  Facebook Page URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.facebookUrl || ''}
+                  onChange={(e) => handleChange('facebookUrl', e.target.value)}
+                  placeholder="https://facebook.com/gcapofficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-pink-400 font-bold mb-1">
+                  Instagram Profile URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.instagramUrl || ''}
+                  onChange={(e) => handleChange('instagramUrl', e.target.value)}
+                  placeholder="https://instagram.com/gcapofficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-pink-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold mb-1">
+                  Twitter / X Profile URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.twitterUrl || ''}
+                  onChange={(e) => handleChange('twitterUrl', e.target.value)}
+                  placeholder="https://twitter.com/gcapofficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-slate-500"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-cyan-400 font-bold mb-1">
+                  LinkedIn Corporate Page URL:
+                </label>
+                <input
+                  type="url"
+                  value={formData.linkedinUrl || ''}
+                  onChange={(e) => handleChange('linkedinUrl', e.target.value)}
+                  placeholder="https://linkedin.com/company/gcapofficial"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 8: Social Media Bio Generator */}
+          <div className="bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-950 border-2 border-purple-500/50 rounded-2xl p-5 shadow-xl shadow-purple-950/30 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-purple-500/30 flex-wrap gap-2">
+              <div className="flex items-center gap-2.5 text-purple-400">
+                <div className="p-2 bg-purple-500/20 rounded-xl border border-purple-500/40">
+                  <Share2 className="w-5 h-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <span>{isHi ? '8. सोशल मीडिया बायो जनरेटर' : '8. Social Media Bio Generator'}</span>
+                    <span className="text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold">
+                      INSTA • FB • YT • LINKEDIN
+                    </span>
+                  </h3>
+                  <p className="text-xs text-purple-300/80 font-medium">
+                    {isHi
+                      ? 'अपने सभी सोशल मीडिया प्रोफाइल (Instagram, Facebook, LinkedIn, YouTube) में यह बायो पेस्ट करें।'
+                      : 'Copy this ready-made bio to paste into your Instagram, Facebook, LinkedIn, and YouTube profiles.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Complete Bio Card */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span>{isHi ? '📋 संपूर्ण कंपनी बायो (Facebook, LinkedIn, YouTube के लिए):' : '📋 Full Bio (For Facebook, LinkedIn, YouTube):'}</span>
+                <span className="text-[10px] text-slate-400 font-mono">1-Click Copy</span>
+              </div>
+              <div className="bg-slate-950 p-4 rounded-xl border border-purple-500/30 font-mono text-xs text-purple-100 whitespace-pre-wrap leading-relaxed shadow-inner">
+{`🏢 ${formData.companyName}
+✨ ${formData.tagline || 'Guaranteed Returns & Financial Growth'}
+🏛️ CIN: ${formData.cin || 'U66190BR2026OPC088307'} | DPIIT: ${formData.dippNumber || 'DIPP285976'}
+📍 ${formData.registeredAddress || 'Registered Office, India'}
+📞 Support: ${formData.supportPhone || '+91 8503504808'}
+🌐 Website: ${formData.websiteUrl || 'https://www.gcapopc.com'}`}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const bio = `🏢 ${formData.companyName}\n✨ ${formData.tagline || 'Guaranteed Returns & Financial Growth'}\n🏛️ CIN: ${formData.cin || 'U66190BR2026OPC088307'} | DPIIT: ${formData.dippNumber || 'DIPP285976'}\n📍 ${formData.registeredAddress || 'Registered Office, India'}\n📞 Support: ${formData.supportPhone || '+91 8503504808'}\n🌐 Website: ${formData.websiteUrl || 'https://www.gcapopc.com'}`;
+                  navigator.clipboard.writeText(bio);
+                  setCopySuccess(true);
+                  setTimeout(() => setCopySuccess(false), 3500);
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xs cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition-all active:scale-95"
+              >
+                <Copy className="w-4 h-4" />
+                <span>{isHi ? '📋 संपूर्ण बायो कॉपी करें (Copy Full Bio)' : '📋 Copy Full Bio'}</span>
+              </button>
+            </div>
+
+            {/* Short Bio Card for Instagram / Twitter */}
+            <div className="space-y-2 pt-2 border-t border-purple-500/20">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span>{isHi ? '⚡ संक्षिप्त बायो (Instagram / X / Twitter 150 अक्षर सीमा के लिए):' : '⚡ Short Bio (For Instagram & X / Twitter 150-char limit):'}</span>
+              </div>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-slate-200 whitespace-pre-wrap">
+{`${formData.companyName} | ${formData.tagline || 'Secure Assets & Guaranteed Returns'}
+📍 ${formData.city || 'India'} • 📞 ${formData.supportPhone || ''}
+🌐 ${formData.websiteUrl || ''}`}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const shortBio = `${formData.companyName} | ${formData.tagline || 'Secure Assets & Guaranteed Returns'}\n📍 ${formData.city || 'India'} • 📞 ${formData.supportPhone || ''}\n🌐 ${formData.websiteUrl || ''}`;
+                  navigator.clipboard.writeText(shortBio);
+                  setCopySuccess(true);
+                  setTimeout(() => setCopySuccess(false), 3500);
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 font-bold text-xs cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-95"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{isHi ? '⚡ संक्षिप्त बायो कॉपी करें (Copy Short Bio)' : '⚡ Copy Short Bio'}</span>
+              </button>
+            </div>
+          </div>
+
           {/* Bottom Save Bar */}
           <div className="space-y-3 pt-2">
             {saveSuccess && (
@@ -768,6 +965,16 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   {isHi
                     ? '✅ कंपनी प्रोफ़ाइल व बैंक विवरण सेव हो गए! अब सभी यूज़र्स को डिपॉजिट करते समय यही नया बैंक खाता व UPI दिखेगा।'
                     : '✅ Company Profile & Bank Saved! Users will now see this updated bank account & UPI during deposits.'}
+                </span>
+              </div>
+            )}
+            {copySuccess && (
+              <div className="p-3.5 rounded-xl bg-purple-500/20 border border-purple-500/50 text-purple-200 text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-500/10">
+                <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                <span>
+                  {isHi
+                    ? '✅ बायो कॉपी हो गया!'
+                    : '✅ Bio Copied!'}
                 </span>
               </div>
             )}

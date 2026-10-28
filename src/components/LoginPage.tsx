@@ -23,6 +23,7 @@ import {
   KeyRound,
   Shield,
   BadgeCheck,
+  Video,
 } from 'lucide-react';
 import { Language, UserProfile, ViewMode } from '../types';
 import * as authStorage from '../utils/authStorage';
@@ -45,6 +46,7 @@ interface LoginPageProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onOpenWebsite?: () => void;
+  onOpenYouTubeStudio?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
@@ -54,6 +56,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   viewMode,
   onViewModeChange,
   onOpenWebsite,
+  onOpenYouTubeStudio,
 }) => {
   const isHi = language === 'hi';
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
@@ -467,90 +470,109 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col justify-start selection:bg-emerald-500 selection:text-white">
       {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md shrink-0">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
-              <img 
-                src={PRIMARY_COMPANY_LOGO} 
-                onError={(e) => {
-                  const img = e.currentTarget as HTMLImageElement;
-                  if (!img.dataset.triedFallback1) {
-                    img.dataset.triedFallback1 = 'true';
-                    img.src = '/assets/images/gcap-luxury-gold-3d.jpg';
-                  } else if (!img.dataset.triedFallback2) {
-                    img.dataset.triedFallback2 = 'true';
-                    img.src = '/assets/images/logo.jpg';
-                  } else if (!img.dataset.triedFallback3) {
-                    img.dataset.triedFallback3 = 'true';
-                    img.src = '/logo.jpg';
-                  }
-                }}
-                alt="GCap Logo" 
-                className="w-full h-full object-cover scale-110"
-              />
+      <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md sticky top-0 z-30 shadow-md shrink-0">
+        {/* Row 1: Brand & Logo */}
+        <div className="block w-full px-4 sm:px-8 py-3 border-b border-white/[0.03]">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
+                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
+                  <img 
+                    src={PRIMARY_COMPANY_LOGO} 
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      if (!img.dataset.triedFallback1) {
+                        img.dataset.triedFallback1 = 'true';
+                        img.src = '/assets/images/gcap-luxury-gold-3d.jpg';
+                      } else if (!img.dataset.triedFallback2) {
+                        img.dataset.triedFallback2 = 'true';
+                        img.src = '/assets/images/logo.jpg';
+                      } else if (!img.dataset.triedFallback3) {
+                        img.dataset.triedFallback3 = 'true';
+                        img.src = '/logo.jpg';
+                      }
+                    }}
+                    alt="GCap Logo" 
+                    className="w-full h-full object-cover scale-110"
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center">
+                  <span className="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
+                    GCap
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 tracking-wider uppercase">
+                  {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
+                </p>
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="flex items-center">
-              <span className="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
-                GCap
-              </span>
+
+            {/* View Mode Toggle (Desktop only row 1) */}
+            <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+              <button
+                onClick={() => onViewModeChange('web')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'web'
+                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Web</span>
+              </button>
+              <button
+                onClick={() => onViewModeChange('android')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  (viewMode as string) === 'android'
+                    ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Mobile</span>
+              </button>
             </div>
-            <p className="text-[10px] text-slate-400 tracking-wider uppercase">
-              {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
-            </p>
           </div>
         </div>
 
-        {/* Header Right Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* View Mode Toggle */}
-          <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+        {/* Row 2: Separated Action Controls (Buttons) - Guaranteed on new line via block div */}
+        <div className="block w-full px-4 sm:px-8 py-2.5 bg-slate-900/40">
+          <div className="flex items-center flex-wrap gap-2 sm:gap-3 w-full sm:justify-end">
+            {/* YouTube Promo Video Button */}
+            {onOpenYouTubeStudio && (
+              <button
+                onClick={onOpenYouTubeStudio}
+                className="flex items-center gap-1.5 px-3 py-2 text-[11px] sm:text-xs font-bold rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white border border-red-500/50 transition-all cursor-pointer shadow-md shadow-red-950/40 active:scale-95"
+              >
+                <Video className="w-3.5 h-3.5 fill-white" />
+                <span className="hidden xs:inline">{isHi ? 'यूट्यूब वीडियो' : 'YouTube Video'}</span>
+                <span className="xs:hidden">{isHi ? 'वीडियो' : 'Video'}</span>
+              </button>
+            )}
+
+            {/* Official Website Button */}
+            {onOpenWebsite && (
+              <button
+                onClick={onOpenWebsite}
+                className="flex items-center gap-1.5 px-3 py-2 text-[11px] sm:text-xs font-bold rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 text-amber-300 border border-amber-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Globe className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden xs:inline">{isHi ? 'ऑफिशियल वेबसाइट' : 'Official Website'}</span>
+                <span className="xs:hidden">{isHi ? 'वेबसाइट' : 'Website'}</span>
+              </button>
+            )}
+
+            {/* Language Toggle */}
             <button
-              onClick={() => onViewModeChange('web')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                viewMode === 'web'
-                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] sm:text-xs font-bold rounded-xl bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
             >
-              <Monitor className="w-3.5 h-3.5" />
-              <span>Web</span>
-            </button>
-            <button
-              onClick={() => onViewModeChange('android')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                (viewMode as string) === 'android'
-                  ? 'bg-slate-800 text-emerald-400 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Mobile</span>
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{isHi ? 'English' : 'हिंदी'}</span>
             </button>
           </div>
-
-          {/* Official Website Button */}
-          {onOpenWebsite && (
-            <button
-              onClick={onOpenWebsite}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 text-amber-300 border border-amber-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
-            >
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">{isHi ? 'ऑफिशियल वेबसाइट' : 'Official Website'}</span>
-              <span className="sm:hidden">{isHi ? 'वेबसाइट' : 'Website'}</span>
-            </button>
-          )}
-
-          {/* Language Toggle */}
-          <button
-            onClick={() => onLanguageChange(isHi ? 'en' : 'hi')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
-          >
-            <Globe className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isHi ? 'English' : 'हिंदी'}</span>
-          </button>
         </div>
       </header>
 

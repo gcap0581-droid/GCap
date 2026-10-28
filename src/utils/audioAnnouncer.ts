@@ -105,12 +105,16 @@ class AudioAnnouncerEngine {
         }
         if (lang === 'hi') {
           utterance.lang = 'hi-IN';
-          const hiVoice = voices.find(
-            (v) =>
-              v.lang.toLowerCase().includes('hi') ||
-              v.name.toLowerCase().includes('hindi') ||
-              v.name.toLowerCase().includes('india')
-          );
+          const hiVoice =
+            voices.find((v) => {
+              const l = v.lang.toLowerCase().replace('_', '-');
+              return l === 'hi-in' || l === 'hi' || l.startsWith('hi-');
+            }) ||
+            voices.find((v) => {
+              const l = v.lang.toLowerCase().replace('_', '-');
+              const n = v.name.toLowerCase();
+              return !l.startsWith('en') && (n.includes('hindi') || n.includes('हिन्दी'));
+            });
           if (hiVoice) {
             utterance.voice = hiVoice;
           }

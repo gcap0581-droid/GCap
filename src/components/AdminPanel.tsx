@@ -39,6 +39,7 @@ import {
   Sparkles,
   MessageCircle,
   Smartphone,
+  Video,
 } from 'lucide-react';
 import {
   AppRules,
@@ -162,6 +163,7 @@ interface AdminPanelProps {
   companyProfile?: CompanyProfile;
   onSaveCompanyProfile?: (profile: CompanyProfile) => void;
   onUpdateRules?: (rules: AppRules) => void;
+  onOpenYouTubeStudio?: () => void;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -213,6 +215,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onConvertAdminFeeGpToRupees,
   onSaveCompanyProfile,
   onUpdateRules,
+  onOpenYouTubeStudio,
 }) => {
   const isHi = language === 'hi';
   const [internalActiveSubTab, setInternalActiveSubTab] = useState<
@@ -906,6 +909,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>{isHi ? '🔑 ट्रांजेक्शन पासवर्ड बदलें' : '🔑 Change Tx Password'}</span>
                 </button>
 
+                {onOpenYouTubeStudio && (
+                  <button
+                    id="btn-admin-youtube-studio-master"
+                    onClick={onOpenYouTubeStudio}
+                    className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-red-950/90 via-rose-900/90 to-amber-950/90 hover:from-red-900 hover:to-amber-900 text-white border border-red-500/50 text-xs font-black transition-all cursor-pointer shadow-lg shadow-red-950/40"
+                  >
+                    <Video className="w-4 h-4 text-red-400 animate-pulse" />
+                    <span>{isHi ? '🎥 यूट्यूब प्रोमो वीडियो स्टूडियो' : '🎥 YouTube Promo Studio'}</span>
+                  </button>
+                )}
+
                 {onResetSystemFresh && (
                   <button
                     id="btn-admin-fresh-reset-system"
@@ -923,10 +937,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* Navigation Sub-Tabs & Mobile Menu Grid */}
           <div className="space-y-3 w-full">
-            {/* Navigation Sub-Tabs Cards Grid: 18 items perfectly balanced across 2 cols (mobile), 3 cols (tablet), 6 cols (desktop) with zero right blank space */}
+            {/* Navigation Sub-Tabs Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 w-full">
                 
-                {/* Tabs definition - 18 balanced items */}
+                {/* Tabs definition */}
                 {[
                   { id: 'OVERVIEW', icon: TrendingUp, label: isHi ? 'डैशबोर्ड' : 'Overview', desc: isHi ? 'मुख्य सांख्यिकी' : 'System Stats', badge: 'STATS' },
                   { id: 'USERS', icon: Users, label: isHi ? 'यूज़र्स' : 'Users', desc: isHi ? `${onlineUsersCount} ऑनलाइन` : `${onlineUsersCount} Online`, badge: onlineUsersCount > 0 ? "LIVE" : "USERS" },
@@ -946,6 +960,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       markTreasuryRequestsAsSeen();
                       setActiveSubTab('TREASURY');
                     }
+                  },
+                  { 
+                    id: 'YOUTUBE_STUDIO', 
+                    icon: Video, 
+                    label: isHi ? 'यूट्यूब स्टूडियो' : 'YouTube Studio', 
+                    desc: isHi ? '1080p प्रोमो वीडियो' : 'HD Promo Video', 
+                    badge: 'PROMO',
+                    customClick: onOpenYouTubeStudio
                   },
                   { id: 'BACKUP', icon: Database, label: isHi ? 'बैकअप' : 'Backup', desc: isHi ? 'मैन्युअल स्नैपशॉट' : 'Snapshots', badge: 'CLONES' },
                   { id: 'DEDUCTIONS', icon: ShieldAlert, label: isHi ? 'कटौती व शुल्क' : 'Deductions', desc: isHi ? 'चार्ज, TDS व फीस' : 'Admin & TDS Fees', badge: 'AUDIT' },

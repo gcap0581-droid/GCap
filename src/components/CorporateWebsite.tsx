@@ -32,7 +32,17 @@ import {
   Check,
   Home,
   FileCheck2,
-  Scale
+  Scale,
+  Video,
+  Play,
+  Menu,
+  X,
+  Youtube,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Share2
 } from 'lucide-react';
 import { CompanyProfile, InvestmentPlan, Language } from '../types';
 import { DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
@@ -49,6 +59,8 @@ interface CorporateWebsiteProps {
   onLaunchApp: () => void;
   onOpenLogin: () => void;
   onOpenRegister: () => void;
+  onOpenYouTubeStudio?: () => void;
+  onOpenSocialHub?: () => void;
 }
 
 export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
@@ -58,9 +70,44 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
   onLaunchApp,
   onOpenLogin,
   onOpenRegister,
+  onOpenYouTubeStudio,
+  onOpenSocialHub,
 }) => {
   const [lang, setLang] = useState<Language>(initialLang);
   const isHi = lang === 'hi';
+  const [activeProfile, setActiveProfile] = useState<CompanyProfile>(() => companyProfile || DEFAULT_COMPANY_PROFILE);
+
+  useEffect(() => {
+    if (companyProfile) {
+      setActiveProfile(companyProfile);
+    }
+  }, [companyProfile]);
+
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      if (e?.detail) setActiveProfile(e.detail);
+    };
+    const handleStorageChange = (e: StorageEvent) => {
+      if ((e.key === 'gcap_corporate_company_profile_v2' || e.key === 'gcap_corporate_company_profile_v1') && e.newValue) {
+        try {
+          setActiveProfile(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
+    const handleFirestoreUpdated = (e: any) => {
+      if (e?.detail?.companyProfile) {
+        setActiveProfile(e.detail.companyProfile);
+      }
+    };
+    window.addEventListener('gcap_company_profile_updated', handleProfileUpdated);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('firestore_state_updated', handleFirestoreUpdated);
+    return () => {
+      window.removeEventListener('gcap_company_profile_updated', handleProfileUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('firestore_state_updated', handleFirestoreUpdated);
+    };
+  }, []);
 
   // Active Tab state: strictly renders ONLY the selected tab's content
   const [activeTab, setActiveTab] = useState<WebTabId>(() => {
@@ -74,8 +121,11 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
     return 'home';
   });
 
+  const [isNavMenuOpen, setIsNavMenuOpen] = useState<boolean>(false);
+
   const handleTabChange = (tab: WebTabId) => {
     setActiveTab(tab);
+    setIsNavMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (typeof window !== 'undefined') {
       try {
@@ -167,25 +217,121 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
     }
   };
 
-  const tabsConfig: { id: WebTabId; labelHi: string; labelEn: string; icon: any }[] = [
-    { id: 'home', labelHi: '🏠 होम (Home)', labelEn: '🏠 Home', icon: Home },
-    { id: 'about', labelHi: '🏛️ कंपनी परिचय', labelEn: '🏛️ About Us', icon: Building2 },
-    { id: 'plans', labelHi: '📈 निवेश योजनाएं', labelEn: '📈 Investment Schemes', icon: TrendingUp },
-    { id: 'calculator', labelHi: '🧮 रिटर्न कैलकुलेटर', labelEn: '🧮 Yield Calculator', icon: Calculator },
-    { id: 'legal', labelHi: '📜 वैधानिक वॉल्ट (MCA)', labelEn: '📜 Legal & MCA', icon: ShieldCheck },
-    { id: 'contact', labelHi: '📞 संपर्क व सहायता', labelEn: '📞 Contact Us', icon: Phone },
+  const tabsConfig: { id: WebTabId; labelHi: string; labelEn: string; icon: any; descHi?: string; descEn?: string }[] = [
+    { id: 'home', labelHi: '🏠 होम', labelEn: '🏠 Home', icon: Home, descHi: 'मुख्य होम पेज', descEn: 'Main Homepage' },
+    { id: 'about', labelHi: '🏛️ कंपनी परिचय', labelEn: '🏛️ About Us', icon: Building2, descHi: 'निदेशक व Axis बैंक', descEn: 'Governance & Bank' },
+    { id: 'plans', labelHi: '📈 निवेश योजनाएं', labelEn: '📈 Investment Schemes', icon: TrendingUp, descHi: '641D व 365D स्कीम्स', descEn: '641D & 365D ROI' },
+    { id: 'calculator', labelHi: '🧮 रिटर्न कैलकुलेटर', labelEn: '🧮 Yield Calculator', icon: Calculator, descHi: 'लाइव लाभ की गणना', descEn: 'Calculate Returns' },
+    { id: 'legal', labelHi: '📜 वैधानिक वॉल्ट (MCA)', labelEn: '📜 Legal & MCA', icon: ShieldCheck, descHi: 'MCA व DPIIT सर्टिफिकेट', descEn: 'Govt Certificates' },
+    { id: 'contact', labelHi: '📞 संपर्क व सहायता', labelEn: '📞 Contact Us', icon: Phone, descHi: 'सासाराम ऑफिस व हेल्प', descEn: 'Office & Helpline' },
   ];
+
+  const socialMediaChannels = [
+    {
+      id: 'youtube',
+      name: 'YouTube',
+      nameHi: 'यूट्यूब (YouTube)',
+      icon: Youtube,
+      url: activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial',
+      color: 'text-red-400 border-red-500/30 bg-red-950/40 hover:bg-red-900/50 hover:border-red-500/60',
+      badgeHi: 'ऑफिशियल चैनल',
+      badgeEn: 'Official Channel',
+      btnBg: 'bg-red-600 hover:bg-red-500 text-white',
+      btnTextHi: 'सब्सक्राइब करें 🔔',
+      btnTextEn: 'Subscribe 🔔',
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      nameHi: 'टेलीग्राम (Telegram)',
+      icon: Send,
+      url: activeProfile.telegramUrl || 'https://t.me/gcapofficial',
+      color: 'text-sky-400 border-sky-500/30 bg-sky-950/40 hover:bg-sky-900/50 hover:border-sky-500/60',
+      badgeHi: 'आधिकारिक अपडेट्स',
+      badgeEn: 'Official Updates',
+      btnBg: 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold',
+      btnTextHi: 'चैनल ज्वाइन करें 🚀',
+      btnTextEn: 'Join Channel 🚀',
+    },
+    {
+      id: 'whatsapp',
+      name: 'WhatsApp Community',
+      nameHi: 'व्हाट्सएप ग्रुप (WhatsApp)',
+      icon: MessageSquare,
+      url: activeProfile.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity',
+      color: 'text-emerald-400 border-emerald-500/30 bg-emerald-950/40 hover:bg-emerald-900/50 hover:border-emerald-500/60',
+      badgeHi: 'इन्वेस्टर कम्युनिटी',
+      badgeEn: 'Investor Group',
+      btnBg: 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold',
+      btnTextHi: 'ग्रुप ज्वाइन करें 💬',
+      btnTextEn: 'Join Group 💬',
+    },
+    {
+      id: 'facebook',
+      name: 'Facebook',
+      nameHi: 'फेसबुक (Facebook)',
+      icon: Facebook,
+      url: activeProfile.facebookUrl || 'https://facebook.com/gcapofficial',
+      color: 'text-blue-400 border-blue-500/30 bg-blue-950/40 hover:bg-blue-900/50 hover:border-blue-500/60',
+      badgeHi: 'ऑफिशियल पेज',
+      badgeEn: 'Official Page',
+      btnBg: 'bg-blue-600 hover:bg-blue-500 text-white',
+      btnTextHi: 'फॉलो करें 👍',
+      btnTextEn: 'Follow Page 👍',
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      nameHi: 'इंस्टाग्राम (Instagram)',
+      icon: Instagram,
+      url: activeProfile.instagramUrl || 'https://instagram.com/gcapofficial',
+      color: 'text-pink-400 border-pink-500/30 bg-pink-950/40 hover:bg-pink-900/50 hover:border-pink-500/60',
+      badgeHi: 'फोटो व अपडेट्स',
+      badgeEn: 'Photos & Updates',
+      btnBg: 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white',
+      btnTextHi: 'फॉलो करें 📸',
+      btnTextEn: 'Follow 📸',
+    },
+    {
+      id: 'twitter',
+      name: 'Twitter / X',
+      nameHi: 'ट्विटर (𝕏)',
+      icon: Twitter,
+      url: activeProfile.twitterUrl || 'https://twitter.com/gcapofficial',
+      color: 'text-slate-200 border-slate-700 bg-slate-900/60 hover:bg-slate-800 hover:border-slate-500',
+      badgeHi: 'आधिकारिक ट्वीट्स',
+      badgeEn: 'Official Tweets',
+      btnBg: 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-600',
+      btnTextHi: 'फॉलो करें 𝕏',
+      btnTextEn: 'Follow 𝕏',
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      nameHi: 'लिंक्डइन (LinkedIn)',
+      icon: Linkedin,
+      url: activeProfile.linkedinUrl || 'https://linkedin.com/company/gcapofficial',
+      color: 'text-blue-300 border-blue-600/30 bg-blue-950/40 hover:bg-blue-900/50 hover:border-blue-500/60',
+      badgeHi: 'कॉरपोरेट डेस्क',
+      badgeEn: 'Corporate Desk',
+      btnBg: 'bg-blue-700 hover:bg-blue-600 text-white',
+      btnTextHi: 'कनेक्ट करें 💼',
+      btnTextEn: 'Connect 💼',
+    },
+  ];
+
+  const currentTabObj = tabsConfig.find(t => t.id === activeTab) || tabsConfig[0];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 antialiased flex flex-col justify-between">
 
 
       {/* 2. PRIMARY LOGO HEADER */}
-      <header className="bg-slate-950/95 border-b border-amber-500/20 shrink-0 backdrop-blur-xl">
+      <header className="bg-slate-950/95 border-b border-amber-500/20 shrink-0 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2">
           {/* Logo & Brand */}
           <div className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1" onClick={() => handleTabChange('home')}>
-            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-900 shrink-0 shadow-md flex items-center justify-center">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-900 shrink-0 shadow-md flex items-center justify-center">
               <img
                 src={PRIMARY_COMPANY_LOGO}
                 alt="GCap Logo"
@@ -194,7 +340,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[13px] sm:text-xl font-black tracking-tight text-white font-mono leading-tight">
+                <span className="text-[13px] sm:text-lg font-black tracking-tight text-white font-mono leading-tight">
                   GCap OPC Private Limited
                 </span>
                 <span className="hidden sm:inline-block text-[9px] uppercase font-mono font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded">
@@ -207,40 +353,113 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
           </div>
 
-          {/* Language Toggle */}
-          <div className="flex items-center shrink-0">
+          {/* Action Buttons in Header */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Navigation Menu Button - Icon Only (3-lines blinking icon) */}
             <button
-              onClick={() => setLang(isHi ? 'en' : 'hi')}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-amber-300 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-md"
+              id="btn-website-main-menu-toggle"
+              onClick={() => setIsNavMenuOpen(!isNavMenuOpen)}
+              aria-label={isNavMenuOpen ? 'Close Menu' : 'Open Menu'}
+              title={isNavMenuOpen ? (isHi ? 'मेन्यू बंद करें' : 'Close Menu') : (isHi ? 'मुख्य मेन्यू खोलें' : 'Open Main Menu')}
+              className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border border-amber-500/40 text-amber-300 flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-95"
             >
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span>{isHi ? 'English' : 'हिन्दी'}</span>
+              {isNavMenuOpen ? (
+                <X className="w-5 h-5 text-amber-400" />
+              ) : (
+                <Menu className="w-5 h-5 text-amber-400 animate-pulse" />
+              )}
             </button>
           </div>
-
         </div>
 
-        {/* 3. PROMINENT 6-TAB CONTROLLER BAR (STICKY & HORIZONTALLY SCROLLABLE ON MOBILE) */}
-        <div className="bg-slate-900/90 border-t border-slate-800/80 px-2 sm:px-8 py-2 sticky top-0 z-30 shadow-lg backdrop-blur-md">
-          <div className="max-w-7xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-            {tabsConfig.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`shrink-0 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 border ${
-                    isActive
-                      ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 border-amber-300 shadow-md shadow-amber-500/20 scale-[1.02]'
-                      : 'bg-slate-950/80 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800'
-                  }`}
-                >
-                  <span>{isHi ? tab.labelHi : tab.labelEn}</span>
-                </button>
-              );
-            })}
+        {/* 3. COLLAPSIBLE NAVIGATION MENU DROPDOWN PANEL */}
+        {isNavMenuOpen && (
+          <div className="bg-slate-900/98 border-t border-b border-amber-500/30 px-3 sm:px-8 py-3 shadow-2xl animate-in slide-in-from-top-3 duration-200 backdrop-blur-2xl">
+            <div className="max-w-7xl mx-auto space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-400 border-b border-slate-800 pb-2 flex-wrap gap-2">
+                <span className="text-amber-400 flex items-center gap-1.5">
+                  <Menu className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'वेबसाइट नेविगेशन मेन्यू (Navigation Menu)' : 'Website Navigation Menu'}</span>
+                </span>
+                
+                {/* Language Toggle inside Menu Panel */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-400">{isHi ? 'भाषा (Language):' : 'Language:'}</span>
+                  <button
+                    id="btn-menu-language-toggle"
+                    onClick={() => setLang(isHi ? 'en' : 'hi')}
+                    className="px-2.5 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? '🌐 English में बदलें' : '🌐 Switch to हिन्दी'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {tabsConfig.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const IconComp = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabChange(tab.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-[82px] group ${
+                        isActive
+                          ? 'bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-slate-950 border-amber-300 shadow-xl shadow-amber-500/20 scale-[1.02]'
+                          : 'bg-slate-950/90 text-slate-200 hover:text-white hover:bg-slate-800 border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className={`p-1 rounded-lg ${isActive ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-900 text-amber-400'}`}>
+                          <IconComp className="w-3.5 h-3.5" />
+                        </div>
+                        {isActive && (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-950 text-amber-400">
+                            {isHi ? 'सक्रिय' : 'Active'}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs sm:text-sm font-extrabold truncate">{isHi ? tab.labelHi : tab.labelEn}</div>
+                        <div className={`text-[10px] truncate ${isActive ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
+                          {isHi ? tab.descHi : tab.descEn}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Social Media Quick Bar inside Menu Dropdown */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-amber-400 font-bold flex items-center gap-1.5">
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>{isHi ? 'आधिकारिक सोशल मीडिया चैनल:' : 'Official Social Media:'}</span>
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {socialMediaChannels.map((soc) => {
+                    const SocIcon = soc.icon;
+                    return (
+                      <a
+                        key={soc.id}
+                        href={soc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-all ${soc.color}`}
+                        title={isHi ? soc.nameHi : soc.name}
+                      >
+                        <SocIcon className="w-3.5 h-3.5" />
+                        <span>{soc.name}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
       </header>
 
       {/* 4. ISOLATED TAB CONTENT (ONLY ACTIVE TAB'S MATTER SHOWS) */}
@@ -249,17 +468,17 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 1: 🏠 होम (Home) - ONLY HOME MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'home' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
             {/* Hero Card */}
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-12 space-y-6 shadow-2xl relative overflow-hidden">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-2xl p-5 sm:p-8 space-y-4 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-500/30 text-xs text-emerald-300 font-semibold">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/30 text-xs text-emerald-300 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                 <span>{isHi ? 'भारत सरकार (MCA) पंजीकृत कॉरपोरेट वेल्थ संस्था' : 'Govt of India MCA Registered Corporate Entity'}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
                 {isHi ? (
                   <>
                     जीकैप (OPC) प्राइवेट लिमिटेड: <span className="text-amber-400">सुरक्षित परिसंपत्ति प्रबंधन</span> एवं 6-घंटे चक्र रिटर्न
@@ -271,7 +490,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 )}
               </h1>
 
-              <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                 {isHi ? (
                   'हम भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA) के अधीन पंजीकृत हैं। हमारे अत्याधुनिक सॉफ्टवेयर एल्गोरिदम द्वारा प्रत्येक 24 घंटे में 4 निश्चित चक्रों में बिना किसी मानवीय हस्तक्षेप के स्वचालित रिटर्न प्रदान किया जाता है।'
                 ) : (
@@ -279,23 +498,24 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 )}
               </p>
 
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap gap-2.5 pt-1">
                 <button
                   onClick={onLaunchApp}
-                  className="px-6 py-3.5 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 transition-all shadow-md shadow-amber-500/20 text-xs sm:text-sm flex items-center gap-2 cursor-pointer active:scale-95"
                 >
                   <span>{isHi ? 'इन्वेस्टर सॉफ्टवेयर पोर्टल खोलें 🚀' : 'Launch Software Portal 🚀'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
+
                 <button
                   onClick={() => handleTabChange('plans')}
-                  className="px-6 py-3.5 rounded-xl font-semibold text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all text-sm cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl font-semibold text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all text-xs sm:text-sm cursor-pointer"
                 >
                   {isHi ? 'इन्वेस्टमेंट स्कीम्स देखें →' : 'View Investment Schemes →'}
                 </button>
                 <button
                   onClick={() => handleTabChange('calculator')}
-                  className="px-6 py-3.5 rounded-xl font-semibold text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all text-sm cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl font-semibold text-slate-200 bg-slate-900 hover:bg-slate-800 border border-slate-700 transition-all text-xs sm:text-sm cursor-pointer"
                 >
                   {isHi ? 'रिटर्न कैलकुलेटर खोलें →' : 'Open Yield Calculator →'}
                 </button>
@@ -303,35 +523,35 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* 4 Performance Tiles */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-1">
-                <span className="text-xs text-slate-400">{isHi ? 'अधिकृत पूंजी (Authorised)' : 'Authorised Capital'}</span>
-                <div className="text-xl sm:text-2xl font-extrabold font-mono text-emerald-400">₹55,00,00,000</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3.5">
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-1">
+                <span className="text-[11px] text-slate-400">{isHi ? 'अधिकृत पूंजी (Authorised)' : 'Authorised Capital'}</span>
+                <div className="text-lg sm:text-xl font-extrabold font-mono text-emerald-400">₹55,00,00,000</div>
                 <span className="text-[10px] text-slate-500">{isHi ? '₹55 करोड़ MCA अनुमोदित' : '₹55 Cr MCA Approved'}</span>
               </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-1">
-                <span className="text-xs text-slate-400">{isHi ? 'सक्रिय प्रबंधित पूंजी' : 'Active Assets Managed'}</span>
-                <div className="text-xl sm:text-2xl font-extrabold font-mono text-amber-400">₹24.8 Cr+</div>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-1">
+                <span className="text-[11px] text-slate-400">{isHi ? 'सक्रिय प्रबंधित पूंजी' : 'Active Assets Managed'}</span>
+                <div className="text-lg sm:text-xl font-extrabold font-mono text-amber-400">₹24.8 Cr+</div>
                 <span className="text-[10px] text-slate-500">{isHi ? '14,850+ निवेशकों द्वारा' : '14,850+ Investors'}</span>
               </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-1">
-                <span className="text-xs text-slate-400">{isHi ? 'दैनिक चक्र पेआउट्स' : 'Daily Payout Cycles'}</span>
-                <div className="text-xl sm:text-2xl font-extrabold font-mono text-sky-400">4x Every 24h</div>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-1">
+                <span className="text-[11px] text-slate-400">{isHi ? 'दैनिक चक्र पेआउट्स' : 'Daily Payout Cycles'}</span>
+                <div className="text-lg sm:text-xl font-extrabold font-mono text-sky-400">4x Every 24h</div>
                 <span className="text-[10px] text-slate-500">{isHi ? 'हर 6 घंटे में 0.040% GP' : '0.040% every 6 hours'}</span>
               </div>
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-1">
-                <span className="text-xs text-slate-400">{isHi ? 'GP विनिमय दर (Peg)' : 'GP Value Ratio'}</span>
-                <div className="text-xl sm:text-2xl font-extrabold font-mono text-white">1 GP = ₹1.00</div>
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-1">
+                <span className="text-[11px] text-slate-400">{isHi ? 'GP विनिमय दर (Peg)' : 'GP Value Ratio'}</span>
+                <div className="text-lg sm:text-xl font-extrabold font-mono text-white">1 GP = ₹1.00</div>
                 <span className="text-[10px] text-emerald-400">{isHi ? '100% भारतीय रुपये में निकासी' : '100% INR Direct Bank'}</span>
               </div>
             </div>
 
             {/* Quick Tab Jump Grid */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
-              <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3.5">
+              <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2">
                 {isHi ? 'वेबसाइट के अन्य विभाग चुनें (Tab Selector):' : 'Explore Other Sections:'}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {[
                   { tab: 'about', titleHi: '🏛️ कंपनी परिचय व प्रबंधन', titleEn: 'About Us & Governance', descHi: 'डायरेक्टर अमित कुमार, DIN 11964641, विज़न एवं Axis Bank खाता विवरण।' },
                   { tab: 'plans', titleHi: '📈 641-दिन व 365-दिन स्कीम्स', titleEn: 'Investment Schemes', descHi: 'शॉर्ट-टर्म व लॉन्ग-टर्म रिटर्न, लॉक अवधि और निकासी नियमों की तालिका।' },
@@ -342,13 +562,13 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                   <button
                     key={s.tab}
                     onClick={() => handleTabChange(s.tab as WebTabId)}
-                    className="p-4 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-500/60 text-left transition-all cursor-pointer group space-y-1.5"
+                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/60 text-left transition-all cursor-pointer group space-y-1"
                   >
-                    <div className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors flex justify-between items-center">
+                    <div className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-400 transition-colors flex justify-between items-center">
                       <span>{isHi ? s.titleHi : s.titleEn}</span>
-                      <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-transform group-hover:translate-x-1" />
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-transform group-hover:translate-x-1" />
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{isHi ? s.descHi : s.titleEn}</p>
+                    <p className="text-[11px] text-slate-400 leading-normal">{isHi ? s.descHi : s.titleEn}</p>
                   </button>
                 ))}
               </div>
@@ -360,15 +580,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 2: 🏛️ कंपनी परिचय (About Us) - ONLY ABOUT MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'about' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold uppercase">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold uppercase">
                 TAB 2: CORPORATE PROFILE
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white">
                 {isHi ? 'जीकैप (OPC) प्राइवेट लिमिटेड: कंपनी परिचय एवं प्रबंधन' : 'About GCAP (OPC) PRIVATE LIMITED'}
               </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isHi ? (
                   'जीकैप भारत सरकार के कॉर्पोरेट मामलों के मंत्रालय (MCA), कंपनी अधिनियम 2013 के अधीन विधिवत निगमित संस्था है (ROC पटना, बिहार)।'
                 ) : (
@@ -378,19 +598,19 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* Leadership Profile Card */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-6">
-              <h2 className="text-xl font-bold text-white border-b border-slate-800 pb-3">{isHi ? 'कंपनी निदेशक व अधिकृत हस्ताक्षरकर्ता:' : 'Director & Management:'}</h2>
-              <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+              <h2 className="text-base font-bold text-white border-b border-slate-800 pb-2">{isHi ? 'कंपनी निदेशक व अधिकृत हस्ताक्षरकर्ता:' : 'Director & Management:'}</h2>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <img
                   src={PRIMARY_COMPANY_LOGO}
                   alt="Director Logo"
-                  className="w-28 h-28 rounded-2xl object-cover border-2 border-amber-500/50 shadow-xl shrink-0"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover border-2 border-amber-500/50 shadow-lg shrink-0"
                 />
-                <div className="space-y-2 text-center sm:text-left">
-                  <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold">
+                <div className="space-y-1 text-center sm:text-left">
+                  <div className="inline-block px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-mono font-bold">
                     AUTHORIZED DIRECTOR
                   </div>
-                  <h3 className="text-2xl font-bold text-white">{companyProfile.authorizedSignatory || 'Amit Kumar'}</h3>
+                  <h3 className="text-xl font-bold text-white">{companyProfile.authorizedSignatory || 'Amit Kumar'}</h3>
                   <p className="text-xs text-amber-400 font-mono font-bold">{companyProfile.signatoryDesignation || 'Director & Authorized Signatory'}</p>
                   <p className="text-xs text-slate-300 font-mono">DIN: {companyProfile.signatoryDin || '11964641'}</p>
                   <p className="text-xs text-slate-400">{companyProfile.registeredAddress}</p>
@@ -399,32 +619,32 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* Banking Partner */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4">
-              <h2 className="text-lg font-bold text-white">{isHi ? 'कंपनी का प्राथमिक बैंकिंग खाता विवरण:' : 'Official Banking Partner:'}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
+              <h2 className="text-base font-bold text-white">{isHi ? 'कंपनी का प्राथमिक बैंकिंग खाता विवरण:' : 'Official Banking Partner:'}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 font-mono text-xs">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <span className="text-slate-400 font-sans block">{isHi ? 'बैंक का नाम:' : 'Bank Name:'}</span>
-                  <span className="text-white font-bold text-sm mt-1 block">{companyProfile.bankName || 'Axis Bank Ltd.'}</span>
+                  <span className="text-white font-bold text-xs mt-0.5 block">{companyProfile.bankName || 'Axis Bank Ltd.'}</span>
                 </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <span className="text-slate-400 font-sans block">{isHi ? 'खाता संख्या:' : 'Account Number:'}</span>
-                  <span className="text-amber-400 font-bold text-sm mt-1 block">{companyProfile.bankAccountNumber || '924010008662307'}</span>
+                  <span className="text-amber-400 font-bold text-xs mt-0.5 block">{companyProfile.bankAccountNumber || '924010008662307'}</span>
                 </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <span className="text-slate-400 font-sans block">IFSC Code:</span>
-                  <span className="text-emerald-400 font-bold text-sm mt-1 block">{companyProfile.bankIfsc || 'UTIB0001219'}</span>
+                  <span className="text-emerald-400 font-bold text-xs mt-0.5 block">{companyProfile.bankIfsc || 'UTIB0001219'}</span>
                 </div>
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <span className="text-slate-400 font-sans block">{isHi ? 'शाखा (Branch):' : 'Branch:'}</span>
-                  <span className="text-slate-200 mt-1 block">{companyProfile.bankBranch || 'Sasaram Branch'}</span>
+                  <span className="text-slate-200 mt-0.5 block">{companyProfile.bankBranch || 'Sasaram Branch'}</span>
                 </div>
               </div>
             </div>
 
             {/* Mission & Vision */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-3">
-                <h3 className="text-base font-bold text-white">{isHi ? 'हमारा विज़न (Our Vision)' : 'Our Vision'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div className="bg-slate-900 p-4.5 rounded-xl border border-slate-800 space-y-2">
+                <h3 className="text-sm font-bold text-white">{isHi ? 'हमारा विज़न (Our Vision)' : 'Our Vision'}</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {isHi ? (
                     'तकनीक और नियमों के समन्वय से भारत में परिसंपत्ति प्रबंधन को पारदर्शी बनाना, जिससे हर निवेशक को समय पर निश्चित चक्र लाभ प्राप्त हो सके।'
@@ -433,8 +653,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                   )}
                 </p>
               </div>
-              <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-3">
-                <h3 className="text-base font-bold text-white">{isHi ? 'हमारा मिशन (Our Mission)' : 'Our Mission'}</h3>
+              <div className="bg-slate-900 p-4.5 rounded-xl border border-slate-800 space-y-2">
+                <h3 className="text-sm font-bold text-white">{isHi ? 'हमारा मिशन (Our Mission)' : 'Our Mission'}</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {isHi ? (
                     'कंपनी अधिनियम और आयकर नियमों (TDS) के 100% अनुपालन के साथ बिना किसी मानवीय त्रुटि के सर्वर-आधारित पेआउट्स सुनिश्चित करना।'
@@ -451,15 +671,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 3: 📈 निवेश योजनाएं (Investment Schemes) - ONLY PLANS MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'plans' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold uppercase">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold uppercase">
                 TAB 3: INVESTMENT SCHEMES
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white">
                 {isHi ? 'जीकैप सक्रिय निवेश योजनाएं एवं नियम' : 'GCap Active Investment Schemes & Rules'}
               </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isHi ? (
                   'सभी प्लान्स में 24 घंटे में 4 निश्चित चक्रों (00:00, 06:00, 12:00, 18:00) में लाभ वॉलेट में क्रेडिट होता है।'
                 ) : (
@@ -469,30 +689,30 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {plans.map((p, idx) => {
                 const isPopular = idx === 0 || p.id === 'short-term';
                 return (
                   <div
                     key={p.id}
-                    className={`rounded-3xl p-6 sm:p-8 flex flex-col justify-between border ${
+                    className={`rounded-2xl p-4 sm:p-5 flex flex-col justify-between border ${
                       isPopular
-                        ? 'bg-slate-900 border-2 border-amber-500/60 shadow-2xl'
+                        ? 'bg-slate-900 border-2 border-amber-500/60 shadow-xl'
                         : 'bg-slate-900/80 border-slate-800'
                     }`}
                   >
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {isPopular && (
-                        <span className="inline-block px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-bold text-[10px] uppercase">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-bold text-[9px] uppercase">
                           {isHi ? 'सर्वाधिक लोकप्रिय' : 'MOST POPULAR'}
                         </span>
                       )}
-                      <h3 className="text-lg font-bold text-white">{isHi ? p.nameHi || p.name : p.name}</h3>
-                      <p className="text-xs text-slate-400 leading-relaxed">{isHi ? p.descriptionHi || p.description : p.description}</p>
+                      <h3 className="text-base font-bold text-white">{isHi ? p.nameHi || p.name : p.name}</h3>
+                      <p className="text-[11px] text-slate-400 leading-normal">{isHi ? p.descriptionHi || p.description : p.description}</p>
 
-                      <div className="py-4 border-y border-slate-800 space-y-1">
+                      <div className="py-2.5 border-y border-slate-800 space-y-0.5">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-extrabold font-mono text-emerald-400">{p.dailyRoiPercent}%</span>
+                          <span className="text-2xl font-extrabold font-mono text-emerald-400">{p.dailyRoiPercent}%</span>
                           <span className="text-xs text-slate-400">/ {isHi ? 'दिन' : 'day'}</span>
                         </div>
                         <span className="text-xs text-amber-400 font-mono block">
@@ -500,7 +720,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                         </span>
                       </div>
 
-                      <div className="space-y-2 text-xs text-slate-300 font-mono">
+                      <div className="space-y-1.5 text-xs text-slate-300 font-mono">
                         <div className="flex justify-between">
                           <span className="text-slate-400 font-sans">{isHi ? 'न्यूनतम निवेश:' : 'Min Deposit:'}</span>
                           <span className="font-bold text-white">{formatINR(p.minAmount)}</span>
@@ -519,26 +739,26 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                         </div>
                       </div>
 
-                      <div className="pt-2">
-                        <span className="text-[11px] font-semibold uppercase text-slate-400 block mb-2">{isHi ? 'प्रमुख विशेषताएं:' : 'Key Terms:'}</span>
-                        <ul className="space-y-1.5 text-xs text-slate-300">
+                      <div className="pt-1">
+                        <span className="text-[10px] font-semibold uppercase text-slate-400 block mb-1">{isHi ? 'प्रमुख विशेषताएं:' : 'Key Terms:'}</span>
+                        <ul className="space-y-1 text-xs text-slate-300">
                           {(p.featuresHi || p.features || []).map((feat, fidx) => (
-                            <li key={fidx} className="flex items-start gap-2">
+                            <li key={fidx} className="flex items-start gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                              <span>{feat}</span>
+                              <span className="text-[11px]">{feat}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                     </div>
 
-                    <div className="pt-6 space-y-2">
+                    <div className="pt-4 space-y-2">
                       <button
                         onClick={() => {
                           setSelectedPlanId(p.id);
                           handleTabChange('calculator');
                         }}
-                        className="w-full py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full py-2 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Calculator className="w-3.5 h-3.5 text-amber-400" />
                         <span>{isHi ? 'कैलकुलेटर में लाभ देखें' : 'Calculate Yield in Tab 4'}</span>
@@ -546,7 +766,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
 
                       <button
                         onClick={onLaunchApp}
-                        className="w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-amber-400 text-slate-950 hover:bg-amber-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full py-2 rounded-xl font-bold text-xs uppercase tracking-wider bg-amber-400 text-slate-950 hover:bg-amber-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <span>{isHi ? 'सॉफ्टवेयर में यह प्लान लें' : 'Invest in Portal App'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -558,37 +778,37 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* Comparison Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4">
-              <h2 className="text-lg font-bold text-white">{isHi ? 'विस्तृत योजना तुलना (Comparison Table):' : 'Detailed Comparison:'}</h2>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
+              <h2 className="text-base font-bold text-white">{isHi ? 'विस्तृत योजना तुलना (Comparison Table):' : 'Detailed Comparison:'}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 text-slate-400">
-                      <th className="py-3 px-4 font-semibold">{isHi ? 'पैरामीटर' : 'Parameter'}</th>
-                      <th className="py-3 px-4 font-semibold text-amber-400">Short Term (641-Day)</th>
-                      <th className="py-3 px-4 font-semibold text-emerald-400">Long Term & Royalty (365-Day)</th>
+                      <th className="py-2.5 px-3 font-semibold">{isHi ? 'पैरामीटर' : 'Parameter'}</th>
+                      <th className="py-2.5 px-3 font-semibold text-amber-400">Short Term (641-Day)</th>
+                      <th className="py-2.5 px-3 font-semibold text-emerald-400">Long Term & Royalty (365-Day)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
                     <tr>
-                      <td className="py-3 px-4 font-sans text-slate-400">{isHi ? 'न्यूनतम निवेश' : 'Min Deposit'}</td>
-                      <td className="py-3 px-4 text-white font-bold">₹1,00,000</td>
-                      <td className="py-3 px-4 text-white font-bold">₹10,000</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-400">{isHi ? 'न्यूनतम निवेश' : 'Min Deposit'}</td>
+                      <td className="py-2.5 px-3 text-white font-bold">₹1,00,000</td>
+                      <td className="py-2.5 px-3 text-white font-bold">₹10,000</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-4 font-sans text-slate-400">{isHi ? 'प्रति 6-घंटे चक्र लाभ' : 'Per 6h Cycle'}</td>
-                      <td className="py-3 px-4 text-amber-400 font-bold">0.040% GP</td>
-                      <td className="py-3 px-4 text-amber-400 font-bold">0.033% GP</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-400">{isHi ? 'प्रति 6-घंटे चक्र लाभ' : 'Per 6h Cycle'}</td>
+                      <td className="py-2.5 px-3 text-amber-400 font-bold">0.040% GP</td>
+                      <td className="py-2.5 px-3 text-amber-400 font-bold">0.033% GP</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-4 font-sans text-slate-400">{isHi ? 'दैनिक रिटर्न (24h)' : 'Daily ROI'}</td>
-                      <td className="py-3 px-4 text-emerald-400 font-bold">0.160% / day</td>
-                      <td className="py-3 px-4 text-emerald-400 font-bold">0.132% / day</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-400">{isHi ? 'दैनिक रिटर्न (24h)' : 'Daily ROI'}</td>
+                      <td className="py-2.5 px-3 text-emerald-400 font-bold">0.160% / day</td>
+                      <td className="py-2.5 px-3 text-emerald-400 font-bold">0.132% / day</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-4 font-sans text-slate-400">{isHi ? 'निकासी विंडो' : 'Withdrawal Window'}</td>
-                      <td className="py-3 px-4 font-sans text-emerald-400">1st to 5th Monthly</td>
-                      <td className="py-3 px-4 font-sans text-emerald-400">1st to 5th Monthly</td>
+                      <td className="py-2.5 px-3 font-sans text-slate-400">{isHi ? 'निकासी विंडो' : 'Withdrawal Window'}</td>
+                      <td className="py-2.5 px-3 font-sans text-emerald-400">1st to 5th Monthly</td>
+                      <td className="py-2.5 px-3 font-sans text-emerald-400">1st to 5th Monthly</td>
                     </tr>
                   </tbody>
                 </table>
@@ -601,15 +821,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 4: 🧮 रिटर्न कैलकुलेटर (Calculator) - ONLY CALCULATOR MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'calculator' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold uppercase">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold uppercase">
                 TAB 4: YIELD & PROFIT CALCULATOR
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white">
                 {isHi ? 'इंटरैक्टिव रिटर्न एवं साइकिल कैलकुलेटर' : 'Interactive Return & Yield Calculator'}
               </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isHi ? (
                   'अपनी निवेश राशि और योजना चुनें। सिस्टम आपको 6-घंटे के चक्र, दैनिक और परिपक्वता का सटीक लाभ दिखाएगा।'
                 ) : (
@@ -618,22 +838,22 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               </p>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div className="lg:col-span-7 space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                <div className="lg:col-span-7 space-y-4">
                   {/* Select Plan */}
                   <div>
-                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1.5">
                       {isHi ? 'योजना (Scheme) चुनें:' : 'Select Scheme:'}
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {plans.map((p) => {
                         const isSel = p.id === selectedPlanId;
                         return (
                           <button
                             key={p.id}
                             onClick={() => setSelectedPlanId(p.id)}
-                            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                               isSel
                                 ? 'bg-amber-500/10 border-amber-500 text-white shadow-md'
                                 : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -643,7 +863,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                               <span className="text-xs font-bold">{isHi ? p.nameHi || p.name : p.name}</span>
                               {isSel && <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />}
                             </div>
-                            <span className="text-xs font-mono text-emerald-400 block mt-1">
+                            <span className="text-[11px] font-mono text-emerald-400 block mt-0.5">
                               {p.dailyRoiPercent}% / {isHi ? 'दिन' : 'day'} · {p.durationDays} {isHi ? 'दिन' : 'days'}
                             </span>
                           </button>
@@ -654,11 +874,11 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
 
                   {/* Slider */}
                   <div>
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex justify-between items-center mb-1.5">
                       <label className="text-xs font-semibold uppercase text-slate-400">
                         {isHi ? 'निवेश राशि चुनें (INR):' : 'Select Amount (INR):'}
                       </label>
-                      <span className="text-2xl font-bold font-mono text-emerald-400">{formatINR(calcAmount)}</span>
+                      <span className="text-xl font-bold font-mono text-emerald-400">{formatINR(calcAmount)}</span>
                     </div>
 
                     <input
@@ -668,15 +888,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       step="5000"
                       value={calcAmount}
                       onChange={(e) => setCalcAmount(Number(e.target.value))}
-                      className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                      className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
                     />
 
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {[10000, 25000, 50000, 100000, 200000, 500000, 1000000].map((amt) => (
                         <button
                           key={amt}
                           onClick={() => setCalcAmount(amt)}
-                          className={`text-xs px-3 py-1.5 rounded-lg border font-mono transition-colors cursor-pointer ${
+                          className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors cursor-pointer ${
                             calcAmount === amt
                               ? 'bg-amber-400 text-slate-950 font-bold border-amber-400'
                               : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
@@ -690,13 +910,13 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 </div>
 
                 {/* Calculation Output Box */}
-                <div className="lg:col-span-5 bg-slate-950 border border-amber-500/40 rounded-2xl p-6 sm:p-8 space-y-5">
-                  <div className="flex justify-between items-center pb-4 border-b border-slate-800">
+                <div className="lg:col-span-5 bg-slate-950 border border-amber-500/40 rounded-xl p-4 sm:p-5 space-y-3.5">
+                  <div className="flex justify-between items-center pb-2.5 border-b border-slate-800">
                     <span className="text-xs uppercase font-bold text-slate-400">{isHi ? 'प्रत्याशित रिटर्न विवरण' : 'Projected Yield'}</span>
                     <span className="text-xs font-mono font-bold text-amber-400">+{totalGainPercent}% ROI</span>
                   </div>
 
-                  <div className="space-y-3 font-mono text-sm">
+                  <div className="space-y-2 font-mono text-xs sm:text-sm">
                     <div className="flex justify-between text-slate-300">
                       <span className="font-sans text-xs text-slate-400">{isHi ? 'प्रति 6-घंटे चक्र लाभ:' : 'Per 6h Cycle:'}</span>
                       <span className="font-bold text-emerald-400">+{formatINR(perCycleReturn)}</span>
@@ -714,23 +934,23 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       <span className="font-bold text-emerald-400">+{formatINR(monthlyReturn)}</span>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+                    <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
                       <div>
                         <span className="font-sans text-xs text-slate-400 block">{isHi ? 'कुल परिपक्वता लाभ:' : 'Maturity Profit:'}</span>
-                        <span className="font-sans text-[11px] text-slate-500">({activePlan.durationDays} {isHi ? 'दिन' : 'days'})</span>
+                        <span className="font-sans text-[10px] text-slate-500">({activePlan.durationDays} {isHi ? 'दिन' : 'days'})</span>
                       </div>
-                      <span className="text-xl font-extrabold text-amber-400">+{formatINR(totalMaturityReturn)}</span>
+                      <span className="text-lg font-extrabold text-amber-400">+{formatINR(totalMaturityReturn)}</span>
                     </div>
 
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex justify-between items-center">
                       <span className="font-sans text-xs text-slate-400">{isHi ? 'कुल देय राशि (मूलधन + लाभ):' : 'Total Payout:'}</span>
-                      <span className="text-base font-bold text-white">{formatINR(totalGrossAmount)}</span>
+                      <span className="text-sm font-bold text-white">{formatINR(totalGrossAmount)}</span>
                     </div>
                   </div>
 
                   <button
                     onClick={onLaunchApp}
-                    className="w-full py-3.5 text-center font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 text-center font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>{isHi ? 'सॉफ्टवेयर ऐप में निवेश शुरू करें 🚀' : 'Start Investing in App 🚀'}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -745,15 +965,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 5: 📜 वैधानिक वॉल्ट (Legal & MCA) - ONLY LEGAL MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'legal' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold uppercase">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold uppercase">
                 TAB 5: STATUTORY & LEGAL VAULT
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white">
                 {isHi ? 'कंपनी मामलों का मंत्रालय (MCA) एवं सरकारी रिकॉर्ड' : 'Official Ministry of Corporate Affairs & Legal Records'}
               </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isHi ? (
                   'जीकैप के सभी सरकारी पंजीकरण नंबर, निगमन विवरण, पैन, टैन और निदेशक सील की आधिकारिक जानकारी।'
                 ) : (
@@ -763,11 +983,11 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             </div>
 
             {/* Sub Tabs */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-6">
-              <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+              <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
                 <button
                   onClick={() => setActiveLegalSubTab('MCA')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     activeLegalSubTab === 'MCA' ? 'bg-amber-400 text-slate-950' : 'bg-slate-950 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -775,7 +995,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveLegalSubTab('STARTUP')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     activeLegalSubTab === 'STARTUP' ? 'bg-amber-400 text-slate-950' : 'bg-slate-950 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -783,7 +1003,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveLegalSubTab('SEAL')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     activeLegalSubTab === 'SEAL' ? 'bg-amber-400 text-slate-950' : 'bg-slate-950 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -792,66 +1012,66 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               </div>
 
               {activeLegalSubTab === 'MCA' && (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4 font-mono text-xs">
-                  <div className="text-amber-400 font-bold border-b border-slate-800 pb-2 text-sm font-sans">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 sm:p-6 space-y-3 font-mono text-xs">
+                  <div className="text-amber-400 font-bold border-b border-slate-800 pb-2 text-xs font-sans">
                     GOVERNMENT OF INDIA · MINISTRY OF CORPORATE AFFAIRS · ROC PATNA
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Company Legal Name:</span>
-                      <span className="text-white font-bold text-sm mt-1 block">{companyProfile.companyName}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Company Legal Name:</span>
+                      <span className="text-white font-bold text-xs mt-0.5 block">{companyProfile.companyName}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Corporate Identification Number (CIN):</span>
-                      <span className="text-amber-400 font-bold text-sm mt-1 block">{companyProfile.cin || 'U66190BR2026OPC088307'}</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Corporate Identification Number (CIN):</span>
+                      <span className="text-amber-400 font-bold text-xs mt-0.5 block">{companyProfile.cin || 'U66190BR2026OPC088307'}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Incorporation Date:</span>
-                      <span className="text-slate-200 mt-1 block">{companyProfile.incorporationDate || '2026-09-23'}</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Incorporation Date:</span>
+                      <span className="text-slate-200 text-xs mt-0.5 block">{companyProfile.incorporationDate || '2026-09-23'}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Authorised Capital:</span>
-                      <span className="text-emerald-400 font-bold mt-1 block">{companyProfile.authorizedCapital || '₹55,00,00,000'}</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Authorised Capital:</span>
+                      <span className="text-emerald-400 font-bold text-xs mt-0.5 block">{companyProfile.authorizedCapital || '₹55,00,00,000'}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Corporate PAN:</span>
-                      <span className="text-white font-bold mt-1 block">{companyProfile.pan || 'AANCG4365Q'}</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Corporate PAN:</span>
+                      <span className="text-white font-bold text-xs mt-0.5 block">{companyProfile.pan || 'AANCG4365Q'}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Corporate TAN:</span>
-                      <span className="text-white font-bold mt-1 block">{companyProfile.tan || 'PTNG16977C'}</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Corporate TAN:</span>
+                      <span className="text-white font-bold text-xs mt-0.5 block">{companyProfile.tan || 'PTNG16977C'}</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {activeLegalSubTab === 'STARTUP' && (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4 font-mono text-xs">
-                  <div className="text-sky-400 font-bold border-b border-slate-800 pb-2 text-sm font-sans">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 sm:p-6 space-y-3 font-mono text-xs">
+                  <div className="text-sky-400 font-bold border-b border-slate-800 pb-2 text-xs font-sans">
                     DPIIT · MINISTRY OF COMMERCE & INDUSTRY · GOVERNMENT OF INDIA
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Certificate No:</span>
-                      <span className="text-amber-400 font-bold text-sm mt-1 block">{companyProfile.dippNumber || 'DIPP285976'}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Certificate No:</span>
+                      <span className="text-amber-400 font-bold text-xs mt-0.5 block">{companyProfile.dippNumber || 'DIPP285976'}</span>
                     </div>
-                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                      <span className="text-slate-400 font-sans block">Validity:</span>
-                      <span className="text-emerald-400 font-bold mt-1 block">{companyProfile.startupIndiaCertValidUpto || '22-09-2036'} (10-Year Certificate)</span>
+                    <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                      <span className="text-slate-400 font-sans block text-[11px]">Validity:</span>
+                      <span className="text-emerald-400 font-bold text-xs mt-0.5 block">{companyProfile.startupIndiaCertValidUpto || '22-09-2036'} (10-Year Certificate)</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {activeLegalSubTab === 'SEAL' && (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-8 text-center space-y-4">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center space-y-3">
                   <img
                     src={PRIMARY_COMPANY_LOGO}
                     alt="Corporate Logo"
-                    className="w-32 h-32 mx-auto rounded-2xl object-cover border-2 border-amber-500/50 shadow-2xl"
+                    className="w-24 h-24 mx-auto rounded-xl object-cover border-2 border-amber-500/50 shadow-xl"
                   />
                   <div>
-                    <h4 className="text-lg font-bold text-white">{companyProfile.authorizedSignatory || 'Amit Kumar'}</h4>
+                    <h4 className="text-base font-bold text-white">{companyProfile.authorizedSignatory || 'Amit Kumar'}</h4>
                     <p className="text-xs text-amber-400 font-mono font-semibold">{companyProfile.signatoryDesignation || 'Director & Authorized Signatory'}</p>
                     <p className="text-xs text-slate-400 font-mono">DIN: {companyProfile.signatoryDin || '11964641'}</p>
                   </div>
@@ -865,15 +1085,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
         {/* TAB 6: 📞 संपर्क व सहायता (Contact Us) - ONLY CONTACT MATTER */}
         {/* ========================================================================= */}
         {activeTab === 'contact' && (
-          <div className="py-10 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto space-y-12 animate-in fade-in-50 duration-200">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-mono font-bold uppercase">
+          <div className="py-4 sm:py-6 px-3 sm:px-6 max-w-7xl mx-auto space-y-5 animate-in fade-in-50 duration-200">
+            <div className="space-y-1.5 max-w-3xl">
+              <div className="inline-block px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-mono font-bold uppercase">
                 TAB 6: CONTACT & SUPPORT DESK
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
+              <h1 className="text-xl sm:text-3xl font-extrabold text-white">
                 {isHi ? 'जीकैप कॉर्पोरेट ऑफिस व हेल्पलाइन केंद्र' : 'Contact Corporate Headquarters & Support'}
               </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isHi ? (
                   'हमारे सासाराम (बिहार) स्थित पंजीकृत कार्यालय से सीधा संपर्क करें या नीचे दिए गए फॉर्म से अपनी पूछताछ भेजें।'
                 ) : (
@@ -882,23 +1102,23 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               {/* Left Details */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
-                  <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">{isHi ? 'कार्यालय विवरण:' : 'Office Channels:'}</h3>
+              <div className="lg:col-span-5 space-y-3">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+                  <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2">{isHi ? 'कार्यालय विवरण:' : 'Office Channels:'}</h3>
 
-                  <div className="space-y-4 text-xs sm:text-sm">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-white block">{isHi ? 'पंजीकृत कॉरपोरेट पता:' : 'Registered Office:'}</span>
                         <span className="text-slate-400 leading-relaxed">{companyProfile.registeredAddress}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div className="flex items-center gap-2.5">
+                      <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                       <div>
                         <span className="font-bold text-white block">{isHi ? 'हेल्पलाइन फोन:' : 'Phone Line:'}</span>
                         <a href={`tel:${companyProfile.supportPhone}`} className="text-slate-300 hover:text-amber-400 font-mono">
@@ -907,8 +1127,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-sky-400 shrink-0" />
+                    <div className="flex items-center gap-2.5">
+                      <Mail className="w-4 h-4 text-sky-400 shrink-0" />
                       <div>
                         <span className="font-bold text-white block">{isHi ? 'आधिकारिक सपोर्ट ईमेल:' : 'Official Email:'}</span>
                         <a href={`mailto:${companyProfile.supportEmail}`} className="text-slate-300 hover:text-amber-400 font-mono">
@@ -917,12 +1137,12 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <a
                         href={`https://wa.me/${(companyProfile.adminWhatsAppNumber || '918603504808').replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors w-full justify-center"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors w-full justify-center"
                       >
                         <MessageSquare className="w-4 h-4" />
                         <span>{isHi ? 'सीधे व्हाट्सएप पर चैट करें' : 'Chat on WhatsApp (Desk)'}</span>
@@ -934,14 +1154,14 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
 
               {/* Right Form */}
               <div className="lg:col-span-7">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
                   {contactSubmitted ? (
-                    <div className="text-center py-12 space-y-4">
-                      <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
-                        <CheckCircle2 className="w-8 h-8" />
+                    <div className="text-center py-8 space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
+                        <CheckCircle2 className="w-6 h-6" />
                       </div>
-                      <h3 className="text-xl font-bold text-white">{isHi ? 'संदेश सफलतापूर्वक दर्ज हुआ!' : 'Inquiry Submitted!'}</h3>
-                      <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                      <h3 className="text-lg font-bold text-white">{isHi ? 'संदेश सफलतापूर्वक दर्ज हुआ!' : 'Inquiry Submitted!'}</h3>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
                         {isHi ? 'जीकैप टीम को आपकी पूछताछ प्राप्त हो गई है। हम जल्द ही आपसे संपर्क करेंगे।' : 'Our team has logged your inquiry and will reach out shortly.'}
                       </p>
                       <button
@@ -952,10 +1172,10 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <form onSubmit={handleContactSubmit} className="space-y-4">
-                      <h3 className="text-lg font-bold text-white">{isHi ? 'ऑनलाइन पूछताछ व परामर्श फॉर्म' : 'Online Consultation Form'}</h3>
+                    <form onSubmit={handleContactSubmit} className="space-y-3">
+                      <h3 className="text-base font-bold text-white">{isHi ? 'ऑनलाइन पूछताछ व परामर्श फॉर्म' : 'Online Consultation Form'}</h3>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-400 mb-1">{isHi ? 'पूरा नाम *' : 'Full Name *'}</label>
                           <input
@@ -964,7 +1184,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                             value={contactName}
                             onChange={(e) => setContactName(e.target.value)}
                             placeholder={isHi ? 'उदा. राकेश कुमार' : 'e.g. Rakesh Kumar'}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                           />
                         </div>
 
@@ -976,7 +1196,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                             value={contactPhone}
                             onChange={(e) => setContactPhone(e.target.value)}
                             placeholder="9876543210"
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                           />
                         </div>
                       </div>
@@ -986,7 +1206,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                         <select
                           value={contactSubject}
                           onChange={(e) => setContactSubject(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
                         >
                           <option value="New Investment">{isHi ? 'नया निवेश (New Investment)' : 'New Investment'}</option>
                           <option value="Scheme Inquiry">{isHi ? 'स्कीम जानकारी (Scheme Inquiry)' : 'Scheme Inquiry'}</option>
@@ -998,18 +1218,18 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                       <div>
                         <label className="block text-xs font-semibold text-slate-400 mb-1">{isHi ? 'संदेश' : 'Message'}</label>
                         <textarea
-                          rows={3}
+                          rows={2.5}
                           value={contactMessage}
                           onChange={(e) => setContactMessage(e.target.value)}
                           placeholder={isHi ? 'अपना सवाल या विवरण यहाँ लिखें...' : 'Type details here...'}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
                         />
                       </div>
 
                       <button
                         type="submit"
                         disabled={contactSubmitting}
-                        className="w-full py-3.5 rounded-xl font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-2.5 rounded-xl font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {contactSubmitting ? (
                           <>
@@ -1029,10 +1249,66 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               </div>
             </div>
 
+            {/* Dedicated Social Media Showcase Section */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-amber-400" />
+                    <span>{isHi ? 'आधिकारिक सोशल मीडिया चैनल्स (Official Channels):' : 'Official Social Media Channels:'}</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {isHi ? 'जीकैप के आधिकारिक YouTube, Telegram, WhatsApp ग्रुप, Facebook, Instagram, Twitter/X एवं LinkedIn से सीधे जुड़ें।' : 'Connect directly with GCAP official handles across YouTube, Telegram, WhatsApp Group, Facebook, Instagram, Twitter/X & LinkedIn.'}
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 font-bold shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{isHi ? 'सत्यापित कॉर्पोरेट हैंडल' : 'Verified Handles'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {socialMediaChannels.map((soc) => {
+                  const SocIcon = soc.icon;
+                  return (
+                    <div
+                      key={soc.id}
+                      className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between space-y-3 group ${soc.color}`}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800 group-hover:scale-105 transition-transform">
+                            <SocIcon className="w-4 h-4" />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-slate-950 border border-slate-800">
+                            {isHi ? soc.badgeHi : soc.badgeEn}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{isHi ? soc.nameHi : soc.name}</h4>
+                          <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">{soc.url}</p>
+                        </div>
+                      </div>
+
+                      <a
+                        href={soc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full py-2 px-2.5 rounded-lg text-xs font-bold text-center transition-all flex items-center justify-center gap-1 shadow-md ${soc.btnBg}`}
+                      >
+                        <span>{isHi ? soc.btnTextHi : soc.btnTextEn}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* FAQs */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4">
-              <h3 className="text-lg font-bold text-white">{isHi ? 'सामान्य प्रश्न व उत्तर (FAQs):' : 'Frequently Asked Questions:'}</h3>
-              <div className="space-y-3">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-3">
+              <h3 className="text-base font-bold text-white">{isHi ? 'सामान्य प्रश्न व उत्तर (FAQs):' : 'Frequently Asked Questions:'}</h3>
+              <div className="space-y-2">
                 {[
                   {
                     qHi: 'क्या जीकैप भारत सरकार से पंजीकृत है?',
@@ -1055,16 +1331,16 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 ].map((faq, idx) => {
                   const isOpen = faqOpenIndex === idx;
                   return (
-                    <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+                    <div key={idx} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
                       <button
                         onClick={() => setFaqOpenIndex(isOpen ? null : idx)}
-                        className="w-full p-4 text-left flex justify-between items-center text-sm font-semibold text-white hover:text-amber-400"
+                        className="w-full p-3 text-left flex justify-between items-center text-xs font-semibold text-white hover:text-amber-400"
                       >
                         <span>{isHi ? faq.qHi : faq.qEn}</span>
-                        {isOpen ? <ChevronUp className="w-4 h-4 text-amber-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />}
+                        {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-amber-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
                       </button>
                       {isOpen && (
-                        <div className="px-4 pb-4 pt-1 text-xs text-slate-300 leading-relaxed border-t border-slate-800">
+                        <div className="px-3 pb-3 pt-1 text-xs text-slate-300 leading-relaxed border-t border-slate-800">
                           {isHi ? faq.aHi : faq.aEn}
                         </div>
                       )}
@@ -1078,16 +1354,42 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
       </main>
 
       {/* 5. MULTI-PAGE CORPORATE FOOTER */}
-      <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 text-xs py-8 px-4 sm:px-8 shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={PRIMARY_COMPANY_LOGO} alt="Logo" className="w-7 h-7 rounded-lg" />
-            <span className="font-bold font-mono text-white text-xs">{companyProfile.tradeName || 'GCap OPC Private Limited'}</span>
-            <span className="text-slate-600">·</span>
-            <span>CIN: {companyProfile.cin || 'U66190BR2026OPC088307'}</span>
+      <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 text-xs py-5 px-3 sm:px-6 shrink-0 space-y-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 items-center border-b border-slate-800/80 pb-4">
+          <div className="md:col-span-4 flex items-center gap-2.5">
+            <img src={PRIMARY_COMPANY_LOGO} alt="Logo" className="w-8 h-8 rounded-lg border border-amber-500/40" />
+            <div>
+              <span className="font-bold font-mono text-white text-xs block">{activeProfile.tradeName || 'GCap OPC Private Limited'}</span>
+              <span className="text-[10px] text-slate-400 font-mono">CIN: {activeProfile.cin || 'U66190BR2026OPC088307'}</span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-[11px]">
+          <div className="md:col-span-8 flex flex-wrap items-center justify-start md:justify-end gap-1.5">
+            <span className="text-[11px] font-bold text-amber-400 mr-1 flex items-center gap-1">
+              <Share2 className="w-3.5 h-3.5" />
+              <span>{isHi ? 'सोशल लिंक:' : 'Social:'}</span>
+            </span>
+            {socialMediaChannels.map((soc) => {
+              const SocIcon = soc.icon;
+              return (
+                <a
+                  key={soc.id}
+                  href={soc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-2 py-0.5 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-all ${soc.color}`}
+                  title={isHi ? soc.nameHi : soc.name}
+                >
+                  <SocIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{soc.name}</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px]">
             {tabsConfig.map((t) => (
               <button
                 key={t.id}
@@ -1099,8 +1401,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
             ))}
           </div>
 
-          <div className="text-[11px] text-slate-500">
-            © 2026 {companyProfile.companyName}
+          <div className="text-[10px] text-slate-500">
+            © 2026 {activeProfile.companyName}. All Rights Reserved.
           </div>
         </div>
       </footer>

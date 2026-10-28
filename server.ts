@@ -8,6 +8,16 @@ import { GoogleGenAI } from "@google/genai";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { initializeFirestore as clientInitializeFirestore, doc as clientDoc, getDoc as getClientDoc, setDoc as setClientDoc, writeBatch as clientWriteBatch, onSnapshot as clientOnSnapshot, setLogLevel, collection as clientCollection } from "firebase/firestore";
 
+// Initialize Gemini globally
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
+
 // Global process exception handlers to permanently prevent server crash or shutdown
 process.on("uncaughtException", (err) => {
   console.error("[Global UncaughtException Prevented Server Crash]:", err);
@@ -5673,6 +5683,144 @@ GCap में काम कैसे होता है:
   app.post("/api/users/delete", (req, res) => {
     const { userId } = req.body || {};
     performDeleteUser(userId, res);
+  });
+
+  // Helper function to split long text into chunks <= 140 characters for Google Translate TTS
+  const splitTextIntoChunks = (text: string, maxChars = 140): string[] => {
+    const cleanText = text.replace(/[\r\n]+/g, " ").trim();
+    if (!cleanText) return [];
+    if (cleanText.length <= maxChars) {
+      return [cleanText];
+    }
+
+    // Split on Hindi full stop (।), English full stop (.), ?, !, ,, ;, or space
+    const tokens = cleanText.split(/([।.?!,;]+\s*)/);
+    const chunks: string[] = [];
+    let currentChunk = "";
+
+    for (const token of tokens) {
+      if (!token) continue;
+      if ((currentChunk + token).length <= maxChars) {
+        currentChunk += token;
+      } else {
+        if (currentChunk.trim().length > 0) {
+          chunks.push(currentChunk.trim());
+        }
+        if (token.length <= maxChars) {
+          currentChunk = token;
+        } else {
+          // Token itself is longer than maxChars, split by whitespace
+          const words = token.split(/\s+/);
+          currentChunk = "";
+          for (const word of words) {
+            if (!word) continue;
+            if ((currentChunk + " " + word).trim().length <= maxChars) {
+              currentChunk = (currentChunk + " " + word).trim();
+            } else {
+              if (currentChunk.trim().length > 0) {
+                chunks.push(currentChunk.trim());
+              }
+              currentChunk = word;
+            }
+          }
+        }
+      }
+    }
+
+    if (currentChunk.trim().length > 0) {
+      chunks.push(currentChunk.trim());
+    }
+
+    return chunks;
+  };
+
+  // GET: Ultra-High-Fidelity Neural Hindi Text-To-Speech Proxy Route (Using Gemini 3.8 TTS)
+  app.get("/api/tts", async (req, res) => {
+    try {
+      const text = String(req.query.text || "").trim();
+      if (!text) {
+        return res.status(400).json({ error: "Text parameter is required" });
+      }
+
+      console.log(`[Gemini TTS] Generating melodious and energetic Hindi voice for: "${text.slice(0, 30)}..."`);
+
+      const response = await genAI.models.generateContent({
+        model: "gemini-3.8-flash-lite-tts",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: text,
+                speechMetadata: {
+                  style: "Deep, melodious, passionate, and highly energetic Hindi male voice. Inspiring and motivational tone, full of life and passion, not aggressive but very compelling.",
+                } as any,
+              },
+            ],
+          },
+        ],
+        config: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: "Zephyr" },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        console.log("[TTS Engine] Gemini-Neural-Zephyr generation successful.");
+        const wavBuffer = Buffer.from(base64Audio, "base64");
+        res.setHeader("Content-Type", "audio/wav");
+        res.setHeader("Content-Length", wavBuffer.length);
+        res.setHeader("X-TTS-Engine", "Gemini-Neural-Zephyr");
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        return res.send(wavBuffer);
+      } else {
+        throw new Error("Gemini TTS response successful but no audio data found in candidates");
+      }
+    } catch (err: any) {
+      console.error("[TTS ENGINE GEMINI ERROR]:", err);
+      
+      // FALLBACK: Google Translate TTS
+      try {
+        console.log("[TTS Fallback] Gemini failed, activating Google Translate engine...");
+        const text = String(req.query.text || "").trim();
+        const chunks = splitTextIntoChunks(text, 160);
+        
+        const audioResponses = await Promise.all(
+          chunks.map(async (chunk) => {
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+              chunk
+            )}&tl=hi&client=tw-ob`;
+
+            const response = await fetch(ttsUrl, {
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                Referer: "https://translate.google.com/",
+              },
+            });
+
+            if (!response.ok) throw new Error(`Google TTS fallback failed: ${response.status}`);
+            const ab = await response.arrayBuffer();
+            return Buffer.from(ab);
+          })
+        );
+
+        const mergedBuffer = Buffer.concat(audioResponses);
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Length", mergedBuffer.length);
+        res.setHeader("X-TTS-Engine", "Google-Translate-Fallback");
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        return res.send(mergedBuffer);
+      } catch (fallbackErr: any) {
+        console.error("[TTS FINAL FAILURE]:", fallbackErr.message || fallbackErr);
+        return res.status(500).json({ error: "Failed to generate TTS audio", details: fallbackErr?.message });
+      }
+    }
   });
 
   // Anti-cache middleware for HTML, manifest, and service worker files

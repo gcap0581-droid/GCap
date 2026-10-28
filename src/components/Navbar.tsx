@@ -5,6 +5,7 @@ import {
   PlusCircle,
   Award,
   Bell,
+  Video,
 } from 'lucide-react';
 import {
   Language,
@@ -49,6 +50,7 @@ interface NavbarProps {
   onRefreshApp?: () => void;
   onGoHome?: () => void;
   onOpenAssistant?: () => void;
+  onOpenYouTubeStudio?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -65,6 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectAdminSubTab,
   onOpenDeposit,
   onGoHome,
+  onOpenYouTubeStudio,
 }) => {
   const isHi = language === 'hi';
   const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'STAFF';
@@ -194,6 +197,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                 <span className="whitespace-nowrap">{isHi ? 'पैसे जोड़ें' : 'Add'}</span>
+              </button>
+            )}
+
+            {/* Quick YouTube Video Studio Button */}
+            {currentUser && onOpenYouTubeStudio && (
+              <button
+                id="btn-nav-youtube-studio"
+                onClick={onOpenYouTubeStudio}
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs shadow-lg shadow-red-900/40 cursor-pointer transition-all active:scale-95 shrink-0"
+                title={isHi ? 'यूट्यूब वीडियो स्टूडियो - 1 क्लिक में प्रोमो वीडियो बनाएं' : 'YouTube Promo Video Studio'}
+              >
+                <Video className="w-3.5 h-3.5 shrink-0 animate-pulse text-amber-200" />
+                <span className="whitespace-nowrap">{isHi ? 'यूट्यूब वीडियो' : 'YouTube Studio'}</span>
               </button>
             )}
 

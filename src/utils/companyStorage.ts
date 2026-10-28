@@ -48,6 +48,15 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   industry: 'Finance Technology',
   sector: 'Business Finance',
   dpiitMinistry: 'Ministry of Commerce & Industry, DPIIT, Government of India',
+  // Official Social Media & YouTube Channel Links
+  youtubeUrl: 'https://www.youtube.com/@GCapOfficial',
+  telegramUrl: 'https://t.me/gcapofficial',
+  whatsappGroupUrl: 'https://chat.whatsapp.com/GCapOfficialCommunity',
+  facebookUrl: 'https://facebook.com/gcapofficial',
+  instagramUrl: 'https://instagram.com/gcapofficial',
+  twitterUrl: 'https://twitter.com/gcapofficial',
+  linkedinUrl: 'https://linkedin.com/company/gcapofficial',
+  featuredVideoUrl: '',
   lastUpdated: '2026-09-30T16:31:07.308Z',
 };
 

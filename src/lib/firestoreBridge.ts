@@ -683,6 +683,7 @@ export async function saveCompanyLedgerToFirestore(companyLedger: any[]): Promis
 }
 
 export async function saveCompanyProfileToFirestore(companyProfile: any): Promise<boolean> {
+  updateFirestoreBridgeCache({ companyProfile });
   return await saveDocToFirestore('companyProfile', companyProfile);
 }
 
