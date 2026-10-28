@@ -155,14 +155,8 @@ export async function checkForAiStudioUpdate(autoApplyOnDetect: boolean = false)
       updateAvailable = remoteInfo;
       updateListeners.forEach((fn) => fn(remoteInfo));
 
-      // ONLY auto-apply if explicitly requested AND not in development preview iframe
-      const isDevPreview = typeof window !== 'undefined' && (
-        window.location.hostname.includes('run.app') || 
-        window.location.hostname.includes('localhost') || 
-        window.location.hostname.includes('127.0.0.1')
-      );
-
-      if (autoApplyOnDetect && !isDevPreview && sessionStorage.getItem('gcap_last_auto_reload_build') !== remoteInfo.buildId) {
+      if (autoApplyOnDetect && sessionStorage.getItem('gcap_last_auto_reload_build') !== remoteInfo.buildId) {
+        sessionStorage.setItem('gcap_last_auto_reload_build', remoteInfo.buildId);
         sessionStorage.setItem('gcap_session_build_id', remoteInfo.buildId);
         await applyAiStudioUpdateNow(remoteInfo.buildId);
       }
@@ -195,23 +189,22 @@ export function initAiStudioLiveSync(): () => void {
   // 1. Check immediately on app boot
   checkAndAutoApplyOnLaunch();
 
-  // 2. Heartbeat check every 60 seconds (non-intrusive)
+  // 2. Heartbeat check every 45 seconds for efficient mobile sync without battery/network drain
   const interval = setInterval(() => {
-    checkForAiStudioUpdate(false);
-  }, 60000);
+    checkForAiStudioUpdate(true);
+  }, 45000);
 
   // 3. Whenever user opens/resumes the app on their mobile (visibilitychange)
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      // Quiet background check without forcing disruptive reloads
-      checkForAiStudioUpdate(false);
+      checkForAiStudioUpdate(true);
     }
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   // 4. Window focus check
   const onFocus = () => {
-    checkForAiStudioUpdate(false);
+    checkForAiStudioUpdate(true);
   };
   window.addEventListener('focus', onFocus);
 

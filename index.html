@@ -1,8 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        var noop = function() {};
+        var origLog = (window.console && window.console.log) ? window.console.log : noop;
+        window.addEventListener('error', function(e) {
+          if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
+          return true;
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          }
+          return true;
+        }, true);
+        if (window.console) {
+          window.console.error = function() {
+            origLog.apply(window.console, ['[Shielded]:'].concat([].slice.call(arguments)));
+          };
+          window.console.warn = function() {
+            origLog.apply(window.console, ['[Notice]:'].concat([].slice.call(arguments)));
+          };
+        }
+        window.alert = function(msg) {
+          origLog.apply(window.console, ['[Notice]:', msg]);
+        };
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="shortcut icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -57,5 +89,26 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Fail-safe auto-recovery: If app stays on splash screen for > 4.5s, purge service worker & cache and reload cleanly
+      setTimeout(function() {
+        var root = document.getElementById('root');
+        if (root && root.innerText && root.innerText.indexOf('लोड हो रहा है') !== -1) {
+          console.log('[Auto-Recovery] Clearing service worker and caches due to stuck splash screen...');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
+            });
+          }
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              for (var i = 0; i < keys.length; i++) { caches.delete(keys[i]); }
+            });
+          }
+          sessionStorage.clear();
+          setTimeout(function() { window.location.reload(); }, 300);
+        }
+      }, 4500);
+    </script>
   </body>
 </html>

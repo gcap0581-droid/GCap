@@ -15,8 +15,8 @@ export default defineConfig({
         enabled: false, // Prevents Node 22 ESM createRequire crash in dev mode
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // Raised to support offline caching of larger assets
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit to allow main JS bundle precaching
+        globPatterns: ['**/*.{js,css,html}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
@@ -46,7 +46,17 @@ export default defineConfig({
   ],
   build: {
     target: 'esnext',
-    chunkSizeWarningLimit: 3000,
+    chunkSizeWarningLimit: 2500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-export': ['xlsx', 'jspdf'],
+          'vendor-charts': ['recharts'],
+        },
+      },
+    },
   },
   server: {
     host: '0.0.0.0',

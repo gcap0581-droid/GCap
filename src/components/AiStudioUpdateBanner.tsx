@@ -70,7 +70,7 @@ export const AiStudioUpdateBanner: React.FC<AiStudioUpdateBannerProps> = ({ lang
   return (
     <div
       id="aistudio-live-update-modal"
-      className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 animate-in fade-in slide-in-from-bottom-5 duration-300"
+      className="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-[99999] animate-in fade-in slide-in-from-bottom-5 duration-300"
     >
       <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 border-2 border-emerald-400/80 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-emerald-950/80 text-white backdrop-blur-md relative overflow-hidden">
         {/* Glowing top line */}

@@ -186,9 +186,11 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               />
             </div>
             <div>
-              <span className="font-black text-2xl tracking-tight text-white block">GCap</span>
-              <p className="text-[10px] text-slate-400">
-                {isHi ? 'मुख्य मेन्यू व उप-विकल्प' : 'Main Menu & Options'}
+              <span className="font-black text-lg sm:text-xl tracking-tight text-white block leading-tight font-mono">
+                GCap OPC Private Limited
+              </span>
+              <p className="text-xs text-amber-300 font-bold mt-0.5">
+                {isHi ? 'कॉरपोरेट परिसंपत्ति प्रबंधन' : 'Corporate Asset Management'}
               </p>
             </div>
           </button>

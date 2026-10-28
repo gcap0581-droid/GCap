@@ -51,6 +51,6 @@ export const GCAP_LOGOS: LogoAssetInfo[] = [
   },
 ];
 
-export const PRIMARY_COMPANY_LOGO = officialLogoPng || luxuryGoldImg || '/assets/aistudio/GCAP_Official_Logo_luxury_gold_3d_1024x1024_5b90bedb.png';
-export const OFFICIAL_SEAL_LOGO = officialSealImg || '/assets/images/gcap-official-crest-seal.jpg';
-export const CORPORATE_ELITE_LOGO = corporateEliteImg || '/assets/images/gcap-corporate-elite.jpg';
+export const PRIMARY_COMPANY_LOGO = '/assets/images/gcap_luxury_logo_1790665820788.jpg';
+export const OFFICIAL_SEAL_LOGO = '/assets/images/gcap_emblem_seal_1790665840672.jpg';
+export const CORPORATE_ELITE_LOGO = '/assets/images/gcap_hd_logo_premium_1790349527564.jpg';

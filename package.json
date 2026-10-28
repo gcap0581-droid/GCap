@@ -14,6 +14,7 @@
     "@google/genai": "^2.31.0",
     "@tailwindcss/vite": "^4.0.0",
     "canvas-confetti": "^1.9.4",
+    "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "edge-tts-universal": "^1.4.0",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.4",

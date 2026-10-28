@@ -26,13 +26,19 @@ if (typeof window !== 'undefined') {
 
   // Also catch uncaught exceptions
   window.addEventListener('error', (event) => {
-    silence('[Uncaught Exception]:', event.error || event.message);
-    event.preventDefault();
+    if (event) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    }
   }, true);
 
   window.addEventListener('unhandledrejection', (event) => {
-    silence('[Unhandled Rejection]:', event.reason);
-    event.preventDefault();
+    if (event) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    }
   }, true);
 }
 

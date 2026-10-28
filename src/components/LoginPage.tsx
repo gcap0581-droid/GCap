@@ -470,45 +470,47 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col justify-start selection:bg-emerald-500 selection:text-white">
       {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md sticky top-0 z-30 shadow-md shrink-0">
-        {/* Row 1: Brand & Logo */}
-        <div className="block w-full px-4 sm:px-8 py-3 border-b border-white/[0.03]">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-400 to-amber-400 p-0.5 flex items-center justify-center shadow-xl shadow-emerald-500/30 animate-pulse-slow">
-                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/10">
-                  <img 
-                    src={PRIMARY_COMPANY_LOGO} 
-                    onError={(e) => {
-                      const img = e.currentTarget as HTMLImageElement;
-                      if (!img.dataset.triedFallback1) {
-                        img.dataset.triedFallback1 = 'true';
-                        img.src = '/assets/images/gcap-luxury-gold-3d.jpg';
-                      } else if (!img.dataset.triedFallback2) {
-                        img.dataset.triedFallback2 = 'true';
-                        img.src = '/assets/images/logo.jpg';
-                      } else if (!img.dataset.triedFallback3) {
-                        img.dataset.triedFallback3 = 'true';
-                        img.src = '/logo.jpg';
-                      }
-                    }}
-                    alt="GCap Logo" 
-                    className="w-full h-full object-cover scale-110"
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center">
-                  <span className="font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent font-sans">
-                    GCap
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 tracking-wider uppercase">
-                  {isHi ? 'सुरक्षित वेल्थ व दैनिक रिटर्न पोर्टल' : 'Secure Wealth & Daily ROI Portal'}
-                </p>
+      <header className="border-b border-amber-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 backdrop-blur-xl sticky top-0 z-30 shadow-2xl shrink-0 w-full">
+        <div className="w-full px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-emerald-500 p-0.5 flex items-center justify-center shadow-2xl shadow-amber-500/30 shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center overflow-hidden border border-white/20">
+                <img 
+                  src={PRIMARY_COMPANY_LOGO} 
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    if (!img.dataset.triedFallback1) {
+                      img.dataset.triedFallback1 = 'true';
+                      img.src = '/assets/images/gcap-luxury-gold-3d.jpg';
+                    } else if (!img.dataset.triedFallback2) {
+                      img.dataset.triedFallback2 = 'true';
+                      img.src = '/assets/images/logo.jpg';
+                    } else if (!img.dataset.triedFallback3) {
+                      img.dataset.triedFallback3 = 'true';
+                      img.src = '/logo.jpg';
+                    }
+                  }}
+                  alt="GCap Logo" 
+                  className="w-full h-full object-cover scale-110"
+                />
               </div>
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base sm:text-2xl font-black tracking-tight text-white font-mono leading-tight">
+                  GCap OPC Private Limited
+                </span>
+                <span className="inline-block text-[10px] uppercase font-mono font-black text-slate-950 bg-amber-400 border border-amber-300 px-2.5 py-0.5 rounded-full shadow-md">
+                  MCA REG
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-amber-300 font-bold truncate mt-1">
+                {isHi ? 'कॉरपोरेट परिसंपत्ति प्रबंधन एवं 6-घंटे चक्र रिटर्न पोर्टल' : 'Corporate Asset Management & 6-Hour Return Portal'}
+              </p>
+            </div>
+          </div>
 
+          <div className="flex items-center gap-2 shrink-0">
             {/* View Mode Toggle (Desktop only row 1) */}
             <div className="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
               <button

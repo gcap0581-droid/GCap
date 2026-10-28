@@ -330,8 +330,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
       <header className="bg-slate-950/95 border-b border-amber-500/20 shrink-0 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-8 py-3 flex items-center justify-between gap-2">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1" onClick={() => handleTabChange('home')}>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden border border-amber-500/50 bg-slate-900 shrink-0 shadow-md flex items-center justify-center">
+          <div className="flex items-center gap-3 cursor-pointer min-w-0 flex-1" onClick={() => handleTabChange('home')}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border-2 border-amber-400/70 bg-slate-900 shrink-0 shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center">
               <img
                 src={PRIMARY_COMPANY_LOGO}
                 alt="GCap Logo"
@@ -339,15 +339,15 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[13px] sm:text-lg font-black tracking-tight text-white font-mono leading-tight">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm sm:text-xl md:text-2xl font-black tracking-tight text-white font-mono leading-tight">
                   GCap OPC Private Limited
                 </span>
-                <span className="hidden sm:inline-block text-[9px] uppercase font-mono font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                <span className="inline-block text-[10px] uppercase font-mono font-black text-slate-950 bg-amber-400 border border-amber-300 px-2 py-0.5 rounded-full shadow-sm">
                   MCA REG
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium truncate">
+              <p className="text-xs sm:text-sm text-amber-300/90 font-bold truncate mt-0.5">
                 {isHi ? 'कॉरपोरेट परिसंपत्ति प्रबंधन' : 'Corporate Asset Management'}
               </p>
             </div>
