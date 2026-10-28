@@ -204,7 +204,7 @@ export function setStoredWallet(wallet: Wallet, userId?: string) {
       localStorage.setItem(`inv_portal_wallet_${userId}`, JSON.stringify(wallet));
     }
   } catch (err) {
-    console.warn('Failed to save wallet:', err);
+    console.log('Failed to save wallet:', err);
   }
 }
 
@@ -247,7 +247,7 @@ export function normalizeInvestmentsList(list: ActiveInvestment[]): ActiveInvest
         longRate = activeRules.longTerm6hRate;
       }
     } catch (e) {
-      console.warn('Could not read dynamic rates inside normalizeInvestmentsList:', e);
+      console.log('Could not read dynamic rates inside normalizeInvestmentsList:', e);
     }
 
     // Dynamic rate calculation based on current Rules
@@ -355,7 +355,7 @@ export function setStoredInvestments(investments: ActiveInvestment[]) {
   try {
     localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(investments));
   } catch (err) {
-    console.warn('Failed to save investments:', err);
+    console.log('Failed to save investments:', err);
   }
 }
 
@@ -430,7 +430,7 @@ export function setStoredTransactions(txns: Transaction[]) {
   try {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txns));
   } catch (err) {
-    console.warn('Failed to save txns:', err);
+    console.log('Failed to save txns:', err);
   }
 }
 
@@ -470,6 +470,6 @@ export function setStoredBankDetails(userId: string, details: BankAccountDetails
   try {
     localStorage.setItem(BANK_DETAILS_KEY_PREFIX + userId, JSON.stringify(details));
   } catch (err) {
-    console.warn('Failed to save bank details:', err);
+    console.log('Failed to save bank details:', err);
   }
 }

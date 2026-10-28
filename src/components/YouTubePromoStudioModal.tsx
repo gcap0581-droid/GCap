@@ -165,10 +165,13 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
   // Pre-load company logo image for canvas rendering
   useEffect(() => {
     const img = new Image();
+    img.crossOrigin = 'anonymous'; // MUST be before src
     img.src = PRIMARY_COMPANY_LOGO || '/logo.png';
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       logoImageRef.current = img;
+    };
+    img.onerror = () => {
+      console.log("[GCAP-Studio] Logo load failed, using fallback");
     };
   }, []);
 
@@ -184,10 +187,10 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
       const timestamp = Date.now();
       const audio = new Audio(`/api/tts?text=${encodeURIComponent(scene.voiceText)}&voice=male_energetic&style=shouting&v=${timestamp}`);
       audio.playbackRate = 1.10; // Optimized for energy and clarity
-      audio.crossOrigin = 'anonymous';
+      audio.crossOrigin = 'anonymous'; // CRITICAL for canvas recording
       
       audio.onerror = (e) => {
-        console.error(`[Audio Preload Error] Scene ${scene.id}:`, e);
+        console.log(`[Audio Preload Error] Scene ${scene.id}:`, e);
       };
 
       audio.load();
@@ -227,6 +230,8 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
   }, []);
 
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const audioSourceNodesRef = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(new Map());
 
   // Stop any active audio or speech immediately
   const stopVoice = useCallback(() => {
@@ -325,29 +330,49 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
           }
         };
 
-        // Try routing to Web Audio destination node for video recording capture
+        // Proper AudioContext integration for recording (Crucial for Shandar/Joshila Audio)
         try {
           if (!audioContextRef.current) {
-            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
             if (AudioCtx) {
               audioContextRef.current = new AudioCtx();
               audioDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
+              
+              // Add a permanent silent source to keep the stream alive and prevent "no tracks" errors
+              const osc = audioContextRef.current.createOscillator();
+              const gain = audioContextRef.current.createGain();
+              gain.gain.value = 0.0001; // Extremely quiet but present
+              osc.connect(gain);
+              gain.connect(audioDestinationRef.current);
+              osc.start();
             }
           }
-          if (audioContextRef.current && audioDestinationRef.current) {
-            if (audioContextRef.current.state === 'suspended') {
-              audioContextRef.current.resume();
+
+          const ctx = audioContextRef.current;
+          const dest = audioDestinationRef.current;
+
+          if (ctx && dest) {
+            if (ctx.state === 'suspended') {
+              ctx.resume();
             }
-            // Disconnect old connections to prevent multiple sources
-            // This is a simplification; for production-grade, manage nodes more carefully.
-            try {
-              const source = audioContextRef.current.createMediaElementSource(audio);
-              source.connect(audioDestinationRef.current);
-              source.connect(audioContextRef.current.destination);
-            } catch (_) {}
+
+            // Use cached source node to avoid "already connected" errors
+            let sourceNode = audioSourceNodesRef.current.get(audio);
+            if (!sourceNode) {
+              console.log("[GCAP-Studio] Connecting source for scene", sceneIdx);
+              sourceNode = ctx.createMediaElementSource(audio);
+              audioSourceNodesRef.current.set(audio, sourceNode);
+              
+              sourceNode.connect(dest);
+              sourceNode.connect(ctx.destination);
+            } else {
+              // Ensure it's connected
+              try { sourceNode.connect(dest); } catch(_) {}
+              try { sourceNode.connect(ctx.destination); } catch(_) {}
+            }
           }
-        } catch (_) {
-          // Cross-origin audio routing fallback
+        } catch (err) {
+          console.log("[GCAP-Studio] Audio Record Linkage Error:", err);
         }
 
         audio.onended = () => {
@@ -391,482 +416,241 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
       const scene = SCENES[sceneIdx];
       const t = elapsedSceneTime;
 
-      // 1. Rich Luxury Dark Gradient Background
-      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-      bgGrad.addColorStop(0, '#020617');
-      bgGrad.addColorStop(0.5, '#051329');
-      bgGrad.addColorStop(1, '#020617');
+      // 1. Ultra-Luxury "Shandar" Background
+      const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, W * 0.8);
+      bgGrad.addColorStop(0, '#0f172a');
+      bgGrad.addColorStop(0.5, '#020617');
+      bgGrad.addColorStop(1, '#000000');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
-      // Subtle Golden Mesh Grid Pattern
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.05)';
-      ctx.lineWidth = 1;
-      const gridSize = 40;
-      for (let x = 0; x < W; x += gridSize) {
+      // Moving High-Tech Light Beams (Josila Energy)
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < 6; i++) {
+        const offset = (t * 80 + i * 200) % (W + 400);
+        const beamGrad = ctx.createLinearGradient(offset - 200, 0, offset, H);
+        beamGrad.addColorStop(0, 'transparent');
+        beamGrad.addColorStop(0.5, i % 2 === 0 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(56, 189, 248, 0.08)');
+        beamGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = beamGrad;
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, H);
-        ctx.stroke();
+        ctx.moveTo(offset - 300, 0);
+        ctx.lineTo(offset, 0);
+        ctx.lineTo(offset + 300, H);
+        ctx.lineTo(offset, H);
+        ctx.closePath();
+        ctx.fill();
       }
-      for (let y = 0; y < H; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(W, y);
-        ctx.stroke();
-      }
+      ctx.globalCompositeOperation = 'source-over';
 
-      // Floating ambient particle light streaks
-      for (let i = 0; i < 15; i++) {
-        const px = ((i * 97 + t * 40) % (W + 200)) - 100;
-        const py = ((i * 61 + Math.sin(t + i) * 60 + 200) % H);
-        const radius = (i % 4) + 1.5;
+      // Subtle Golden Particles
+      for (let i = 0; i < 25; i++) {
+        const px = ((i * 131 + t * 50) % (W + 200)) - 100;
+        const py = (i * 79 + Math.cos(t * 0.5 + i) * 100 + 400) % H;
+        const radius = (i % 3) + 1;
         ctx.beginPath();
         ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fillStyle = i % 2 === 0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.2)';
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255, 255, 255, 0.15)';
         ctx.fill();
       }
 
-      // 2. Top Header Brand Bar
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.fillRect(40, 25, W - 80, 70);
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(40, 25, W - 80, 70);
+      // 2. Premium Top Navigation / Brand Bar
+      const headerH = 85;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.fillRect(0, 0, W, headerH);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, headerH);
+      ctx.lineTo(W, headerH);
+      ctx.stroke();
 
       // Logo rendering in header
       if (logoImageRef.current) {
-        ctx.drawImage(logoImageRef.current, 60, 35, 50, 50);
-      } else {
-        // Fallback Golden Emblem circle
-        ctx.beginPath();
-        ctx.arc(85, 60, 22, 0, Math.PI * 2);
-        ctx.fillStyle = 'linear-gradient(135deg, #f59e0b, #d97706)';
-        ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 20px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('G', 85, 67);
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+        ctx.drawImage(logoImageRef.current, 50, 12, 60, 60);
+        ctx.restore();
       }
 
-      // Company Official Title
+      // Company Official Title (High Impact)
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
-      ctx.fillText('जीकैप (OPC) प्राइवेट लिमिटेड', 125, 55);
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '13px monospace';
-      ctx.fillText(`सीआईएन: ${prof.cin || 'U66190BR2026OPC088307'} • MCA भारत सरकार पंजीकृत`, 125, 76);
-
-      // Scene Badge Top Right
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
-      ctx.beginPath();
-      safeRoundRect(ctx, W - 270, 40, 210, 40, 10);
-      ctx.fill();
-      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px system-ui, sans-serif';
+      ctx.fillText('GCAP (OPC) PRIVATE LIMITED', 125, 42);
 
       ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 13px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`★ ${scene.badge} ★`, W - 165, 65);
+      ctx.font = 'bold 16px system-ui, sans-serif';
+      ctx.fillText(`CIN: ${prof.cin || 'U66190BR2026OPC088307'} • भारत सरकार द्वारा पंजीकृत`, 125, 68);
+
+      // LIVE News Ticker (Bottom)
+      const tickerY = H - 35;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(0, tickerY - 10, W, 45);
+      
+      const tickerText = `🚀 ब्रेकिंग न्यूज़: जीकैप भारत का सबसे भरोसेमंद निवेश प्लेटफॉर्म • 0% विथड्रॉल फीस • हर 6 घंटे में पक्का रिटर्न • 100% मूलधन सुरक्षा • सासाराम, बिहार में मुख्य कार्यालय • ज्वाइन करें ${prof.supportPhone || '+91 8603504808'}`;
+      const tickerPos = (t * 120) % 2000;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText(tickerText, W - tickerPos, tickerY + 18);
+      ctx.fillText(tickerText, W - tickerPos + 2000, tickerY + 18);
 
       // 3. Main Center Stage Content (Based on Scene ID)
       ctx.textAlign = 'center';
 
       if (scene.id === 1) {
-        // Scene 1: Mega Corporate Seal & Verification
-        const pulse = Math.sin(t * 3) * 6;
+        // Scene 1: MEGA INTRO
+        const scale = 1 + Math.sin(t * 2) * 0.05;
         ctx.save();
-        ctx.translate(W / 2, 230);
-
-        // Glowing outer halo
+        ctx.translate(W / 2, 240);
+        ctx.scale(scale, scale);
+        
+        // Gold Halo
+        const halo = ctx.createRadialGradient(0, 0, 50, 0, 0, 150);
+        halo.addColorStop(0, 'rgba(245, 158, 11, 0.4)');
+        halo.addColorStop(1, 'transparent');
+        ctx.fillStyle = halo;
         ctx.beginPath();
-        ctx.arc(0, 0, 85 + pulse, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(245, 158, 11, 0.1)';
+        ctx.arc(0, 0, 150, 0, Math.PI * 2);
         ctx.fill();
 
-        // Golden Badge
-        ctx.beginPath();
-        ctx.arc(0, 0, 75, 0, Math.PI * 2);
-        const emblemGrad = ctx.createLinearGradient(-75, -75, 75, 75);
-        emblemGrad.addColorStop(0, '#f59e0b');
-        emblemGrad.addColorStop(0.5, '#b45309');
-        emblemGrad.addColorStop(1, '#fbbf24');
-        ctx.fillStyle = emblemGrad;
-        ctx.fill();
-        ctx.strokeStyle = '#fef3c7';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        ctx.fillStyle = '#051329';
-        ctx.font = '900 68px system-ui, sans-serif';
-        ctx.fillText('G', 0, 24);
+        if (logoImageRef.current) {
+          ctx.drawImage(logoImageRef.current, -80, -80, 160, 160);
+        }
         ctx.restore();
 
-        // Main Headings
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 42px system-ui, sans-serif';
-        ctx.fillText('जीकैप (OPC) प्राइवेट लिमिटेड', W / 2, 380);
+        ctx.font = '900 52px system-ui, sans-serif';
+        ctx.fillText('सुनहरा भविष्य, आपका अपना जीकैप!', W / 2, 420);
+        
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 24px system-ui, sans-serif';
+        ctx.fillText('भरोसेमंद निवेश • सुरक्षित कल • बड़ी कामयाबी', W / 2, 465);
+      } else if (scene.id === 2) {
+        // Scene 2: 641D Plan
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 22px system-ui, sans-serif';
+        ctx.fillText('⚡ धमाकेदार 641-दिन शॉर्ट टर्म प्लान ⚡', W / 2, 170);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 64px system-ui, sans-serif';
+        ctx.fillText('0.160% डेली रिटर्न', W / 2, 250);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 22px system-ui, sans-serif';
-        ctx.fillText('भारत का अग्रणी सुरक्षित एवं उच्च-रिटर्न निवेश प्लेटफॉर्म', W / 2, 420);
+        ctx.font = 'bold 32px system-ui, sans-serif';
+        ctx.fillText('₹1 लाख निवेश पर ₹160 प्रतिदिन पक्का!', W / 2, 310);
 
-        // Official Credential Chips
-        const chips = [
-          `सीआईएन: ${prof.cin || 'U66190BR2026OPC088307'}`,
-          `पैन: ${prof.pan || 'AANCG4365Q'}`,
-          'DPIIT मान्यता प्राप्त',
-          'एक्सिस बैंक अधिकृत',
-        ];
-        chips.forEach((chip, idx) => {
-          const cx = W / 2 - 360 + idx * 240;
-          ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-          ctx.beginPath();
-          safeRoundRect(ctx, cx - 100, 460, 200, 38, 8);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle = '#e2e8f0';
-          ctx.font = 'bold 13px monospace';
-          ctx.fillText(chip, cx, 484);
-        });
-      } else if (scene.id === 2) {
-        // Scene 2: 641-Day Short Term Plan Spotlight
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('उच्च-रिटर्न सुरक्षित दैनिक फिक्स्ड निवेश', W / 2, 160);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 48px system-ui, sans-serif';
-        ctx.fillText('⚡ 641-दिन शॉर्ट टर्म प्लान', W / 2, 215);
-
-        // Feature Cards Box
-        const cardWidth = 320;
-        const cardHeight = 220;
-        const startX = (W - (cardWidth * 3 + 40)) / 2;
-
-        const cards = [
-          {
-            label: 'हर 6 घंटे में रिटर्न',
-            val: '0.040%',
-            sub: 'दिन में 4 बार स्वतः क्रेडिट',
-            color: '#10b981',
-          },
-          {
-            label: 'दैनिक रिटर्न (24h)',
-            val: '0.160%',
-            sub: '₹1 लाख पर ₹160 प्रतिदिन',
-            color: '#f59e0b',
-          },
-          {
-            label: 'कुल परिपक्वता (641D)',
-            val: '₹2,02,560',
-            sub: '₹1,02,560 मुनाफा + 100% मूलधन वापस',
-            color: '#38bdf8',
-          },
-        ];
-
-        cards.forEach((c, i) => {
-          const bx = startX + i * (cardWidth + 20);
-          const by = 260;
-
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-          ctx.strokeStyle = c.color;
+        // Feature Tags
+        const tags = ['100% मूलधन सुरक्षा', '24h लॉक के बाद कभी भी निकासी', 'हर 6 घंटे में कमाई'];
+        tags.forEach((tag, idx) => {
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+          ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 2;
+          const tx = W / 2 - 350 + idx * 350;
+          const ty = 380;
           ctx.beginPath();
-          safeRoundRect(ctx, bx, by, cardWidth, cardHeight, 16);
+          safeRoundRect(ctx, tx - 160, ty, 320, 50, 25);
           ctx.fill();
           ctx.stroke();
-
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = 'bold 15px system-ui, sans-serif';
-          ctx.fillText(c.label, bx + cardWidth / 2, by + 45);
-
-          ctx.fillStyle = c.color;
-          ctx.font = '900 44px monospace';
-          ctx.fillText(c.val, bx + cardWidth / 2, by + 115);
-
-          ctx.fillStyle = '#cbd5e1';
-          ctx.font = '14px system-ui, sans-serif';
-          ctx.fillText(c.sub, bx + cardWidth / 2, by + 165);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 18px system-ui, sans-serif';
+          ctx.fillText(tag, tx, ty + 32);
         });
       } else if (scene.id === 3) {
-        // Scene 3: 365-Day Long Term & Royalty Plan
+        // Scene 3: Royalty
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('दीर्घकालिक सुरक्षित पूंजी निर्माण योजना', W / 2, 160);
+        ctx.font = 'bold 22px system-ui, sans-serif';
+        ctx.fillText('👑 शाही रॉयल्टी पाथवे - लाइफटाइम इनकम 👑', W / 2, 170);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 46px system-ui, sans-serif';
-        ctx.fillText('👑 365-दिन लॉन्ग टर्म व रॉयल्टी प्लान', W / 2, 215);
+        ctx.font = '900 64px system-ui, sans-serif';
+        ctx.fillText('365 दिन + 1461 दिन रॉयल्टी', W / 2, 250);
 
-        // Comparison cards
-        const cardWidth = 480;
-        const c1X = W / 2 - cardWidth - 20;
-        const c2X = W / 2 + 20;
-        const cY = 260;
-        const cH = 220;
-
-        // Card 1
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.strokeStyle = '#a855f7';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        safeRoundRect(ctx, c1X, cY, cardWidth, cH, 16);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 18px system-ui, sans-serif';
-        ctx.fillText('लचीली निवेश सीमा (न्यूनतम से अधिकतम)', c1X + cardWidth / 2, cY + 45);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 36px monospace';
-        ctx.fillText('₹10,000 — ₹1,00,000', c1X + cardWidth / 2, cY + 105);
-
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '15px system-ui, sans-serif';
-        ctx.fillText('0.033% प्रति 6 घंटे • ₹13.20 दैनिक प्रति ₹10K', c1X + cardWidth / 2, cY + 155);
-
-        // Card 2
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.strokeStyle = '#f59e0b';
-        ctx.beginPath();
-        safeRoundRect(ctx, c2X, cY, cardWidth, cH, 16);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 18px system-ui, sans-serif';
-        ctx.fillText('365-दिन बाद 1461-दिन रॉयल्टी लाभ', c2X + cardWidth / 2, cY + 45);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 36px monospace';
-        ctx.fillText('+ 1461 दिन निरंतर रॉयल्टी', c2X + cardWidth / 2, cY + 105);
-
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '15px system-ui, sans-serif';
-        ctx.fillText('मूलधन 100% सुरक्षित वापसी + निरंतर मासिक रॉयल्टी', c2X + cardWidth / 2, cY + 155);
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 32px system-ui, sans-serif';
+        ctx.fillText('₹10,000 से शुरू करें अपनी शाही आमदनी!', W / 2, 310);
       } else if (scene.id === 4) {
         // Scene 4: GP Swap
         ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('शून्य शुल्क त्वरित रूपांतरण विधि', W / 2, 160);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 48px system-ui, sans-serif';
-        ctx.fillText('🪙 जीपी स्वैप (GP Points Swap)', W / 2, 215);
-
-        // Big Exchange Rate Banner
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 3;
+        ctx.font = 'bold 22px system-ui, sans-serif';
+        ctx.fillText('🪙 सुपर-फास्ट जीपी स्वैप (Instant) 🪙', W / 2, 170);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
         ctx.beginPath();
-        safeRoundRect(ctx, W / 2 - 380, 265, 760, 110, 20);
+        safeRoundRect(ctx, W / 2 - 300, 210, 600, 120, 20);
         ctx.fill();
-        ctx.stroke();
-
+        
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 46px monospace';
-        ctx.fillText('₹1 (1 रुपया)  =  0.98 GP पॉइंट', W / 2, 335);
+        ctx.font = '900 72px monospace';
+        ctx.fillText('₹1 = 0.98 GP', W / 2, 295);
 
-        // 3 steps
-        const stepTexts = [
-          '1. UPI / बैंक से फंड जमा करें',
-          '2. कैश को GP में बदलें (₹1 = 0.98 GP)',
-          '3. 641D या 365D प्लान तुरंत सक्रिय करें',
-        ];
-        stepTexts.forEach((st, idx) => {
-          const sx = W / 2 - 360 + idx * 360;
-          ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
-          ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
-          ctx.beginPath();
-          safeRoundRect(ctx, sx - 160, 410, 320, 70, 12);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle = '#f8fafc';
-          ctx.font = 'bold 15px system-ui, sans-serif';
-          ctx.fillText(st, sx, 452);
-        });
-      } else if (scene.id === 5) {
-        // Scene 5: 6-Hour Automated Payout Cycles
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = '#94a3b8';
         ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('24-घंटे स्वतः निश्चित चक्रवृद्धि लाभ', W / 2, 160);
-
+        ctx.fillText('कोई झंझट नहीं, कोई एक्स्ट्रा चार्ज नहीं!', W / 2, 360);
+      } else if (scene.id === 5) {
+        // Scene 5: 6h Cycles
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 48px system-ui, sans-serif';
-        ctx.fillText('⏱️ स्वचालित 6-घंटे का रिटर्न चक्र', W / 2, 215);
-
-        const slots = [
-          { time: '06:00 AM', name: 'सुबह का चक्र', icon: '🌅' },
-          { time: '12:00 PM', name: 'दोपहर का चक्र', icon: '☀️' },
-          { time: '06:00 PM', name: 'शाम का चक्र', icon: '🌆' },
-          { time: '12:00 AM', name: 'मध्यरात्रि चक्र', icon: '🌙' },
-        ];
-
-        const slotW = 240;
-        const totalW = slots.length * slotW + (slots.length - 1) * 20;
-        const sStartX = (W - totalW) / 2;
-
+        ctx.font = '900 60px system-ui, sans-serif';
+        ctx.fillText('हर 6 घंटे में ऑटो-पेआउट!', W / 2, 220);
+        
+        const slots = ['🌅 06:00 AM', '☀️ 12:00 PM', '🌆 06:00 PM', '🌙 12:00 AM'];
         slots.forEach((s, idx) => {
-          const sx = sStartX + idx * (slotW + 20);
-          const sy = 280;
-
-          // Glowing active ring for current animation
-          const isActive = (Math.floor(t * 1.5) % 4) === idx;
-
-          ctx.fillStyle = isActive ? 'rgba(245, 158, 11, 0.25)' : 'rgba(15, 23, 42, 0.85)';
-          ctx.strokeStyle = isActive ? '#fbbf24' : 'rgba(148, 163, 184, 0.3)';
-          ctx.lineWidth = isActive ? 3 : 1.5;
-          ctx.beginPath();
-          safeRoundRect(ctx, sx, sy, slotW, 180, 16);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.font = '36px sans-serif';
-          ctx.fillText(s.icon, sx + slotW / 2, sy + 55);
-
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 24px monospace';
-          ctx.fillText(s.time, sx + slotW / 2, sy + 105);
-
-          ctx.fillStyle = isActive ? '#fbbf24' : '#94a3b8';
-          ctx.font = 'bold 15px system-ui, sans-serif';
-          ctx.fillText(s.name, sx + slotW / 2, sy + 145);
+          const sx = W / 2 - 450 + idx * 300;
+          ctx.fillStyle = (Math.floor(t * 2) % 4 === idx) ? '#f59e0b' : '#334155';
+          ctx.font = 'bold 32px monospace';
+          ctx.fillText(s, sx, 320);
         });
       } else if (scene.id === 6) {
-        // Scene 6: Bank Withdrawals
+        // Scene 6: Bank
         ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('सीधे बैंक खाते में सुरक्षित एवं त्वरित भुगतान', W / 2, 160);
+        ctx.font = 'bold 22px system-ui, sans-serif';
+        ctx.fillText('🏦 बैंक निकासी: सीधी, सुरक्षित और सरल 🏦', W / 2, 170);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 48px system-ui, sans-serif';
-        ctx.fillText('🏦 पारदर्शी बैंक निकासी नियम', W / 2, 215);
-
-        // 2 big columns
-        const colW = 460;
-        const colH = 210;
-
-        // Earnings
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        safeRoundRect(ctx, W / 2 - colW - 20, 270, colW, colH, 18);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('मुनाफ़ा निकासी (अर्निंग पेआउट)', W / 2 - colW / 2 - 20, 315);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 40px monospace';
-        ctx.fillText('1 से 5 तारीख', W / 2 - colW / 2 - 20, 370);
+        ctx.font = '900 56px system-ui, sans-serif';
+        ctx.fillText('1-5 तारीख और 6-10 तारीख', W / 2, 260);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '15px system-ui, sans-serif';
-        ctx.fillText('हर महीने सीधे बैंक / UPI में • न्यूनतम मात्र ₹200 (0% शुल्क)', W / 2 - colW / 2 - 20, 425);
-
-        // Royalty
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-        ctx.strokeStyle = '#38bdf8';
-        ctx.beginPath();
-        safeRoundRect(ctx, W / 2 + 20, 270, colW, colH, 18);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('रॉयल्टी निकासी (रॉयल्टी पेआउट)', W / 2 + colW / 2 + 20, 315);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 40px monospace';
-        ctx.fillText('6 से 10 तारीख', W / 2 + colW / 2 + 20, 370);
-
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '15px system-ui, sans-serif';
-        ctx.fillText('हर महीने स्वतः रिलीज • 24-48 घंटों में बैंक क्रेडिट', W / 2 + colW / 2 + 20, 425);
+        ctx.font = 'bold 24px system-ui, sans-serif';
+        ctx.fillText('न्यूनतम निकासी मात्र ₹200 • सीधे आपके बैंक खाते में', W / 2, 320);
       } else if (scene.id === 7) {
-        // Scene 7: Registered Address, Helpline & Call to Action
+        // Scene 7: CTA
         ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 20px system-ui, sans-serif';
-        ctx.fillText('आज ही अपनी वित्तीय आजादी की शुरुआत करें', W / 2, 160);
+        ctx.font = 'bold 24px system-ui, sans-serif';
+        ctx.fillText('ज्वाइन जीकैप इंडिया - आपका उज्जवल भविष्य!', W / 2, 170);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '900 46px system-ui, sans-serif';
-        ctx.fillText('आज ही जीकैप परिवार का हिस्सा बनें!', W / 2, 215);
-
-        // Office info banner
-        ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        safeRoundRect(ctx, W / 2 - 480, 260, 960, 110, 16);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 16px system-ui, sans-serif';
-        ctx.fillText('🏛️ पंजीकृत कॉर्पोरेट कार्यालय (Corporate Office):', W / 2, 295);
-
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = '15px system-ui, sans-serif';
-        ctx.fillText(
-          'खारी, बभनगांवा, श्री नगर, आर.आर.पी. नर्सिंग स्कूल के पास, सासाराम, रोहतास (बिहार) - 821113',
-          W / 2,
-          330
-        );
+        ctx.font = '900 64px system-ui, sans-serif';
+        ctx.fillText('अभी रजिस्टर करें!', W / 2, 260);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.font = 'bold 15px monospace';
-        ctx.fillText(`हेल्पलाइन: ${prof.supportPhone || '+91 8603504808'} • ईमेल: ${prof.supportEmail || 'support@gcapopc.com'}`, W / 2, 355);
-
-        // Call to action button banner
-        ctx.fillStyle = 'linear-gradient(90deg, #10b981, #059669)';
-        ctx.beginPath();
-        safeRoundRect(ctx, W / 2 - 280, 395, 560, 65, 32);
-        ctx.fillStyle = '#059669';
-        ctx.fill();
-        ctx.strokeStyle = '#34d399';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '900 24px system-ui, sans-serif';
-        ctx.fillText('🔔 लाइक करें • शेयर करें • सब्सक्राइब करें', W / 2, 437);
+        ctx.font = 'bold 28px monospace';
+        ctx.fillText(`संपर्क: ${prof.supportPhone || '+91 8603504808'}`, W / 2, 330);
       }
 
-      // 4. Bottom Subtitle / Captions Bar
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
-      ctx.fillRect(40, H - 120, W - 80, 75);
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(40, H - 120, W - 80, 75);
+      // 4. Premium Subtitle Overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(40, H - 160, W - 80, 85);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(40, H - 160, W - 80, 85);
 
-      // Subtitle text with smooth glowing presentation
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 19px system-ui, -apple-system, sans-serif';
-      ctx.fillText(scene.caption, W / 2, H - 75);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px system-ui, sans-serif';
+      ctx.fillText(scene.caption, W / 2, H - 110);
 
-      // 5. Scene Progress Indicator Bar (at bottom)
+      // Progress Bar with Energy
       const totalScenes = SCENES.length;
-      const barY = H - 25;
-      const barW = W - 80;
-      ctx.fillStyle = 'rgba(51, 65, 85, 0.5)';
-      ctx.fillRect(40, barY, barW, 6);
-
-      // Overall Progress
       const overallProgress = (sceneIdx + Math.min(t / scene.duration, 1)) / totalScenes;
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(40, H - 170, W - 80, 6);
       ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(40, barY, barW * overallProgress, 6);
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#f59e0b';
+      ctx.fillRect(40, H - 170, (W - 80) * overallProgress, 6);
+      ctx.shadowBlur = 0;
     },
     [prof]
   );
@@ -932,52 +716,63 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
     if (!canvas) return;
 
     try {
-      // Ensure audio context is active
+      // 1. Setup Audio Pipeline first
+      if (!audioContextRef.current) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          audioContextRef.current = new AudioCtx();
+          audioDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
+        }
+      }
+
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         audioContextRef.current.resume();
       }
 
-      // Capture high-quality 30fps stream from canvas
+      // 2. Capture high-quality 30fps stream from canvas
       const canvasStream = canvas.captureStream(30);
-
-      // Create a combined stream for the recorder
       const combinedStream = new MediaStream();
       
       // Add video tracks
       canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
 
-      // Combine with high-fidelity audio destination stream
-      if (audioDestinationRef.current && audioDestinationRef.current.stream) {
-        const audioTracks = audioDestinationRef.current.stream.getAudioTracks();
-        audioTracks.forEach((track) => combinedStream.addTrack(track));
+      // 3. Add audio tracks from our destination node
+      if (!audioDestinationRef.current && audioContextRef.current) {
+         audioDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
+      }
+      
+      if (audioDestinationRef.current) {
+        const audioStream = audioDestinationRef.current.stream;
+        audioStream.getAudioTracks().forEach((track) => {
+          combinedStream.addTrack(track);
+        });
+        console.log("[GCAP-Studio] Successfully attached audio tracks to recorder stream.");
+      } else {
+        console.log("[GCAP-Studio Warning] No audio destination available for recording.");
       }
 
-      // Strict candidate list for MP4 format across browsers
+      // 4. Select best supported MIME type
       const candidateTypes = [
         'video/mp4;codecs=h264,aac',
-        'video/mp4;codecs=h264',
-        'video/mp4;codecs=avc1',
-        'video/mp4',
-        'video/webm;codecs=h264', // WebM container with H264 (often playable as MP4)
-        'video/webm;codecs=vp9',
+        'video/webm;codecs=h264,aac',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
         'video/webm',
       ];
 
-      let selectedMime = 'video/mp4';
-      if (typeof MediaRecorder !== 'undefined') {
-        for (const type of candidateTypes) {
-          if (MediaRecorder.isTypeSupported(type)) {
-            selectedMime = type;
-            break;
-          }
+      let selectedMime = '';
+      for (const type of candidateTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          selectedMime = type;
+          break;
         }
       }
 
       const recorderOptions: MediaRecorderOptions = {
-        videoBitsPerSecond: 5000000, // 5 Mbps for superior HD clarity
-        audioBitsPerSecond: 128000,   // 128kbps crystal clear audio
+        videoBitsPerSecond: 8000000, // Increase to 8 Mbps for HD
+        audioBitsPerSecond: 128000,  
       };
-      if (selectedMime && typeof MediaRecorder !== 'undefined') {
+      if (selectedMime) {
         recorderOptions.mimeType = selectedMime;
       }
 
@@ -991,32 +786,27 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
       };
 
       recorder.onstop = () => {
-        // Create the final video blob
+        console.log("[GCAP-Studio] Recording stopped. Chunks:", recordedChunksRef.current.length);
         const blob = new Blob(recordedChunksRef.current, { type: selectedMime || 'video/mp4' });
         const url = URL.createObjectURL(blob);
-        
-        // Instant direct download as .mp4
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
-        // Always force .mp4 extension for the user
-        a.download = `GCap_Official_Promo_${Date.now()}.mp4`;
+        a.download = `GCap_Official_Promo_HD_${Date.now()}.mp4`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        setIsRecording(false);
-        setRecordingProgress(100);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
       };
 
-      // Set chunk size to 1000ms for stable recording
-      recorder.start(1000); 
+      // Start recording
+      recorder.start(1000); // Larger timeslice for stability
       mediaRecorderRef.current = recorder;
       
       setIsRecording(true);
       setRecordingProgress(0);
       
-      // Auto-start from beginning when recording starts
+      // Reset video to beginning
       currentSceneIdxRef.current = 0;
       setCurrentSceneIdx(0);
       sceneElapsedRef.current = 0;
@@ -1024,11 +814,14 @@ export const YouTubePromoStudioModal: React.FC<YouTubePromoStudioModalProps> = (
       isPlayingRef.current = true;
       setIsPlaying(true);
       
-      // Sync voice start
+      // Start voice
       speakCurrentSceneVoice(0);
+      const hasAudio = combinedStream.getAudioTracks().length > 0;
+      console.log(`[GCAP-Studio] Recording Started. Mime: ${selectedMime}, Audio: ${hasAudio}`);
+
     } catch (err) {
-      console.error('Failed to start recording:', err);
-      alert(isHi ? 'वीडियो रिकॉर्डिंग शुरू करने में समस्या आई। कृपया पुनः प्रयास करें।' : 'Error starting video recording. Please try again.');
+      console.log('Failed to start recording:', err);
+      alert(isHi ? 'वीडियो रिकॉर्डिंग शुरू करने में समस्या आई।' : 'Error starting video recording.');
     }
   };
 

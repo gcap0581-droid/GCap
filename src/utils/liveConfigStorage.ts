@@ -34,7 +34,7 @@ export function getStoredLiveConfig(): LiveInterfaceConfig {
     const parsed = JSON.parse(raw);
     return { ...DEFAULT_LIVE_CONFIG, ...parsed };
   } catch (err) {
-    console.warn('Failed to parse live config:', err);
+    console.log('Failed to parse live config:', err);
     return DEFAULT_LIVE_CONFIG;
   }
 }
@@ -50,7 +50,7 @@ export function saveStoredLiveConfig(config: LiveInterfaceConfig, syncToServer =
       }
     }
   } catch (err) {
-    console.warn('Failed to save live config:', err);
+    console.log('Failed to save live config:', err);
   }
 }
 
@@ -76,7 +76,7 @@ export function recordOtaHistory(event: OtaEventPayload): void {
     const updated = [event, ...history.slice(0, 49)]; // keep latest 50
     localStorage.setItem(OTA_HISTORY_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
-    console.warn('Failed to save OTA history:', err);
+    console.log('Failed to save OTA history:', err);
   }
 }
 
@@ -95,7 +95,7 @@ try {
     };
   }
 } catch (err) {
-  console.warn('BroadcastChannel not supported or restricted:', err);
+  console.log('BroadcastChannel not supported or restricted:', err);
 }
 
 // Window Storage Event Listener (Fallback across tabs/windows)
@@ -106,7 +106,7 @@ if (typeof window !== 'undefined') {
         const payload: OtaEventPayload = JSON.parse(e.newValue);
         listeners.forEach((fn) => fn(payload));
       } catch (err) {
-        console.warn('Failed to parse storage OTA event:', err);
+        console.log('Failed to parse storage OTA event:', err);
       }
     }
   });
@@ -145,7 +145,7 @@ export function broadcastOtaUpdate(
     try {
       fn(event);
     } catch (err) {
-      console.warn('Error executing OTA subscriber:', err);
+      console.log('Error executing OTA subscriber:', err);
     }
   });
 
@@ -154,7 +154,7 @@ export function broadcastOtaUpdate(
     try {
       broadcastChannel.postMessage(event);
     } catch (err) {
-      console.warn('BroadcastChannel postMessage failed:', err);
+      console.log('BroadcastChannel postMessage failed:', err);
     }
   }
 
@@ -162,7 +162,7 @@ export function broadcastOtaUpdate(
   try {
     localStorage.setItem('gcap_ota_trigger_event', JSON.stringify(event));
   } catch (err) {
-    console.warn('Storage event trigger failed:', err);
+    console.log('Storage event trigger failed:', err);
   }
 
   return event;

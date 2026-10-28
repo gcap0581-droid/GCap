@@ -93,7 +93,7 @@ export async function applyAiStudioUpdateNow(targetBuildId?: string): Promise<vo
         const cacheKeys = await caches.keys();
         await Promise.all(cacheKeys.map((key) => caches.delete(key)));
       } catch (e) {
-        console.warn('[AutoSync] Cache clearing error:', e);
+        console.log('[AutoSync] Cache clearing error:', e);
       }
     }
 
@@ -184,7 +184,7 @@ export async function checkAndAutoApplyOnLaunch(): Promise<void> {
     if (typeof window === 'undefined') return;
     await checkForAiStudioUpdate(false);
   } catch (e) {
-    console.warn('[AutoSync] Launch check error:', e);
+    console.log('[AutoSync] Launch check error:', e);
   }
 }
 
@@ -278,6 +278,6 @@ export async function broadcastAiStudioForceUpdate(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.warn('[AutoSync] Server force-refresh broadcast error:', err);
+    console.log('[AutoSync] Server force-refresh broadcast error:', err);
   }
 }

@@ -158,7 +158,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
         alert(isHi ? 'इतिहास सिंक करने में विफल: ' + res.error : 'Failed to sync history: ' + res.error);
       }
     } catch (err: any) {
-      console.warn('History sync error:', err);
+      console.log('History sync error:', err);
     } finally {
       setIsSyncingHistory(false);
     }
@@ -178,7 +178,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
           setContentHi(translated);
         }
       } catch (err) {
-        console.warn('Auto translate content error:', err);
+        console.log('Auto translate content error:', err);
       } finally {
         setIsTranslatingContent(false);
       }
@@ -203,7 +203,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
           setTitleHi(translated);
         }
       } catch (err) {
-        console.warn('Auto translate title error:', err);
+        console.log('Auto translate title error:', err);
       } finally {
         setIsTranslatingTitle(false);
       }
@@ -303,7 +303,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
       );
       setTimeout(() => setSuccessToast(''), 6000);
     } catch (err) {
-      console.warn('Re-send error:', err);
+      console.log('Re-send error:', err);
     } finally {
       setIsSubmitting(false);
       onRefreshMessages();
@@ -472,7 +472,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
       setSelectedUserIds([]);
       setEditingMessage(null);
     } catch (err: any) {
-      console.warn('Send broadcast error:', err);
+      console.log('Send broadcast error:', err);
     } finally {
       setIsSubmitting(false);
       onRefreshMessages();

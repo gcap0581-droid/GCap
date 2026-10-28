@@ -25,7 +25,7 @@ export function getFirebaseApp(): FirebaseApp | null {
     }
     return cachedApp;
   } catch (err) {
-    console.warn('[Firebase] App initialization error:', err);
+    console.log('[Firebase] App initialization error:', err);
     return null;
   }
 }
@@ -40,7 +40,7 @@ export function getFirestoreDb(): Firestore | null {
     console.log('[Firebase] Firestore initialized with DB:', DB_ID);
     return cachedDb;
   } catch (err) {
-    console.warn('[Firebase] Firestore initialization error:', err);
+    console.log('[Firebase] Firestore initialization error:', err);
     return null;
   }
 }
@@ -53,7 +53,7 @@ export function getFirebaseAuth(): Auth | null {
     cachedAuth = getAuth(app);
     return cachedAuth;
   } catch (err) {
-    console.warn('[Firebase] Auth initialization error:', err);
+    console.log('[Firebase] Auth initialization error:', err);
     return null;
   }
 }
@@ -63,7 +63,7 @@ export const db = new Proxy({} as Firestore, {
   get(_target, prop) {
     const instance = getFirestoreDb();
     if (!instance) {
-      console.warn('[Firebase] Accessing DB instance that failed to initialize');
+      console.log('[Firebase] Accessing DB instance that failed to initialize');
       return undefined;
     }
     const val = (instance as any)[prop];
@@ -75,7 +75,7 @@ export const auth = new Proxy({} as Auth, {
   get(_target, prop) {
     const instance = getFirebaseAuth();
     if (!instance) {
-      console.warn('[Firebase] Accessing Auth instance that failed to initialize');
+      console.log('[Firebase] Accessing Auth instance that failed to initialize');
       return undefined;
     }
     const val = (instance as any)[prop];

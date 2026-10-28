@@ -106,13 +106,13 @@ export function initPhoneRecaptcha(containerId: string = 'recaptcha-phone-contai
         console.log('[Firebase Phone Auth] Invisible reCAPTCHA solved');
       },
       'expired-callback': () => {
-        console.warn('[Firebase Phone Auth] reCAPTCHA expired, resetting');
+        console.log('[Firebase Phone Auth] reCAPTCHA expired, resetting');
       },
     });
 
     return activeRecaptchaVerifier;
   } catch (err) {
-    console.warn('[Firebase Phone Auth] Recaptcha init error:', err);
+    console.log('[Firebase Phone Auth] Recaptcha init error:', err);
     return null;
   }
 }
@@ -162,7 +162,7 @@ export async function sendFirebasePhoneOtp(
     console.log('[Firebase Phone Auth] Real SMS sent to', fullPhone);
     return { success: true, isRealFirebase: true };
   } catch (err: any) {
-    console.warn('[Firebase Phone Auth] Real SMS error:', err?.code || err?.message || err);
+    console.log('[Firebase Phone Auth] Real SMS error:', err?.code || err?.message || err);
     return {
       success: false,
       error: err?.message || 'Failed to send SMS via Firebase Auth. Please check Firebase Console Phone Auth settings & Authorized Domains.',
@@ -189,7 +189,7 @@ export async function verifyFirebasePhoneOtp(
       console.log('[Firebase Phone Auth] Mobile OTP verified via Firebase Auth!');
       return { success: true };
     } catch (err: any) {
-      console.warn('[Firebase Phone Auth] Confirm failed:', err?.code || err?.message);
+      console.log('[Firebase Phone Auth] Confirm failed:', err?.code || err?.message);
       if (expectedTestOtp && cleanOtp === expectedTestOtp) {
         return { success: true };
       }

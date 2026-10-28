@@ -558,7 +558,7 @@ export async function loginUserAsync(
       return { success: false, error: result.error };
     }
   } catch (apiErr) {
-    console.warn('[loginUserAsync] Central API login error, falling back to direct Firestore:', apiErr);
+    console.log('[loginUserAsync] Central API login error, falling back to direct Firestore:', apiErr);
   }
 
   // 2. Direct Firestore fallback (for Vercel or when server is unavailable)
@@ -600,7 +600,7 @@ export async function loginUserAsync(
       }
     }
   } catch (fsErr) {
-    console.warn('[loginUserAsync] Direct Firestore lookup error:', fsErr);
+    console.log('[loginUserAsync] Direct Firestore lookup error:', fsErr);
   }
 
   return { success: false, error: 'खाता नहीं मिला। कृपया अपनी आईडी जांचें या नया खाता बनाएं।' };
@@ -691,7 +691,7 @@ export async function registerUserAsync(data: {
         const fullMerged = mergeUsers(remoteUsers, cachedUsers);
         cachedUsers = fullMerged;
         return saveUsersToFirestore(fullMerged);
-      }).catch(e => console.warn('[registerUserAsync] Firestore save error:', e));
+      }).catch(e => console.log('[registerUserAsync] Firestore save error:', e));
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
@@ -702,7 +702,7 @@ export async function registerUserAsync(data: {
       return { success: false, error: result.error };
     }
   } catch (err) {
-    console.warn('Register API fetch error, using direct Firestore fallback:', err);
+    console.log('Register API fetch error, using direct Firestore fallback:', err);
   }
 
   // Direct Firestore fallback for Vercel / Offline
@@ -783,7 +783,7 @@ export async function registerUserAsync(data: {
 
     return { success: true, user: newUser };
   } catch (fsErr) {
-    console.warn('Direct Firestore registration error:', fsErr);
+    console.log('Direct Firestore registration error:', fsErr);
   }
 
   // Memory fallback
@@ -916,7 +916,7 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
       return cachedUsers;
     }
   } catch (fsErr) {
-    console.warn('[getAllUsersAsync] Direct Firestore fetch failed, trying API fallback:', fsErr);
+    console.log('[getAllUsersAsync] Direct Firestore fetch failed, trying API fallback:', fsErr);
   }
 
   // 2. Fallback to Express Central API
@@ -935,14 +935,14 @@ export async function getAllUsersAsync(): Promise<UserProfile[]> {
       }
     }
   } catch (e) {
-    console.warn('[getAllUsersAsync] API fallback failed:', e);
+    console.log('[getAllUsersAsync] API fallback failed:', e);
   }
 
   return filterBlacklisted(enrichUsersWithPresence(cachedUsers));
 }
 
 export function restoreUsersDB(users: UserProfile[]): void {
-  console.warn('restoreUsersDB is deprecated.');
+  console.log('restoreUsersDB is deprecated.');
 }
 
 export async function syncUsersWithServer(): Promise<UserProfile[]> {
@@ -995,7 +995,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
         const fullMerged = mergeUsers(remoteUsers, cachedUsers);
         cachedUsers = fullMerged;
         return saveUsersToFirestore(fullMerged);
-      }).catch(e => console.warn('[adminAddUserAsync] Firestore save error:', e));
+      }).catch(e => console.log('[adminAddUserAsync] Firestore save error:', e));
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('app_users_updated', { detail: cachedUsers }));
@@ -1006,7 +1006,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
       return { success: false, error: result.error };
     }
   } catch (err) {
-    console.warn('Admin add user API error, using direct Firestore:', err);
+    console.log('Admin add user API error, using direct Firestore:', err);
   }
 
   // Direct Firestore fallback for Vercel / offline mode
@@ -1080,7 +1080,7 @@ export async function adminAddUserAsync(data: any): Promise<{ success: boolean; 
 
     return { success: true, user: newUser };
   } catch (fsErr) {
-    console.warn('Direct Firestore adminAddUser error:', fsErr);
+    console.log('Direct Firestore adminAddUser error:', fsErr);
   }
 
   const tempId = `usr-admin-${Date.now()}`;
@@ -1105,7 +1105,7 @@ export function adminAddUser(data: any): { success: boolean; user?: UserProfile;
     joinedDate: data.joinedDate || new Date().toISOString().split('T')[0]
   } as unknown as UserProfile;
   cachedUsers = [...cachedUsers, newUser];
-  adminAddUserAsync(data).catch(e => console.warn('Background adminAddUser error:', e));
+  adminAddUserAsync(data).catch(e => console.log('Background adminAddUser error:', e));
   return { success: true, user: newUser };
 }
 
@@ -1140,7 +1140,7 @@ export async function adminDeleteUserAsync(userId: string): Promise<{ success: b
       data = await res.json().catch(() => ({}));
     }
   } catch (err: any) {
-    console.warn('Admin delete user API error, using direct Firestore:', err);
+    console.log('Admin delete user API error, using direct Firestore:', err);
   }
 
   // Update Firestore directly
@@ -1176,7 +1176,7 @@ export async function adminDeleteUserAsync(userId: string): Promise<{ success: b
 
     return { success: true };
   } catch (fsErr) {
-    console.warn('Direct Firestore adminDeleteUser error:', fsErr);
+    console.log('Direct Firestore adminDeleteUser error:', fsErr);
   }
 
   cachedUsers = cachedUsers.filter(u => u && !isUserDeleted(u));
@@ -1186,7 +1186,7 @@ export async function adminDeleteUserAsync(userId: string): Promise<{ success: b
 export function adminDeleteUser(userId: string): { success: boolean; error?: string } {
   recordDeletedUserId(userId);
   cachedUsers = cachedUsers.filter(u => !isUserDeleted(u));
-  adminDeleteUserAsync(userId).catch(e => console.warn('Background adminDeleteUser error:', e));
+  adminDeleteUserAsync(userId).catch(e => console.log('Background adminDeleteUser error:', e));
   return { success: true };
 }
 
@@ -1255,7 +1255,7 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
       }
     }
   } catch (err) {
-    console.warn('Admin update user API error, using direct Firestore:', err);
+    console.log('Admin update user API error, using direct Firestore:', err);
   }
 
   // Direct Firestore fallback for Vercel
@@ -1287,7 +1287,7 @@ export async function adminUpdateUserAsync(userId: string, updates: any): Promis
 
     return { success: true, user: targetUpdated || undefined };
   } catch (fsErr) {
-    console.warn('Direct Firestore adminUpdateUser error:', fsErr);
+    console.log('Direct Firestore adminUpdateUser error:', fsErr);
   }
 
   // Fallback local memory update
@@ -1334,7 +1334,7 @@ export function adminUpdateUser(userId: string, updates: any): { success: boolea
 
   // Trigger server & firestore update in background
   adminUpdateUserAsync(userId, cleanUpdates).catch(err => {
-    console.warn('Background adminUpdateUserAsync error:', err);
+    console.log('Background adminUpdateUserAsync error:', err);
   });
 
   const updatedProfile = cachedUsers.find(u => u.id === userId || u.loginId === userId || u.phone === userId);

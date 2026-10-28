@@ -47,7 +47,7 @@ export const LiveAnnouncementBanner: React.FC<LiveAnnouncementBannerProps> = ({
       localStorage.setItem(bannerKey, 'true');
       sessionStorage.setItem('gcap_dismissed_all_banners', 'true');
     } catch (e) {
-      console.warn('Could not save banner dismiss state', e);
+      console.log('Could not save banner dismiss state', e);
     }
   };
 

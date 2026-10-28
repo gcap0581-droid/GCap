@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.warn('GCap Global Error Caught:', error, errorInfo);
+    console.log('GCap Global Error Caught:', error, errorInfo);
   }
 
   private handleReload = () => {

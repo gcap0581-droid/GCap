@@ -433,7 +433,7 @@ export async function fetchCentralState(
       }
     }
   } catch (err) {
-    console.warn('[CentralSync] API fetch failed, trying Firestore fallback...', err);
+    console.log('[CentralSync] API fetch failed, trying Firestore fallback...', err);
   }
 
   // 2. Direct Firestore State (Instant fallback for Vercel)
@@ -446,7 +446,7 @@ export async function fetchCentralState(
     const fs = await fetchFullFirestoreState();
     if (fs) return formatDatabaseToCentralResponse(fs, userId, role);
   } catch (fsErr) {
-    console.warn('[CentralSync] Firestore fallback failed:', fsErr);
+    console.log('[CentralSync] Firestore fallback failed:', fsErr);
   }
 
   return null;
@@ -493,7 +493,7 @@ export async function apiCreateTransaction(
       saveTransactionsToFirestore(merged).catch(() => {});
     }
   } catch (e) {
-    console.warn('[apiCreateTransaction] Early cache sync note:', e);
+    console.log('[apiCreateTransaction] Early cache sync note:', e);
   }
 
   try {
@@ -519,7 +519,7 @@ export async function apiCreateTransaction(
       }
     }
   } catch (err: any) {
-    console.warn('[apiCreateTransaction] API fetch failed, using direct Firestore:', err);
+    console.log('[apiCreateTransaction] API fetch failed, using direct Firestore:', err);
   }
 
   // Direct Firestore write for Vercel
@@ -596,7 +596,7 @@ export async function apiUpdateTransaction(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiUpdateTransaction] API failed, using direct Firestore:', err);
+    console.log('[apiUpdateTransaction] API failed, using direct Firestore:', err);
   }
 
   // Direct Firestore fallback for Vercel
@@ -683,7 +683,7 @@ export async function apiAddTransaction(
       }
     }
   } catch (err: any) {
-    console.warn('[apiAddTransaction] API failed, using direct Firestore:', err);
+    console.log('[apiAddTransaction] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -727,7 +727,7 @@ export async function apiDeleteTransaction(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiDeleteTransaction] API failed, using direct Firestore:', err);
+    console.log('[apiDeleteTransaction] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -777,7 +777,7 @@ export async function apiCreateInvestment(
       }
     }
   } catch (err: any) {
-    console.warn('[apiCreateInvestment] API failed, using direct Firestore:', err);
+    console.log('[apiCreateInvestment] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -838,7 +838,7 @@ export async function apiUpdateInvestment(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiUpdateInvestment] API failed, using direct Firestore:', err);
+    console.log('[apiUpdateInvestment] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -879,7 +879,7 @@ export async function apiSavePlans(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSavePlans] API failed, using direct Firestore:', err);
+    console.log('[apiSavePlans] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -907,7 +907,7 @@ export async function apiSaveRules(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSaveRules] API failed, using direct Firestore:', err);
+    console.log('[apiSaveRules] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -935,7 +935,7 @@ export async function apiSaveLiveConfig(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSaveLiveConfig] API failed, using direct Firestore:', err);
+    console.log('[apiSaveLiveConfig] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -964,7 +964,7 @@ export async function apiUpdateTreasury(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiUpdateTreasury] API failed, using direct Firestore:', err);
+    console.log('[apiUpdateTreasury] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -994,7 +994,7 @@ export async function apiSaveBankDetails(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSaveBankDetails] API failed, using direct Firestore:', err);
+    console.log('[apiSaveBankDetails] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -1056,14 +1056,14 @@ export async function apiAdminAdjustUserWallet(
               saveTreasuryToFirestore(result.treasury, result.treasuryLogs).catch(() => {});
             }
           }).catch((fsSyncErr) => {
-            console.warn('[apiAdminAdjustUserWallet] Direct Firestore sync warn:', fsSyncErr);
+            console.log('[apiAdminAdjustUserWallet] Direct Firestore sync warn:', fsSyncErr);
           });
         }
         return result;
       }
     }
   } catch (err: any) {
-    console.warn('[apiAdminAdjustUserWallet] API failed, using direct Firestore:', err);
+    console.log('[apiAdminAdjustUserWallet] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -1170,7 +1170,7 @@ export async function apiUpdateWallet(
       }
     }
   } catch (err: any) {
-    console.warn('[apiUpdateWallet] API failed, using direct Firestore:', err);
+    console.log('[apiUpdateWallet] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -1213,7 +1213,7 @@ export async function apiFetchMessages(
       if (data && data.messages) return { success: true, messages: data.messages };
     }
   } catch (err) {
-    console.warn('[apiFetchMessages] API failed, using direct Firestore:', err);
+    console.log('[apiFetchMessages] API failed, using direct Firestore:', err);
   }
 
   try {
@@ -1265,7 +1265,7 @@ export async function apiSendAdminMessage(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSendAdminMessage] API failed, creating fallback message:', err);
+    console.log('[apiSendAdminMessage] API failed, creating fallback message:', err);
   }
 
   try {
@@ -1325,7 +1325,7 @@ export async function apiSyncAdminMessagesBatch(
       if (result && result.success) return result;
     }
   } catch (err: any) {
-    console.warn('[apiSyncAdminMessagesBatch] API failed, syncing directly to Firestore:', err);
+    console.log('[apiSyncAdminMessagesBatch] API failed, syncing directly to Firestore:', err);
   }
 
   try {
@@ -1454,19 +1454,19 @@ export async function apiDeleteAdminMessage(
 if (typeof window !== 'undefined') {
   window.addEventListener('gcap_api_save_plans', (e: any) => {
     if (e.detail) {
-      apiSavePlans(e.detail).catch(err => console.warn('[CentralSync] Global save plans error:', err));
+      apiSavePlans(e.detail).catch(err => console.log('[CentralSync] Global save plans error:', err));
     }
   });
 
   window.addEventListener('gcap_api_save_rules', (e: any) => {
     if (e.detail) {
-      apiSaveRules(e.detail).catch(err => console.warn('[CentralSync] Global save rules error:', err));
+      apiSaveRules(e.detail).catch(err => console.log('[CentralSync] Global save rules error:', err));
     }
   });
 
   window.addEventListener('gcap_api_save_live_config', (e: any) => {
     if (e.detail) {
-      apiSaveLiveConfig(e.detail).catch(err => console.warn('[CentralSync] Global save live config error:', err));
+      apiSaveLiveConfig(e.detail).catch(err => console.log('[CentralSync] Global save live config error:', err));
     }
   });
 }

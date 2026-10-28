@@ -76,7 +76,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
           });
         }
       } catch (e) {
-        console.warn('Failed to request notification permission:', e);
+        console.log('Failed to request notification permission:', e);
       }
     }
   };

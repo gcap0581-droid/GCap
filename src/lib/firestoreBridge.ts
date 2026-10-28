@@ -126,7 +126,7 @@ export function saveOfflineDbToLocalStorage(state: FirestoreDatabaseState) {
     try {
       localStorage.setItem('gcap_offline_db_backup', JSON.stringify(state));
     } catch (e) {
-      console.warn('[FirestoreBridge] Failed to save offline DB backup:', e);
+      console.log('[FirestoreBridge] Failed to save offline DB backup:', e);
     }
   }
 }
@@ -143,7 +143,7 @@ export function loadOfflineDbFromLocalStorage(): FirestoreDatabaseState | null {
         return cleanDatabaseState(parsed);
       }
     } catch (e) {
-      console.warn('[FirestoreBridge] Failed to load offline DB backup:', e);
+      console.log('[FirestoreBridge] Failed to load offline DB backup:', e);
     }
   }
   return null;
@@ -311,7 +311,7 @@ export function initFirestoreRealtimeListener(): () => void {
     try {
       const firestore = getFirestoreDb();
       if (!firestore) {
-        console.warn('[FirestoreBridge] Firestore unavailable, real-time sync in offline mode');
+        console.log('[FirestoreBridge] Firestore unavailable, real-time sync in offline mode');
         return () => {};
       }
       const colRef = collection(firestore, 'gcap_database');
@@ -332,7 +332,7 @@ export function initFirestoreRealtimeListener(): () => void {
               try {
                 listener(parsed);
               } catch (e) {
-                console.warn('[FirestoreBridge] Listener callback error:', e);
+                console.log('[FirestoreBridge] Listener callback error:', e);
               }
             });
 
@@ -343,7 +343,7 @@ export function initFirestoreRealtimeListener(): () => void {
           }
         },
         (error) => {
-          console.warn('[FirestoreBridge] Realtime listener error:', error);
+          console.log('[FirestoreBridge] Realtime listener error:', error);
           // If we hit quota limit, fallback to localStorage backup and notify UI immediately to prevent hanging
           const offlineBackup = loadOfflineDbFromLocalStorage();
           if (offlineBackup) {
@@ -352,7 +352,7 @@ export function initFirestoreRealtimeListener(): () => void {
               try {
                 listener(offlineBackup);
               } catch (e) {
-                console.warn('[FirestoreBridge] Fallback listener error:', e);
+                console.log('[FirestoreBridge] Fallback listener error:', e);
               }
             });
             // Dispatch global browser event for cross-component re-renders
@@ -363,7 +363,7 @@ export function initFirestoreRealtimeListener(): () => void {
         }
       );
     } catch (err) {
-      console.warn('[FirestoreBridge] Failed to initialize snapshot listener:', err);
+      console.log('[FirestoreBridge] Failed to initialize snapshot listener:', err);
     }
   }
 
@@ -395,7 +395,7 @@ export function subscribeToFirestoreState(
     try {
       callback(cachedFirestoreDb);
     } catch (e) {
-      console.warn('[FirestoreBridge] Initial callback error:', e);
+      console.log('[FirestoreBridge] Initial callback error:', e);
     }
   }
 
@@ -441,7 +441,7 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
 
     const firestore = getFirestoreDb();
     if (!firestore) {
-      console.warn('[FirestoreBridge] Firestore unavailable, using offline local database state');
+      console.log('[FirestoreBridge] Firestore unavailable, using offline local database state');
       return loadOfflineDbFromLocalStorage();
     }
 
@@ -488,9 +488,9 @@ export async function fetchFullFirestoreState(): Promise<FirestoreDatabaseState 
   } catch (err) {
     const errMsg = String(err && (err as any).message || err || "").toLowerCase();
     if (errMsg.includes("resource_exhausted") || errMsg.includes("quota")) {
-      console.warn('[FirestoreBridge] Firestore quota limit reached. Falling back to local offline DB backup.', err);
+      console.log('[FirestoreBridge] Firestore quota limit reached. Falling back to local offline DB backup.', err);
     } else {
-      console.warn('[FirestoreBridge] Error fetching full state:', err);
+      console.log('[FirestoreBridge] Error fetching full state:', err);
     }
 
     // Try loading from local offline backup
@@ -559,7 +559,7 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
       try {
         listener(cachedFirestoreDb!);
       } catch (e) {
-        console.warn('[FirestoreBridge] Listener callback error on local save:', e);
+        console.log('[FirestoreBridge] Listener callback error on local save:', e);
       }
     });
 
@@ -574,7 +574,7 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
     if (!firestore) return true;
     const ref = doc(firestore, 'gcap_database', docId);
     withTimeout(setDoc(ref, { data: cleanForFirestore(data) }), 10000).catch((e) => {
-      console.warn(`[FirestoreBridge] Background setDoc warn for ${docId}:`, e);
+      console.log(`[FirestoreBridge] Background setDoc warn for ${docId}:`, e);
     });
 
     // Update metadata timestamp in background
@@ -583,7 +583,7 @@ export async function saveDocToFirestore(docId: string, data: any): Promise<bool
 
     return true;
   } catch (err) {
-    console.warn(`[FirestoreBridge] Error saving doc ${docId} to remote Firestore (using local offline backup):`, err);
+    console.log(`[FirestoreBridge] Error saving doc ${docId} to remote Firestore (using local offline backup):`, err);
     // Return true because it was successfully persisted locally and Express API will handle central synchronization
     return true;
   }
@@ -805,7 +805,7 @@ export async function updatePresenceInFirestore(
       allPresence[uId] = record;
       await setDoc(presenceRef, { data: cleanForFirestore(allPresence) }, { merge: true });
     } catch (e) {
-      console.warn('[FirestoreBridge] Presence update fallback error:', e);
+      console.log('[FirestoreBridge] Presence update fallback error:', e);
     }
   }
 }
@@ -869,7 +869,7 @@ export function updateFirestoreBridgeCache(partial: Partial<FirestoreDatabaseSta
     try {
       listener(cachedFirestoreDb!);
     } catch (e) {
-      console.warn('[FirestoreBridge] Error in update cache listener:', e);
+      console.log('[FirestoreBridge] Error in update cache listener:', e);
     }
   });
 

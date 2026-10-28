@@ -164,7 +164,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           setIsReferralLocked(false);
         }
       } catch (err) {
-        console.warn('Error reading referral param:', err);
+        console.log('Error reading referral param:', err);
       }
     }
   }, []);

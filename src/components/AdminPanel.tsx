@@ -518,7 +518,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             language: language === 'hi' ? 'hi' : 'en',
           });
         } else {
-          console.warn('User add error:', res.error);
+          console.log('User add error:', res.error);
           setIsSyncingUsers(false);
           throw new Error(res.error || 'Failed to add new user');
         }
@@ -635,7 +635,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     try {
       const res = await adminDeleteUserAsync(userId);
       if (!res.success) {
-        console.warn('Delete user failed:', res.error);
+        console.log('Delete user failed:', res.error);
       }
       await refreshUsers();
     } finally {

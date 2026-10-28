@@ -133,7 +133,7 @@ class AudioAnnouncerEngine {
 
         window.speechSynthesis.speak(utterance);
       } catch (err) {
-        console.warn('[AudioAnnouncer] Speech synthesis error:', err);
+        console.log('[AudioAnnouncer] Speech synthesis error:', err);
       }
     }, delayMs);
   }

@@ -147,7 +147,7 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('gcap_api_save_rules', { detail: sanitizedRules }));
       }
-      saveRulesToFirestore(sanitizedRules).catch((err) => console.warn('Direct saveRulesToFirestore error:', err));
+      saveRulesToFirestore(sanitizedRules).catch((err) => console.log('Direct saveRulesToFirestore error:', err));
     }
     if (broadcast) {
       broadcastOtaUpdate(
@@ -159,7 +159,7 @@ export function saveStoredRules(rules: AppRules, broadcast = false, syncToServer
       );
     }
   } catch (err) {
-    console.warn('Failed to save rules:', err);
+    console.log('Failed to save rules:', err);
   }
 }
 

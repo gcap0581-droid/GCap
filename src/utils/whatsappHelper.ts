@@ -55,7 +55,7 @@ export function saveMetaCloudApiConfig(config: MetaCloudApiConfig): void {
       localStorage.setItem(META_CLOUD_API_STORAGE_KEY, JSON.stringify(config));
     }
   } catch (err) {
-    console.error('Failed to save Meta Cloud API config', err);
+    console.log('Failed to save Meta Cloud API config', err);
   }
 }
 
@@ -69,7 +69,7 @@ export function getStoredWhatsAppLogs(): WhatsAppDispatchLog[] {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    console.error('Failed to load WhatsApp logs', err);
+    console.log('Failed to load WhatsApp logs', err);
     return [];
   }
 }
@@ -100,7 +100,7 @@ export function recordWhatsAppDispatchLog(logData: Partial<WhatsAppDispatchLog>)
       localStorage.setItem(WHATSAPP_LOGS_STORAGE_KEY, JSON.stringify(updated));
     }
   } catch (err) {
-    console.error('Failed to persist WhatsApp log', err);
+    console.log('Failed to persist WhatsApp log', err);
   }
 
   return newLog;
@@ -115,7 +115,7 @@ export function clearWhatsAppLogs(): void {
       localStorage.removeItem(WHATSAPP_LOGS_STORAGE_KEY);
     }
   } catch (err) {
-    console.error('Failed to clear WhatsApp logs', err);
+    console.log('Failed to clear WhatsApp logs', err);
   }
 }
 
@@ -198,7 +198,7 @@ export function sendWhatsAppAlert(options: WhatsAppAlertOptions): boolean {
     }
     return true;
   } catch (error) {
-    console.error('Failed to trigger WhatsApp alert', error);
+    console.log('Failed to trigger WhatsApp alert', error);
     return false;
   }
 }

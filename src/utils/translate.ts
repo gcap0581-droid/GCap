@@ -20,7 +20,7 @@ export async function translateEnglishToHindi(text: string): Promise<string> {
       }
     }
   } catch (err) {
-    console.warn('[Translate] Direct endpoint failed, trying fallback:', err);
+    console.log('[Translate] Direct endpoint failed, trying fallback:', err);
   }
 
   // 2. Try Server API Proxy endpoint

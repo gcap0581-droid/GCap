@@ -295,7 +295,7 @@ export const AdminLedgerTab: React.FC<AdminLedgerTabProps> = ({ language }) => {
         gathered = mergeEntries([gathered, fsState.companyLedger]);
       }
     } catch (err: any) {
-      console.warn('[AdminLedgerTab] Error loading Firestore ledger:', err);
+      console.log('[AdminLedgerTab] Error loading Firestore ledger:', err);
     }
 
     // Apply combined state and persist to Firestore

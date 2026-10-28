@@ -302,7 +302,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
       setDownloadSuccess(`${filename} (${(blob.size / 1024).toFixed(0)} KB) ${isHi ? 'सफलतापूर्वक डाउनलोड हुआ!' : 'downloaded successfully!'}`);
       setTimeout(() => setDownloadSuccess(null), 5000);
     } catch (err) {
-      console.error('Logo download failed:', err);
+      console.log('Logo download failed:', err);
       alert(isHi ? 'लोगो डाउनलोड करने में त्रुटि हुई। कृपया पुनः प्रयास करें।' : 'Failed to download logo. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -357,7 +357,7 @@ export const AdminCompanyLogoTab: React.FC<AdminCompanyLogoTabProps> = ({ langua
         setTimeout(() => setCopiedLink(false), 3000);
       }
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      console.log('Failed to copy to clipboard:', err);
     }
   };
 

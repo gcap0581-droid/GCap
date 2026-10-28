@@ -94,7 +94,7 @@ class RealtimeSyncManager {
         };
       }
     } catch (e) {
-      console.warn('[RealtimeSync] BroadcastChannel not supported:', e);
+      console.log('[RealtimeSync] BroadcastChannel not supported:', e);
     }
   }
 
@@ -129,7 +129,7 @@ class RealtimeSyncManager {
           };
           this.notifyListeners(payload, true);
         } catch (parseErr) {
-          console.warn('[RealtimeSync] Parse error for', type, parseErr);
+          console.log('[RealtimeSync] Parse error for', type, parseErr);
         }
       };
 
@@ -172,7 +172,7 @@ class RealtimeSyncManager {
         }
       };
     } catch (err) {
-      console.warn('[RealtimeSync] SSE setup failed, falling back to polling:', err);
+      console.log('[RealtimeSync] SSE setup failed, falling back to polling:', err);
       this.isConnected = false;
     }
   }
@@ -185,7 +185,7 @@ class RealtimeSyncManager {
       try {
         listener(payload);
       } catch (err) {
-        console.warn('[RealtimeSync] Error in listener:', err);
+        console.log('[RealtimeSync] Error in listener:', err);
       }
     });
 

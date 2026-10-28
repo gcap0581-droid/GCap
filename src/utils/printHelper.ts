@@ -6,7 +6,7 @@
 export function printDocument(elementId: string, documentTitle: string = 'GCap Official Document'): void {
   const element = document.getElementById(elementId);
   if (!element) {
-    console.warn(`Print target #${elementId} not found, falling back to window.print()`);
+    console.log(`Print target #${elementId} not found, falling back to window.print()`);
     window.print();
     return;
   }
@@ -99,7 +99,7 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
                 window.focus();
                 window.print();
               } catch(e) {
-                console.error(e);
+                console.log(e);
               }
             }, 350);
           };
@@ -119,7 +119,7 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
         try {
           window.print();
         } catch (e) {
-          console.error(e);
+          console.log(e);
         }
       }
     }, 450);
@@ -129,11 +129,11 @@ export function printDocument(elementId: string, documentTitle: string = 'GCap O
       iframe.remove();
     }, 60000);
   } catch (error) {
-    console.warn('Iframe print error, falling back to window.print()', error);
+    console.log('Iframe print error, falling back to window.print()', error);
     try {
       window.print();
     } catch (e) {
-      console.error(e);
+      console.log(e);
     }
   }
 }

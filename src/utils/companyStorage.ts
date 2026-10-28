@@ -126,7 +126,7 @@ export function getStoredCompanyProfile(): CompanyProfile {
     }
     return mergeCompanyProfiles(DEFAULT_COMPANY_PROFILE, parsed);
   } catch (err) {
-    console.warn('Failed to parse stored company profile:', err);
+    console.log('Failed to parse stored company profile:', err);
     return DEFAULT_COMPANY_PROFILE;
   }
 }
@@ -149,7 +149,7 @@ export function saveStoredCompanyProfile(profile: CompanyProfile): void {
       );
     }
   } catch (err) {
-    console.warn('Failed to save company profile:', err);
+    console.log('Failed to save company profile:', err);
   }
 }
 

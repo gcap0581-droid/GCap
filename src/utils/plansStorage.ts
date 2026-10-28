@@ -171,12 +171,12 @@ export function getStoredPlans(): InvestmentPlan[] {
         });
       }
     } catch (e) {
-      console.warn('Dynamic plans ROI override failed:', e);
+      console.log('Dynamic plans ROI override failed:', e);
     }
 
     return finalPlans;
   } catch (err) {
-    console.warn('Failed to load plans from storage:', err);
+    console.log('Failed to load plans from storage:', err);
     return DEFAULT_PLANS;
   }
 }
@@ -194,7 +194,7 @@ export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, sync
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('gcap_api_save_plans', { detail: finalPlans }));
       }
-      savePlansToFirestore(finalPlans).catch((err) => console.warn('Background savePlansToFirestore error:', err));
+      savePlansToFirestore(finalPlans).catch((err) => console.log('Background savePlansToFirestore error:', err));
     }
     if (broadcast || changed) {
       broadcastOtaUpdate(
@@ -206,7 +206,7 @@ export function saveStoredPlans(plans: InvestmentPlan[], broadcast = false, sync
       );
     }
   } catch (err) {
-    console.warn('Failed to save plans to storage:', err);
+    console.log('Failed to save plans to storage:', err);
   }
 }
 

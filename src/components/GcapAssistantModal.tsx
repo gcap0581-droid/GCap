@@ -414,7 +414,7 @@ export const GcapAssistantModal: React.FC<GcapAssistantModalProps> = ({
         speakText(reply, assistantMsg.id);
       }
     } catch (err) {
-      console.warn('[Assistant Chat Error]:', err);
+      console.log('[Assistant Chat Error]:', err);
       const fallbackReply = getLocalAssistantReply(text, currentUser?.name || 'साथी', rules, companyProfile);
       const fallbackMsg: ChatMessage = {
         id: `asst-${Date.now()}`,

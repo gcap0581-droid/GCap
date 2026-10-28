@@ -130,7 +130,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
       setIsEditing(false);
       if (onSaveProfileSuccess) onSaveProfileSuccess();
     } catch (err) {
-      console.error('Failed to save social links:', err);
+      console.log('Failed to save social links:', err);
     } finally {
       setIsSaving(false);
     }
