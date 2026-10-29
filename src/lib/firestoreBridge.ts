@@ -205,13 +205,11 @@ function cleanDatabaseState(state: FirestoreDatabaseState): FirestoreDatabaseSta
   }
 
   if (state) {
+    const localProfile = getStoredCompanyProfile();
     if (!state.companyProfile || state.companyProfile.pan === 'AABCG1234F' || (state.companyProfile.registeredAddress && state.companyProfile.registeredAddress.includes('Grand Plaza'))) {
-      state.companyProfile = DEFAULT_COMPANY_PROFILE;
+      state.companyProfile = localProfile;
     } else {
-      state.companyProfile = {
-        ...DEFAULT_COMPANY_PROFILE,
-        ...state.companyProfile,
-      };
+      state.companyProfile = mergeCompanyProfiles(localProfile, state.companyProfile);
     }
 
     // Apply authoritative local / server-confirmed wallets so that stale Firestore snapshots
