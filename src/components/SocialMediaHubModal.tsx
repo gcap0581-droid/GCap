@@ -91,7 +91,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
 
   // Form state for admin editing social handles
   const [formData, setFormData] = useState({
-    youtubeUrl: prof.youtubeUrl || 'https://www.youtube.com/@GCapOfficial',
+    youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1',
     telegramUrl: prof.telegramUrl || 'https://t.me/gcapofficial',
     whatsappGroupUrl: prof.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity',
     facebookUrl: prof.facebookUrl || 'https://facebook.com/gcapofficial',
@@ -102,7 +102,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
 
   React.useEffect(() => {
     setFormData({
-      youtubeUrl: prof.youtubeUrl || 'https://www.youtube.com/@GCapOfficial',
+      youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1',
       telegramUrl: prof.telegramUrl || 'https://t.me/gcapofficial',
       whatsappGroupUrl: prof.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity',
       facebookUrl: prof.facebookUrl || 'https://facebook.com/gcapofficial',
