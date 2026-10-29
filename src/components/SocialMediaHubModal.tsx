@@ -27,6 +27,7 @@ import { CompanyProfile, UserProfile } from '../types';
 import { getStoredCompanyProfile, saveStoredCompanyProfile } from '../utils/companyStorage';
 import { saveCompanyProfileToFirestore } from '../lib/firestoreBridge';
 import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
+import { YouTubeNativeActionBar } from './YouTubeNativeActionBar';
 
 interface SocialMediaHubModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ interface SocialMediaHubModalProps {
   companyProfile?: CompanyProfile;
   currentUser?: UserProfile | null;
   onOpenYouTubeStudio?: () => void;
+  onOpenYouTubeChannel?: () => void;
   onSaveProfileSuccess?: () => void;
 }
 
@@ -45,6 +47,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
   companyProfile,
   currentUser,
   onOpenYouTubeStudio,
+  onOpenYouTubeChannel,
   onSaveProfileSuccess,
 }) => {
   const isHi = language === 'hi';
@@ -431,10 +434,12 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
             </form>
           )}
 
-          {/* Featured YouTube Channel Hero Section */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-950 via-slate-950 to-amber-950 border border-red-500/40 p-5 sm:p-7 shadow-xl space-y-4">
+          {/* Featured YouTube Channel Hero Section with Pixel-Accurate Action Bar */}
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-950 via-slate-950 to-amber-950 border border-red-500/40 p-3 sm:p-5 shadow-2xl space-y-3">
+            
+            {/* Embedded YouTube Video Player */}
             {prof.featuredVideoUrl && (
-              <div className="w-full aspect-video rounded-xl overflow-hidden border border-red-500/30">
+              <div className="w-full aspect-video rounded-xl overflow-hidden border border-red-500/40 shadow-2xl relative bg-slate-950">
                 <iframe
                   className="w-full h-full"
                   src={prof.featuredVideoUrl.replace('watch?v=', 'embed/')}
@@ -445,90 +450,55 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
                 ></iframe>
               </div>
             )}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              
-              <div className="flex items-center gap-4 text-center md:text-left flex-col md:flex-row">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-red-600/20 border-2 border-red-500/50 p-1 shrink-0 flex items-center justify-center shadow-lg shadow-red-500/30">
-                  <img
-                    src={PRIMARY_COMPANY_LOGO}
-                    alt="GCap Logo"
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                </div>
+
+            {/* Native YouTube Channel & Action Pill Bar (Subscribe, Like, Dislike, Share, Remix, More) */}
+            <YouTubeNativeActionBar
+              channelUrl={youtubeChannelUrl}
+              videoUrl={prof.featuredVideoUrl || youtubeChannelUrl}
+              videoTitle={isHi ? `${prof.companyName || 'GCap OPC Private Limited'} - 6-घंटे ऑटो-पेआउट व प्लान ट्यूटोरियल` : `${prof.companyName || 'GCap OPC Private Limited'} - Official Plan & Payout Tutorial`}
+              channelName="GCap Official"
+              subscribersCount="12.5K subscribers"
+              initialLikes={3742}
+              initialViews="6.6 lakh views"
+              isHi={isHi}
+              onOpenStudio={() => {
+                if (onOpenYouTubeStudio) {
+                  onClose();
+                  onOpenYouTubeStudio();
+                }
+              }}
+            />
+
+            {/* Explanatory Banner & Native Channel Page Trigger */}
+            <div className="p-3 rounded-xl bg-red-950/50 border border-red-500/30 text-xs text-red-200 leading-relaxed flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="flex items-center gap-2 justify-center md:justify-start">
-                    <span className="text-red-500 font-extrabold text-xs uppercase tracking-widest flex items-center gap-1">
-                      <Youtube className="w-4 h-4 inline" /> YouTube Channel
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                      MCA Registered
-                    </span>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
-                    {prof.companyName || 'GCap OPC Private Limited'} (Official)
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                  <span className="font-extrabold text-white block">
+                    {isHi ? '💡 आधिकारिक यूट्यूब एक्शन बार:' : '💡 Official YouTube Action Bar:'}
+                  </span>
+                  <p className="mt-0.5 text-slate-300 text-[11px]">
                     {isHi
-                      ? 'भारत सरकार के कॉर्पोरेट कार्य मंत्रालय (MCA) द्वारा पंजीकृत आधिकारिक यूट्यूब चैनल। हर 6 घंटे में दैनिक रिटर्न, प्लान ट्यूटोरियल्स और लीगल सर्टिफिकेट्स देखें।'
-                      : 'Official YouTube channel registered under MCA Govt of India. Watch 6-hour daily return tutorials, investment plans, and corporate updates.'}
+                      ? 'ऊपर दिए गए Subscribe बटन से चैनल सब्सक्राइब करें और Like & Share से व्हाट्सएप कम्युनिटी में शेयर करें!'
+                      : 'Subscribe to join the YouTube channel and Like & Share with your community!'}
                   </p>
-                  
-                  <div className="flex items-center gap-3 mt-3 justify-center md:justify-start text-xs font-mono text-slate-300">
-                    <span className="flex items-center gap-1 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
-                      <Users className="w-3.5 h-3.5 text-red-400" /> 12.5K+ Subscribers
-                    </span>
-                    <span className="flex items-center gap-1 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> CIN: {prof.cin || 'U66190BR2026OPC088307'}
-                    </span>
-                  </div>
                 </div>
               </div>
 
-              {/* Channel Action Buttons */}
-              <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 w-full md:w-auto shrink-0">
-                <a
-                  href={youtubeChannelUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/40 transition-all hover:scale-[1.02] active:scale-95 text-center cursor-pointer"
-                >
-                  <Youtube className="w-5 h-5 fill-white" />
-                  <span>{isHi ? 'चैनल पर जाएँ और सब्सक्राइब करें' : 'Visit & Subscribe Channel'}</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-
-                {onOpenYouTubeStudio && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenYouTubeStudio();
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/40 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    <Video className="w-4 h-4 text-amber-400" />
-                    <span>{isHi ? '🎥 7-सीन प्रोमो वीडियो स्टूडियो' : '🎥 7-Scene Promo Video Studio'}</span>
-                  </button>
-                )}
-
+              {onOpenYouTubeChannel && (
                 <button
-                  onClick={() => handleCopy(youtubeChannelUrl, 'youtube')}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-300 text-xs flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
+                  onClick={() => {
+                    onClose();
+                    onOpenYouTubeChannel();
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-200 text-slate-950 font-black text-xs shrink-0 flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95"
                 >
-                  {copiedLink === 'youtube' ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">{isHi ? 'लिंक कॉपी हो गया!' : 'Link Copied!'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{isHi ? 'चैनल लिंक कॉपी करें' : 'Copy Channel Link'}</span>
-                    </>
-                  )}
+                  <Youtube className="w-4 h-4 text-red-600 fill-red-600" />
+                  <span>{isHi ? 'चैनल पेज खोलें (@GCapOfficial)' : 'Open Channel Page (@GCapOfficial)'}</span>
                 </button>
-              </div>
-
+              )}
             </div>
+
           </div>
 
           {/* Social Platforms Grid */}

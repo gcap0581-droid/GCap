@@ -152,6 +152,7 @@ import { SuspendedUserModal } from './components/SuspendedUserModal';
 import { GcapAssistantModal } from './components/GcapAssistantModal';
 import { YouTubePromoStudioModal } from './components/YouTubePromoStudioModal';
 import { SocialMediaHubModal } from './components/SocialMediaHubModal';
+import { YouTubeChannelModal } from './components/YouTubeChannelModal';
 import { audioAnnouncer } from './utils/audioAnnouncer';
 import {
   TrendingUp,
@@ -354,6 +355,7 @@ export default function App() {
   const [isAgreementOpen, setIsAgreementOpen] = useState<boolean>(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState<boolean>(false);
   const [isSocialHubOpen, setIsSocialHubOpen] = useState<boolean>(false);
+  const [isYouTubeChannelOpen, setIsYouTubeChannelOpen] = useState<boolean>(false);
 
   // Dedicated Separate Link Routing for Official Corporate Website (Always start on Home page by default)
   const [isWebsiteRoute, setIsWebsiteRoute] = useState<boolean>(() => {
@@ -4979,6 +4981,7 @@ export default function App() {
         onOpenAssistant={() => setIsAssistantModalOpen(true)}
         onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
         onOpenSocialHub={() => setIsSocialHubOpen(true)}
+        onOpenYouTubeChannel={() => setIsYouTubeChannelOpen(true)}
         onOpenWebsite={navigateToWebsite}
       />
 
@@ -5642,7 +5645,17 @@ export default function App() {
         companyProfile={companyProfile}
         currentUser={currentUser}
         onOpenYouTubeStudio={() => setIsYouTubeStudioOpen(true)}
+        onOpenYouTubeChannel={() => setIsYouTubeChannelOpen(true)}
         onSaveProfileSuccess={() => setCompanyProfile(getStoredCompanyProfile())}
+      />
+
+      {/* Full YouTube Mobile Channel Modal (@GCapOfficial Page Replicated) */}
+      <YouTubeChannelModal
+        isOpen={isYouTubeChannelOpen}
+        onClose={() => setIsYouTubeChannelOpen(false)}
+        language={language}
+        onOpenStudio={() => setIsYouTubeStudioOpen(true)}
+        currentUser={currentUser}
       />
 
     </div>

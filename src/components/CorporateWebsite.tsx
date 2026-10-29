@@ -50,6 +50,7 @@ import { PRIMARY_COMPANY_LOGO, OFFICIAL_SEAL_LOGO } from '../utils/logoAssets';
 import { INVESTMENT_PLANS } from '../utils/plansStorage';
 import { formatINR } from '../utils/storage';
 import { getStoredRules } from '../utils/rulesStorage';
+import { YouTubeNativeActionBar } from './YouTubeNativeActionBar';
 
 export type WebTabId = 'home' | 'about' | 'plans' | 'calculator' | 'legal' | 'contact';
 
@@ -258,16 +259,18 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
   const socialMediaChannels = [
     {
       id: 'youtube',
-      name: 'YouTube',
-      nameHi: 'यूट्यूब (YouTube)',
+      name: 'YouTube Channel',
+      nameHi: 'यूट्यूब चैनल (YouTube)',
       icon: Youtube,
-      url: activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial',
+      url: (activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial').includes('?')
+        ? `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}&sub_confirmation=1`
+        : `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}?sub_confirmation=1`,
       color: 'text-red-400 border-red-500/30 bg-red-950/40 hover:bg-red-900/50 hover:border-red-500/60',
       badgeHi: 'ऑफिशियल चैनल',
       badgeEn: 'Official Channel',
-      btnBg: 'bg-red-600 hover:bg-red-500 text-white',
-      btnTextHi: 'सब्सक्राइब करें 🔔',
-      btnTextEn: 'Subscribe 🔔',
+      btnBg: 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black',
+      btnTextHi: '🔴 सब्सक्राइब व लाइक करें 🔔',
+      btnTextEn: '🔴 Subscribe & Like 🔔',
     },
     {
       id: 'telegram',
@@ -582,6 +585,58 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                 <div className="text-lg sm:text-xl font-extrabold font-mono text-emerald-400">₹1 = {activeRules.gpRatePerRupee ?? 0.98} GP</div>
                 <span className="text-[10px] text-emerald-400">{isHi ? '100% भारतीय रुपये में निकासी' : '100% INR Direct Bank'}</span>
               </div>
+            </div>
+
+            {/* Official YouTube Channel & Video Showcase Section */}
+            <div className="bg-gradient-to-br from-red-950/60 via-slate-900 to-amber-950/40 border border-red-500/30 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Youtube className="w-6 h-6 text-red-500 fill-red-500 animate-pulse" />
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black text-white">
+                      {isHi ? 'जीकैप आधिकारिक यूट्यूब चैनल व वीडियो ट्यूटोरियल' : 'GCap Official YouTube Video Tutorial'}
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      {isHi ? '1-क्लिक सब्सक्राइब करें, लाइक करें और अपने व्हाट्सएप ग्रुप में शेयर करें' : '1-Click Subscribe, Like, and Share directly to WhatsApp'}
+                    </p>
+                  </div>
+                </div>
+
+                {onOpenSocialHub && (
+                  <button
+                    onClick={onOpenSocialHub}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{isHi ? 'सोशल मीडिया हब खोलें →' : 'Open Social Hub →'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Video Frame */}
+              <div className="w-full aspect-video rounded-xl overflow-hidden border border-red-500/30 shadow-2xl bg-slate-950">
+                <iframe
+                  className="w-full h-full"
+                  src={(activeProfile.featuredVideoUrl || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ').replace('watch?v=', 'embed/')}
+                  title="GCap Official Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+
+              {/* Pixel-Accurate Native YouTube Action Bar (Subscribe, Like, Dislike, Share, Remix/Studio, More) */}
+              <YouTubeNativeActionBar
+                channelUrl={activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}
+                videoUrl={activeProfile.featuredVideoUrl || activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}
+                videoTitle={isHi ? `${activeProfile.companyName || 'GCap OPC Private Limited'} - 6-घंटे ऑटो-पेआउट व प्लान ट्यूटोरियल` : `${activeProfile.companyName || 'GCap OPC Private Limited'} - Official Video Tutorial`}
+                channelName="GCap Official"
+                subscribersCount="12.5K subscribers"
+                initialLikes={3742}
+                initialViews="6.6 lakh views"
+                isHi={isHi}
+                onOpenStudio={onOpenYouTubeStudio}
+              />
             </div>
 
             {/* Quick Tab Jump Grid */}

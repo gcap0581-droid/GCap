@@ -79,6 +79,7 @@ interface NavigationDrawerProps {
   onOpenAssistant?: () => void;
   onOpenYouTubeStudio?: () => void;
   onOpenSocialHub?: () => void;
+  onOpenYouTubeChannel?: () => void;
   onOpenWebsite?: () => void;
 }
 
@@ -113,6 +114,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onOpenAssistant,
   onOpenYouTubeStudio,
   onOpenSocialHub,
+  onOpenYouTubeChannel,
   onOpenWebsite,
 }) => {
   const isHi = language === 'hi';
@@ -672,6 +674,24 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     HUB
                   </span>
                 </button>
+
+                {onOpenYouTubeChannel && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenYouTubeChannel();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between text-amber-300 hover:bg-amber-500/15 transition-colors font-bold border border-amber-500/30 bg-amber-500/10 mt-1 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>{isHi ? '🔴 GCap Official यूट्यूब चैनल पेज' : '🔴 GCap Official YouTube Channel'}</span>
+                    </div>
+                    <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded uppercase">
+                      PAGE
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
