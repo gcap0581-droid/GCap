@@ -87,7 +87,18 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
 
   useEffect(() => {
     const handleProfileUpdated = (e: any) => {
-      if (e?.detail) setActiveProfile(e.detail);
+      if (e?.detail) {
+        setActiveProfile((prev) => ({
+          ...e.detail,
+          showYoutube: e.detail.showYoutube ?? prev.showYoutube,
+          showTelegram: e.detail.showTelegram ?? prev.showTelegram,
+          showWhatsapp: e.detail.showWhatsapp ?? prev.showWhatsapp,
+          showFacebook: e.detail.showFacebook ?? prev.showFacebook,
+          showInstagram: e.detail.showInstagram ?? prev.showInstagram,
+          showTwitter: e.detail.showTwitter ?? prev.showTwitter,
+          showLinkedin: e.detail.showLinkedin ?? prev.showLinkedin,
+        }));
+      }
     };
     const handleRulesUpdated = (e: any) => {
       if (e?.detail) setActiveRules(e.detail);
