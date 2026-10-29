@@ -21,7 +21,7 @@ import {
   SmsSettings,
 } from '../types';
 import { DEFAULT_GCAP_RULES } from '../utils/rulesStorage';
-import { DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
+import { DEFAULT_COMPANY_PROFILE, getStoredCompanyProfile, mergeCompanyProfiles } from '../utils/companyStorage';
 
 export interface UserPresenceRecord {
   userId: string;
