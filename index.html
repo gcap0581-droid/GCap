@@ -90,25 +90,8 @@
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Fail-safe auto-recovery: If app stays on splash screen for > 4.5s, purge service worker & cache and reload cleanly
-      setTimeout(function() {
-        var root = document.getElementById('root');
-        if (root && root.innerText && root.innerText.indexOf('लोड हो रहा है') !== -1) {
-          console.log('[Auto-Recovery] Clearing service worker and caches due to stuck splash screen...');
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(regs) {
-              for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
-            });
-          }
-          if ('caches' in window) {
-            caches.keys().then(function(keys) {
-              for (var i = 0; i < keys.length; i++) { caches.delete(keys[i]); }
-            });
-          }
-          sessionStorage.clear();
-          setTimeout(function() { window.location.reload(); }, 300);
-        }
-      }, 4500);
+      // Non-destructive init check
+      console.log('[GCAP Portal] Initializing web application...');
     </script>
   </body>
 </html>

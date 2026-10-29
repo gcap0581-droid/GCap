@@ -506,13 +506,13 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                     </label>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       {isHi
-                        ? 'यूज़र जब ₹1 कैश स्वैप करेगा तो उसे कितना GP मिलेगा? (डिफ़ॉल्ट 1 GP = ₹1)'
-                        : 'Set how many G-Points (GP) a user receives for each ₹1 INR swapped (Default 1.0)'}
+                        ? 'यूज़र जब ₹1 कैश स्वैप करेगा तो उसे कितना GP मिलेगा? (डिफ़ॉल्ट ₹1 = 0.98 GP)'
+                        : 'Set how many G-Points (GP) a user receives for each ₹1 INR swapped (Default 0.98)'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                      ₹1 = {formData.gpRatePerRupee ?? 1} GP
+                      ₹1 = {formData.gpRatePerRupee ?? 0.98} GP
                     </span>
                   </div>
                 </div>

@@ -313,7 +313,7 @@ export interface CompanyProfile {
   industry?: string; // e.g. "Finance Technology"
   sector?: string; // e.g. "Business Finance"
   dpiitMinistry?: string; // e.g. "Ministry of Commerce & Industry, DPIIT, Govt of India"
-  // Official Social Media & YouTube Channel URLs
+  // Official Social Media & YouTube Channel URLs & Visibility Toggles
   youtubeUrl?: string; // e.g. "https://www.youtube.com/@gcapofficial"
   telegramUrl?: string; // e.g. "https://t.me/gcapofficial"
   whatsappGroupUrl?: string; // e.g. "https://chat.whatsapp.com/GCapOfficialCommunity"
@@ -321,6 +321,13 @@ export interface CompanyProfile {
   instagramUrl?: string; // e.g. "https://instagram.com/gcapofficial"
   twitterUrl?: string; // e.g. "https://twitter.com/gcapofficial"
   linkedinUrl?: string; // e.g. "https://linkedin.com/company/gcapofficial"
+  showYoutube?: boolean;
+  showTelegram?: boolean;
+  showWhatsapp?: boolean;
+  showFacebook?: boolean;
+  showInstagram?: boolean;
+  showTwitter?: boolean;
+  showLinkedin?: boolean;
   featuredVideoUrl?: string; // e.g. YouTube embed URL or watch URL
   lastUpdated?: string;
 }

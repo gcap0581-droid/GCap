@@ -2884,7 +2884,7 @@ export default function App() {
     let updatedWallet: Wallet;
     let newTx: Transaction;
 
-    const gpRate = rules?.gpRatePerRupee && rules?.gpRatePerRupee > 0 ? rules?.gpRatePerRupee : 1.0;
+    const gpRate = rules?.gpRatePerRupee && rules?.gpRatePerRupee > 0 ? rules?.gpRatePerRupee : 0.98;
     let finalGpAmount = 0;
 
     if (direction === 'GP_TO_CASH') {

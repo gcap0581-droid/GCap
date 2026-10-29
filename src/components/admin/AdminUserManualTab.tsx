@@ -131,7 +131,7 @@ export const AdminUserManualTab: React.FC<AdminUserManualTabProps> = ({
     }
   };
 
-  const gpRate = activeRules?.gpRatePerRupee ?? 1;
+  const gpRate = activeRules?.gpRatePerRupee ?? 0.98;
 
   return (
     <div className="space-y-6" ref={manualPrintRef}>

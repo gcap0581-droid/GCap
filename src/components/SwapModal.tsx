@@ -41,7 +41,7 @@ export const SwapModal: React.FC<SwapModalProps> = ({
     pendingDeposits: 0,
   };
   const isHi = language === 'hi';
-  const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 1.0;
+  const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 0.98;
   
   // Dual Swap Direction Mode State
   const [direction, setDirection] = useState<'CASH_TO_GP' | 'GP_TO_CASH'>('CASH_TO_GP');

@@ -21,7 +21,7 @@ export function setStoredAdminTxPassword(newPassword: string): void {
 export const DEFAULT_GCAP_RULES: AppRules = {
   platformName: 'GCAP GLOBAL ASSET PORTAL',
   adminTxPassword: 'adtra123',
-  gpRatePerRupee: 1.0,
+  gpRatePerRupee: 0.98,
   minDeposit: 10000,
   maxDeposit: 1000000000,
   minWithdrawal: 500,

@@ -55,7 +55,13 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   facebookUrl: 'https://facebook.com/gcapofficial',
   instagramUrl: 'https://instagram.com/gcapofficial',
   twitterUrl: 'https://twitter.com/gcapofficial',
-  linkedinUrl: 'https://linkedin.com/company/gcapofficial',
+  showYoutube: true,
+  showTelegram: true,
+  showWhatsapp: true,
+  showFacebook: true,
+  showInstagram: true,
+  showTwitter: true,
+  showLinkedin: true,
   featuredVideoUrl: '',
   lastUpdated: '2026-09-30T16:31:07.308Z',
 };
@@ -75,10 +81,12 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
     lastUpdated: incoming.lastUpdated || baseObj.lastUpdated || new Date().toISOString(),
   };
 
-  // Guarantee every non-empty field in incoming overrides previous values
+  // Guarantee every non-empty field and boolean in incoming overrides previous values
   (Object.keys(incoming) as (keyof CompanyProfile)[]).forEach((key) => {
     const val = incoming[key];
     if (typeof val === 'string' && val.trim().length > 0) {
+      (merged as any)[key] = val;
+    } else if (typeof val === 'boolean') {
       (merged as any)[key] = val;
     }
   });

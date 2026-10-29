@@ -49,7 +49,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
     pendingWithdrawals: 0,
     pendingDeposits: 0,
   };
-  const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 1.0;
+  const gpRate = rules?.gpRatePerRupee && rules.gpRatePerRupee > 0 ? rules.gpRatePerRupee : 0.98;
   const hasPendingApproval = (wallet.pendingDeposits || 0) > 0;
 
   return (

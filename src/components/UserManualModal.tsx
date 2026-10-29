@@ -134,7 +134,7 @@ export const UserManualModal: React.FC<UserManualModalProps> = ({
     downloadDocumentAsHtml('user-manual-modal-printable', `GCap-Operations-SOP.html`);
   };
 
-  const gpRate = activeRules?.gpRatePerRupee ?? 1;
+  const gpRate = activeRules?.gpRatePerRupee ?? 0.98;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">

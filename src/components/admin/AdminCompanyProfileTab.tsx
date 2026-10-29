@@ -52,13 +52,9 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const [showStartupCertModal, setShowStartupCertModal] = useState(false);
   const isDirtyRef = React.useRef(false);
 
-  React.useEffect(() => {
-    if (propCompanyProfile && !isDirtyRef.current) {
-      setFormData({ ...propCompanyProfile });
-    }
-  }, [propCompanyProfile]);
 
-  const handleChange = (field: keyof CompanyProfile, value: string) => {
+
+  const handleChange = (field: keyof CompanyProfile, value: any) => {
     isDirtyRef.current = true;
     setFormData((prev) => ({
       ...prev,
@@ -775,104 +771,200 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
             </div>
           </div>
 
-          {/* SECTION 7: Official Social Media Channels */}
+          {/* SECTION 7: Official Social Media Channels & Visibility Toggles */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800 text-rose-400">
-              <Globe className="w-5 h-5" />
-              <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                {isHi ? '7. आधिकारिक सोशल मीडिया चैनल्स (Official Social Links)' : '7. Official Social Media Channels'}
-              </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5 text-rose-400">
+                <Globe className="w-5 h-5" />
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                  {isHi ? '7. आधिकारिक सोशल मीडिया चैनल्स व डिस्प्ले ऑन/ऑफ कंट्रोल' : '7. Social Media Links & Visibility Control'}
+                </h3>
+              </div>
+              <p className="text-[11px] text-amber-400 font-medium">
+                💡 {isHi ? 'बटन दबाकर किसी भी सोशल लिंक को ऑन या ऑफ करें' : 'Tap button to turn any social link ON or OFF'}
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-red-400 font-bold mb-1">
-                  YouTube Channel URL:
-                </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-red-400 font-bold flex items-center gap-1.5">
+                    YouTube Channel URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showYoutube', formData.showYoutube === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showYoutube !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showYoutube !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.youtubeUrl || ''}
                   onChange={(e) => handleChange('youtubeUrl', e.target.value)}
                   placeholder="https://www.youtube.com/@GCapOfficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-sky-400 font-bold mb-1">
-                  Telegram Channel URL:
-                </label>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sky-400 font-bold flex items-center gap-1.5">
+                    Telegram Channel URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showTelegram', formData.showTelegram === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showTelegram !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showTelegram !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.telegramUrl || ''}
                   onChange={(e) => handleChange('telegramUrl', e.target.value)}
                   placeholder="https://t.me/gcapofficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-emerald-400 font-bold mb-1">
-                  WhatsApp Group / Community URL:
-                </label>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-emerald-400 font-bold flex items-center gap-1.5">
+                    WhatsApp Group / Community URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showWhatsapp', formData.showWhatsapp === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showWhatsapp !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showWhatsapp !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.whatsappGroupUrl || ''}
                   onChange={(e) => handleChange('whatsappGroupUrl', e.target.value)}
                   placeholder="https://chat.whatsapp.com/GCapOfficialCommunity"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-blue-400 font-bold mb-1">
-                  Facebook Page URL:
-                </label>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-blue-400 font-bold flex items-center gap-1.5">
+                    Facebook Page URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showFacebook', formData.showFacebook === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showFacebook !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showFacebook !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.facebookUrl || ''}
                   onChange={(e) => handleChange('facebookUrl', e.target.value)}
                   placeholder="https://facebook.com/gcapofficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-pink-400 font-bold mb-1">
-                  Instagram Profile URL:
-                </label>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-pink-400 font-bold flex items-center gap-1.5">
+                    Instagram Profile URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showInstagram', formData.showInstagram === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showInstagram !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showInstagram !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.instagramUrl || ''}
                   onChange={(e) => handleChange('instagramUrl', e.target.value)}
                   placeholder="https://instagram.com/gcapofficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-pink-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-pink-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-300 font-bold mb-1">
-                  Twitter / X Profile URL:
-                </label>
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-300 font-bold flex items-center gap-1.5">
+                    Twitter / X Profile URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showTwitter', formData.showTwitter === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showTwitter !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showTwitter !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.twitterUrl || ''}
                   onChange={(e) => handleChange('twitterUrl', e.target.value)}
                   placeholder="https://twitter.com/gcapofficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-slate-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-slate-500"
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-cyan-400 font-bold mb-1">
-                  LinkedIn Corporate Page URL:
-                </label>
+              <div className="sm:col-span-2 bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-cyan-400 font-bold flex items-center gap-1.5">
+                    LinkedIn Corporate Page URL
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleChange('showLinkedin', formData.showLinkedin === false ? true : false)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
+                      formData.showLinkedin !== false
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                    }`}
+                  >
+                    {formData.showLinkedin !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                  </button>
+                </div>
                 <input
                   type="url"
                   value={formData.linkedinUrl || ''}
                   onChange={(e) => handleChange('linkedinUrl', e.target.value)}
                   placeholder="https://linkedin.com/company/gcapofficial"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
               </div>
             </div>

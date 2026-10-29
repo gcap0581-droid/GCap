@@ -44,11 +44,12 @@ import {
   Linkedin,
   Share2
 } from 'lucide-react';
-import { CompanyProfile, InvestmentPlan, Language } from '../types';
+import { CompanyProfile, InvestmentPlan, Language, AppRules } from '../types';
 import { DEFAULT_COMPANY_PROFILE } from '../utils/companyStorage';
 import { PRIMARY_COMPANY_LOGO, OFFICIAL_SEAL_LOGO } from '../utils/logoAssets';
 import { INVESTMENT_PLANS } from '../utils/plansStorage';
 import { formatINR } from '../utils/storage';
+import { getStoredRules } from '../utils/rulesStorage';
 
 export type WebTabId = 'home' | 'about' | 'plans' | 'calculator' | 'legal' | 'contact';
 
@@ -76,6 +77,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
   const [lang, setLang] = useState<Language>(initialLang);
   const isHi = lang === 'hi';
   const [activeProfile, setActiveProfile] = useState<CompanyProfile>(() => companyProfile || DEFAULT_COMPANY_PROFILE);
+  const [activeRules, setActiveRules] = useState<AppRules>(() => getStoredRules());
 
   useEffect(() => {
     if (companyProfile) {
@@ -87,23 +89,39 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
     const handleProfileUpdated = (e: any) => {
       if (e?.detail) setActiveProfile(e.detail);
     };
+    const handleRulesUpdated = (e: any) => {
+      if (e?.detail) setActiveRules(e.detail);
+      else setActiveRules(getStoredRules());
+    };
     const handleStorageChange = (e: StorageEvent) => {
       if ((e.key === 'gcap_corporate_company_profile_v2' || e.key === 'gcap_corporate_company_profile_v1') && e.newValue) {
         try {
           setActiveProfile(JSON.parse(e.newValue));
         } catch {}
       }
+      if (e.key === 'gcap_platform_rules_v2' || e.key === 'gcap_platform_rules_v1') {
+        setActiveRules(getStoredRules());
+      }
     };
     const handleFirestoreUpdated = (e: any) => {
       if (e?.detail?.companyProfile) {
         setActiveProfile(e.detail.companyProfile);
       }
+      if (e?.detail?.rules) {
+        setActiveRules(e.detail.rules);
+      } else {
+        setActiveRules(getStoredRules());
+      }
     };
     window.addEventListener('gcap_company_profile_updated', handleProfileUpdated);
+    window.addEventListener('gcap_rules_updated', handleRulesUpdated);
+    window.addEventListener('gcap_ota_config_updated', handleRulesUpdated);
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('firestore_state_updated', handleFirestoreUpdated);
     return () => {
       window.removeEventListener('gcap_company_profile_updated', handleProfileUpdated);
+      window.removeEventListener('gcap_rules_updated', handleRulesUpdated);
+      window.removeEventListener('gcap_ota_config_updated', handleRulesUpdated);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('firestore_state_updated', handleFirestoreUpdated);
     };
@@ -318,7 +336,16 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
       btnTextHi: 'कनेक्ट करें 💼',
       btnTextEn: 'Connect 💼',
     },
-  ];
+  ].filter((ch) => {
+    if (ch.id === 'youtube' && activeProfile.showYoutube === false) return false;
+    if (ch.id === 'telegram' && activeProfile.showTelegram === false) return false;
+    if (ch.id === 'whatsapp' && activeProfile.showWhatsapp === false) return false;
+    if (ch.id === 'facebook' && activeProfile.showFacebook === false) return false;
+    if (ch.id === 'instagram' && activeProfile.showInstagram === false) return false;
+    if (ch.id === 'twitter' && activeProfile.showTwitter === false) return false;
+    if (ch.id === 'linkedin' && activeProfile.showLinkedin === false) return false;
+    return true;
+  });
 
   const currentTabObj = tabsConfig.find(t => t.id === activeTab) || tabsConfig[0];
 
@@ -541,7 +568,7 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
               </div>
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-1">
                 <span className="text-[11px] text-slate-400">{isHi ? 'GP विनिमय दर (Peg)' : 'GP Value Ratio'}</span>
-                <div className="text-lg sm:text-xl font-extrabold font-mono text-white">1 GP = ₹1.00</div>
+                <div className="text-lg sm:text-xl font-extrabold font-mono text-emerald-400">₹1 = {activeRules.gpRatePerRupee ?? 0.98} GP</div>
                 <span className="text-[10px] text-emerald-400">{isHi ? '100% भारतीय रुपये में निकासी' : '100% INR Direct Bank'}</span>
               </div>
             </div>
@@ -1325,8 +1352,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
                   {
                     qHi: '1 GP का मूल्य कितना है?',
                     qEn: 'What is 1 GP worth?',
-                    aHi: '1 GP का मूल्य ठीक ₹1.00 (एक भारतीय रुपया) के बराबर है।',
-                    aEn: '1 GP is strictly equal to ₹1.00 INR.',
+                    aHi: `वर्तमान विनिमय दर ₹1 = ${activeRules.gpRatePerRupee ?? 0.98} GP है। 1 GP 100% भारतीय रुपये (INR) में सीधे बैंक में निकासी योग्य है।`,
+                    aEn: `The official exchange rate is ₹1 = ${activeRules.gpRatePerRupee ?? 0.98} GP. 1 GP is 100% withdrawable to INR direct bank account.`,
                   },
                 ].map((faq, idx) => {
                   const isOpen = faqOpenIndex === idx;

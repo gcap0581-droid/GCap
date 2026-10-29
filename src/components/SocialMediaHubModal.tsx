@@ -245,7 +245,16 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
       subscribers: 'Corporate Profile',
       actionText: isHi ? 'लिंक्डइन पर जुड़ें' : 'Connect on LinkedIn',
     },
-  ];
+  ].filter((p) => {
+    if (p.id === 'youtube' && prof.showYoutube === false) return false;
+    if (p.id === 'telegram' && prof.showTelegram === false) return false;
+    if (p.id === 'whatsapp' && prof.showWhatsapp === false) return false;
+    if (p.id === 'facebook' && prof.showFacebook === false) return false;
+    if (p.id === 'instagram' && prof.showInstagram === false) return false;
+    if (p.id === 'twitter' && prof.showTwitter === false) return false;
+    if (p.id === 'linkedin' && prof.showLinkedin === false) return false;
+    return true;
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">

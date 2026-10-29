@@ -18,7 +18,7 @@ export const INVESTMENT_PLANS: InvestmentPlan[] = [
     tag: '641 Days • First 24h Lock • 0.040%/6h GP',
     tagHi: '641 दिन • पहले 24 घंटे का लॉक • हर 6h में 0.040% GP',
     badge: '⚡ 641-Day Short Term Plan (Min ₹1 Lakh)',
-    description: 'Special 641-day Short Term investment plan. Deposit ₹100,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP (1 GP = ₹1) automatically credited.',
+    description: 'Special 641-day Short Term investment plan. Deposit ₹100,000 to Unlimited. First 24 hours lock. Earn 0.040% of your investment amount every 6 hours as GP automatically credited.',
     descriptionHi: 'विशेष 641 दिवसीय शॉर्ट टर्म निवेश योजना। निवेश सीमा ₹1,00,000 से असीमित (Unlimited)। पहले 24 घंटे का लॉक। हर 6 घंटे में 0.040% GP स्वतः जमा।',
     features: [
       'न्यूनतम निवेश ₹1,00,000 से अधिकतम असीमित (Unlimited)',
