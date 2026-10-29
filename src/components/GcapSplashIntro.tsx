@@ -22,7 +22,7 @@ import {
 } from '../utils/startupAudio';
 
 interface GcapSplashIntroProps {
-  user: UserProfile;
+  user?: UserProfile;
   language: Language;
   onComplete: () => void;
 }
@@ -147,6 +147,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
 
   // Play startup theme immediately upon opening and synchronize with stages
   useEffect(() => {
+    console.log('[Splash] Started');
     // Start decent acoustic wealth chime
     playStartupMusic(2.6);
     hasPlayedRef.current = true;
@@ -163,6 +164,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
       const elapsed = Date.now() - startTime;
       const currentProgress = Math.min(100, Math.floor((elapsed / duration) * 100));
       setProgress(currentProgress);
+      console.log('[Splash] Progress:', currentProgress);
 
       const hi = isHiRef.current;
       if (currentProgress < 30) {
@@ -188,6 +190,7 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
       }
 
       if (currentProgress >= 100) {
+        console.log('[Splash] Completed');
         clearInterval(interval);
         playStartupTriumph();
         setTimeout(() => {
@@ -335,21 +338,23 @@ export const GcapSplashIntro: React.FC<GcapSplashIntroProps> = ({ user, language
             </motion.div>
 
             {/* Personalized Welcome Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6, duration: 0.5 }}
-              className="mt-4 sm:mt-5 px-4 py-2 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl flex items-center justify-center gap-2 backdrop-blur-md"
-            >
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-xs sm:text-sm font-bold text-slate-200">
-                {isHi ? 'आपका स्वागत है:' : 'Welcome back:'}{' '}
-                <strong className="text-amber-300 font-black">{user.name}</strong>
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold uppercase">
-                {user.role}
-              </span>
-            </motion.div>
+            {user && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+                className="mt-4 sm:mt-5 px-4 py-2 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl flex items-center justify-center gap-2 backdrop-blur-md"
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-xs sm:text-sm font-bold text-slate-200">
+                  {isHi ? 'आपका स्वागत है:' : 'Welcome back:'}{' '}
+                  <strong className="text-amber-300 font-black">{user.name}</strong>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold uppercase">
+                  {user.role}
+                </span>
+              </motion.div>
+            )}
           </div>
 
           {/* Bottom Progress Bar & Status Text */}

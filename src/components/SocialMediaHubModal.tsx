@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { CompanyProfile, UserProfile } from '../types';
 import { getStoredCompanyProfile, saveStoredCompanyProfile } from '../utils/companyStorage';
+import { saveCompanyProfileToFirestore } from '../lib/firestoreBridge';
 import { PRIMARY_COMPANY_LOGO } from '../utils/logoAssets';
 
 interface SocialMediaHubModalProps {
@@ -116,7 +117,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
     setTimeout(() => setCopiedLink(null), 2500);
   };
 
-  const handleSaveSocialLinks = (e: React.FormEvent) => {
+  const handleSaveSocialLinks = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
@@ -128,6 +129,24 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
       saveStoredCompanyProfile(updatedProfile);
       setActiveProf(updatedProfile);
       setIsEditing(false);
+
+      // Save to Firebase Firestore and central server
+      try {
+        await saveCompanyProfileToFirestore(updatedProfile);
+      } catch (err) {
+        console.log('Failed to save profile to Firestore:', err);
+      }
+
+      try {
+        await fetch('/api/company-profile/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile: updatedProfile }),
+        });
+      } catch (err) {
+        console.log('Failed to save profile to central server:', err);
+      }
+
       if (onSaveProfileSuccess) onSaveProfileSuccess();
     } catch (err) {
       console.log('Failed to save social links:', err);
