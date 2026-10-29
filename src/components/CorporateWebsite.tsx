@@ -262,9 +262,11 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
       name: 'YouTube Channel',
       nameHi: 'यूट्यूब चैनल (YouTube)',
       icon: Youtube,
-      url: (activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial').includes('?')
-        ? `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}&sub_confirmation=1`
-        : `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}?sub_confirmation=1`,
+      url: (activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited').includes('sub_confirmation=1')
+        ? (activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited')
+        : (activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited').includes('?')
+        ? `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited'}&sub_confirmation=1`
+        : `${activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited'}?sub_confirmation=1`,
       color: 'text-red-400 border-red-500/30 bg-red-950/40 hover:bg-red-900/50 hover:border-red-500/60',
       badgeHi: 'ऑफिशियल चैनल',
       badgeEn: 'Official Channel',
@@ -627,8 +629,8 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
 
               {/* Pixel-Accurate Native YouTube Action Bar (Subscribe, Like, Dislike, Share, Remix/Studio, More) */}
               <YouTubeNativeActionBar
-                channelUrl={activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}
-                videoUrl={activeProfile.featuredVideoUrl || activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOfficial'}
+                channelUrl={activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited'}
+                videoUrl={activeProfile.featuredVideoUrl || activeProfile.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited'}
                 videoTitle={isHi ? `${activeProfile.companyName || 'GCap OPC Private Limited'} - 6-घंटे ऑटो-पेआउट व प्लान ट्यूटोरियल` : `${activeProfile.companyName || 'GCap OPC Private Limited'} - Official Video Tutorial`}
                 channelName="GCap Official"
                 subscribersCount="12.5K subscribers"

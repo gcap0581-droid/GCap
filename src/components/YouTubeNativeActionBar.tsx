@@ -31,8 +31,8 @@ interface YouTubeNativeActionBarProps {
 }
 
 export const YouTubeNativeActionBar: React.FC<YouTubeNativeActionBarProps> = ({
-  channelUrl = 'https://www.youtube.com/@GCapOfficial',
-  videoUrl = 'https://www.youtube.com/@GCapOfficial',
+  channelUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited',
+  videoUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited',
   videoTitle = 'GCap OPC Private Limited - Official Plan & 6-Hour Return Guide',
   channelName = 'GCap Official',
   subscribersCount = '12.5K subscribers',
@@ -93,7 +93,11 @@ export const YouTubeNativeActionBar: React.FC<YouTubeNativeActionBarProps> = ({
     if (nextSubState) {
       triggerToast(isHi ? '🎉 धन्यवाद! आप यूट्यूब चैनल से जुड़ गए हैं (Subscribed)!' : '🎉 Subscribed to GCap Official!');
       // Open YouTube channel with ?sub_confirmation=1 in new tab for official account confirmation
-      const subUrl = channelUrl.includes('?') ? `${channelUrl}&sub_confirmation=1` : `${channelUrl}?sub_confirmation=1`;
+      const subUrl = channelUrl.includes('sub_confirmation=1')
+        ? channelUrl
+        : channelUrl.includes('?')
+        ? `${channelUrl}&sub_confirmation=1`
+        : `${channelUrl}?sub_confirmation=1`;
       window.open(subUrl, '_blank', 'noopener,noreferrer');
     } else {
       triggerToast(isHi ? 'Unsubscribed' : 'Unsubscribed');
@@ -335,7 +339,7 @@ export const YouTubeNativeActionBar: React.FC<YouTubeNativeActionBarProps> = ({
                 </div>
 
                 <a
-                  href={channelUrl.includes('?') ? `${channelUrl}&sub_confirmation=1` : `${channelUrl}?sub_confirmation=1`}
+                  href={channelUrl.includes('sub_confirmation=1') ? channelUrl : channelUrl.includes('?') ? `${channelUrl}&sub_confirmation=1` : `${channelUrl}?sub_confirmation=1`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full p-2 rounded-lg hover:bg-slate-800 flex items-center gap-2 text-white transition-colors"

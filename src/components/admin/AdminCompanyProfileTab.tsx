@@ -818,7 +818,7 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   type="url"
                   value={formData.youtubeUrl || ''}
                   onChange={(e) => handleChange('youtubeUrl', e.target.value)}
-                  placeholder="https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1"
+                  placeholder="https://www.youtube.com/@GCapOPCPrivateLimited"
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-red-500"
                 />
               </div>

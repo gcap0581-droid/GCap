@@ -49,7 +49,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   sector: 'Business Finance',
   dpiitMinistry: 'Ministry of Commerce & Industry, DPIIT, Government of India',
   // Official Social Media & YouTube Channel Links
-  youtubeUrl: 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1',
+  youtubeUrl: 'https://www.youtube.com/@GCapOPCPrivateLimited',
   telegramUrl: 'https://t.me/gcapofficial',
   whatsappGroupUrl: 'https://chat.whatsapp.com/GCapOfficialCommunity',
   facebookUrl: 'https://facebook.com/gcapofficial',
@@ -115,9 +115,9 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
     merged.companyNameHi = 'जीकैप (ओपीसी) प्राइवेट लिमिटेड';
   }
 
-  // Auto-correct invalid YouTube handle @GCapOfficial to user's actual channel handle @GCapOPCPrivateLimited
+  // Ensure YouTube channel URL points to https://www.youtube.com/@GCapOPCPrivateLimited
   if (!merged.youtubeUrl || merged.youtubeUrl.includes('@GCapOfficial')) {
-    merged.youtubeUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1';
+    merged.youtubeUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited';
   }
 
   return merged;

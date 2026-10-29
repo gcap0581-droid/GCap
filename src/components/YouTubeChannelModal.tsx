@@ -259,7 +259,7 @@ export const YouTubeChannelModal: React.FC<YouTubeChannelModalProps> = ({
     if (nextState) {
       triggerToast(isHi ? '🔔 चैनल सब्सक्राइब हो गया! (Notifications On)' : '🔔 Subscribed to GCap Official!');
       try {
-        window.open('https://www.youtube.com/@GCapOfficial?sub_confirmation=1', '_blank', 'noopener,noreferrer');
+        window.open('https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1', '_blank', 'noopener,noreferrer');
       } catch {}
     } else {
       triggerToast(isHi ? 'Unsubscribed' : 'Unsubscribed');
@@ -267,7 +267,7 @@ export const YouTubeChannelModal: React.FC<YouTubeChannelModalProps> = ({
   };
 
   const handleShareChannel = () => {
-    const shareUrl = 'https://www.youtube.com/@GCapOfficial';
+    const shareUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited';
     if (navigator.share) {
       navigator
         .share({
@@ -592,7 +592,7 @@ export const YouTubeChannelModal: React.FC<YouTubeChannelModalProps> = ({
               </div>
 
               <div className="text-xs text-slate-400 font-normal space-x-1.5">
-                <span className="font-semibold text-slate-300">@GCapOfficial</span>
+                <span className="font-semibold text-slate-300">@GCapOPCPrivateLimited</span>
                 <span>•</span>
                 <span>12.5K subscribers</span>
                 <span>•</span>
@@ -756,8 +756,8 @@ export const YouTubeChannelModal: React.FC<YouTubeChannelModalProps> = ({
 
                 {/* Embedded YouTube Action Bar */}
                 <YouTubeNativeActionBar
-                  channelUrl="https://www.youtube.com/@GCapOfficial"
-                  videoUrl="https://www.youtube.com/@GCapOfficial"
+                  channelUrl="https://www.youtube.com/@GCapOPCPrivateLimited"
+                  videoUrl="https://www.youtube.com/@GCapOPCPrivateLimited"
                   videoTitle={featuredVideo.title}
                   channelName="GCap Official"
                   subscribersCount="12.5K subscribers"

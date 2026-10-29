@@ -5649,7 +5649,7 @@ export default function App() {
         onSaveProfileSuccess={() => setCompanyProfile(getStoredCompanyProfile())}
       />
 
-      {/* Full YouTube Mobile Channel Modal (@GCapOfficial Page Replicated) */}
+      {/* Full YouTube Mobile Channel Modal (@GCapOPCPrivateLimited Page Replicated) */}
       <YouTubeChannelModal
         isOpen={isYouTubeChannelOpen}
         onClose={() => setIsYouTubeChannelOpen(false)}

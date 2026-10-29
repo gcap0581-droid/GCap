@@ -91,7 +91,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
 
   // Form state for admin editing social handles
   const [formData, setFormData] = useState({
-    youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1',
+    youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited',
     telegramUrl: prof.telegramUrl || 'https://t.me/gcapofficial',
     whatsappGroupUrl: prof.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity',
     facebookUrl: prof.facebookUrl || 'https://facebook.com/gcapofficial',
@@ -102,7 +102,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
 
   React.useEffect(() => {
     setFormData({
-      youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited?sub_confirmation=1',
+      youtubeUrl: prof.youtubeUrl && !prof.youtubeUrl.includes('@GCapOfficial') ? prof.youtubeUrl : 'https://www.youtube.com/@GCapOPCPrivateLimited',
       telegramUrl: prof.telegramUrl || 'https://t.me/gcapofficial',
       whatsappGroupUrl: prof.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity',
       facebookUrl: prof.facebookUrl || 'https://facebook.com/gcapofficial',
@@ -160,7 +160,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
 
   if (!isOpen) return null;
 
-  const youtubeChannelUrl = prof.youtubeUrl || 'https://www.youtube.com/@GCapOfficial';
+  const youtubeChannelUrl = prof.youtubeUrl || 'https://www.youtube.com/@GCapOPCPrivateLimited';
   const telegramChannelUrl = prof.telegramUrl || 'https://t.me/gcapofficial';
   const whatsappCommunityUrl = prof.whatsappGroupUrl || 'https://chat.whatsapp.com/GCapOfficialCommunity';
   const facebookPageUrl = prof.facebookUrl || 'https://facebook.com/gcapofficial';
@@ -172,7 +172,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
     {
       id: 'youtube',
       name: isHi ? 'यूट्यूब आधिकारिक चैनल (YouTube Channel)' : 'Official YouTube Channel',
-      handle: '@GCapOfficial',
+      handle: '@GCapOPCPrivateLimited',
       url: youtubeChannelUrl,
       icon: Youtube,
       color: 'from-red-600 to-rose-700',
@@ -358,7 +358,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
                     value={formData.youtubeUrl}
                     onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500"
-                    placeholder="https://www.youtube.com/@GCapOfficial"
+                    placeholder="https://www.youtube.com/@GCapOPCPrivateLimited"
                     required
                   />
                 </div>
@@ -494,7 +494,7 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
                   className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-200 text-slate-950 font-black text-xs shrink-0 flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95"
                 >
                   <Youtube className="w-4 h-4 text-red-600 fill-red-600" />
-                  <span>{isHi ? 'चैनल पेज खोलें (@GCapOfficial)' : 'Open Channel Page (@GCapOfficial)'}</span>
+                  <span>{isHi ? 'चैनल पेज खोलें (@GCapOPCPrivateLimited)' : 'Open Channel Page (@GCapOPCPrivateLimited)'}</span>
                 </button>
               )}
             </div>
