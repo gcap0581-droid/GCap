@@ -596,12 +596,12 @@ const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   twitterUrl: 'https://twitter.com/gcapofficial',
   linkedinUrl: 'https://linkedin.com/company/gcapofficial',
   showYoutube: true,
-  showTelegram: true,
-  showWhatsapp: true,
-  showFacebook: true,
-  showInstagram: true,
-  showTwitter: true,
-  showLinkedin: true,
+  showTelegram: false,
+  showWhatsapp: false,
+  showFacebook: false,
+  showInstagram: false,
+  showTwitter: false,
+  showLinkedin: false,
   lastUpdated: '2026-09-30T16:31:07.308Z',
 };
 

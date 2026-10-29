@@ -265,13 +265,13 @@ export const SocialMediaHubModal: React.FC<SocialMediaHubModalProps> = ({
       actionText: isHi ? 'लिंक्डइन पर जुड़ें' : 'Connect on LinkedIn',
     },
   ].filter((p) => {
-    if (p.id === 'youtube' && prof.showYoutube === false) return false;
-    if (p.id === 'telegram' && prof.showTelegram === false) return false;
-    if (p.id === 'whatsapp' && prof.showWhatsapp === false) return false;
-    if (p.id === 'facebook' && prof.showFacebook === false) return false;
-    if (p.id === 'instagram' && prof.showInstagram === false) return false;
-    if (p.id === 'twitter' && prof.showTwitter === false) return false;
-    if (p.id === 'linkedin' && prof.showLinkedin === false) return false;
+    if (p.id === 'youtube') return prof.showYoutube !== false;
+    if (p.id === 'telegram') return prof.showTelegram === true;
+    if (p.id === 'whatsapp') return prof.showWhatsapp === true;
+    if (p.id === 'facebook') return prof.showFacebook === true;
+    if (p.id === 'instagram') return prof.showInstagram === true;
+    if (p.id === 'twitter') return prof.showTwitter === true;
+    if (p.id === 'linkedin') return prof.showLinkedin === true;
     return true;
   });
 

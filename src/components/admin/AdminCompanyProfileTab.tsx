@@ -819,14 +819,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showTelegram', formData.showTelegram === false ? true : false)}
+                    onClick={() => handleChange('showTelegram', !formData.showTelegram)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showTelegram !== false
+                      formData.showTelegram === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showTelegram !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showTelegram === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input
@@ -845,14 +845,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showWhatsapp', formData.showWhatsapp === false ? true : false)}
+                    onClick={() => handleChange('showWhatsapp', !formData.showWhatsapp)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showWhatsapp !== false
+                      formData.showWhatsapp === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showWhatsapp !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showWhatsapp === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input
@@ -871,14 +871,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showFacebook', formData.showFacebook === false ? true : false)}
+                    onClick={() => handleChange('showFacebook', !formData.showFacebook)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showFacebook !== false
+                      formData.showFacebook === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showFacebook !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showFacebook === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input
@@ -897,14 +897,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showInstagram', formData.showInstagram === false ? true : false)}
+                    onClick={() => handleChange('showInstagram', !formData.showInstagram)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showInstagram !== false
+                      formData.showInstagram === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showInstagram !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showInstagram === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input
@@ -923,14 +923,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showTwitter', formData.showTwitter === false ? true : false)}
+                    onClick={() => handleChange('showTwitter', !formData.showTwitter)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showTwitter !== false
+                      formData.showTwitter === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showTwitter !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showTwitter === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input
@@ -949,14 +949,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => handleChange('showLinkedin', formData.showLinkedin === false ? true : false)}
+                    onClick={() => handleChange('showLinkedin', !formData.showLinkedin)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-black border transition-all cursor-pointer shadow-sm ${
-                      formData.showLinkedin !== false
+                      formData.showLinkedin === true
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
                     }`}
                   >
-                    {formData.showLinkedin !== false ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
+                    {formData.showLinkedin === true ? '🟢 चालू (ON)' : '🔴 बंद (OFF)'}
                   </button>
                 </div>
                 <input

@@ -348,13 +348,13 @@ export const CorporateWebsite: React.FC<CorporateWebsiteProps> = ({
       btnTextEn: 'Connect 💼',
     },
   ].filter((ch) => {
-    if (ch.id === 'youtube' && activeProfile.showYoutube === false) return false;
-    if (ch.id === 'telegram' && activeProfile.showTelegram === false) return false;
-    if (ch.id === 'whatsapp' && activeProfile.showWhatsapp === false) return false;
-    if (ch.id === 'facebook' && activeProfile.showFacebook === false) return false;
-    if (ch.id === 'instagram' && activeProfile.showInstagram === false) return false;
-    if (ch.id === 'twitter' && activeProfile.showTwitter === false) return false;
-    if (ch.id === 'linkedin' && activeProfile.showLinkedin === false) return false;
+    if (ch.id === 'youtube') return activeProfile.showYoutube !== false;
+    if (ch.id === 'telegram') return activeProfile.showTelegram === true;
+    if (ch.id === 'whatsapp') return activeProfile.showWhatsapp === true;
+    if (ch.id === 'facebook') return activeProfile.showFacebook === true;
+    if (ch.id === 'instagram') return activeProfile.showInstagram === true;
+    if (ch.id === 'twitter') return activeProfile.showTwitter === true;
+    if (ch.id === 'linkedin') return activeProfile.showLinkedin === true;
     return true;
   });
 
