@@ -307,6 +307,20 @@ interface CompanyProfile {
   companyBankAccountHolder?: string;
   tagline?: string;
   taglineHi?: string;
+  youtubeUrl?: string;
+  telegramUrl?: string;
+  whatsappGroupUrl?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+  showYoutube?: boolean;
+  showTelegram?: boolean;
+  showWhatsapp?: boolean;
+  showFacebook?: boolean;
+  showInstagram?: boolean;
+  showTwitter?: boolean;
+  showLinkedin?: boolean;
   lastUpdated?: string;
 }
 
