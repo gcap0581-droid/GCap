@@ -51,6 +51,6 @@ export const GCAP_LOGOS: LogoAssetInfo[] = [
   },
 ];
 
-export const PRIMARY_COMPANY_LOGO = '/assets/images/gcap_hd_logo_premium_1790349527564.jpg';
-export const OFFICIAL_SEAL_LOGO = '/assets/images/gcap_emblem_seal_1790665840672.jpg';
-export const CORPORATE_ELITE_LOGO = '/assets/images/gcap_hd_logo_premium_1790349527564.jpg';
+export const PRIMARY_COMPANY_LOGO = '/assets/images/logo.png';
+export const OFFICIAL_SEAL_LOGO = '/assets/images/logo.png';
+export const CORPORATE_ELITE_LOGO = '/assets/images/logo.png';
