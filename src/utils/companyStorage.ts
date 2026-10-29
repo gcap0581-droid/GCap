@@ -116,7 +116,7 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
   }
 
   // Ensure YouTube channel URL points to https://www.youtube.com/@GCapOPCPrivateLimited
-  if (!merged.youtubeUrl || merged.youtubeUrl.includes('@GCapOfficial')) {
+  if (!merged.youtubeUrl || !merged.youtubeUrl.includes('@GCapOPCPrivateLimited')) {
     merged.youtubeUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited';
   }
 

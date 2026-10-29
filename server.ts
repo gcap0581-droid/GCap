@@ -1870,6 +1870,10 @@ function ensureDb(): ServerDB {
         parsed.companyProfile.companyNameHi = 'जीकैप (ओपीसी) प्राइवेट लिमिटेड';
         needsSave = true;
       }
+      if (!parsed.companyProfile.youtubeUrl || !parsed.companyProfile.youtubeUrl.includes('@GCapOPCPrivateLimited')) {
+        parsed.companyProfile.youtubeUrl = 'https://www.youtube.com/@GCapOPCPrivateLimited';
+        needsSave = true;
+      }
     }
 
     // Ensure Admin account exists and has the requested password
