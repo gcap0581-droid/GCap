@@ -73,7 +73,19 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
   if (!incoming || typeof incoming !== 'object') return base || DEFAULT_COMPANY_PROFILE;
   const baseObj = base || DEFAULT_COMPANY_PROFILE;
 
-  // Merge order: Defaults -> Base -> Incoming (Incoming ALWAYS takes precedence)
+  const baseTs = baseObj.lastUpdated ? new Date(baseObj.lastUpdated).getTime() : 0;
+  const incomingTs = incoming.lastUpdated ? new Date(incoming.lastUpdated).getTime() : 0;
+
+  // If local baseObj has a NEWER lastUpdated timestamp than incoming server snapshot, preserve local baseObj!
+  if (baseTs > incomingTs && baseTs > 0 && incomingTs > 0) {
+    return {
+      ...DEFAULT_COMPANY_PROFILE,
+      ...incoming,
+      ...baseObj,
+    };
+  }
+
+  // Incoming is newer or equal: apply incoming over base
   const merged: CompanyProfile = {
     ...DEFAULT_COMPANY_PROFILE,
     ...baseObj,
@@ -81,10 +93,9 @@ export function mergeCompanyProfiles(base: CompanyProfile, incoming?: Partial<Co
     lastUpdated: incoming.lastUpdated || baseObj.lastUpdated || new Date().toISOString(),
   };
 
-  // Guarantee every non-empty field and boolean in incoming overrides previous values
   (Object.keys(incoming) as (keyof CompanyProfile)[]).forEach((key) => {
     const val = incoming[key];
-    if (typeof val === 'string' && val.trim().length > 0) {
+    if (typeof val === 'string') {
       (merged as any)[key] = val;
     } else if (typeof val === 'boolean') {
       (merged as any)[key] = val;

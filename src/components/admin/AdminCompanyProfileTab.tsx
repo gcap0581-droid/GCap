@@ -54,6 +54,13 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
 
 
 
+  // Keep formData synchronized with propCompanyProfile when user is not actively editing
+  React.useEffect(() => {
+    if (propCompanyProfile && !isDirtyRef.current) {
+      setFormData({ ...propCompanyProfile });
+    }
+  }, [propCompanyProfile]);
+
   const handleChange = (field: keyof CompanyProfile, value: any) => {
     isDirtyRef.current = true;
     setFormData((prev) => ({
@@ -65,10 +72,14 @@ export const AdminCompanyProfileTab: React.FC<AdminCompanyProfileTabProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     isDirtyRef.current = false;
+    const payloadToSave: CompanyProfile = {
+      ...formData,
+      lastUpdated: new Date().toISOString(),
+    };
     if (onSaveProfile) {
-      onSaveProfile(formData);
+      onSaveProfile(payloadToSave);
     } else {
-      saveStoredCompanyProfile(formData);
+      saveStoredCompanyProfile(payloadToSave);
     }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 4500);
